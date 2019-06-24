@@ -25,6 +25,9 @@ class PagesController extends Controller
     public function launchpad(){
         return view('launchpad');
     }
+    public function booknow(){
+        return view('booknow');
+    }
     public function checkmark(){
         return view('confirmations.checkmark');
     }

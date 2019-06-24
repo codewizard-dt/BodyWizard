@@ -2,8 +2,8 @@
             <div class='logo white'></div>
             <div class='contact'>
                 <h4 class='white'>1706 South Lamar Blvd</h4>
-                512-514-3706<br>
-                info@bodywizard.studio
+                512-256-0216<br>
+                info@bodywizardmedicine.com
             </div>
             <div class='hours'>
                 <h4 class='white'>Hours of Operation</h4>

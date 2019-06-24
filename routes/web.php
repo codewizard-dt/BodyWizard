@@ -27,6 +27,7 @@ Route::get('/rates', 'PagesController@rates');
 Route::get('/checkmark', 'PagesController@checkmark');
 Route::get('/portal/logout', 'PagesController@logout');
 Route::get('/home/patients', 'PatientController@home')->middleware('auth');
+Route::get("/booknow", 'PagesController@booknow');
 
 Route::get('/optionsNav/{model}/{uid}', 'ScriptController@OptionsNav');
 Route::get('/display/table/{model}', 'ScriptController@ResourceTable');

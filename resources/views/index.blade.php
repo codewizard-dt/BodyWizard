@@ -11,8 +11,6 @@
 @section('content')
         <div id='acu-chin-1' class='splash btnPopDown'>
             <?php 
-            // use Illuminate\Http\Request;
-            // var_dump(Request::headers());
             if (isset(getallheaders()["Referer"])){
                 $referer = getallheaders()["Referer"];
                 if (strpos($referer,"logout")>-1){
