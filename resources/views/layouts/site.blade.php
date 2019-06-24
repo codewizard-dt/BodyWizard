@@ -21,8 +21,8 @@
                     <!-- <div id="portal" class="tab"><span class="title">Portal</span></div>
                     <div id="logout" class="tab"><span class="title">Log Out</span></div> -->
                 @endif
-                <!-- <div class='divide'></div>
-                <div id="booknow" class="tab"><span class="title">Book Now</span></div> -->
+                <div class='divide'></div>
+                <div id="booknow" class="tab"><span class="title">Book Now</span></div>
             </div>
         </div>
         @yield("content")
