@@ -16,13 +16,13 @@
                 <div id="about" class="tab"><span class="title">About</span></div>
                 <div id="services" class="tab"><span class="title">What + How</span></div>
                 @if (Auth::guest())
-                    <div id="portal" class="tab"><span class="title">Log In</span></div>
+                    <!-- <div id="portal" class="tab"><span class="title">Log In</span></div> -->
                 @elseif (Auth::user())
-                    <div id="portal" class="tab"><span class="title">Portal</span></div>
-                    <div id="logout" class="tab"><span class="title">Log Out</span></div>
+                    <!-- <div id="portal" class="tab"><span class="title">Portal</span></div>
+                    <div id="logout" class="tab"><span class="title">Log Out</span></div> -->
                 @endif
-                <div class='divide'></div>
-                <div id="booknow" class="tab"><span class="title">Book Now</span></div>
+                <!-- <div class='divide'></div>
+                <div id="booknow" class="tab"><span class="title">Book Now</span></div> -->
             </div>
         </div>
         @yield("content")
