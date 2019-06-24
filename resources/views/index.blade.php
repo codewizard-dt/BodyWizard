@@ -59,7 +59,7 @@
                 <p>Fascial release techniques, such as cupping and scraping, release stored metabolic wastes and stimulate the healing process for soft tissues</p>
                 <h4>Guided Meditation</h4>
                 <p>Methods to get you out of your head, foster body awareness, reawaken dormant aspects of the psyche, and explore ways to move forward in life</p>
-                <a href='/services'><h4 class='pink'>READ MORE AND SEE RATES ></h4></a>
+                <a href='/treatments'><h4 class='pink'>READ MORE AND SEE RATES ></h4></a>
             </div>
         </div>
         <div class='quoteBlock'>

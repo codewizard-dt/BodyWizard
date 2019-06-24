@@ -44,7 +44,7 @@
                 <p>Imagine a giant cliff with a river running through it.  The longer that river flows, the more likely it can carve out an unimaginable canyon. Now imagine trying to climb out of that deep canyon without the proper tools. Even for a very capable human, it might be difficult or even impossible!</p><p>Now imagine that our minds are the cliff and our actions are the river. Our actions and habits will carve out their own canyons in our mind. The longer we act a certain way, the more entrenched that activity gets and the harder it is to change.</p><p>We approach these psychosocial conditions with a multi-pronged approach to get you out of that canyon. Initially, we use acupuncture to calm the mind and reset the nervous system, activating the innermost part of the brain that integrates thoughts and emotions.</p><p>This acupuncture-induced state of mind fosters a type of non-judgmental awareness that is a common goal of many transformative practices. It can allow the mind to connect the dots and see life situations from new perspectives.</p><p>We can also integrate simple guided reflections, breathing exercises, and meditations that will further ease the process of reshaping our minds.</p>
             </div>
         </div>
-        <div id='ServiceDesc' class='small paddedXBig'>
+        <div id='TreatmentDesc' class='small paddedXBig'>
             <div class='wrapper'>
                 <div class='icon acu pink'></div>
                 <div class='divide hor yellowBG central xs'></div>

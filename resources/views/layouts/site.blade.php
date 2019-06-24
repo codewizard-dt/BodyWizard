@@ -26,7 +26,8 @@
             </div>
         </div>
         @yield("content")
-        <footer id="footer">
+        @include('layouts.footer')
+<!--         <footer id="footer">
             <div class='logo white'></div>
             <div class='contact'>
                 <h4 class='white'>1706 South Lamar Blvd</h4>
@@ -46,11 +47,11 @@
             <br>
             <div class='button booknow pink small'>BOOK AN APPOINTMENT</div>
             <div class='copyright'>
-                <?php echo "Copyright 2013-" . date("Y") . ", Body Wizard Integrative Medicine Studio, David Taylor MS L.Ac." ?>
+                <?php //echo "Copyright 2013-" . date("Y") . ", Body Wizard Integrative Medicine Studio, David Taylor MS L.Ac." ?>
             </div>
             
         </footer>
-
+ -->
 
 
 

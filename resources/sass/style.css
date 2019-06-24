@@ -2,7 +2,8 @@
     --main-color:#06c;
     --purple:rgb(105,12,104);
     --yellow:rgb(240,154,53);
-    --yellow4:rgba(240,154,53,0.4);
+    --yellow10:rgba(240,154,53,0.1);
+    --yellow40:rgba(240,154,53,0.4);
     --pink:rgb(234,78,80);
 }
 
@@ -44,7 +45,7 @@
 }
 
 body {
-    background-color: var(--purple);
+    background-color: transparent;
     font-family: body;
     font-size: 16px;
     font-weight: 100;
@@ -700,6 +701,10 @@ a:hover {color:red;}
     display: inline-block;
     margin: 0 0 2em 0;
     max-width:100%;
+}
+
+#CondDesc, #TreatmentDesc {
+    background-color: var(--yellow10);
 }
 
 .quoteBlock {
