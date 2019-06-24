@@ -1,0 +1,2518 @@
+:root {
+    --main-color:#06c;
+    --purple:rgb(105,12,104);
+    --purple10:rgba(105,12,104,0.1);
+    --purple30:rgba(105,12,104,0.3);
+    --yellow:rgb(240,154,53);
+    --yellow10:rgba(240,154,53,0.1);
+    --yellow30:rgba(240,154,53,0.3);
+    --yellow50:rgba(240,154,53,0.5);
+    --yellow70:rgba(240,154,53,0.7);
+    --pink:rgb(234,78,80);
+}
+
+input, select, textarea {
+    vertical-align: top;
+    font-size: 1em;
+}
+
+textarea {
+    overflow: auto;
+}
+
+input, textarea {
+    /*border-style: inset; */
+    border-width: 2px;
+    border-color: rgba(210,210,210,0.8);
+    border-style: solid;
+    border-radius: 5px;
+    padding: 2px;
+    margin:0 1px;
+    box-sizing: border-box;
+}
+
+textarea[data-followup]{
+    margin:1.5em 0 0 0;
+}
+
+#uidList {display: none;}
+
+#calendar{
+    width:90%;
+    margin:auto;
+    max-width: 800px;
+    margin-bottom: 3em;
+}
+
+.redfont {
+    color:rgb(189, 48, 40);
+}
+
+.boldfont {
+    font-weight: 700;
+}
+
+.scale.small {
+    font-size: 1em;
+}
+
+.radio span {
+    margin-right:1em;
+}
+
+.range {
+    display: none;
+    margin:1em 3em;
+    width:600px;
+    background-color: rgb(230,230,230);
+    border-style: solid;
+    border-width: 1px ;
+    border-radius: 6px;
+    border-color: black;
+    position: relative;
+}
+
+.range.show {display: block;}
+
+.range input[type="range"] {
+    width:80%;
+    margin-left:10%;
+    background-color: aqua;
+}
+
+.range label {
+    width:100%;
+    margin-left:10%;
+}
+
+.range .legend {
+    display: inline-block;
+    width: 40%;
+    margin:0 5% 1em 5%;
+    font-size: 0.9em;
+    text-align: right;
+}
+
+.range .current {
+    display: inline-block;
+    width: 40%;
+    color:rgb(189, 48, 40);
+    margin:0 5% 1em 5%;
+    font-size: 0.9em;
+    text-align: left;
+    position: relative;
+    top:-2em;
+    font-weight: 700;
+}
+
+.scale {
+    display: block;
+    margin: 0em 0 0.5em 2.7em;
+    vertical-align: top;
+}
+
+.ScaleLeft {
+    display:inline-block;
+    margin-right:10px;
+    vertical-align: top;
+    color:rgb(189, 48, 40);
+}
+.ScaleRight {
+    display: inline-block;
+    margin-left:10px;
+    color:rgb(189, 48, 40);
+    vertical-align: top;
+}
+
+.ItemNumber {
+    display: inline-block;
+    width:1.6em;
+    height:1.1em;
+    text-align: right;
+    margin-left: 10px;
+    margin-right: 10px;
+    vertical-align: top;
+}
+
+.PrimaryConcern {
+    display: inline-block;
+    font-size: 1.1em;
+    font-weight:bold;
+    width:9em;
+    text-align: right;
+    margin-left: 0px;
+    margin-right: 10px;
+    vertical-align: top;
+}
+
+.ConcernScale {
+    color:rgb(189, 48, 40);
+}
+
+
+/*.Question {
+    display: inline-block;
+    max-width:500px;
+    margin-right:20px;
+    vertical-align: top;
+}
+
+.Answer {
+    position:relative;
+    color:rgb(189, 48, 40);
+    display: inline-block;
+}
+
+.Answer.UnderQuestion {
+    display: block;
+    width:100%;
+}
+
+.Item {
+    display:block;
+    margin:1em 0;
+}
+
+
+.Item.inline {
+    display:inline-block;
+    margin:0.25em;
+}
+
+#noIssues {
+    padding: 5px;
+    font-size: 0.9em;
+}
+*/
+.CCItem {
+    display: block;
+    border-style: solid;
+    border-width: 0 0 1px 0;
+    border-color: rgb(170,170,170);
+    background-color: rgb(220,220,220);
+}
+
+.CCItem.new {
+    display: none;
+}
+
+#CCAdd input{
+    font-size: 1.2em;
+    margin-bottom: 10px;
+}
+
+#CCAdd h3{text-align: left;}
+
+
+/*.CCItem .scale {
+    display: none;
+    margin:0 2em;
+    font-size: 0.9em;
+    border-radius: 5px;
+    background-color: rgba(250,250,250,0.3);
+    padding:10px;
+}*/
+
+.CCItem .ScaleLeft, .CCItem .ScaleRight{
+    background-color: rgb(240,240,240);
+    border-radius: 3px;
+    padding:5px 10px;
+    text-align: center;
+}
+
+.CCItem.Fresh .scale {
+    display: inline-block;
+    opacity: 1;
+}
+
+.showScale, .RemoveCC {
+    cursor: pointer;
+}
+
+.CCAdd {
+    margin:0.25em 2em 0.25em 2em;
+    /*width:45em;*/
+    position: relative;
+}
+
+.CCAdd input, .CCAdd select {
+    font-size: 1em;
+    vertical-align: middle;
+}
+
+.showScale {
+    display: inline-block;
+    padding:0.5em 1em;
+    margin-bottom: 0.5em;
+    border-radius: 5px;
+    background-color: rgb(170,170,170);
+    opacity: 0.7;
+    transition: opacity 0.5s, border-color 0.5s;
+    border-style: solid;
+    border-width: 2px;
+    border-color: rgba(0,0,0,0);
+}
+
+.showScale.active {
+    opacity: 1;
+    background-color: rgb(210,210,210);
+    border-color: rgb(120,120,120);
+}
+
+.RemoveCC {
+    background-color: rgb(189, 48, 40);
+    color: white;
+    font-size: 0.8em;
+    opacity: 0.7;
+    padding:0.5em;
+    border-radius: 0 5px 5px 0;
+    transition: opacity 0.5s, border-color 0.5s;
+    border-style: solid;
+    border-width: 1px;
+    border-color: rgba(0,0,0,0);
+}
+
+.RemoveCC.active{
+    opacity:1;
+    border-color: white;
+}
+
+.RemoveNotice {
+    display: none;
+    position:absolute;
+    width: 8em;
+    top:-11px;
+    left: 103%;
+    padding: 0.5em;
+    text-align: center;
+    background-color: rgba(230,230,230,0.9);
+    font-size: 0.8em;
+    color: rgb(189, 48, 40);
+    border-style: solid;
+    border-radius: 5px;
+    border-color: rgb(189, 48, 40);
+    border-width: 1px;
+}
+
+.scaleoption {
+    display: inline-block;
+    color:rgb(189, 48, 40);
+    position: relative;
+    text-align:center;
+    margin:0 .1em;
+}
+
+#menseschart {
+    font-size: 0.9em;
+    display: inline-block;
+    margin: 0 0 1em 3em;
+}
+
+#menseschart h3 {
+    margin-top:0;
+}
+
+#menseschart td{
+    padding:3px 5px;
+    border-style: solid;
+    border-width: 1px;
+    border-color: rgb(170,170,170);
+}
+
+#menseschart th{
+    text-align: center;
+}
+
+#menseschart input, #menseschart select{
+    color:rgb(189, 48, 40);
+    font-size: 0.8em;
+
+}
+
+.sectionRow {
+    display: flex;
+    margin:0 3em;
+}
+
+.sectionRow > div, .sectionRow > label {
+    flex:auto;
+    border-style: dotted;
+    border-width: 1px;
+}
+
+.sectionRow.Ind>div{max-width: 33%;}
+
+.sectionRow span {
+    margin-left:5px;
+}
+
+label {
+    display: inline-block;
+    margin:0 2px;
+}
+
+label input {
+    vertical-align: baseline;
+    margin: 0 3px 1px 0;
+}
+
+.Item > .comment {
+    display: none;
+    margin: 0.5em 0 0.5em 3.5em;
+    vertical-align: top;
+    font-size: 0.9em;
+}
+
+.Answer > .comment {
+    display: inline-block;
+    margin: 0.5em;
+    vertical-align: top;
+    font-size: 0.9em;
+}
+
+form, .indent, .report, .w95 {
+    display: block;
+    width:95%;
+    max-width: 900px;
+    margin:auto;
+}
+
+.formDisp {
+    text-align: left;
+    position: relative;
+}
+
+#LoginForm {
+    width: auto;
+}
+#LoginForm .submit{
+    margin: 0.5em 0 0 0;
+}
+
+#LoginStatus{
+    text-align: center;
+    display: none;
+}
+
+.importantFormInfo{
+    display: block;
+    width: 80%;
+    max-width: 810px;
+    margin:auto;
+    padding:1em;
+    margin: 2em auto 3em auto;
+    border-style: dotted;
+    border-width: 2px;
+}
+
+
+
+.importantFormInfo span{
+    font-size: 1.4em;
+    display: inline-block;
+    padding: 0 0.5em;
+}
+
+.section {
+    border-style: solid;
+    border-width: 1px;
+    border-radius: 5px;
+    border-color: rgb(170,170,170); 
+    margin: 1em 0 0 0;
+    background-color: rgb(240,240,240);
+    padding:1em;
+    position: relative;
+}
+
+/*.section h2 {
+    background-color: rgb(210,210,210);
+    border-style: dotted;
+    border-width: 1px;
+    margin-left: -1px;
+}*/
+
+.section h3 {
+    margin:1em 0 0 0;
+}
+
+.section h4 {
+    margin-left: 2em;
+}
+
+.section h4.center {margin-left: 0;}
+
+.section h4 span {
+    color:rgb(189, 48, 40);
+}
+
+.button {
+    padding:0.5em;
+    margin:1em 1.5em;
+}
+
+.button.disabled{
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+#submit {
+    display: inline;
+    text-align: center;
+    margin-left: 45%;
+    cursor: pointer;
+}
+
+.errorreport {
+    display: inline-block;
+    border-style: solid;
+    border-width: 1px;
+    border-radius: 5px;
+    margin-left: 20%;
+    background-color: rgba(210,210,210,0.9);
+}
+
+.errorreport span {
+    padding:1em;
+    margin:0.5em;
+}
+
+#model {
+    position: relative;
+    width:600px;
+    height: 500px;
+    background-image: url(/images/model/newman.png);
+    margin:auto;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+#model input[type="checkbox"]{
+    opacity:0.7;
+    position:absolute;
+    z-index: 2;
+}
+
+#savePain {display: none;}
+
+.painItem{
+    position: relative;
+}
+
+.painbox{
+    position: absolute;
+    width: 16px;
+    height: 16px;
+}
+
+.paincircle{
+    width:40px;
+    height: 40px;
+    position:absolute;
+    transform: translate(-50%,-50%);
+    opacity:0.75;
+    background-image: url(/images/model/paincircle.png);
+    background-size: contain;
+    z-index: 1;
+}
+
+.paincircle.show{
+    display:inline-block;
+}
+
+#painratings > .Item, #painratingOverall > .Item {
+    padding: 1em;
+    margin:1em;
+    background-color: rgb(230,230,230);
+    border-style: solid;
+    border-width: 1px ;
+    border-radius: 1.5em;
+}
+
+#painratings {text-align: center;}
+
+#painwrapper {text-align: center;}
+
+#IndividualRatings {display:none;}
+
+#exitreview .scaleoption {
+    font-size: 0.9em;
+}
+
+/*#CaseReview .Answer {
+    padding: 0.5em;
+    margin:0 0 0 1em;
+    position: relative;
+    top:-0.5em;
+    background-color: rgb(230,230,230);
+    border-style: solid;
+    border-width: 1px ;
+    border-radius: 6px;
+    border-color: black;
+}
+
+#CaseReview .Answer.bare{
+    padding:0;
+    margin:1em 1em 1em 3em;
+    background-color: none;
+    border-style: none;
+    border-width: none;
+}
+*/
+
+
+.SeparateRating {
+    display: none;
+}
+
+.SeparateRating > .Item {
+    display: none;
+    padding: 1em;
+    margin: 1em 1em 1em 4em;
+    background-color: rgb(230,230,230);
+    border-style: solid;
+    border-width: 1px ;
+    border-radius: 1.5em;
+}
+
+#painwrapper h2 {
+    border-style: none;
+    margin:1em auto;
+    background-color: rgba(230,230,230,0.8);
+}
+
+.instructions {
+    background-color: rgb(189, 48, 40);
+    color:white;
+    padding:1em;
+    border-radius: 1em;
+    border-color: black;
+    margin-bottom: 2em;
+}
+
+.instructions > h3{
+    margin:0 -0.2em;
+    text-align:left;
+}
+
+
+.painScale {
+    margin:1em 0 0 1em;
+}
+
+.hideAllItems {
+    margin:1em;
+    font-weight: 700;
+}
+
+.hideInput {
+    margin: auto 15px auto -10px;
+}
+
+input[type=number]{
+    width: 35px;
+} 
+
+.QualIndBoxes {display: none;}
+
+.QualInd a.showBoxes {
+    color: rgb(170,170,170);
+    transition: color 1s;
+}
+
+.QualInd a:hover, .QualInd a:active {
+    color:rgb(189, 48, 40);
+}
+
+#NewFocus {display: none}
+
+#FormLinks, #ReportLinks{
+    vertical-align: top;
+    background-color: rgb(230,230,230);
+    padding:0.5em;
+    border-radius: 5px;
+    border-style: solid;
+    border-width: 1px;
+    border-color: rgb(170,170,170);
+    display: inline-block;
+    margin:0.5em;
+}
+
+/*#FormLinks.next {
+    position: -webkit-sticky;
+    position: -moz-sticky;
+    position: -ms-sticky;
+    position: -o-sticky;
+    position: sticky;
+    top:6em;
+    vertical-align: top;
+    width:20%;
+}*/
+
+.formReport {
+    display: block;
+    margin: auto;
+    width:74%;
+    position: relative;
+}
+
+.formReport p.hideTarget{
+    padding:10px;
+    font-size: 1.5em;
+/*    background-color: rgb(230,230,230);
+    border-radius: 5px;
+    border-style: solid;
+    border-width: 1px;
+    border-color: rgb(170,170,170);    */
+}
+
+.dateReport {
+    background-color: rgb(240,240,240);
+    border-radius: 5px;
+    border-style: solid;
+    border-width: 1px;
+    border-color: rgb(170,170,170);    
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.dateReport p {
+    margin: 0;
+}
+
+.dateReport h2 {padding:3px;}
+
+.dateReport .item {
+    margin: 0;
+}
+
+.dateReport .section {
+    padding:0.5em 1em;
+}
+
+#FormLinks h3, #ReportLinks h3{
+    text-align: left;
+}
+
+.FormLink, .ReportLink {
+    margin: 0.25em 0.5em;
+    padding:4px 14px;
+    display: inline-block;
+    background-color: rgb(170,170,170);
+    border-style: solid;
+    border-radius: 3px;
+    border-width: 2px;
+    border-color: rgba(170,170,170,0);
+    cursor: pointer;
+    opacity: 1;
+}
+
+.FormLink:hover, .FormLink.active, .ReportLink:hover, .ReportLink.active{
+    background-color: rgb(210,210,210);
+}
+
+.FormLink.active, .ReportLink.active{
+    border-color: rgb(150,150,150);
+}
+
+.FormLink.inactive, .ReportLink.inactive{
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.PrevDateList {width:70%;text-align: center;margin:auto;}
+.PrevDateList#PrevFocusList {width:90%;margin:auto;}
+
+.PrevDateList > span {
+    display: inline-block;
+    text-align: center;
+    padding:0.25em;
+    margin:0.25em;
+    opacity:0.5;
+    transition:opacity 1s,padding 0.5s;
+    border-radius: 5px;
+    border-style: none;
+    border-width: 0px;
+}
+
+.PrevDateList > span > span {
+    font-size: 0.75em;
+}
+
+.PrevDateList span.dark {
+    background-color: rgb(150,150,150);
+}
+
+.PrevDateList span.light {
+    background-color: rgb(200,200,200);
+}
+
+.PrevDateList > span:hover{
+    opacity:1;
+    padding:0.4em;
+    border-style: solid;
+    border-width: 2px;
+    border-color: rgb(100,100,100);
+}
+
+.PrevDateList span.opaque {
+    opacity:1;
+    padding:0.4em;
+    border-style: solid;
+    border-width: 2px;
+    border-color: rgb(100,100,100);
+}
+
+#Letters {margin-top:10px;}
+
+#Letters li {
+    display: inline-block;
+    width:18px;
+    padding: 0;
+    font-size: 1.1em;
+    text-align: center;
+/*    background-color: rgb(210,210,210);*/
+    margin:1.5px 2px;
+}
+
+/*#Letters span {
+    background-color: black;
+    color: white;
+    padding:5px;
+    display: inline-block;
+    float: left;
+    width:6em;
+    height: 100%;
+    margin: 0 5px 0 0;
+    text-align: center;
+}*/
+
+#Letters ul {
+    display: inline-block;
+    border-width: 0 0 0 1px;
+    border-style: solid;
+    border-color: rgb(150,150,150);
+    padding: 1px 1px 1px 1em;
+    background-color: rgb(210,210,210);
+}
+
+#FNameLetter, #LNameLetter {
+    display: flex;
+    align-items: center;
+    border-style: solid;
+    border-width: 1px;
+    border-color: rgb(150,150,150);
+    background-color: rgb(230,230,230);
+}
+
+#FNameLetter span, #LNameLetter span {
+    flex: 0 1 8em;
+    padding:5px;
+    margin: 0;
+    vertical-align: middle;
+    text-align: center;
+}
+
+#PatientList {
+    position: relative;
+    text-align: justify;
+    background-color: rgb(230,230,230);
+    margin:0.5em 0;
+    border-radius: 5px;
+    border-style: solid;
+    border-width: 1px;
+    border-color: rgb(170,170,170);
+    overflow: hidden;
+    max-height: 10em;
+}
+
+#PatientList #empty {
+    padding: 0 20px 10px 20px;
+    display: inline-block;
+}
+
+#PatientData {
+    position: relative;
+    display: none;
+    text-align: justify;
+    background-color: rgb(230,230,230);
+    margin:0.5em 0;
+    border-radius: 5px;
+    border-style: solid;
+    border-width: 1px;
+    border-color: rgb(170,170,170);
+}
+
+#CategoryList, #ActionList, #SymptomList, #HerbList, #FormulaDesc, #CurrentFormula, #NewHerb, .FormulaDisplay, #PrevFormulas, #dateSelect ul{
+    background-color: rgb(230,230,230);
+    margin:0.5em 0;
+    border-radius: 5px;
+    border-style: groove;
+    border-width: 2px;
+    position: relative;
+}
+
+#ActionList, #SymptomList, #FormulaDesc, #CategoryList ul, #NewHerb {display: none;}
+
+#Filters span {display: none;}
+#NameF {display: inline;}
+
+#HerbList, #CategoryList, #SymptomList, #ActionList, #CurrentFormula, #FormulaDesc, #NewHerb, .FormulaDisplay, #PrevFormulas{
+    padding:1em;
+}
+
+#HerbList li, #PatientList li, #ActionList li, #SymptomList li, #CategoryList li, #FormulaDesc li, .ActiveSymptoms li, .ActiveActions li, #NewHerb li, .FormulaDisplay li, .answer li, .reportFilters li{
+    list-style: none;
+    display:inline-block;
+    background-color: rgb(170,170,170);
+    border-radius: 3px;
+    margin: 5px;
+    padding:0.2em 0.5em;
+    border-width: 2px;
+    border-style: solid;
+    border-color: rgba(120,120,120,0);
+    cursor: pointer;
+    opacity: 1;
+}
+
+.answer li.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+
+ul.clickable li{
+    list-style: none;
+    display:inline-block;
+    background-color: rgb(170,170,170);
+    border-radius: 3px;
+    margin: 5px;
+    padding:0.2em 0.5em;
+    border-width: 2px;
+    border-style: solid;
+    border-color: rgba(120,120,120,0);
+    cursor: pointer;
+}
+
+ul.clickable li:hover{
+    background-color: rgb(210,210,210);
+}
+
+ul.clickable li.active{
+    background-color: rgb(210,210,210);
+    border-color: rgb(120,120,120);
+}
+
+.blurred {
+    opacity: 0.5;
+}
+
+.blurred li {
+    cursor: not-allowed;
+}
+
+.reportFilters {
+    position: -webkit-sticky;
+    position: -moz-sticky;
+    position: -ms-sticky;
+    position: -o-sticky;
+    position: sticky;
+    display: inline-block;
+    float: right;
+    margin: 0.5em;
+    top: 8em;
+    right: 1em;
+    background-color: rgb(230,230,230);
+    border-radius: 5px;
+    border-style: solid;
+    border-width: 1px;
+    border-color: rgb(170,170,170);
+    font-size: 0.7em;
+    padding: 0 0.5em;
+}
+
+li[data-response='no response']{
+    opacity: 0.5;
+}
+
+.answer li {
+    font-size: 0.9em;
+}
+
+#PrevFormulas > div {display: none;}
+#PrevFormulas .FormulaDetails {display: none;}
+#PrevFormulas .FormulaDisplay {background-color: rgb(230,230,230);}
+
+.FormulaDisplay li.date{background-color: rgb(210,210,210);}
+.FormulaDisplay li.formName{}
+.FormulaDisplay li.pattern{}
+
+.FormulaDisplay td {
+    max-width: 16em;
+    padding: 2px 8px;
+    text-align: center;
+    vertical-align: middle;
+    border-bottom: 1px solid rgb(210,210,210);
+}
+
+.FormulaDisplay th {
+    padding: 3px 9px;
+    background-color: rgb(200,200,200);
+    text-align: center;
+    border-bottom: 1px solid rgb(200,200,200);
+}
+
+.FormulaDisplay table{
+    border: 1px solid rgb(200,200,200);
+}
+
+.FormulaDisplay h4 span {
+    font-weight: 400;
+}
+
+#PrevFormulas tr[data-herbname]:hover {
+    background-color: rgb(210,210,210);
+}
+
+#PrevFormulas tr[data-herbname].active {
+    background-color: rgb(210,210,210);
+}
+
+.herb {font-size: 0.8em;padding:1.5em;}
+
+#FormulaDesc li{cursor: default; font-size: 0.9em;}
+#FormulaDesc .button {margin:10px;}
+
+#HerbNames li:hover, #PatientList li:hover, .answer:not(.blurred) li:hover{
+    background-color: rgb(210,210,210);
+}
+
+#HerbList li.add, #PatientList li.active, #ActionList li.active, #SymptomList li.active, #CategoryList li.active, .ActiveSymptoms li.active, .ActiveActions li.active, #NewHerb li.active, .answer li.active, .reportFilters li.active{
+    background-color: rgb(210,210,210);
+    border-color: rgba(120,120,120,0.9);
+}
+
+.question {
+    display: inline-block;
+    border-style: solid;
+    border-color: rgb(210,210,210);
+    border-width: 0 0 1px 0;
+}
+
+.question span.n {
+    display: inline-block;
+    width: 1.5em;
+}
+
+.question.CC{
+    border-width: 0;
+    padding:5px 10px;
+}
+
+[data-followup="followup"]{
+    display: none;
+}
+
+.item {
+    margin:0.25em 0 1em 0;
+    vertical-align: top;
+    text-align: left;
+}
+.item.inline{
+    display: inline-block; 
+    padding-right: 0.2em;
+    width: calc(33% - 0.2em);
+}
+.item input{
+    width: calc(100% - 0.4em);
+    max-width: 300px;
+}
+.item textarea{
+    width: calc(100% - 0.4em);
+    max-width:450px;
+    height:5em;
+}
+.number input{
+    width:5em;
+}
+.item.ownLine{
+    display: block; 
+    padding-right: 0px; 
+    width: 100%;
+}
+
+.answer {
+    position: relative;
+    border-style: solid;
+    border-radius: 5px;
+    border-color: rgb(210,210,210);
+    display: inline-block;
+    margin:5px 0.2em;
+    width: calc(100% - 0.5em);
+    overflow: hidden;
+}
+
+.item.inline .text, .item.inline .textbox{
+    width:100%;
+}
+.item.inline .answer{
+    width:auto;
+}
+.optionsList .answer{
+    width: auto;
+}
+
+.answer.text, .answer.date, .answer.textbox, .answer.dropdown, .answer.time{
+    border-color: transparent;
+    background-color: transparent;
+}
+.answer.textbox{
+    min-width: 65%;
+}
+
+.answer.signHere{
+    display: block;
+}
+
+#CaseReview .answer,#PsychReview .answer{
+    margin: 0 2em 0.3em 2em;
+}
+
+#CaseReview .question,#PsychReview .question{
+    margin-top:0.3em;
+}
+
+#CaseReview .followup .answer,#PsychReview .followup .answer{
+    margin: 5px;
+}
+
+
+.followup {
+    margin: 0 2em;
+    padding: 5px;
+    border-radius: 3px;
+    border-style: solid;
+    border-width: 1px;
+    border-color: rgb(170,170,170);
+    background-color: rgb(235,235,235);
+    vertical-align: middle;
+}
+
+.followup .question{
+    display: inline-block;
+    margin: 0.7em 0.7em 0.3em 0.7em;
+}
+
+.followup .answer {
+    max-width: 500px;
+}
+
+.per {
+    display: inline-block;
+    margin: 0.9em 0.7em;
+}
+
+.formReport .answer {
+    margin: 0.5em 0;
+}
+
+.answer.CC {
+    display: block;
+    border-color: rgb(170,170,170);
+}
+
+.question.CC{
+    display: block;
+    background-color: rgb(190,190,190);
+}
+
+.closed .answer{
+    display: none;
+}
+
+.answer.checkboxes, .answer.radio {
+    background-color: rgb(220,220,220);
+    width: auto;
+}
+
+.plzselect {
+    margin: 5px 1.3em 0 1.3em;
+    font-size: 0.8em;
+    color: rgb(130,130,130);
+}
+
+.answer.scale {
+    width: 100%;
+    padding:10px 0 10px 0;
+    margin: 0;
+    border-width: 0;
+    text-align: center;
+    overflow: visible;
+    display: block;
+}
+
+.slider {
+    -webkit-appearance: none;
+    width: 75%;
+    height: 10px;
+    /*z-index: 1;*/
+    position: relative;
+    background: rgb(220,220,220);
+    outline: none;
+    margin-top:5px;
+    border-radius: 1.5em;   
+    border-style: solid;
+    border-color: rgb(170,170,170);
+    border-width: 1px;
+    box-sizing: border-box;
+}
+
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: rgb(170,170,170);
+    cursor: pointer;
+}
+
+.slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: rgb(170,170,170);
+    cursor: pointer;
+}
+
+.slider.disabled {
+    height: 2px;
+}
+.slider.disabled::-webkit-slider-thumb {
+    height: 4px;
+    width: 4px;
+    cursor: not-allowed;
+}
+.slider.disabled::-moz-range-thumb {
+    height: 4px;
+    width: 4px;
+    cursor: not-allowed;
+}
+
+.sliderbg {
+    position:relative;
+    display:inline-block;
+}
+
+.sliderMarks{
+    position: absolute;
+    display: inline-block;
+    width: 100%;
+    font-size: 3em;
+}
+
+.SliderValue{
+    position: absolute;
+    display: none;
+    /*width:1.5em;
+    height: 1.7em;
+    z-index: 0;*/
+    padding:.4em .5em;
+    left:50%;
+    top:-50%;
+    transform: translate(-50%,-1.5em);
+    border-radius: 5px;
+    border-style: solid;
+    border-width: 1px;
+    border-color: rgb(170,170,170);
+    font-weight: 700;
+    background-color: rgb(210,210,210);
+    box-shadow: 0 0 3px 2px rgb(240,240,240);
+}
+
+.answer.scale > .left, .answer.scale > .right{
+    display: inline-block;
+    font-size: 0.9em;
+    /*height:25px;*/
+    vertical-align: top;
+    width: 10%;
+}
+
+.section h2{
+    text-align: left;
+    margin:0;
+}
+
+/*
+.section .description {
+    display: inline-block;
+    background-color: rgb(170,170,170);
+    border-radius: 10px;
+    padding: 0.75em 1.5em;
+    border-style: solid;
+    border-width: 1px;
+    border-color: rgb(150,150,150);
+    margin-bottom: 2em;
+}
+
+.section .description span {
+    font-weight: 700;
+}
+*/
+
+.clearX {
+    background-image: url(/images/icons/simple-x-pink.png);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: contain;
+    top:-0.5em;
+    right:-0.5em;
+    width:1em;
+    height:1em;
+    border-radius: 50%;
+    background-color: rgb(250,250,250);
+    border: 1px solid rgb(190,190,190);
+}
+
+.clear {
+    position: absolute;
+    top:10px;
+    right:10px;
+    color:rgb(190,190,190);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.list .clear{
+    position: relative;
+    top: auto;
+    right: auto;
+    font-size: 0.9em;
+    margin-left:10px;
+}
+
+#PatientList .clear {
+    position: relative;
+    text-decoration: none;
+    top: auto;
+    right: auto;
+    font-size: 0.7em;
+}
+
+#timerClear.clear{
+    position: relative;
+    display: inline;
+    color:rgb(130,130,130);
+    top:0;
+    right:0;
+}
+
+#model > .clear {
+    top:100px;
+    right:48%;
+    display: none;
+}
+
+#PleaseClick {
+    transform: translateY(-40px);
+    background-color: rgb(210,210,210);
+    border-width: 1px;
+    border-style: solid;
+    border-color: rgb(170,170,170);
+    text-align: center;
+    padding:3px;
+    border-radius: 3px;
+}
+
+#processReport > .clear{
+    position: relative;
+    top:auto;
+    right:auto;
+    color:rgb(170,170,170);
+}
+
+.close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    cursor: pointer;
+}
+
+.jump.text, #CategorySelect, #AddHerb {
+    color:rgb(90,90,90);
+    display: inline-block;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+#NewHerb span{padding:0 10px;}
+#NewHerb ul {display: none;}
+
+.pinyin{font-family: Lora;font-weight: bold;font-size: 1.2em;}
+
+.common{font-weight: 400;}
+
+.latin{font-weight: 400;font-style: italic;}
+
+#CurrentFormula span {
+    margin:0.25em 0.5em;
+}
+
+#CurrentFormula h3 {text-align: left;}
+
+.HerbData input {font-size: 0.9em;margin-left: 1.3em;}
+.HerbData .xsmall {font-size: 0.75em;}
+
+
+.ActiveSymptoms, .ActiveActions {
+    position:relative;
+}
+
+.ActiveSymptoms li, .ActiveActions li{
+    font-size: 0.8em;
+}
+
+.ActiveHerb {
+    margin:1em 2em;
+    position: relative;
+    border-style: solid;
+    padding: 0.25em 1em;
+    border-width: 1px;
+    border-radius: 3px;
+    border-color: rgba(200,200,200,0);
+}
+.ActiveHerb h4 {margin-left:-3.2em;}
+.ActiveHerb ul {margin-left:1em;}
+
+.hideAttr{
+    cursor: pointer;
+    position:absolute;
+    color:rgb(130,130,130);
+    font-size: 0.8em;
+    left:-1.5em;
+    top:0.25em;
+}
+
+
+.removeHerb{
+    cursor: pointer;
+    font-size: 0.8;
+    position: relative;
+    top:0.2em;
+}
+
+#Filters span{
+    font-size: 0.8em;
+    background-color: rgb(210,210,210);
+    padding: 0 10px;
+    margin: 0 3px;
+    border-radius: 3px;
+    text-transform: lowercase;
+}
+
+li.inactive{
+    opacity:0.5;
+    cursor: not-allowed;
+}
+
+#processReport {
+    display: inline-block;
+    margin: 0 0 2em 50%;
+    padding: 1em 2em;
+    transform: translateX(-50%);
+    background-color: rgb(210,210,210);
+    border-color: rgb(170,170,170);
+    border-style: solid;
+    border-width: 2px;
+    border-radius: 5px;
+    max-width: 50%;
+}
+
+#BackToLaunchpad{
+    display: inline-block;
+    margin: 2em 0 2em 50%;
+    padding: 1em 2em;
+    transform: translateX(-50%);
+    background-color: rgb(210,210,210);
+    border-color: rgb(170,170,170);
+    border-style: solid;
+    border-width: 2px;
+    border-radius: 5px;
+}
+
+.zeroWrap{
+    display: inline-block;
+    width:1px;
+    height:1px;
+    overflow: visible;
+    position: absolute;
+    text-align: center;
+    vertical-align: middle;
+    background-color: none;
+    margin: 0 0 0 3px !important;
+    z-index: 9999;
+}
+
+.alert{
+    background-color: red !important;
+    color: white !important;
+    font-weight: 700 !important;
+    position:absolute;
+    text-align: center;
+    top:50%;
+    transform: translateY(-50%);
+    padding:4px;
+    margin: 0 !important;
+    border-radius: 3px;
+    border-width: 0 !important;
+    white-space: nowrap;
+    font-size: 0.8em;
+    text-transform: uppercase;
+}
+
+.confirm{
+    background-color: rgb(46, 107, 53) !important;
+    color: white !important;
+    font-weight: 700 !important;
+    position:absolute;
+    padding:4px;
+    border-radius: 3px;
+    border-width: 0 !important;
+    font-size: 0.8em;
+    text-transform: uppercase;
+}
+
+#CurrentFormula .jump {
+    position: absolute;
+    top: 1em;
+    right:1em;
+}
+
+#AddPatient{
+    font-size: 0.9em;
+    display: none;
+    min-width: 150px;
+    min-height: 20px;
+    padding:25px 50px;
+}
+
+
+
+#dateSelect {
+    width:600px;
+    max-width: 95%;
+}
+
+#demographics {
+    margin: 5px 10px;
+    font-size: 1.1em;
+    font-weight: 700;
+}
+
+#demographics .field {
+    display: inline-block;
+    text-align: right;
+    padding-right: 10px;
+    width: 100px;
+}
+
+#addDemoRecord {
+    font-size: 0.75em;
+}
+
+.table {
+    padding:0;
+    background-color: rgb(210,210,210);
+    display: inline-block;
+    border-radius: 5px;
+    border: 1px solid rgb(120,120,120);
+}
+
+.table .row{
+    padding: 0.5em 1em;
+    border-width: 0 0 1px 0;
+    border-style: solid;
+    border-color: rgb(150,150,150);
+    text-align: left;
+}
+
+.table .row:last-of-type{
+    border-width: 0;
+}
+
+.table .pair{
+    display: inline-block;
+    margin: 0.1em 0.25em;
+    border-radius: 5px;
+    border-style: solid;
+    border-color: rgb(150,150,150);
+    border-width: 1px;
+    overflow: hidden;
+    vertical-align: middle;
+}
+
+.table .blurred {
+    opacity: 0.5;
+}
+
+.table .key{
+    display: inline-block;
+    padding: 0.25em 1em;
+    background-color: rgb(170,170,170);
+}
+
+.table .value{
+    display: inline-block;
+    padding: 0.25em 1em;
+}
+
+.table input, .table select, .table input.datepicker{
+    display: inline-block;
+    margin: -0.5em -1em;
+    padding: 0.25em 0 0.25em 1em;
+    border-radius: 0 5px 5px 0;
+    vertical-align: middle;
+    transform: translateY(-2px);
+}
+
+.clickToEdit, .clickToSave, .clickToCancel {
+    display: inline-block;
+    color: rgb(170,170,170);
+    cursor: pointer;
+    margin-right: 10px;
+}
+
+.clickToSave {
+    color: rgb(120,120,120);
+}
+
+#setPlan {
+    cursor: pointer;
+    text-decoration: underline;
+}
+input#PatientName {
+    margin-left: 1.5em;
+}
+
+.button.next, .button.prev, .optionsNav .button {
+    font-size: 0.7em;
+    margin: 2px 5px;
+}
+
+.optionsNav .optionsBar{
+    white-space: nowrap;
+}
+
+.number {
+    /*padding: 0.4em 0.5em;*/
+    margin: -0.25em 0;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    touch-action: manipulate;
+    margin-right:0;
+    white-space: nowrap;
+}
+.inline .number{
+    width:calc(100% - 0.5em);
+}
+
+.number .label{
+    margin-left: 0.1em;
+}
+
+.number div, .number input, .number span, .secName div, .secName span{
+    vertical-align: middle;
+    text-align: right;
+    touch-action: manipulate;
+}
+
+.secName, .itemName, .itemFUName {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 3px 3px 3px 10px;
+    border-width: 1px 0 0 0;
+    border-style: solid;
+    border-color: rgb(120,120,120);
+}
+
+.secName:first-of-type, .itemName:first-of-type, .itemFUName:first-of-type{
+    border-width: 0;
+}
+
+.secName div, .secName span, .itemName div, .itemName span,  .itemFUName div, .itemFUName span{
+    flex: 0 0 1 auto auto;
+}
+
+.secName span, .itemName span, .itemFUName span {
+    font-size: 1.1em;
+    font-weight: 700;
+}
+
+.UpDown {
+    display: inline-block;
+    position: relative;
+    right: 0;
+}
+
+.UpDown .selectChkBx{
+    font-size: 1.2em;
+    position: relative;
+    right:15px;
+}
+
+.item > .UpDown, .itemFU > .UpDown {
+    position: absolute;
+    top:5px;
+    right:5px;
+}
+
+#OptionsList .up, #OptionsList .down{
+    width: 1.5em;
+    height: 1em;
+}
+.number .up, .number .down, .UpDown .up, .UpDown .down {
+    width: 2.1em;
+    height: 1.4em;
+    background-color: rgb(230,230,230);
+    border-width: 1px;
+    border-style: solid;
+    border-color: rgb(150,150,150);
+    margin-left: 1em;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    touch-action: manipulate;
+    transition: box-shadow 200ms;
+}
+
+.number .up:hover, .number .down:hover, .UpDown .up:hover, .UpDown .down:hover {
+    box-shadow: 0 0 3px 0.1px rgb(150,150,150) inset;
+}
+
+.number .up, .UpDown .up {
+    border-radius: 5px 5px 0 0 ;
+    background-image: url(/images/icons/arrow-up.png);
+}
+
+.number .down, .UpDown .down {
+    border-radius: 0 0 5px 5px ;
+    background-image: url(/images/icons/arrow-down.png);
+}
+
+.number > div {
+    display: inline-block;
+}
+
+.signHere {
+    position: relative;
+    background-color: white;
+    padding:0.5em 1em;
+    border-radius: 5px;
+    margin:0.5em;
+}
+
+.signHere span {
+    display: block;
+    margin: 0 0 1em 0;
+}
+
+.informational {
+
+}
+.informational .prompt {
+    /*background-color: var(--yellow);*/
+    color: var(--pink);
+    border-radius: 3px;
+    padding: 3px;
+    margin: 0 5px;
+    font-size: 0.9em;
+    vertical-align:baseline;
+    cursor: pointer;
+}
+.informational .info {
+    display:none;
+}
+
+.optionsNav {
+    display: inline-block;
+    position: relative;    
+    min-width: 25em;
+    max-width: 95%;
+    overflow: hidden;
+    text-align: center;
+    background-color: rgb(240,240,240);
+    border-radius: 5px;
+    border-style: solid;
+    border-width: 2px;
+    border-color: rgb(190,190,190);
+    transition: height 1200ms;
+    vertical-align: middle;
+}
+.optionsNav > div {
+    padding:1em;
+}
+.prompt{
+    padding:0 !important;
+    display: inline-block;
+    position: relative;    
+    min-width: 25em;
+    max-width: 70%;
+    overflow: hidden;
+    text-align: center;
+    background-color: rgb(240,240,240) !important;
+    border-radius: 5px;
+    border-color: rgb(190,190,190);
+    transition: height 1200ms;
+    vertical-align: middle;
+
+}
+.prompt > div {
+    padding: 1.5em;
+}
+.prompt .options{
+    padding: 0.4em;
+    font-size: 0.8em;
+    background-color: rgb(230,230,230);
+    border-width: 1px 0 0 0;
+    border-style: solid;
+    border-color: rgb(190,190,190);
+    transition: background-color 400ms;
+}
+.optionsNav.hide{
+    height: 0;
+    opacity: 0;
+}
+.optionsNav .toggleDetails{
+    padding: 0.4em;
+    cursor: pointer;
+    font-size: 0.8em;
+    background-color: rgb(230,230,230);
+    border-width: 1px 0 0 0;
+    border-style: solid;
+    border-color: rgb(190,190,190);
+    transition: background-color 400ms;
+}
+.optionsNav .toggleDetails .arrow{
+    height: 1.2em;
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+.optionsNav .toggleDetails.down .arrow{
+    background-image: url(/images/icons/arrow-down.png);
+}
+.optionsNav .toggleDetails.up .arrow{
+    background-image: url(/images/icons/arrow-up.png);
+}
+.optionsNav .toggleDetails:hover{
+    background-color: rgb(210,210,210);
+}
+.navDetails{
+    display: none;
+}
+.optionsNav .name {
+    position: relative;
+    display: inline-block;
+    padding: 0.5em;
+    margin: 0 10px 10px 10px;
+    font-weight: 700;
+    background-color: var(--yellow);
+    color: white;
+    border-radius: 5px;
+    border-style: solid;
+    border-width: 1px;
+    border-color: rgb(120,120,120);
+}
+
+.optionsNav .detail {
+    padding:0.5em 2em;
+    text-align: left;
+}
+.optionsNav .detail span {
+    display: inline-block;
+    margin-right: 1em;
+    border: 1px solid rgb(150,150,150);
+    border-width: 0 0 1px 0;
+}
+.optionsNav .detail > div{
+    vertical-align: middle;
+}
+/*.optionsNav .detail:first-of-type {
+    margin-top: 1em;
+}*/
+
+#CurrentForm {
+    margin: 0 0 1em 0;
+}
+
+.patientName, .formName, .serviceName {
+}
+
+#SectionOrder, #ItemOrder, #ItemFUOrder {
+    display: none;
+}
+
+#AddSection, #AddItem, #AddText, #AddFollowUp, #SectionOrder>div, #ItemOrder>div, #ItemFUOrder>div {
+    display: none;
+    position: relative;
+    border-radius: 5px;
+    border-width: 1px;
+    border-style: solid;
+    border-color: rgb(120,120,120);
+    background-color: rgb(210,210,210);
+    margin: 1em;
+    padding: 0.5em;
+}
+
+#AddItem {
+    text-align:left;
+}
+
+.sectionOptions {
+    border-radius: 5px;
+    border-width: 1px;
+    border-style: solid;
+    border-color: rgb(120,120,120);
+    background-color: rgb(240,240,240);
+    margin: 1em;
+    padding: 0.5em;
+    display: inline-block;
+    width: 24em;
+}
+
+#SectionList, #ItemList, #ItemFUList {
+    border-radius: 5px;
+    border-width: 1px;
+    border-style: solid;
+    border-color: rgb(120,120,120);
+    background-color: rgb(230,230,230);
+    margin: 0.5em;
+    position: relative;
+    overflow: hidden;
+}
+
+#SectionOrder > div > span, #ItemOrder > div > span, #ItemFUOrder > div > span {
+    font-size: 1.1em;
+    font-weight: 700;
+}
+
+#AddSection > div > span {
+    display: inline-block;
+    width: 9em;
+}
+
+#AddItem > div > span, #AddText > div > span {
+    display: inline-block;
+    width: 6em;
+    vertical-align: top;
+}
+
+#AddItem > div, #AddText > div {
+    margin: 0.5em 0.25em;
+}
+
+#AddItem .button, #AddText .button {
+    display: inline-block;
+}
+
+#AutoSaveWrap {
+    height: 5em;
+    position:fixed;
+    width:100%;
+    display:none;
+    opacity: 0;
+    z-index: 9999;
+    box-shadow: 0 0 10px 5px rgba(250,250,250,0.95);
+}
+#AutoConfirm {
+    position:relative;
+    display:inline-block;
+    font-size:1.2em;
+    z-index:9999;
+    transform: translateY(-50%);
+}
+
+#FormBuilder .button {
+    font-size: 0.7em;
+}
+
+#FormBuilder {
+    position: relative;
+    max-width: 95%;
+    width: 900px;
+    margin:auto;
+    margin-top: 1em;
+}
+
+#FormBuilder .hideTarget, #FormBuilder .hideFUs{
+    margin-top: 1em;
+}
+
+#FormBuilder .question {
+    font-size: 1.2em;
+    font-weight: 700;
+    margin-right: 1em;
+}
+
+/*#FormBuilder .question > .toggle {
+    font-weight: 400;
+    vertical-align: middle;
+}
+*/
+.sectionName {
+    text-transform: capitalize;
+    font-weight: 700;
+    font-size: 1.2em;
+}
+
+#FormName > span, #FormName .value{
+    font-weight: 700;
+    font-size: 1.2em;
+}
+
+#FormName .value {
+    text-transform: capitalize;
+}
+
+#Sections h4 {
+    text-transform: capitalize;
+}
+
+#Sections .section {
+    display: none;
+}
+
+.Items, .ItemsFU {
+    position: relative;
+    text-align: left;
+}
+
+.Items .target, .ItemsFU .targetFUs{
+    margin: 0 1em 1em 1em;
+    border-radius: 5px;
+    border-style: solid;
+    border-width: 1px;
+    border-color: rgb(120,120,120);
+    overflow: hidden;
+    position: relative;
+    text-align: left;
+}
+
+.Items .selectMultiple {
+    position: relative;
+    margin: -1em 1em;
+    top:1em;
+    right:0;
+    float: right;
+    z-index: 21;
+}
+
+.selectMultiple .button {
+    display: inline-block;
+    float:right;
+    margin:0 1em;
+}
+.selectMultiple .delete, .selectMultiple .hide, .selectMultiple .copy {
+    display: none;
+}
+
+.multiCopyOption {
+    cursor: pointer;
+    border-width: 1px;
+    border-color: rgb(90,90,90);
+    background-color: rgb(210,210,210);
+    color: rgb(120,120,120);
+    margin: 0 0 0 5px;
+    padding: 3px 5px 3px 7px;
+    transition: color 800ms;
+}
+
+.multiCopyOption:hover {
+    color: black;
+}
+
+.multiCopyOption:first-of-type{
+    border-radius: 5px 0 0 5px;
+}
+.multiCopyOption:last-of-type{
+    border-radius: 0 5px 5px 0;
+}
+
+.ItemsFU .targetFUs {
+    display: none;
+}
+
+.Items .item, .ItemsFU .itemFU {
+    position: relative;
+    margin: 0;
+    padding: 0.5em 1em;
+    border-style: solid;
+    border-width: 1px 0 0 0;
+    border-color: rgb(120,120,120);
+}
+
+.Items .item:first-of-type, .ItemsFU .itemFU:first-of-type {
+    border-width: 0;
+}
+
+.section.display .itemFUList {
+    display:none;
+    padding-left: 2em;
+    margin-left: 1.5em;
+    border-width: 0 0 0 3px;
+    border-style: solid;
+    border-color: rgb(190,190,190);
+    border-radius: 15px 0 0 15px;
+}
+.section.display .itemFU{
+    display: none;
+}
+
+#examples {
+    display: none;
+}
+
+.example {
+    margin: 1em;
+    border-style: solid;
+    border-width: 1px;
+    border-color: rgb(190,190,190);
+    padding: 10px;
+}
+
+.exampleType {
+    font-size: 1.15em;
+    font-weight: 700;
+}
+
+.confirmY, .confirmN {
+    cursor: pointer;
+    border-radius: 5px 0 0 5px;
+    border-width: 1px;
+    border-color: rgb(90,90,90);
+    background-color: rgb(210,210,210);
+    color: rgb(120,120,120);
+    margin: 0 0 0 5px;
+    padding: 3px 5px 3px 7px;
+    transition: color 800ms;
+}
+
+.confirmN {
+    border-radius: 0 5px 5px 0;
+    padding: 3px 7px 3px 5px;
+}
+
+.confirmY:hover, .confirmN:hover {
+    color: black;
+}
+
+.toggle {
+    display: inline-block;
+    cursor: pointer;
+    font-size: 0.85em;
+    margin: 0 0 0 5px;
+    color: rgb(120,120,120);
+    transition: color 400ms;
+    text-transform: lowercase !important;
+    font-weight: 400 !important;
+    vertical-align: middle;
+}
+
+.toggle:hover {
+    color: rgb(0,0,0);
+}
+
+.editable .input, .editable .save, .editable .cancel {
+    display: none;
+}
+
+.editable .pair {
+    display: inline;
+}
+
+.item .save, .item .cancel{
+    display: none;
+}
+
+#ItemFUOrder .toggle {
+    display: inline-block !important;
+}
+
+/*#Options, #NumberOptions, #DateOptions, #FollowUpOptions, #ScaleOptions, #SignatureOptions, #TimeOptions {
+    display: none;
+}*/
+#FormBuilder .options {
+    display:none;
+}
+
+/*#OptionsList, #NumberList, #DateList, #FollowUpList, #ScaleList, #SignatureList, #TimeList {
+    display: inline-block;
+    max-width: 75%;
+}*/
+#FormBuilder .optionsList {
+    display: inline-block;
+    width: calc(100% - 7em);
+}
+#Text{
+    max-width: calc(100% - 7em);
+}
+.option input{
+    margin-top: 0.2em;
+    width: calc(100% - 6em);
+    max-width: 250px;
+}
+
+.dispOptions {
+    white-space: nowrap;
+    position: absolute;
+    font-size:0.5em !important;
+    height: 0.6em;
+    width: 0.6em;
+    background-image: url(/images/icons/simple-plus-white.png);
+    background-size: contain;
+    background-repeat: no-repeat;
+    margin:0.25em 1em;
+    padding:5px;
+    border-radius:2em;
+    opacity:0.5;
+    transition:opacity 0.5s, width 0.5s, height 0.5s;
+    z-index: 1;
+}
+.dispOptions:hover{
+    opacity:1;
+}
+.dispOptions.active{
+    width:auto;
+    height:auto;
+    opacity:1;
+    background-image: none;
+    padding: 1px;
+}
+.dispOptions > .button{
+    background-color:rgb(130,130,130);
+    background-image: url(/images/icons/simple-x-white.png);
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    border-radius:2em;
+    width:1.1em;
+    height:1.1em;
+    margin:2px;
+}
+
+#DateList > div, #TimeList > div {
+    padding: 0.5em;
+    margin: 0.5em;
+    border-width: 1px;
+    border-radius: 5px;
+    border-style: solid;
+    border-color: rgb(150,150,150);
+    vertical-align: middle;
+}
+
+#DateList > div > span, #TimeList > div > span {
+    font-weight: 700;
+}
+
+#condition span, #FollowUpList select, #FollowUpList .answer, #ScaleList span, #ScaleList .answer{
+    vertical-align: middle;
+}
+
+#FollowUpList select, #SignatureList select{
+    display: inline-block;
+    margin: 0 15px;
+}
+
+.signature {
+    position: relative;
+    border-color: rgb(230,230,230);
+    border-width: 1px;
+    border-radius: 5px;
+    border-style: solid;
+    overflow: visible;
+}
+
+#condition .answer, #ScaleList .answer, #NarrativeList .answer {
+    margin: 0;
+    overflow: visible;
+}
+ 
+#NumberList > span{
+    display: inline-block;
+    width: 6em;
+    font-size: 0.9em;
+    vertical-align: middle;
+    text-align: right;
+}
+
+#DateList > span{
+    display: inline-block;
+    vertical-align: top;
+    width: 8em;
+    font-size: 0.9em;
+}
+
+#NarrativeList .answer {
+    width: 100%
+}
+#NarrativeList > span{
+    display: block;
+    vertical-align: top;
+}
+#NarrativeList {
+    width: 100% !important;
+    max-width: 100%;
+}
+
+#SignatureOptions > span {
+    width: 8em;
+}
+
+#DateList .answer {
+    overflow: visible;
+}
+
+#FollowUpList > span{
+    display: inline-block;
+    vertical-align: top;
+    font-size: 0.9em;
+}
+
+#FollowUpList .condition{
+    display: inline-block;
+}
+
+.number {
+    overflow: visible;
+}
+
+#ScaleList span {
+    display: inline-block;
+}
+
+#DisplayQ {
+    font-weight: 700;
+}
+
+#DisplayQ::before{
+    content: "\"";
+}
+#DisplayQ::after{
+    content: "\"";
+}
+
+.ItemsFU > .target{
+    display: none;
+}
+
+#DateList > div{
+    display: inline-block;
+}
+
+.tdSizeControl {
+    max-height: 4em;
+    max-width: 250px;
+    position: relative;
+    overflow: hidden;
+    padding-right: 1em;
+}
+.indicator {
+    display: none;
+    position: absolute;
+    right: 0.25em;
+    bottom: 0;
+    font-size: 0.8em;
+}
+
+.styledTable {
+    /*width:100%;*/
+    max-width: 100%;
+    text-align: left;
+    background-color: white;
+    font-weight: 400;
+}
+.styledTable div.filter {
+    display:none;
+}
+.tableSearch{
+    width:90%;
+    max-width: 400px;
+}
+
+.tableWrapper {
+    display: inline-block;
+    border-radius: 5px;
+    border-width: 2px;
+    border-style: solid;
+    border-color: var(--purple);
+    overflow: auto;
+    max-height: 20em;
+    box-sizing: border-box;
+    background-color: var(--purple);
+}
+
+.styledTable th{
+    background-color: var(--purple);
+    font-weight: 700;
+    padding: 0.25em 2em 0.25em 0.5em;
+    white-space: nowrap;
+}
+
+#AvailFormList .formid, #AvailFormList .versionid, #ServicesList .addon {
+    text-align: center;
+    padding: 0.25em 0.5em;
+}
+
+#AvailFormList .name, #ServicesList .name{
+    font-weight: 700;
+}
+
+#AvailFormList span {
+    font-size: 0.8em;
+    padding: 0 3px;
+    font-weight: 400;
+}
+
+/*#AvailFormList .created, #AvailFormList .modified{
+    flex: 2 1 auto;
+}*/
+
+.styledTable tr {
+    border-style: solid;
+    border-width: 1px 0px;
+    border-color: var(--purple30);
+    background-color: rgb(255,255,255);
+    transition: background-color 800ms;
+    box-sizing: border-box;
+    z-index: 2;
+}
+.styledTable tr.hover {
+    background-color: var(--yellow30);
+    border-color: var(--yellow50);
+    z-index: 3;
+}
+.styledTable tr.hide {
+    display:none !important;
+}
+.styledTable tr.match {
+    display:table-row;
+}
+
+.styledTable tr.head {
+    border: 0px solid rgb(160,160,160);
+    cursor: default !important; 
+    background-color: var(--purple);
+    color:white;
+    border-bottom: 2px solid var(--purple);
+}
+
+.styledTable tr.a {
+    background-color: rgb(255,255,255);
+}
+.styledTable tr.b {
+    background-color: var(--purple10);
+}
+.styledTable tr.a.hover {
+    background-color: var(--yellow30);
+    border-color: var(--yellow50);
+}
+.styledTable tr.b.hover {
+    background-color: var(--yellow30);
+    border-color: var(--yellow50);
+}
+
+.styledTable.clickable tr{
+    cursor: pointer;
+}
+
+.styledTable td {
+    padding: 0.25em 0.5em;
+    vertical-align: middle;
+}
+
+.filterType {
+    border-radius: 5px;
+    padding: 0.2em 0.5em;
+    margin:0.1em 1em;
+    border-width: 1px;
+    border-color: transparent;
+    box-sizing: border-box;
+}
+.filterType.active {
+    background-color: rgb(220,220,220);
+    border-style: solid;
+    border-color: rgb(190,190,190);
+}
+.filterType .switch{
+    font-size: 0.8em;
+}
+.filterType .list{
+    display:none;
+}
+.filterType[data-condition] {
+    display:none;
+}
+.filterType label {
+    margin: 0 6px;
+}
+
+#CurrentForm .formName{
+    font-weight: 700;
+}
+
+#CurrentForm .settings{
+    margin-left:1.5em;
+    font-size: 0.9em;
+}
+
+
+.submitForm {
+    margin: 1em 3em !important;
+}
+
+.styledTable.clickable tr.active {
+    border-color: var(--yellow) !important;
+    background-color: var(--yellow);
+    z-index: 4;
+    color:white;
+}
+
+#NewPatient .submit {
+    margin: 1em 0 0 0;
+}
+
+#authorize-button {
+    display: none;
+}
+
+/*#NewService, #EditService, #NewCode, #EditCode, #EditFormSettings, #UnlockForm, #NewDiagnosis, #EditDiagnosis, #NewComplaint, #EditComplaint {
+    display: none;
+}*/
+
+.modalForm {
+    display:none;
+    max-height: 90%;
+    width: 700px;
+    max-width: 90%;
+    box-sizing: border-box;
+    overflow-y: auto;
+}
+.modalForm.expanded{
+    width:96%;
+    height:96%;
+}
+#ModalHome{
+    display: none;
+}
+
+#UserNameClash span, #ContestedUsername span{
+    font-weight: 700;
+}
+
+#EditServiceBtn {
+    display: none;
+}
+
+/*#CodeList, #ServiceList {
+    max-width: 700px;
+}*/

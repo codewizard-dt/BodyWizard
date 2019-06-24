@@ -1,0 +1,33 @@
+{
+    "AccountDetails":[
+        {"name":"FName",
+         "type":"text"},
+        
+        {"name":"LName",
+         "type":"text"},
+        
+        {"name":"NickName",
+         "type":"text"},
+        
+        {"name":"Email",
+         "type":"text"},
+        
+        {"name":"Username",
+         "type":"text"},
+        
+        {"name":"DOB",
+         "type":"date"},
+        
+        {"name":"Sex",
+         "type":"dropdown",
+         "options":["male","female","inter"]},
+        
+        {"name":"Gender",
+         "type":"dropdown",
+         "options":["male","female","queer","nonbinary","other"]},
+        
+        {"name":"ReproQs",
+         "type":"dropdown",
+         "options":["ask about male sexual health","ask about female sexual health"]}
+    ]
+}

@@ -1,0 +1,155 @@
+/* ThemeRoller override style sheet for jQuery date picker v5.0.1. */
+.ui-datepicker {
+	display: block !important;
+}
+#ui-datepicker-div,
+.ui-datepicker-inline {
+	width: 17em !important;
+	font-size: 75% !important;
+}
+#ui-datepicker-div {
+	z-index: 100 !important;
+}
+.ui-datepicker-inline {
+	float: left !important;
+}
+.ui-datepicker-rtl {
+	direction: rtl !important;
+}
+#ui-datepicker-div a,
+.ui-datepicker-inline a {
+	text-decoration: none !important;
+}
+.ui-datepicker-prompt {
+	height: 1.5em !important;
+	padding-top: 0.25em !important;
+	text-align: center !important;
+}
+button.ui-datepicker-cmd {
+	height: 2em !important;
+}
+.ui-datepicker-cmd-clear {
+	float: left !important;
+	margin-left: 0.25em !important;
+}
+.ui-datepicker-cmd-close {
+	float: right !important;
+	margin-right: 0.25em !important;
+}
+.ui-datepicker-cmd-prev {
+	position: static !important;
+	float: left !important;
+	width: 30% !important;
+	height: auto !important;
+	margin-left: 1% !important;
+}
+.ui-datepicker-cmd-next {
+	position: static !important;
+	float: right !important;
+	width: 30% !important;
+	height: auto !important;
+	margin-right: 1% !important;
+	text-align: right !important;
+}
+.ui-datepicker-cmd-current,
+.ui-datepicker-cmd-today {
+	float: left !important;
+	width: 37% !important;
+	text-align: center !important;
+}
+.ui-datepicker-month-nav {
+	float: left !important;
+	text-align: center !important;
+}
+.ui-datepicker-month-nav div {
+	float: left !important;
+	width: 12.5% !important;
+	margin: 1% !important;
+	padding: 1% !important;
+}
+.ui-datepicker-month-nav span {
+	color: #888 !important;
+}
+.ui-datepicker-row-break {
+	width: 100% !important;
+	font-size: 100% !important;
+}
+.ui-datepicker-group {
+	float: left !important;
+	width: 17em !important;
+}
+.ui-datepicker-group .ui-datepicker-header {
+	height: 1.5em !important;
+	text-align: center !important;
+}
+.ui-datepicker select,
+.ui-datepicker-inline select {
+	width: auto !important;
+	height: 1.66em !important;
+	border: none !important;
+	font-weight: bold !important;
+}
+.ui-datepicker th {
+	padding: 0.5em 0.3em !important;
+}
+.ui-datepicker td,
+.ui-datepicker td a,
+.ui-datepicker td span {
+	border: 1px solid transparent !important;
+	text-align: center !important;
+}
+.ui-datepicker-status {
+	padding: 0.25em 0em !important;
+	text-align: center !important;
+}
+.ui-datepicker .ui-helper-clearfix {
+	clear: both !important;
+}
+.ui-datepicker-cover {
+    display: none !important;
+    display/**/: block !important;
+    position: absolute !important;
+    z-index: -1 !important;
+    filter: mask() !important;
+    top: -1px !important;
+    left: -1px !important;
+    width: 187px !important;
+    height: 187px !important;
+}
+
+.datepick-popup{
+    background-color: rgb(230,230,230);
+    border-style: solid;
+    border-color: rgb(130,130,130);
+    border-width: 1px 0;
+ /*   width: 100%;*/
+}
+
+.datepick-popup table{
+    background-color: rgb(210,210,210);
+    padding:3px;
+}
+
+.datepick-popup th{
+    padding:2px;
+}
+
+.datepick-cmd{
+    padding: 0 5px;
+}
+
+input.datepicker{
+    /*margin:0.35em 1em;*/
+}
+
+.table input.datepicker{
+    /*margin: 0;*/
+}
+
+.datepick-today{
+    color: rgb(20,20,20) !important;
+}
+
+.datepick a {
+    color: rgb(130,130,130);
+}

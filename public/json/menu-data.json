@@ -1,0 +1,187 @@
+{
+    "SiteMenu": [
+        {"name": "about",
+         "dropdown":false,
+         "uri":"/about"},
+         
+        {"name": "services",
+         "dropdown":true,
+          "options":[
+              {"text":"Treatments","uri":"/treatments","id":"treatments"},
+              {"text":"Conditions","uri":"/conditions-treated","id":"conditions"},
+              {"text":"Rates","uri":"/rates","id":"rates"}
+          ]},
+        {"name": "portal",
+         "dropdown":false,
+         "uri":"/portal"},
+        {"name": "logout",
+         "dropdown":false,
+         "uri":"/portal/logout"}
+    ],
+    "PortalPractitioner": [
+        {"name": "logout",
+         "dropdown":false,
+         "uri":"/portal/logout"}
+    ],
+    "PortalPatient": [
+        {"name": "logout",
+         "dropdown":false,
+         "uri":"/portal/logout"}
+    ],
+    "PortalAdmin": [
+        {"name": "logout",
+         "dropdown":false,
+         "uri":"portal/logout"}
+    ],
+
+    "TreatmentMenu": [
+        {"name": "acu",
+         "dropdown":false,
+         "uri":"#AcuListing"},
+        {"name": "botanical",
+         "dropdown":false,
+         "uri":"#BotanicalListing"},
+        {"name": "fascial",
+         "dropdown":false,
+         "uri":"#FascialListing"},
+        {"name": "meditation",
+         "dropdown":false,
+         "uri":"#MeditationListing"}
+    ],
+    "ConditionMenu": [
+        {"name": "internal",
+         "dropdown":false,
+         "uri":"#InternalMedicineListing"},
+        {"name": "pain",
+         "dropdown":false,
+         "uri":"#MuscleJointPainListing"},
+        {"name": "psychosocial",
+         "dropdown":false,
+         "uri":"#PsychoSocialListing"}
+    ],
+    "RateMenu":[
+        {"name": "eval",
+         "dropdown":false,
+         "uri":"#EvaluationRates"},
+        {"name": "acu",
+         "dropdown":false,
+         "uri":"#AcuRates"},
+        {"name": "botanical",
+         "dropdown":false,
+         "uri":"#BotanicalRates"},
+        {"name": "fascial",
+         "dropdown":false,
+         "uri":"#FascialRates"},
+        {"name": "meditation",
+         "dropdown":false,
+         "uri":"#MeditationRates"}
+    ],
+    
+    "PortalLinks":[
+        {"name":"appointments-home",
+        "dropdown":false,
+        "uri":"/home/appointments"},
+        {"name":"appointments-index",
+        "dropdown":false,
+        "uri":"/appointments"},
+        {"name":"appointments-create",
+        "dropdown":false,
+        "uri":"/appointments/create"},
+        
+        {"name":"codes-home",
+        "dropdown":false,
+        "uri":"/home/codes"},
+        {"name":"codes-index",
+        "dropdown":false,
+        "uri":"/Code/index"},
+        {"name":"codes-create",
+        "dropdown":false,
+        "uri":"/create/Code"},
+
+        {"name":"diagnoses-home",
+        "dropdown":true,
+          "options":[
+              {"text":"Chinese Diagnosis","uri":"/Diagnosis/index?type=Chinese","id":"diagnoses-cm-index"},
+              {"text":"Western Diagnosis","uri":"/Diagnosis/index?type=Western","id":"diagnoses-ws-index"}
+          ]},
+        {"name":"diagnoses-create",
+        "dropdown":false,
+        "uri":"/create/Diagnosis"},
+
+        {"name":"forms-home",
+        "dropdown":false,
+        "uri":"/home/forms"},
+        {"name":"forms-index",
+        "dropdown":false,
+        "uri":"/Form/index"},
+        {"name":"forms-create",
+        "dropdown":false,
+        "uri":"/forms/create"},
+        {"name":"forms-edit",
+        "dropdown":false,
+        "uri":"/forms/UID/edit"},
+        {"name":"forms-settings",
+        "dropdown":false,
+        "uri":"/forms/UID/settings"},
+
+        {"name":"new",
+        "dropdown":true,
+          "options":[
+              {"text":"Patient","uri":"/create/User","id":"patient-create"},
+              {"text":"Appointment","uri":"/appointments/create","id":"createAppt"},
+              {"text":"Prescription","uri":"/prescription/create","id":"createRx"}
+          ]},
+
+
+
+        {"name":"messages-home",
+        "dropdown":false,
+        "uri":"/home/messages"},
+        {"name":"messages-index",
+        "dropdown":false,
+        "uri":"/Message/index"},
+        {"name":"messages-create",
+        "dropdown":false,
+        "uri":"/create/Message"},
+
+        {"name":"patients-home",
+        "dropdown":false,
+        "uri":"/home/patients"},
+        {"name":"patients-index",
+        "dropdown":false,
+        "uri":"/User/index?type=patient"},
+        {"name":"patients-create",
+        "dropdown":false,
+        "uri":"/create/User"},
+
+        {"name":"services-home",
+        "dropdown":false,
+        "uri":"/home/services"},
+        {"name":"services-index",
+        "dropdown":false,
+        "uri":"/Service/index"},
+        {"name":"services-create",
+        "dropdown":false,
+        "uri":"/create/Service"},
+
+        {"name":"service-categories-home",
+        "dropdown":false,
+        "uri":"/home/service-categories"},
+        {"name":"service-categories-index",
+        "dropdown":false,
+        "uri":"/ServiceCategory/index"},
+        {"name":"service-categories-create",
+        "dropdown":false,
+        "uri":"/create/ServiceCategory"},
+
+        {"name":"users-home",
+        "dropdown":false,
+        "uri":"/home/users"},
+        {"name":"users-index",
+        "dropdown":false,
+        "uri":"/users"},
+        {"name":"users-create",
+        "dropdown":false,
+        "uri":"/users/create"}
+    ]
+}

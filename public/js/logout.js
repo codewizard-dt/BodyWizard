@@ -1,0 +1,12 @@
+$(document).ready(function(){
+	$(loadingRing).appendTo("#LoggingOut").removeClass('dark').css(loadingRingCSS);
+	$("#Centered").css({
+		position:"absolute",
+		top:"50%",
+		left:"50%",
+		transform:"translate(-50%,-50%)"
+	})
+	setTimeout(function(){
+		$("#logoutForm").submit();
+	},1500)
+})

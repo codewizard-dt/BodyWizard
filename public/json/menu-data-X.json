@@ -1,0 +1,217 @@
+{
+    "SiteMenu": [
+        {"name": "about",
+         "dropdown":false,
+         "uri":"/about"},
+         
+        {"name": "services",
+         "dropdown":true,
+          "options":[
+              {"text":"Treatments","uri":"/treatments","id":"treatments"},
+              {"text":"Conditions","uri":"/conditions-treated","id":"conditions"},
+              {"text":"Rates","uri":"/rates","id":"rates"}
+          ]},
+        {"name": "portal",
+         "dropdown":false,
+         "uri":"/portal"}
+    ],
+    "PortalPractitioner": [
+        {"name": "logout",
+         "dropdown":false,
+         "uri":"/portal/logout"}
+    ],
+    "PortalPatient": [
+        {"name": "logout",
+         "dropdown":false,
+         "uri":"/portal/logout"}
+    ],
+    "PortalAdmin": [
+        {"name": "logout",
+         "dropdown":false,
+         "uri":"portal/logout"}
+    ],
+    
+    "TreatmentMenu": [
+        {"name": "acu",
+         "dropdown":false,
+         "uri":"#AcuListing"},
+        {"name": "botanical",
+         "dropdown":false,
+         "uri":"#BotanicalListing"},
+        {"name": "fascial",
+         "dropdown":false,
+         "uri":"#FascialListing"},
+        {"name": "meditation",
+         "dropdown":false,
+         "uri":"#MeditationListing"}
+    ],
+    "ConditionMenu": [
+        {"name": "internal",
+         "dropdown":false,
+         "uri":"#InternalMedicineListing"},
+        {"name": "pain",
+         "dropdown":false,
+         "uri":"#MuscleJointPainListing"},
+        {"name": "psychosocial",
+         "dropdown":false,
+         "uri":"#PsychoSocialListing"}
+    ],
+    "RateMenu":[
+        {"name": "eval",
+         "dropdown":false,
+         "uri":"#EvaluationRates"},
+        {"name": "acu",
+         "dropdown":false,
+         "uri":"#AcuRates"},
+        {"name": "botanical",
+         "dropdown":false,
+         "uri":"#BotanicalRates"},
+        {"name": "fascial",
+         "dropdown":false,
+         "uri":"#FascialRates"},
+        {"name": "meditation",
+         "dropdown":false,
+         "uri":"#MeditationRates"}
+    ],
+    
+    "patientTabs": [
+        {"name": "patientDetails",
+         "dropdown":false,
+         "uri":"/php/launchpad/patient/my-details.php"},
+        
+        {"name": "treatmentPlan",
+         "dropdown":false,
+         "uri":"/php/launchpad/patient/treatment-plan.php"},
+        
+        {"name": "recommendations",
+         "dropdown":false,
+         "uri":"/php/launchpad/patient/recommendations.php"},
+        
+         {"name": "medicines",
+         "dropdown":true,
+          "options":[
+              {"text":"Request Refill","uri":"/php/launchpad/patient/herbalrefill.php","id":"herb-refill"},
+              {"text":"Your Prescriptions","uri":"/php/launchpad/patient/prescriptions.php","id":"prescriptions"}
+          ]},
+        
+       {"name": "appointments-patient",
+         "dropdown":false,
+         "uri":"/php/launchpad/appointments-patient.php"},
+        
+        {"name":"forms-patient",
+         "dropdown":false,
+         "uri":"/php/launchpad/forms.php"}
+    ],
+    
+    "practitionerTabs":[
+        {"name": "appointments-practitioner",
+         "dropdown":false,
+         "uri":"/appointments/home"},
+        
+        {"name": "patients",
+         "dropdown":false,
+         "uri":"/php/launchpad/practitioner/patients-home.php"},
+
+        {"name": "diagnostics",
+         "dropdown":false,
+         "uri":"/php/launchpad/practitioner/diagnostics.php"},
+
+         {"name": "forms-practitioner",
+         "dropdown":true,
+          "options":[
+              {"text":"Load a Form","uri":"/php/launchpad/load-form.php","id":"load-form"},
+              {"text":"Form List","uri":"/form/index","id":"form-home"}
+          ]},
+
+         {"name": "dailyTasks",
+         "dropdown":true,
+          "options":[
+              {"text":"Treatment Plan","uri":"/php/launchpad/newTreatmentPlan.php","id":"treatment-plan"},
+              {"text":"Herbal Script","uri":"/php/launchpad/prescribe.php","id":"herb-script"}
+          ]}
+    ],
+    
+    "loadForm": [
+       {"name": "patientSelect",
+         "dropdown":false,
+         "uri":"/php/launchpad/practitioner/patient-select-abc.php"},
+
+        {"name": "formSelect",
+         "dropdown":false,
+         "uri":"/php/formselect.php"}
+    ],
+    
+    "formHome": [
+        {"name":"formList",
+        "dropdown":false,
+        "uri":"/php/launchpad/practitioner/form-list.php"},
+        
+        {"name":"formSettings",
+        "dropdown":false,
+        "uri":"/php/launchpad/practitioner/form-settings.php"},
+        
+        {"name":"formNew",
+        "dropdown":false,
+        "uri":"/php/launchpad/practitioner/form-new.php"},
+        
+        {"name":"formEdit",
+        "dropdown":false,
+        "uri":"/php/launchpad/practitioner/form-edit.php"}
+    ],
+    
+    "appointmentsPractitioner": [
+        {"name":"calendarTab",
+        "dropdown":false,
+        "uri":"/appointments"},
+
+        {"name":"newAppt",
+        "dropdown":false,
+        "uri":"/appointments/create"},
+
+        {"name":"manageServices",
+        "dropdown":false,
+        "uri":"/services"},
+
+        {"name":"appointmentSettings",
+        "dropdown":false,
+        "uri":"/php/launchpad/practitioner/settings-appt.php"}
+    ],
+    
+    "diagnosisTabs": [
+        {"name":"chinese",
+        "dropdown":false,
+        "uri":"/php/launchpad/practitioner/diagnosis-tcm.php"},
+        
+        {"name":"western",
+        "dropdown":false,
+        "uri":"/php/launchpad/practitioner/diagnosis-western.php"},
+        
+        {"name":"complaints",
+        "dropdown":false,
+        "uri":"/php/launchpad/practitioner/complaints.php"}
+    ],
+    
+    "PatientsOptions": [
+        {"name":"patientSelect",
+        "dropdown":false,
+        "uri":"/php/launchpad/practitioner/patient-select.php"},
+        
+        {"name":"patientDetails",
+        "dropdown":false,
+        "uri":"/php/launchpad/practitioner/patient-details.php"}
+    ],
+    
+    "PatientMethod":[
+        {"name":"selectABC",
+        "dropdown":false,
+        "uri":"/php/launchpad/practitioner/patient-select-abc.php"},
+        
+        {"name":"selectTimeline",
+        "dropdown":false,
+        "uri":"/php/launchpad/practitioner/patient-select-timeline.php"},
+        
+        {"name":"selectFinance",
+        "dropdown":false,
+        "uri":"/php/launchpad/practitioner/patient-select-finance.php"}
+    ]
+}
