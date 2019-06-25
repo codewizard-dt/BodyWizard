@@ -4,6 +4,8 @@
     --yellow:rgb(240,154,53);
     --yellow4:rgba(240,154,53,0.4);
     --pink:rgb(234,78,80);
+    --white30:rgba(255,255,255,0.3);
+    --white70:rgba(255,255,255,0.7);
 }
 
 @font-face{
@@ -162,6 +164,8 @@ h5 {font-weight: normal;color:var(--purple);}
 .pinkBG{background-color: var(--pink);}
 .purpleBG{background-color: var(--purple);}
 .yellowBG{background-color: var(--yellow);}
+.shaded30{background-color: var(--white30);}
+.shaded70{background-color: var(--white70);}
 .central{
     width:600px;
     max-width: 90%;
@@ -184,6 +188,7 @@ h5 {font-weight: normal;color:var(--purple);}
 .left{text-align: left;}
 .right{text-align:right;}
 .smallFont {font-size: 0.9em;vertical-align: baseline;}
+.letterStretch {letter-spacing: 1;}
 .bold {font-weight: bold;}
 .loadTarget{
     min-height: 7em;
@@ -489,9 +494,6 @@ a:hover {color:red;}
     height:26em;
     background-image: url(/images/acupuncture/chin-amanda-seirin.jpg);
     background-position: 70%;
-}
-#acu-chin-1 .logo{
-    margin-top: 2em;
 }
 #acu-chin-1 .button{
     position: absolute;

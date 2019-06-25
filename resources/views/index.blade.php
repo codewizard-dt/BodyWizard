@@ -21,9 +21,11 @@
             }
                 
             ?>
-            <div class='logo'></div>
-            <h1>Integrative Medicine Studio</h1>
-            <h4 class='paddedSides caps'>Chinese Medicine with a Foundation in Biochemistry</h4>
+            <div class="wrapper shaded30 paddedBig">
+                <div class='logo'></div>
+                <h1>Integrative Medicine Studio</h1>
+                <h4 class='paddedSides caps letterStretch'>Chinese Medicine with a Foundation in Biochemistry</h4>
+            </div>
             
             <div class='button booknow small pink'>book an appointment</div>
         </div>
