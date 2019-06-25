@@ -5,6 +5,9 @@
     --yellow10:rgba(240,154,53,0.1);
     --yellow40:rgba(240,154,53,0.4);
     --pink:rgb(234,78,80);
+    --pink30:rgba(234,78,80,0.3);
+    --white30:rgba(255,255,255,0.3);
+    --white70:rgba(255,255,255,0.7);
 }
 
 @font-face{
@@ -163,6 +166,9 @@ h5 {font-weight: normal;color:var(--purple);}
 .pinkBG{background-color: var(--pink);}
 .purpleBG{background-color: var(--purple);}
 .yellowBG{background-color: var(--yellow);}
+.yellow10BG{background-color: var(--yellow10);}
+.letterStretch{letter-spacing: 1;}
+.nowrap{white-space: nowrap;}
 .central{
     width:600px;
     max-width: 90%;
@@ -176,6 +182,7 @@ h5 {font-weight: normal;color:var(--purple);}
 .marginBig.topOnly, .marginSmall.topOnly{margin-bottom: 0;}
 .marginBig.bottomOnly, .marginSmall.bottomOnly{margin-top: 0;}
 .paddedXBig{padding-top:2.5em;padding-bottom: 2.5em;}
+.paddedBig.topOnly{padding-bottom: 0em;}
 .paddedBig{padding-top:1.5em;padding-bottom: 1.5em;}
 .paddedSmall{padding-top:0.5em;padding-bottom: 0.5em;}
 .paddedSides{padding-left:2.5em;padding-right: 2.5em;box-sizing: border-box;}
@@ -208,10 +215,9 @@ a {
     text-decoration: none;
     transition:color 0.5s;
     font-family: inherit;
-    font-weight: bold;
 }
 
-a:hover {color:red;}
+a:hover {color:var(--pink);}
 
 .dropdown-menu {
     display: none;
@@ -407,6 +413,9 @@ a:hover {color:red;}
 .button:hover span {
     color: rgb(80,80,80);
 }
+.button:hover{
+    color: var(--white70);
+}
 .button.large {
     font-size: 1.1em;
 }
@@ -487,12 +496,31 @@ a:hover {color:red;}
 
 #BookingDetails{
     margin: 2em auto;
-    width: 20em;
+    width: 24em;
     border-radius: 5px;
     background-color: rgba(255,255,255,0.7);
     font-size: 1.1em;
     color: var(--purple);
+    font-weight: bold;
+    padding: 1em 2em;
 }
+#BookingDetails .label{
+    display: inline-block;
+    width: 5em;
+    text-align: right;
+}
+#BookingDetails .link{
+    display: inline-block;
+    width: 18em;
+    margin-left: 1em;
+    text-align: left;
+    font-weight: normal;
+}
+
+.shaded {
+    background-color: rgb(255,255,255,0.73);
+}
+
 
 #acu-chin-1 {
     padding-top: 4em;
@@ -500,9 +528,9 @@ a:hover {color:red;}
     background-image: url(/images/acupuncture/chin-amanda-seirin.jpg);
     background-position: 70%;
 }
-#acu-chin-1 .logo{
+/*#acu-chin-1 .logo{
     margin-top: 2em;
-}
+}*/
 #acu-chin-1 .button{
     position: absolute;
     bottom: 0;
@@ -703,9 +731,9 @@ a:hover {color:red;}
     max-width:100%;
 }
 
-#CondDesc, #TreatmentDesc {
+/*#CondDesc, #TreatmentDesc {
     background-color: var(--yellow10);
-}
+}*/
 
 .quoteBlock {
     position: relative;

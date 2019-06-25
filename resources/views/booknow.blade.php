@@ -10,11 +10,14 @@
 
 @section('content')
     <div id='acu-chin-1' class='splash btnPopDown'>
-        <div class='logo'></div>
-        <h1>Online Booking Available Soon</h1>
+    	<div class="wrapper paddedBig topOnly">
+	        <div class='logo'></div>
+	        <h1 class='shadow'>Contact Us To Book</h1>    		
+	        <h4 class='yellow letterStretch'>Online Booking Coming Soon</h4>
+    	</div>
         <div id='BookingDetails'>
-        	phone: 512-256-0216<br>
-        	email: schedule@bodywizardmedicine.com
+        	<span class='label'>phone:</span><span class='link'> <a href='tel:512-514-3706'>512-256-0216</a></span><br>
+        	<span class='label'>email:</span><span class='link'> <a href='mailto:schedule@bodywizardmedicine.com'>schedule@bodywizardmedicine.com</a></span>
         </div>
     </div>
 

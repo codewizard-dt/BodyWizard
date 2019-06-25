@@ -19,14 +19,16 @@
             }
                 
             ?>
-            <div class='logo'></div>
-            <h1>Integrative Medicine Studio</h1>
-            <h4 class='paddedSides caps'>Chinese Medicine with a Foundation in Biochemistry</h4>
+            <div class="wrapper shaded paddedBig">
+                <div class='logo'></div>
+                <h1 class='nowrap'>Integrative Medicine Studio</h1>
+                <h4 class='paddedSides caps letterStretch'>Chinese Medicine with a Foundation in Biochemistry</h4>                
+            </div>
             
             <div class='button booknow small pink'>book an appointment</div>
         </div>
 
-        <h1 class='purple central paddedBig'>Bringing Scientific Passion to the Practice of Chinese Medicine</h1>
+        <h1 class='purple central paddedBig letterStretch'>Bringing Scientific Rigor to the Practice of Chinese Medicine</h1>
         <div id='CondDesc'>
             <div class='wrapper'>
                 <div class='icon stomach pink'></div>
@@ -38,7 +40,7 @@
                 <div class='icon knee pink'></div>
                 <div class='divide hor yellowBG central small'></div>
                 <h3 class='paddedSmall'>Muscle + Joint Pain</h3>
-                <p class='central small'>Whether due to injury, posture issues,<br>or degenerative disease, most pains<br>can be eliminated fully or made<br>manageable for daily life</p>
+                <p class='central small'>Whether it's due to injury, posture,<br>or degeneration, we can help you<br>go longer without pain</p>
             </div>
             <div class='wrapper'>
                 <div class='icon brain pink'></div>

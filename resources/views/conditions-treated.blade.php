@@ -1,15 +1,19 @@
 @extends('layouts.site')
 
-@section('title', 'Conditions Treated at Body Wizard Medicine')
-@section('description', "At Body Wizard, we embrace the fact that medicine is both a science and an art, using lab work to inform our practice of Chinese medicine and track progress.")
-@section('path', "https://bodywizardmedicine.com/about")
+@push('metadata')
+<title>Body Wizard Realms of Healing</title>
+<meta name='description' content="Appointments are categorized as Evaluation + Diagnosis, Acupuncture, Botanical Medicine, Fascial Release, and Guided Meditation + Breathing">
+<meta property='og:url' content="https://bodywizardmedicine.com/treatments">
+<meta property='og:title' content="Body Wizard Realms of Healing">
+<meta property='og:description' content="Appointments are categorized as Evaluation + Diagnosis, Acupuncture, Botanical Medicine, Fascial Release, and Guided Meditation + Breathing">
+@endpush
 
 @section('content')
         <div class='splash btnPopDown top' id='pulse-1'>
             <h1 class='paddedBig shadow purple'>Commonly Treated Conditions</h1>
             <div class='button booknow small pink'>book an appointment</div>
         </div>
-        <h2 class='yellow paddedSmall'>Categories of Illnesses and Conditions</h2>
+        <h2 class='yellow paddedSmall'>The Three Realms of Healing</h2>
         <div class='menuBar website' id='ConditionMenu' data-populated='no' data-target='window' data-mode='scroll'>
             <div class='tab' id='internal'><div class='title'>Internal Medicine</div></div>
             <div class='tab' id='pain'><div class='title'>Muscle + Joint Pain</div></div>
@@ -23,7 +27,7 @@
                 </div>
                 <h4>A typical treatment plan for internal medicine conditions includes <span class='bold'>acupuncture</span> and <span class='bold'>botanical medicine</span>, although your treatment plan may be different.</h4>
                 <h4>Examples: fatigue + low energy, irregular + painful periods, belly pain + digestive issues, cardiovascular health, infertility, generalized inflammation, allergies, infections</h4>
-                <p>Encompassing the chest and the belly, this broad category covers all the internal organs. Liver, Kidney, Heart, Lungs, Pancreas, Stomach, Intestines, Gallbladder, Reproductive System… these are all the organs that we can address with our integrative approach.</p><p>We start with a complete medical intake that covers all of the organs, and we will prescribe specific lab tests that will help us further diagnose exactly what is going on. We will use the same lab tests periodically to track progress.</p><p>Depending on the duration and complexity of symptoms, these types of issues can be stubborn and difficult to treat. However, the biggest strength of Chinese medicine is its ability to uncover the root causes of disease.</p><p>Picture a giant tree standing alone in a field. You could describe each branch and leaf in full detail and, while it could be fully accurate, it is never going to be a complete description. The root system of the tree, a full half of the picture, is underground.</p><p>The same is true of any disease or illness. The symptoms that are most apparent are just the branches of a tree. In order to treat that illness completely, we have to address the roots that have caused those symptoms in the first place.</p>
+                <p>Encompassing the chest and the belly, this broad category covers all the internal organs. Liver, Kidney, Heart, Lungs, Pancreas, Stomach, Intestines, Gallbladder, Reproductive System… these are all the organs that we can address with our integrative approach.</p><p>We start with a complete medical intake that covers all of the organs, and we will prescribe specific lab tests that will help us further diagnose exactly what is going on. We can use the same lab tests periodically to track progress.</p><p>Depending on the duration and complexity of symptoms, these types of issues can be stubborn and difficult to treat. However, the biggest strength of Chinese medicine is its ability to uncover the root causes of disease.</p><p>Picture a giant tree standing alone in a field. You could describe each branch and leaf in full detail and, while it could be fully accurate, it is never going to be a complete description. The root system of the tree, a full half of the picture, is underground.</p><p>The same is true of any disease or illness. The symptoms that are most apparent are just the branches of a tree. In order to treat that illness completely, we have to address the roots that have caused those symptoms in the first place.</p>
             </div>
             <div id='MuscleJointPainListing'>
                 <div class='splash'>
@@ -44,7 +48,7 @@
                 <p>Imagine a giant cliff with a river running through it.  The longer that river flows, the more likely it can carve out an unimaginable canyon. Now imagine trying to climb out of that deep canyon without the proper tools. Even for a very capable human, it might be difficult or even impossible!</p><p>Now imagine that our minds are the cliff and our actions are the river. Our actions and habits will carve out their own canyons in our mind. The longer we act a certain way, the more entrenched that activity gets and the harder it is to change.</p><p>We approach these psychosocial conditions with a multi-pronged approach to get you out of that canyon. Initially, we use acupuncture to calm the mind and reset the nervous system, activating the innermost part of the brain that integrates thoughts and emotions.</p><p>This acupuncture-induced state of mind fosters a type of non-judgmental awareness that is a common goal of many transformative practices. It can allow the mind to connect the dots and see life situations from new perspectives.</p><p>We can also integrate simple guided reflections, breathing exercises, and meditations that will further ease the process of reshaping our minds.</p>
             </div>
         </div>
-        <div id='TreatmentDesc' class='small paddedXBig'>
+        <div id='TreatmentDesc' class='small paddedXBig yellow10BG'>
             <div class='wrapper'>
                 <div class='icon acu pink'></div>
                 <div class='divide hor yellowBG central xs'></div>

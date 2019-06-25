@@ -1,15 +1,19 @@
 @extends('layouts.site')
 
-@section('title', 'Conditions Treated at Body Wizard Medicine')
-@section('description', "At Body Wizard, we embrace the fact that medicine is both a science and an art, using lab work to inform our practice of Chinese medicine and track progress.")
-@section('path', "https://bodywizardmedicine.com/about")
+@push('metadata')
+<title>Body Wizard Treatments</title>
+<meta name='description' content="The Four Pillars of Treatment">
+<meta property='og:url' content="https://bodywizardmedicine.com/treatments">
+<meta property='og:title' content="Body Wizard Treatments">
+<meta property='og:description' content="The Four Pillars of Treatment">
+@endpush
 
 @section('content')
         <div class='splash btnPopDown' id='head-1'>
             <h1 class='purple paddedBig shadow'>Treatments Offered</h1>
             <div class='button small booknow pink'>book an appointment</div>
         </div>
-        <h2 class='yellow paddedSmall'>Services Can Be Booked Separately or Together</h2>
+        <h2 class='yellow paddedSmall'>The Four Pillars</h2>
         <div class='menuBar website' id='TreatmentMenu' data-populated='no' data-target='window' data-mode='scroll'>
             <div class='tab' id='acu'><div class='title'>Acupuncture</div></div>
             <div class='tab' id='botanical'><div class='title'>Botanical Medicine</div></div>
@@ -74,7 +78,7 @@
                 </div>
             </div>
         </div>
-        <div id='CondDesc' class='small paddedXBig'>
+        <div id='CondDesc' class='small paddedXBig yellow10BG'>
             <div class='wrapper'>
                 <div class='icon stomach pink'></div>
                 <div class='divide hor yellowBG central xs'></div>
@@ -91,7 +95,7 @@
                 <h4 class='paddedSmall'>Psychosocial Conditions</h4>
             </div>
             <br>
-            <div class='button fullWidth small pink marginBig bottomOnly link' data-target='/conditions-treated'>more about conditions treated</div>
+            <div class='button fullWidth small pink marginBig bottomOnly link' data-target='/conditions-treated'>more about what we treat</div>
         </div>
 
 @endsection

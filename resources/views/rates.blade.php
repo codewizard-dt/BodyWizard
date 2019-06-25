@@ -1,8 +1,12 @@
 @extends('layouts.site')
 
-@section('title', 'Conditions Treated at Body Wizard Medicine')
-@section('description', "At Body Wizard, we embrace the fact that medicine is both a science and an art, using lab work to inform our practice of Chinese medicine and track progress.")
-@section('path', "https://bodywizardmedicine.com/about")
+@push('metadata')
+<title>Body Wizard Appointments + Rates</title>
+<meta name='description' content="Appointments are categorized as Evaluation + Diagnosis, Acupuncture, Botanical Medicine, Fascial Release, and Guided Meditation + Breathing">
+<meta property='og:url' content="https://bodywizardmedicine.com/treatments">
+<meta property='og:title' content="Body Wizard Appointments + Rates">
+<meta property='og:description' content="Appointments are categorized as Evaluation + Diagnosis, Acupuncture, Botanical Medicine, Fascial Release, and Guided Meditation + Breathing">
+@endpush
 
 @section('content')
         <div class='splash top' id='shelf-1'>
