@@ -18,7 +18,9 @@ app()->singleton('GoogleClient',function(){
 | contains the "web" middleware group. Now create something great!
 |
 */
+
 Route::domain('headspaceacupuncture.com')->group(function(){
+	Route::any('/changes', 'PagesController@headspace');
 	Route::any('{catchAll}', function(){
 		return redirect('/changes');
 	});
