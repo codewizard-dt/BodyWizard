@@ -15,11 +15,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <link rel="stylesheet" type="text/css" href="{{ asset('/css/app.css') }} ">
-<!--  <title>@yield('title')</title>
-<meta name='description' content="@yield('description')">
-<meta property='og:url' content="@yield('path')">
-<meta property='og:title' content="@yield('title')">
-<meta property='og:description' content="@yield('description')">
- -->
+
  @stack('metadata')
  @stack('extracss')

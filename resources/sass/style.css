@@ -167,7 +167,7 @@ h5 {font-weight: normal;color:var(--purple);}
 .purpleBG{background-color: var(--purple);}
 .yellowBG{background-color: var(--yellow);}
 .yellow10BG{background-color: var(--yellow10);}
-.letterStretch{letter-spacing: 1;}
+.letterStretch{letter-spacing: 1px;}
 .nowrap{white-space: nowrap;}
 .central{
     width:600px;
@@ -339,7 +339,7 @@ a:hover {color:var(--pink);}
     top:0;
     left:0;
     width:100%;
-    z-index: 50;
+    z-index: 51;
     height: 4em;
     background-color: rgba(255,255,255,0.93);
 }
@@ -517,8 +517,11 @@ a:hover {color:var(--pink);}
     font-weight: normal;
 }
 
-.shaded {
-    background-color: rgb(255,255,255,0.73);
+.shaded30 {
+    background-color: var(--white30);
+}
+.shaded70 {
+    background-color: var(--white70);
 }
 
 
@@ -745,10 +748,9 @@ a:hover {color:var(--pink);}
     height: 70% !important;
 }
 .quoteText {
-    font-size: 2.5em;
+    font-size: 1.8em;
     font-style: italic;
-    padding-left:0.5em;
-    padding-right: 0.5em;
+    padding: 0 2em;
 }
 .quote{
     background-color: rgb(255,255,255);

@@ -34,4 +34,7 @@ class PagesController extends Controller
     public function logout(){
         return view('auth.logout');
     }
+    public function headspace(){
+        return view('headspace');
+    }
 }
