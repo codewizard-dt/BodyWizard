@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
     <head>
         @include('layouts.header')
@@ -16,17 +17,18 @@
                 <div id="about" class="tab"><span class="title">About</span></div>
                 <div id="services" class="tab"><span class="title">What + How</span></div>
                 @if (Auth::guest())
-                    <div id="portal" class="tab"><span class="title">Log In</span></div>
+                    <!-- <div id="portal" class="tab"><span class="title">Log In</span></div> -->
                 @elseif (Auth::user())
-                    <div id="portal" class="tab"><span class="title">Portal</span></div>
-                    <div id="logout" class="tab"><span class="title">Log Out</span></div>
+                    <!-- <div id="portal" class="tab"><span class="title">Portal</span></div>
+                    <div id="logout" class="tab"><span class="title">Log Out</span></div> -->
                 @endif
                 <div class='divide'></div>
                 <div id="booknow" class="tab"><span class="title">Book Now</span></div>
             </div>
         </div>
         @yield("content")
-        <footer id="footer">
+        @include('layouts.footer')
+<!--         <footer id="footer">
             <div class='logo white'></div>
             <div class='contact'>
                 <h4 class='white'>1706 South Lamar Blvd</h4>
@@ -46,11 +48,11 @@
             <br>
             <div class='button booknow pink small'>BOOK AN APPOINTMENT</div>
             <div class='copyright'>
-                <?php echo "Copyright 2013-" . date("Y") . ", Body Wizard Integrative Medicine Studio, David Taylor MS L.Ac." ?>
+                <?php //echo "Copyright 2013-" . date("Y") . ", Body Wizard Integrative Medicine Studio, David Taylor MS L.Ac." ?>
             </div>
             
         </footer>
-
+ -->
 
 
 

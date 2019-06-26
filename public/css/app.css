@@ -1510,8 +1510,10 @@ select {
   --main-color: #06c;
   --purple: rgb(105, 12, 104);
   --yellow: rgb(240, 154, 53);
-  --yellow4: rgba(240, 154, 53, 0.4);
+  --yellow10: rgba(240, 154, 53, 0.1);
+  --yellow40: rgba(240, 154, 53, 0.4);
   --pink: rgb(234, 78, 80);
+  --pink30: rgba(234, 78, 80, 0.3);
   --white30: rgba(255, 255, 255, 0.3);
   --white70: rgba(255, 255, 255, 0.7);
 }
@@ -1742,12 +1744,24 @@ h5 {
   background-color: var(--yellow);
 }
 
+.yellow10BG {
+  background-color: var(--yellow10);
+}
+
 .shaded30 {
   background-color: var(--white30);
 }
 
 .shaded70 {
   background-color: var(--white70);
+}
+
+.letterStretch {
+  letter-spacing: 1px;
+}
+
+.nowrap {
+  white-space: nowrap;
 }
 
 .central {
@@ -1791,6 +1805,10 @@ h5 {
 .paddedXBig {
   padding-top: 2.5em;
   padding-bottom: 2.5em;
+}
+
+.paddedBig.topOnly {
+  padding-bottom: 0em;
 }
 
 .paddedBig {
@@ -1869,11 +1887,10 @@ a {
   text-decoration: none;
   transition: color 0.5s;
   font-family: inherit;
-  font-weight: bold;
 }
 
 a:hover {
-  color: red;
+  color: var(--pink);
 }
 
 .dropdown-menu {
@@ -2039,7 +2056,7 @@ a:hover {
   top: 0;
   left: 0;
   width: 100%;
-  z-index: 50;
+  z-index: 51;
   height: 4em;
   background-color: rgba(255, 255, 255, 0.93);
 }
@@ -2122,6 +2139,10 @@ a:hover {
 
 .button:hover span {
   color: rgb(80, 80, 80);
+}
+
+.button:hover {
+  color: var(--white70);
 }
 
 .button.large {
@@ -2225,6 +2246,39 @@ a:hover {
 .split40 > div:nth-of-type(2) {
   width: 60%;
   flex: 1 1 auto;
+}
+
+#BookingDetails {
+  margin: 0 auto;
+  width: 24em;
+  border-radius: 5px;
+  background-color: rgba(255, 255, 255, 0.7);
+  font-size: 1.1em;
+  color: var(--purple);
+  font-weight: bold;
+  padding: 1em 2em;
+}
+
+#BookingDetails .label {
+  display: inline-block;
+  width: 5em;
+  text-align: right;
+}
+
+#BookingDetails .link {
+  display: inline-block;
+  width: 18em;
+  margin-left: 1em;
+  text-align: left;
+  font-weight: normal;
+}
+
+.shaded30 {
+  background-color: var(--white30);
+}
+
+.shaded70 {
+  background-color: var(--white70);
 }
 
 #acu-chin-1 {
@@ -2483,6 +2537,10 @@ a:hover {
   max-width: 100%;
 }
 
+/*#CondDesc, #TreatmentDesc {
+    background-color: var(--yellow10);
+}*/
+
 .quoteBlock {
   position: relative;
 }
@@ -2496,10 +2554,9 @@ a:hover {
 }
 
 .quoteText {
-  font-size: 2.5em;
+  font-size: 1.8em;
   font-style: italic;
-  padding-left: 0.5em;
-  padding-right: 0.5em;
+  padding: 0 2em;
 }
 
 .quote {

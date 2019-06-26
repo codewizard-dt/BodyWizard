@@ -16,7 +16,11 @@
          "uri":"/portal"},
         {"name": "logout",
          "dropdown":false,
-         "uri":"/portal/logout"}
+         "uri":"/portal/logout"},
+         {"name": "booknow",
+         "dropdown":false,
+         "uri":"/booknow"}
+
     ],
     "PortalPractitioner": [
         {"name": "logout",

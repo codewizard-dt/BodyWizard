@@ -40,13 +40,8 @@
         
         @yield("content")
         
-        <footer id="footer">
-             <div class='copyright'>
-                <?php echo "Copyright 2013-" . date("Y") . ", Body Wizard Integrative Medicine Studio, David Taylor MS L.Ac." ?>
-            </div>
-            
-        </footer>
 
+        @include('layouts.footer-simple')
 
         <script
           src="https://code.jquery.com/jquery-3.3.1.min.js"

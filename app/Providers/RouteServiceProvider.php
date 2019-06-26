@@ -24,6 +24,7 @@ class RouteServiceProvider extends ServiceProvider
     public function boot()
     {
         //
+        \Route::pattern('catchall', '[a-z0-9.\-]+'); 
 
         parent::boot();
     }
