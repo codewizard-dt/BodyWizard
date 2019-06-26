@@ -19,9 +19,11 @@ app()->singleton('GoogleClient',function(){
 |
 */
 Route::domain('headspaceacupuncture.com')->group(function(){
-	Route::any('{catchAll}', 'PagesController@headspace');
+	Route::any('{catchAll}', function(){
+		return redirect('/changes');
+	});
 });
-Route::get('/headspace', 'PagesController@headspace');
+// Route::get('/headspace', 'PagesController@headspace');
 
 Route::get('/', 'PagesController@home');
 Route::get('/about', 'PagesController@about');
