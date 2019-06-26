@@ -12,3 +12,8 @@ env_variables:
   # Put production environment variables here.
   APP_LOG: errorlog
   APP_KEY: base64:B25yE1A7qIXy7WGKAG+NfMsULWoTjolnL21SSLfNeuE=
+
+automatic_scaling:
+  min_num_instances: 1
+  cpu_utilization:
+    target_utilization: 0.7
