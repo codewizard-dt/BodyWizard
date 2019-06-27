@@ -7,6 +7,7 @@
     --pink:rgb(234,78,80);
     --pink30:rgba(234,78,80,0.3);
     --white30:rgba(255,255,255,0.3);
+    --white50:rgba(255,255,255,0.5);
     --white70:rgba(255,255,255,0.7);
 }
 
@@ -168,6 +169,7 @@ h5 {font-weight: normal;color:var(--purple);}
 .yellowBG{background-color: var(--yellow);}
 .yellow10BG{background-color: var(--yellow10);}
 .shaded30{background-color: var(--white30);}
+.shaded50{background-color: var(--white50);}
 .shaded70{background-color: var(--white70);}
 .letterStretch{letter-spacing: 1px;}
 .nowrap{white-space: nowrap;}
@@ -186,6 +188,7 @@ h5 {font-weight: normal;color:var(--purple);}
 .paddedXBig{padding-top:2.5em;padding-bottom: 2.5em;}
 .paddedBig.topOnly{padding-bottom: 0em;}
 .paddedBig{padding-top:1.5em;padding-bottom: 1.5em;}
+.paddedXSmall{padding-top:0.25em;padding-bottom: 0.25em;}
 .paddedSmall{padding-top:0.5em;padding-bottom: 0.5em;}
 .paddedSides{padding-left:2.5em;padding-right: 2.5em;box-sizing: border-box;}
 .paddedSides.small{padding-left:1em;padding-right: 1em;}
@@ -555,9 +558,9 @@ a:hover {color:var(--pink);}
     background-position: 50% 40%;
 }
 #palosanto{
-    height:12em;
+    height:45vh;
     background-image: url(/images/other/palosanto.jpg);
-    background-position: 50% 55%;
+    background-position: 50% 35%;
 }
 #headshot{
     height:20em;
@@ -576,7 +579,7 @@ a:hover {color:var(--pink);}
     background-position: 50% 70%;
 }
 #pulse-1{
-    height: 15em;
+    height: 45vh;
     background-image: url(/images/vitals/wrist-jason-1.jpg);
     background-position: 50% 55%;
 }

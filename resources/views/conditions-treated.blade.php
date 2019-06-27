@@ -10,7 +10,7 @@
 
 @section('content')
         <div class='splash btnPopDown top' id='pulse-1'>
-            <h1 class='paddedBig shadow purple'>Commonly Treated Conditions</h1>
+            <h1 class='paddedXSmall shaded30 purple'>Commonly Treated Conditions</h1>
             <div class='button booknow small pink'>book an appointment</div>
         </div>
         <h2 class='yellow paddedSmall'>The Three Realms of Healing</h2>

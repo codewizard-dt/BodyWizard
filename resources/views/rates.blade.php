@@ -10,7 +10,7 @@
 
 @section('content')
         <div class='splash top' id='shelf-1'>
-            <h1 class='purple paddedBig shadow'>Appointments and Rates</h1>
+            <h1 class='purple paddedXSmall shaded50'>Appointments and Rates</h1>
         </div>
         <h2></h2>
         <div class='menuBar website' id='RateMenu' data-populated='no' data-target='window' data-mode='scroll'>

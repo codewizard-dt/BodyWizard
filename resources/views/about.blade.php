@@ -5,8 +5,8 @@
 @section('path', "https://bodywizardmedicine.com/about")
 
 @section('content')
-        <div class='splash btnPopDown' id='palosanto' style='padding-top:7em'>
-            <h1 class='purple'>About Us</h1>
+        <div class='splash btnPopDown top' id='palosanto'>
+            <h1 class='purple shaded30 paddedXSmall'>About Us</h1>
             <div class='button small pink booknow'>book an appointment</div>
         </div>
         
