@@ -568,7 +568,7 @@ a:hover {color:var(--pink);}
     background-position: 50% 10%;
 }
 #head-1{
-    height:15em;
+    height:45vh;
     padding-top:4em;    
     background-image: url(/images/acupuncture/head-benji.jpg);
     background-position: 40% 50%;
