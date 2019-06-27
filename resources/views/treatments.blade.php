@@ -95,7 +95,7 @@
                 <h4 class='paddedSmall'>Psychosocial Conditions</h4>
             </div>
             <br>
-            <div class='button fullWidth small pink marginBig bottomOnly link' data-target='/conditions-treated'>more about what we treat</div>
+            <div class='button fullWidth small pink marginBig bottomOnly link' data-target='/conditions'>more about what we treat</div>
         </div>
 
 @endsection

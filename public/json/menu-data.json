@@ -7,8 +7,8 @@
         {"name": "services",
          "dropdown":true,
           "options":[
+              {"text":"Conditions","uri":"/conditions","id":"conditions"},
               {"text":"Treatments","uri":"/treatments","id":"treatments"},
-              {"text":"Conditions","uri":"/conditions-treated","id":"conditions"},
               {"text":"Rates","uri":"/rates","id":"rates"}
           ]},
         {"name": "portal",

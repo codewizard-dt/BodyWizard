@@ -17,7 +17,7 @@ class PagesController extends Controller
     	return view('rates');
     }
     public function conditions(){
-    	return view('conditions-treated');
+    	return view('conditions');
     }
     public function treatments(){
         return view('treatments');

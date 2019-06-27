@@ -71,7 +71,7 @@
                 <div class='logo popUp'></div>
                 <div class='quoteText purple'>I am a very active person, and was having persistent back pain that I couldn't seem to kick. I tried physical therapy, massage, muscle relaxers... and finally came to David. Within two sessions, my back pain was a thing of the past and I was back to full speed in the gym.</div>
                 <h4 class='yellow caps paddedSmall'>Nathan M.</h4>
-                <a href='/conditions-treated'><div class='button small pink'>learn more</div></a>
+                <a href='/conditions'><div class='button small pink'>learn more</div></a>
             </div>
         </div>
 @endsection
