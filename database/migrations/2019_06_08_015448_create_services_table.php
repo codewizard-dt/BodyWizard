@@ -27,6 +27,7 @@ class CreateServicesTable extends Migration
             $table->unsignedInteger('duration');
             $table->json('full_json');
             $table->json('settings')->nullable()->default(null);
+            $table->json('settings_json')->nullable()->default(null);            
             $table->timestamps();
         });
     }

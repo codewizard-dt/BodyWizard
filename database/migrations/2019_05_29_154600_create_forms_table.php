@@ -20,6 +20,7 @@ class CreateFormsTable extends Migration
             $table->string('form_name');
             $table->json('questions');
             $table->json('settings')->nullable()->default(null);
+            $table->json('settings_json')->nullable()->default(null);
             $table->json('full_json');
             $table->boolean('has_submissions')->default(false);
             $table->boolean('locked')->default(false);

@@ -19,6 +19,8 @@ class CreateServiceCategoriesTable extends Migration
             $table->text('description');
             $table->integer('display_order')->default(1);
             $table->json('full_json');
+            $table->json('settings')->nullable()->default(null);
+            $table->json('settings_json')->nullable()->default(null);            
             $table->timestamps();
         });
     }

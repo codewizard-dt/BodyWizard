@@ -10,50 +10,46 @@ $(document).ready(function(){
 function saveSettings(){
 	var form = $(this).closest('.formDisp'), modal = form.closest(".modalForm"), model = modal.data('model'),
 		obj = checkForm(form), connectedModelArr = checkConnectedModels(model), uid = modal.data('uid'),
-		url = "/save/settings/" + model + "/" + uid, columnObj = constructColumnSettingsObj(model)
+		url = "/save/settings/" + model + "/" + uid, columnObj = constructColumnSettingsObj(model),
+		settings = constructEasyAccessList(model);
 
-		// console.log(modal.data());
-		// console.log(connectedModelArr);
+	if (obj){
+		blurElement(modal,"#loading");
+		var data = {
+			settings_json: JSON.stringify(obj),
+			connectedModels: JSON.stringify(connectedModelArr),
+			columnObj: JSON.stringify(columnObj)
+		};
+		if (settings){
+			data['settings'] = JSON.stringify(settings);
+		}
 
-		if (obj){
-			blurElement(modal,"#loading");
-			var data = {
-				settings: JSON.stringify(obj),
-				connectedModels: JSON.stringify(connectedModelArr),
-				columnObj: JSON.stringify(columnObj)
-			};
-			// var columnObj = constructColumnSettingsObj(model);
-			// if (columnObj){
-			// 	data['columnObj'] = 
-			// }
-			console.log(data);
-			// AJAX
-			$.ajax({
-				url: url,
-				method: "PATCH",
-				data: data,
-				success:function(data){
+		$.ajax({
+			url: url,
+			method: "PATCH",
+			data: data,
+			success:function(data){
+				console.log(data);
+				if (data=="checkmark"){
+					blurElement(modal,"#checkmark");
+					setTimeout(function(){
+						reloadTab();
+					},800)
+				}else{
 					console.log(data);
-					if (data=="checkmark"){
-						blurElement(modal,"#checkmark");
-						setTimeout(function(){
-							reloadTab();
-						},800)
-					}else{
-						console.log(data);
-						$("#Error").html("Error saving settings<div class='button xsmall cancel'>dismiss</div>")
-						blurElement(modal,"#Error");
-					}
-				},
-				error:function(e){
-					console.log(e);
-					$("#Error").html("Server error<div class='button xsmall cancel'>dismiss</div>")
+					$("#Error").find(".message").text("Error saving settings");
 					blurElement(modal,"#Error");
 				}
-			})
-		}else{
-			return false;
-		}
+			},
+			error:function(e){
+				console.log(e);
+				$("#Error").find(".message").text("Server Error");
+				blurElement(modal,"#Error");
+			}
+		})
+	}else{
+		return false;
+	}
 }
 function constructColumnSettingsObj(model){
 	var obj = {};
@@ -83,4 +79,26 @@ function constructColumnSettingsObj(model){
 	if (obj == {}){obj = null;}
 	console.log(obj);
 	return obj;
+}
+function constructEasyAccessList(model){
+	var obj = {};
+	if (model == 'Service'){
+	}
+	else if (model == 'Code'){
+	}
+	else if (model == 'ServiceCategory'){
+	}
+	else if (model == 'Form'){ 
+		obj['display_numbers'] = turnToBoolean(justResponse($("#display_question_numbers")));
+		obj['form_type'] = justResponse($("#form_type"));
+		if ($("#list_this_form_in_the_patients_portal").is(":visible")){
+			obj['portal_listing'] = justResponse($("#list_this_form_in_the_patients_portal"));
+		}
+		if ($("#automatically_prompt_practitioner_to_fill_out_form_when_a_service_requires_it").is(":visible")){
+			obj['prompt_practitioner'] = turnToBoolean(justResponse($("#automatically_prompt_practitioner_to_fill_out_form_when_a_service_requires_it")));
+		}
+	}
+	if (obj == {}){obj = null;}
+	// console.log(obj);
+	return obj;	
 }

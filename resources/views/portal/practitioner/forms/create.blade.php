@@ -338,9 +338,7 @@ if (isset($form)){
                 $options['units'] = "";
                 $options['name'] = 'scalemax';
                 $example->answerDisp("number",$options);
-//                $x = "-100, 100, 100, 1, ";
                 $ID = "scalemax";
-  //              $example->number($x,$ID);                
                 ?>
                 <br>
                 <span style='width:6em;'>Initial value:</span>
@@ -352,9 +350,7 @@ if (isset($form)){
                 $options['units'] = "";
                 $options['name'] = 'initial';
                 $example->answerDisp("number",$options);
-            //    $x = "-100, 100, 50, 1, ";
                 $ID = "initial";
-              //  $example->number($x,$ID);                
                 ?>
                 <br>
                 <span style='width:16em;'>Label for minimum end of scale:</span><input name="minLabel" type="text"><br>
@@ -390,16 +386,7 @@ if (isset($form)){
     <div id='AddText'>
         <div id='NarrativeOptions' class='options'>
             <div id='NarrativeList' class='optionsList'>
-                <span>Heading (Optional): </span>
-                <?php
-                $options = array("name"=>"NarrTitle");
-                $option->text($options);
-                ?><br>
-                <span>Descriptive or Explanatory Text: </span>
-                <?php
-                $options = array("name"=>"NarrText");
-                $option->textbox($options);
-                ?>
+                <div class='summernote'></div>
             </div>
         </div>
         <div class="button xsmall save">save text</div>
@@ -428,6 +415,7 @@ if (isset($form)){
 <script type="text/javascript" src="{{ asset('/js/jquery.datepick.min.js') }}"></script>
 <script type="text/javascript" src="{{ asset('/js/jSignature.min.js') }}"></script>
 <script type="text/javascript" src="{{ asset('/js/launchpad/form-builder.js') }}"></script>
+<script type="text/javascript" src="{{ asset('/js/summernote-lite.min.js') }}"></script>
 @if (isset($form))
 <script src="{{ asset('/js/launchpad/form-edit.js') }}"></script>
 @endif

@@ -17,7 +17,7 @@
         <div id="LoginForm">
             @csrf
 
-            <h2 class='purple shadow marginSmall bottomOnly'>Portal Login</h2>
+            <h2 class='purple marginSmall bottomOnly'>Portal Login</h2>
             <p><span class='purple'>Username:</span><input name="username" id="username" type="text" required></p>
             <p><span class='purple'>Password:</span><input name="password" id="pw" type="password" required></p>
             <!-- <p><input type="checkbox" name="remember" id="remember">Remember Me</p> -->
@@ -61,6 +61,8 @@
         })
     });
 </script>
+<script type="text/javascript" src="{{ asset('/js/jquery.plugin.min.js') }}"></script>
+<script type="text/javascript" src="{{ asset('/js/jquery.datepick.min.js') }}"></script>
 <script type="text/javascript" src="{{ asset('/js/launchpad/forms.js') }}"></script>
 <script type="text/javascript" src="{{ asset('/js/login.js') }}"></script>
 @endsection

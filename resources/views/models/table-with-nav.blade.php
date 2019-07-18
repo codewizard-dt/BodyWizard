@@ -1,5 +1,4 @@
 <?php
-    Use Illuminate\Support\Str;
     include_once app_path("/php/functions.php");
 
     // called by GET /{model}/display/list
@@ -7,17 +6,19 @@
     $class = "App\\$nospaces";
     $ctrl = new $class;
     // $models = plural($model);
-    $models = Str::plural($model);
+    $models = title(pluralSpaces($model));
 
     // setting table options and getting collection
     $tableOptions = $ctrl->tableValues;
     $orderBy = isset($tableOptions['orderBy']) ? $tableOptions['orderBy'] : [];
-    $orderBy = isset($request->order_by) ? array_merge($orderBy,$request->order_by) : null;
+    $orderBy = isset($request->order_by) ? array_merge($orderBy,$request->order_by) : $orderBy;
+    $orderBy = $orderBy != [] ? $orderBy : null;
 
     $where = isset($tableOptions['where']) ? $tableOptions['where'] : [];
-    $where = isset($request->where) ? array_merge($where,$request->where) : null;
+    $where = isset($request->where) ? array_merge($where,$request->where) : $where;
+    $where = $where != [] ? $where : null;
 
-    // SPECIAL STEP FOR DIAGNOSIS / USERS
+    // SPECIAL STEPS TO SELECT A SUBSET OF COLLECTION
         if ($model=='Diagnosis'){
             if (!isset($request->type)){
                 session()->forget('diagnosisType');
@@ -91,7 +92,7 @@
     @include('models.table',$tableOptions)
 </div>
 
-@if ($model != 'Form')
+@if ($model != 'Form' && $model != 'Attachment')
     @include('models.create-modal',['model'=>$nospaces,'request'=>$request])
     @include('models.edit-modal',['model'=>$nospaces,'request'=>$request])
     <script type='text/javascript' src='{{ asset("js/launchpad/save-model.js") }}'></script>
@@ -99,7 +100,8 @@
 
 <div id="delete{{ $nospaces }}" class='modalForm prompt'>
     <div>
-        <h3 class='pink'>Are you sure you want to delete the {{ strtolower($model) }} <span class='name'></span>?<br>This cannot be undone.</h3>    
+        <h3 class='pink central'>Are you sure you want to delete the {{ singularSpaces($model) }} <span class='name'></span>?</h3>
+        <h3 class='pink marginSmall topOnly underlined'>This cannot be undone.</h3>
     </div>
     <div class="options">
         <div class='button delete pink medium' data-model='{{ $nospaces }}'>Delete</div>

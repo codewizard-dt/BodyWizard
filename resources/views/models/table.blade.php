@@ -31,7 +31,7 @@
 		}elseif($model == "Message"){
 			$btnDispText = "Send New Message";
 		}else{
-				$btnDispText = "Add New ".$model;
+			$btnDispText = "Add New ".$model;
 		}
 		$btnDispText = isset($btnDispText) ? $btnDispText : "Add New ".$model;
 	?>
@@ -40,6 +40,10 @@
     
     @if ($modal)
     <div class='button xsmall selectData pink disabled'>update {{ $connectedTo }}</div>
+    @elseif (isset($extraBtns))
+    	@foreach ($extraBtns as $btn)
+			<div class='button xsmall yellow loadInTab' data-uri='{{ $btn[1] }}'>{{ $btn[0] }}</div>
+    	@endforeach
     @endif
 	<br>
 

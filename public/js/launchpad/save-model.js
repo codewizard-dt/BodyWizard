@@ -7,13 +7,61 @@ $(document).ready(function(){
 	saveModelBtns.data('updated',true);
 
 	var modalBtns = $(".button").filter(".createNew, .editExisting").filter(function(){
+		if ($(this).data('model') == 'Template' && !$("#createTemplate").data('initialized')){
+			initializeTemplateForm();
+		}else if ($(this).data('model') == 'Message' && !$("#createMessage").data('initialized')){
+			initializeMessageForm();
+		}
 		return $(this).data('initialized') != true ;
 	});
 	modalBtns.on("click",openModal);
 	modalBtns.data('initialized',true);
 
-	// $(".createNew").filter("[data-model='Message']").off("click",openModal);
 })
+function initializeTemplateForm(){
+	var forms = $("#createTemplate, #editTemplate");
+	forms.each(function(){
+		var section = $(this).find(".section").first();
+		$("<div/>",{
+			class: 'summernote'
+		}).appendTo(section);
+	})
+	setTimeout(function(){
+		forms.find(".summernote").summernote({
+			height:500,
+	        placeholder: 'Enter your text here',
+	        toolbar: [
+	          ['style', ['style']],
+	          ['font', ['bold', 'underline', 'clear']],
+	          ['fontname', ['fontname']],
+	          ['color', ['color']],
+	          ['para', ['ul', 'ol', 'paragraph', 'height']],
+	          ['insert', ['link', 'picture']],
+	          ['view', ['fullscreen', 'codeview', 'undo', 'redo', 'help']],
+	        ]
+		})		
+	},500);
+	forms.data('initialized',true);
+}
+function initializeMessageForm(){
+	var form = $("#createMessage");
+	form.find("#rich_text_message").addClass('summernote');
+	form.find(".summernote").summernote({
+			height:500,
+	        placeholder: 'Enter your text here',
+	        toolbar: [
+	          ['style', ['style']],
+	          ['font', ['bold', 'underline', 'clear']],
+	          ['fontname', ['fontname']],
+	          ['color', ['color']],
+	          ['para', ['ul', 'ol', 'paragraph', 'height']],
+	          ['insert', ['link', 'picture']],
+	          ['view', ['fullscreen', 'codeview', 'undo', 'redo', 'help']],
+	        ]
+		});
+	form.data('initialized',true);
+
+}
 function openModal(){
 	var model = $(this).data('model'),
 		id = $(this).hasClass('createNew') ? "#create"+model : "#edit"+model,
@@ -27,7 +75,6 @@ function openModal(){
 	if (model == 'User'){
 		removePasswordInputs();
 	}
-
 }
 function removePasswordInputs(){
 	$(".item").filter(function(){
@@ -50,6 +97,11 @@ function reloadTableModal(element,model){
 			element.attr("id","xxx").remove();
 			$(data).appendTo("#ModalHome");
 			blurElement(m,$("#"+id));
+			var thisModel = element.data('model');
+			console.log(thisModel);
+			setTimeout(function(){
+				$("#create"+thisModel).find(".submitForm").on('click',saveModel);
+			},300)
 			// t.find(".selectData").on("click",updateInputFromTable);
 		},
 		error:function(e){
@@ -64,6 +116,8 @@ function saveModel(){
 	var	obj = checkForm(form), model = modal.data('model'), 
 		connectedModelArr = checkConnectedModels(model), dataObj, columnObj, url;
 
+	// console.log(model);
+	// console.log(connectedModelArr);
 	var method = modal.hasClass("createNew") ? "POST" : "PATCH",
 		url = "/save/" + model;
 	if (method == "PATCH"){
@@ -73,7 +127,7 @@ function saveModel(){
 	if (!obj){return false;}
 
 	columnObj = constructColumnObj(model);
-	var noFullJson = ['Message'];
+	var noFullJson = ['Message','Attachment'];
 	
 	dataObj = {
 		connectedModels: JSON.stringify(connectedModelArr),
@@ -82,14 +136,13 @@ function saveModel(){
 	if ($.inArray(model,noFullJson) == -1){
 		dataObj['full_json'] = JSON.stringify(obj);
 	}
+	if (model == 'Message'){
+		dataObj['recipient_ids'] = JSON.stringify($("#select_recipients").data('uidArr'));
+	}
 
 	var p = modalOrBody($(this)),
 		m = parentModalOrBody($(this));
 	blurElement(p,"#loading");
-
-	// console.log(p);
-	// console.log(m);
-	// return false;
 
 	$.ajax({
 		url: url,
@@ -166,14 +219,15 @@ function deleteModel(){
             }
         })
 }
-function checkConnectedModels(model){
+function checkConnectedModels(model,form){
+	// console.log(form);
 	var models = $(".connectedModel").filter(function(){
 		return $(this).data('connectedto') == model;
 	}), arr = [];
 	models.each(function(){
 		arr.push($(this).data());
 	})
-	// console.log(arr);
+	console.log(arr);
 	return arr;
 }
 function constructColumnObj(model){
@@ -228,18 +282,31 @@ function constructColumnObj(model){
 		// console.log(obj);
 	}
 	else if (model == 'Message'){
+		var s = {
+			'pending':Date.now(),'processed':null,'dropped':null,'delivered':null,'deferred':null,
+			'bounce':null,'open':null,'click':null,'spamreport':null,'unsubscribe':null,'group_unsubscribe':null,'group_resubscribe':null
+		};
 		obj = {
 			type: justResponse($("#message_type")),
-			message: justResponse($("#message")),
-			status: 'pending'
-		}
+			message: $("#createMessage").find(".summernote").summernote('code'),
+			status: JSON.stringify(s)
+		};
 		if ($("#subject").is(":visible")){
 			obj['subject'] = justResponse($("#subject"));
+		}
+	}
+	else if (model == 'Template'){
+		var m = $('.summernote').filter(function(){
+			return $(this).parent().is(":visible");
+		}).summernote('code');
+		obj = {
+			name: justResponse($("#template_name")),
+			markup: m
 		}
 	}
 	// console.log(obj);
 	return obj;
 }
 function turnToBoolean(value){
-	return (value = "yes") ? true : false;
+	return (value == "yes") ? true : false;
 }

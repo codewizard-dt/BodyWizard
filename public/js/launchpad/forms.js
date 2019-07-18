@@ -2,16 +2,7 @@ $(document).ready(function () {
     masterStyle();
 
     var answerList = $('.answer.radio, .answer.checkboxes');
-    // getSessionVar("FormLocked");
-    // var check = setInterval(function(){
-    //     if (yourSessionVar!=undefined && yourSessionVar=="true"){
-    //         $(".locked").hide();
-    //         yourSessionVar=undefined;
-    //         clearInterval(check);
-    //     }
-    // },50)
-    //slideFadeOut($(".locked"),0);
-    
+
     $("input").on("keyup",function(e){
         if (!e){
             return false;
@@ -24,6 +15,15 @@ $(document).ready(function () {
             }
         }
     })
+
+    var fullscreenBtn = $(".btn-fullscreen").filter(function(){
+        return !$(this).data('initialized');
+    })
+    fullscreenBtn.on('click',function(){
+        var p = modalOrBody($(this));
+        p.scrollTo($(this).closest(".note-editor"),200);
+    })
+    fullscreenBtn.data('initialized',true);
     
     //update defaultDisplayCSS in form-builder.js to reflect any changes here
     var defaultCSS = {"inline":"false"};
@@ -38,13 +38,6 @@ $(document).ready(function () {
         dispClass = (item.is(".itemFU") && item.closest(".item").data('disp').inline.includes("true")) ? "ownLine" : dispClass;
         
         item.addClass(dispClass);
-        /*
-        cssObj['display'] = (inline.includes("true")) ? "inline-block" : "block";
-        cssObj['paddingRight'] = (inline.includes("true")) ? "2.5em" : "0";
-        cssObj['width'] = (inline.includes("true")) ? "28%" : "100%";
-        if (item.is(".itemFU") && inline.includes("true")){
-            cssObj['width'] = item.closest(".item").data('disp').inline.includes("true") ? "100%" : "28%";
-        }*/
         
         if (inline.includes("BR")){
             $("<div/>",{

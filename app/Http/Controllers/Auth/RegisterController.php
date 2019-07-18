@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Foundation\Auth\RegistersUsers;
+use Illuminate\Support\Carbon;
 
 class RegisterController extends Controller
 {
@@ -67,12 +68,14 @@ class RegisterController extends Controller
     // protected function create(array $data)
     protected function create(array $data)
     {
+        $dob = Carbon::parse($data['date_of_birth'])->toDateString();
         $user = new User();
         $user->first_name = $data['first_name'];
         $user->middle_name = $data['middle_name'];
         $user->last_name = $data['last_name'];
         $user->preferred_name = $data['preferred_name'];
         $user->phone = $data['phone'];
+        $user->date_of_birth = $dob;
         $user->username = $data['username'];
         $user->full_json = $data['full_json'];
         $user->email = $data['email'];

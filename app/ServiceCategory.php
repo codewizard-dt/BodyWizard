@@ -42,7 +42,10 @@ class ServiceCategory extends Model
             ),
             'btnText' => array(
                 'edit','delete','create new category'
-            )
+            ),
+            'extraBtns' => [
+                ['back to services',"/Service/index"]
+            ]
         );
         $this->optionsNavValues = array(
             'model' => "ServiceCategory",

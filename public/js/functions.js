@@ -31,6 +31,18 @@ $.ajaxSetup({
             console.log(e);
         }
 });
+$(document).ajaxError(function(ev,xhr,settings,error){
+    if (error !== 'abort'){
+        // console.log("ev");
+        // console.log(ev);
+        console.log("xhr");
+        console.log(xhr);
+        // console.log("settings");
+        // console.log(settings);
+        // console.log("error");
+        // console.log(error);
+    }
+})
 
 $(document).on("mousedown",".button",function(e){
 //    console.log(e.target);
@@ -279,6 +291,13 @@ function containedBySubModal(ele){
     }
 }
 
+$(document).keyup(function(e){
+    if (e.keyCode === 27 && $('.blur').length > 0){
+        var b = $(".blur").last(), p = parentModalOrBody(b);
+        unblurElement(p);
+    }
+})
+
 function blurElement(elem,modal,time,callback){
     time = (time != undefined) ? time : "400";
     var position = $(elem).css("position"),
@@ -362,13 +381,13 @@ function blurElement(elem,modal,time,callback){
     }
     var modalCSS = {
         // display: "inline-block",
-        backgroundColor: "rgb(230,230,230)",
-        maxHeight: "90%",
-        maxWidth: "90%",
-        margin: 0,
-        padding: "2em 3em",
-        borderRadius: "5px",
-        boxShadow: "0 0 15px 3px rgba(230,230,230)"
+        // backgroundColor: "rgb(230,230,230)",
+        // maxHeight: "90%",
+        // maxWidth: "90%",
+        // margin: 0,
+        // padding: "2em 3em",
+        // borderRadius: "5px",
+        // boxShadow: "0 0 15px 3px rgba(230,230,230)"
     }        
 
     if (!block.is("#Block")){
@@ -1097,7 +1116,9 @@ function optionsNavBtnClick(){
         })
     }
     else if (dest=='delete'){
+        model = model.replace(" ","");
         var modal = '#delete'+model;
+        // console.log(modal);
         $(modal).find(".name").text(optionsNav.find(".name").text());
         blurElement($("body"),modal);
     }
@@ -1117,9 +1138,11 @@ function optionsNavBtnClick(){
                 dispModel = optionsNav.data("dxtype") + " " + model;
             }else if (model == 'User'){
                 var h1 = "<h1 class='purple'>Edit Basic Patient Info</h1>", h2 = "<h1 class='yellow'>"+name+"</h1>";
-                // $(modal).find("h1").html("Edit Patient Info");
                 $(modal).find("h1").remove();
                 $(modal).prepend(h1,h2);
+            }else if (model == 'Template'){
+                var m = optionsNav.find(".name").data('markup');
+                $("#editTemplate").find(".summernote").summernote('code',m);
             }
         }
 

@@ -48,12 +48,18 @@ class Message extends Model
 	    	'hideOrder' => "type,opened,sent,message",
 	    	'filtersColumn' => array(),
 	    	'filtersOther' => array(),
+            'orderBy' => [
+                ['updated_at','desc']
+            ],
             'destinations' => array(
                 'expand','reply'
             ),
             'btnText' => array(
                 'expand','reply'
-            )
+            ),
+            'extraBtns' => [
+                ['manage templates',"/Template/index"]
+            ]
 	    );
         $this->optionsNavValues = array(
             'model' => "Message",
@@ -71,13 +77,14 @@ class Message extends Model
         // automatically popped up when required.
         // [Model, relationship]
         $this->connectedModels = array(
-            ['User','many','morphToMany']
-            // ['ServiceCategory','one','belongsTo'],
+            ['User','many','morphToMany'],
+            ['Template','one','belongsTo'],
+            ['Attachment','many','morphToMany']
             // ['Form','many','morphToMany']
             // ['Service','many','morphToMany']
         );
         $this->connectedModelAliases = [
-            'users' => 'recipients',
+            'user' => 'recipient',
             'user' => 'sender'
         ];
     }
@@ -85,11 +92,19 @@ class Message extends Model
     public function optionsNav(){
 
     }
-
-    public function recipients(){
-    	return $this->morphToMany('App\User', 'userable');
+    public function template(){
+        return $this->belongsTo('App\Template', 'template_id');
+    }
+    public function attachments(){
+        return $this->morphToMany('App\Attachment','attachmentable');
+    }
+    public function images(){
+        return $this->morphToMany('App\Image','imageable');
+    }
+    public function recipient(){
+    	return $this->belongsTo('App\User', 'recipient_id');
     }
     public function sender(){
-    	return $this->belongsTo('App\User','user_id');
+    	return $this->belongsTo('App\User','sender_id');
     }
 }

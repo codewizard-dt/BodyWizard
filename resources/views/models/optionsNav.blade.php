@@ -47,10 +47,14 @@ elseif ($uid != null){
 	$uidList[$nospaces] = $uid;
 	session(['uidList' => $uidList]);
 
+	// replace image id references with data strings
+	checkEmbeddedImgs($instance,$nospaces);
 	// get Display name of instance
 	$name = (isset($instance->nameAttr)) ? complexAttr($instance->nameAttr,$instance) : $instance->name;
 	// include submission data if available
 	$jsonStr = isset($instance->full_json) ?  str_replace("'","\u0027",$instance->full_json) : null;
+	// include summernote data if available
+	$markupStr = isset($instance->markup) ?  e($instance->markup) : null;
 
 	if (isset($instance->connectedModels)){
 		$connectedModels = $instance->connectedModels;
@@ -63,17 +67,21 @@ elseif ($uid != null){
 			// dd($connectedModels);
 			$number = $connectedModel[1];
 			try{
-
 				if ($number == 'one'){
 					$connectedInstance = $instance->$cmodel;
-					$key = $connectedInstance->getKey();
-					$modelArr[$cModel] = [$key];
+					if ($connectedInstance!== null){
+						$key = $connectedInstance->getKey();
+						$modelArr[$cModel] = [$key];						
+					}
 				}elseif ($number == 'many'){
 					$keyArr = [];
-					foreach ($instance->$cmodels as $cinstance){
-						$keyArr[] = $cinstance->getKey();
+					$connectedInstances = $instance->$cmodels;
+					if ($connectedInstances!==null){
+						foreach ($connectedInstances as $cinstance){
+							$keyArr[] = $cinstance->getKey();
+						}
+						$modelArr[$cModel] = $keyArr;
 					}
-					$modelArr[$cModel] = $keyArr;
 				}
 			}
 			catch(\Exception $e){
@@ -84,7 +92,7 @@ elseif ($uid != null){
 	$connectedModelStr = (isset($modelArr)) ? json_encode($modelArr) : "";
 
 	echo "<div class='navHead'>";
-    echo "<span class='optionsBar'><span class='name' data-json='$jsonStr' data-uid='$uid' data-connectedmodels='$connectedModelStr'>$name</span><br>";
+    echo "<span class='optionsBar'><span class='name' data-json='$jsonStr' data-markup='$markupStr' data-uid='$uid' data-connectedmodels='$connectedModelStr'>$name</span><br>";
     optionButtons($destinations,$btnText);
     echo "</span>";
 	echo "</div>";

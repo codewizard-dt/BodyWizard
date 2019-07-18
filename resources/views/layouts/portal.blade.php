@@ -56,6 +56,8 @@
     <script type="text/javascript" src="{{ asset('/js/jquery.plugin.min.js') }}"></script>
     <script type="text/javascript" src="{{ asset('/js/jquery.datepick.min.js') }}"></script>
     <script type="text/javascript" src="{{ asset('/js/mark/jquery.mark.js') }}"></script>
+    <script type='text/javascript' src="{{ asset('/js/summernote-lite.min.js') }}"></script>
+
 
         @yield('scripts')
 

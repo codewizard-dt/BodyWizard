@@ -20,6 +20,8 @@ class CreateCodesTable extends Migration
             $table->string('icd_version')->nullable()->default(null);
             $table->text('code_description');
             $table->string('key_words')->nullable()->default(null);;
+            $table->json('settings')->nullable()->default(null);
+            $table->json('settings_json')->nullable()->default(null);            
             $table->json('full_json');
             $table->timestamps();
         });

@@ -44,14 +44,6 @@ textarea[data-followup]{
     margin-bottom: 3em;
 }
 
-.redfont {
-    color:rgb(189, 48, 40);
-}
-
-.boldfont {
-    font-weight: 700;
-}
-
 .scale.small {
     font-size: 1em;
 }
@@ -417,9 +409,9 @@ form, .indent, .report, .w95 {
     border-style: solid;
     border-width: 1px;
     border-radius: 5px;
-    border-color: rgb(170,170,170); 
+    border-color: var(--purple); 
     margin: 1em 0 0 0;
-    background-color: rgb(240,240,240);
+    background-color: rgb(255,255,255);
     padding:1em;
     position: relative;
 }
@@ -431,17 +423,17 @@ form, .indent, .report, .w95 {
     margin-left: -1px;
 }*/
 
-.section h3 {
+.section > h3 {
     margin:1em 0 0 0;
 }
 
-.section h4 {
+.section > h4 {
     margin-left: 2em;
 }
 
-.section h4.center {margin-left: 0;}
+.section > h4.center {margin-left: 0;}
 
-.section h4 span {
+.section > h4 span {
     color:rgb(189, 48, 40);
 }
 
@@ -860,18 +852,20 @@ input[type=number]{
     padding:1em;
 }
 
-#HerbList li, #PatientList li, #ActionList li, #SymptomList li, #CategoryList li, #FormulaDesc li, .ActiveSymptoms li, .ActiveActions li, #NewHerb li, .FormulaDisplay li, .answer li, .reportFilters li{
+.answer li{
     list-style: none;
     display:inline-block;
-    background-color: rgb(170,170,170);
+    background-color: var(--yellow);
+    color: white;
     border-radius: 3px;
     margin: 5px;
     padding:0.2em 0.5em;
     border-width: 2px;
     border-style: solid;
-    border-color: rgba(120,120,120,0);
+    border-color: transparent;
     cursor: pointer;
     opacity: 1;
+    transition: color 500ms, background-color 500ms;
 }
 
 .answer li.disabled {
@@ -938,69 +932,33 @@ li[data-response='no response']{
     font-size: 0.9em;
 }
 
-#PrevFormulas > div {display: none;}
-#PrevFormulas .FormulaDetails {display: none;}
-#PrevFormulas .FormulaDisplay {background-color: rgb(230,230,230);}
-
-.FormulaDisplay li.date{background-color: rgb(210,210,210);}
-.FormulaDisplay li.formName{}
-.FormulaDisplay li.pattern{}
-
-.FormulaDisplay td {
-    max-width: 16em;
-    padding: 2px 8px;
-    text-align: center;
-    vertical-align: middle;
-    border-bottom: 1px solid rgb(210,210,210);
+.answer:not(.blurred) li:hover{
+    background-color: white;
+    border-color: var(--yellow70);
+    color: var(--yellow);
 }
 
-.FormulaDisplay th {
-    padding: 3px 9px;
-    background-color: rgb(200,200,200);
-    text-align: center;
-    border-bottom: 1px solid rgb(200,200,200);
-}
-
-.FormulaDisplay table{
-    border: 1px solid rgb(200,200,200);
-}
-
-.FormulaDisplay h4 span {
-    font-weight: 400;
-}
-
-#PrevFormulas tr[data-herbname]:hover {
-    background-color: rgb(210,210,210);
-}
-
-#PrevFormulas tr[data-herbname].active {
-    background-color: rgb(210,210,210);
-}
-
-.herb {font-size: 0.8em;padding:1.5em;}
-
-#FormulaDesc li{cursor: default; font-size: 0.9em;}
-#FormulaDesc .button {margin:10px;}
-
-#HerbNames li:hover, #PatientList li:hover, .answer:not(.blurred) li:hover{
-    background-color: rgb(210,210,210);
-}
-
-#HerbList li.add, #PatientList li.active, #ActionList li.active, #SymptomList li.active, #CategoryList li.active, .ActiveSymptoms li.active, .ActiveActions li.active, #NewHerb li.active, .answer li.active, .reportFilters li.active{
-    background-color: rgb(210,210,210);
-    border-color: rgba(120,120,120,0.9);
+.answer li.active{
+    background-color: white;
+    border-color: var(--yellow) !important;
+    color: var(--yellow);
 }
 
 .question {
     display: inline-block;
     border-style: solid;
-    border-color: rgb(210,210,210);
+    border-color: var(--yellow);
     border-width: 0 0 1px 0;
+    font-size: 1.1em;
+    margin-bottom:0.25em;
 }
 
 .question span.n {
     display: inline-block;
     width: 1.5em;
+}
+.section.noNums span.n{
+    display: none;
 }
 
 .question.CC{
@@ -1069,6 +1027,11 @@ li[data-response='no response']{
     min-width: 65%;
 }
 
+.answer.checkboxes, .answer.radio {
+    background-color: var(--yellow30);
+    width: auto;
+}
+
 .answer.signHere{
     display: block;
 }
@@ -1127,11 +1090,6 @@ li[data-response='no response']{
 
 .closed .answer{
     display: none;
-}
-
-.answer.checkboxes, .answer.radio {
-    background-color: rgb(220,220,220);
-    width: auto;
 }
 
 .plzselect {
@@ -1974,7 +1932,7 @@ input#PatientName {
     text-transform: capitalize;
 }
 
-#Sections h4 {
+#Sections > h4 {
     text-transform: capitalize;
 }
 
@@ -2057,20 +2015,21 @@ input#PatientName {
 
 .section.display .itemFUList {
     display:none;
-    padding-left: 2em;
-    margin-left: 1.5em;
-    border-width: 0 0 0 3px;
+    padding: 0.1em 0.8em;
+    margin: 0.5em;
+    border-left: 2px dotted var(--yellow30);
+/*    border-width: 0 0 0 3px;
     border-style: solid;
     border-color: rgb(190,190,190);
     border-radius: 15px 0 0 15px;
-}
+*/}
 .section.display .itemFU{
     display: none;
 }
 
 #examples {
-    display: none;
-}
+/*    display: none;
+*/}
 
 .example {
     margin: 1em;
@@ -2230,6 +2189,10 @@ input#PatientName {
     border-radius: 5px;
     border-style: solid;
     overflow: visible;
+}
+
+#NarrativeList {
+    text-align: left;
 }
 
 #condition .answer, #ScaleList .answer, #NarrativeList .answer {
@@ -2491,11 +2454,12 @@ input#PatientName {
 
 .modalForm {
     display:none;
-    max-height: 90%;
+    max-height: 96%;
     width: 700px;
-    max-width: 90%;
+    max-width: 96%;
     box-sizing: border-box;
     overflow-y: auto;
+    transition: width 1000ms;
 }
 .modalForm.expanded{
     width:96%;

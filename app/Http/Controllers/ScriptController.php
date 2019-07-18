@@ -5,21 +5,18 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Form;
+use App\Message;
+use App\Attachment;
+use App\Image;
 use Illuminate\Support\Facades\Validator;
-// use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use App\Events\OutgoingMessage;
 
-app()->singleton('GoogleGmail',function(){
-    $client = app('GoogleClient');
-    $client->addScope("https://www.googleapis.com/auth/gmail.modify");
-    $mail = new \Google_Service_Gmail($client);
-    return $mail;
-});
-
 class ScriptController extends Controller
 {
+    // private $currentInstance;
+
     public function __construct(){
         $this->middleware('auth');
     }
@@ -143,15 +140,56 @@ class ScriptController extends Controller
         public function saveNewModel($model, Request $request){
             include_once app_path("php/functions.php");
             $class = "App\\$model";
-            $newModel = new $class;
-            return $this->saveModel($model, $newModel, $request);
+            // Log::info($newModel);
+            // Log::info($request);
+
+            $recipient_ids = json_decode($request->recipient_ids);
+            if ($model == "Message"){
+                $connectedArr = $request->connectedModels;
+                Log::info($connectedArr);
+                $request->message_id = uuid();
+                foreach ($recipient_ids as $id){
+                    $newModel = new $class;
+                    $request->recipient_id = $id;
+                    $result = $this->saveModel($model, $newModel, $request);
+                    if ($result === true){
+                        event(new OutgoingMessage($newModel));
+                    }else{
+                        break;
+                    }
+                }
+            }else{
+                $newModel = new $class;
+                $result = $this->saveModel($model, $newModel, $request);
+            }
+
+            if ($result === true){
+                return "checkmark";
+            }else{
+                return $result;
+            }
+            
+            // if ($result === true){
+            //     if ($model == 'Message'){
+            //         event(new OutgoingMessage($newModel));
+            //     }
+
+            //     return "checkmark";
+            // }else{
+            //     return $result;
+            // }
         }
         public function UpdateModel($model, $uid, Request $request){
             include_once app_path("php/functions.php");
             $class = "App\\$model";
             $existingInstance = $class::find($uid);
 
-            return $this->saveModel($model, $existingInstance, $request);
+            $result = $this->saveModel($model, $existingInstance, $request);
+            if ($result === true){
+                return "checkmark";
+            }else{
+                return $result;
+            }
         }
         public function saveModel($model, $instance, Request $request){
             $models = strtolower(plural($model));
@@ -173,24 +211,54 @@ class ScriptController extends Controller
                         return $randomPw;
                     }
                 }elseif ($model == 'Message'){
-                    $instance->user_id = Auth::user()->id;
+                    $instance->sender_id = Auth::user()->id;
+                    $instance->recipient_id = $request->recipient_id;
+                    $instance->message_id = $request->message_id;
                 }
 
-            foreach(json_decode($request->columnObj,true) as $key => $value){
-                $instance->$key = $value;
+            // TAKES EACH COLUMN FROM THE REQUEST AND ASSIGNS VALUES TO THE OBJECT
+            foreach($columns as $key => $value){
+                if (($model == 'Message' && $key == 'message')
+                    or ($model == 'Template' && $key == 'markup')){
+                    // RETURNS ARRAY OR FALSE IF NO IMGS ARE EMBEDDED OR IF IMGS ARE ALREADY SAVED
+                    // ALSO SETS ATTR MATCHING $KEY
+                    $embeddedImgs = $this->extractEmbeddedImages($columns[$key],$instance,$key);
+                }else{
+                    $instance->$key = $value;
+                }
             }
 
             if (isset($request->full_json)){
                 $instance->full_json = $request->full_json;
             }
+
             try{
+
+                // Save things
                 $instance->save();
                 $uidList = session('uidList');
-                $uidList[$model] = $instance->getKey();
+                $newId = $instance->getKey();
+                $uidList[$model] = $newId;
                 session([
                     'uidList' => $uidList,
-                    $model => $instance->getKey()
+                    $model => $newId
                 ]);
+                
+                // SAVES EMBEDDED IMAGES AS \Image RESOURCES
+                if (isset($embeddedImgs) && $embeddedImgs != false){
+                    $imgIdArr = [];
+                    foreach ($embeddedImgs as $embeddedImg){
+                        $image = new Image;
+                        $image->id = $embeddedImg[0];
+                        $image->mime_type = $embeddedImg[1];
+                        $image->file_name = $embeddedImg[2];
+                        $image->data_string = $embeddedImg[3];
+                        $image->save();
+                        array_push($imgIdArr, $embeddedImg[0]);
+                    }
+                    $instance->images()->sync($imgIdArr);
+                }
+
             }
             catch(\Exception $e){
                 return $e;
@@ -203,18 +271,13 @@ class ScriptController extends Controller
 
             $connectedModels = isset($request->connectedModels) ? json_decode($request->connectedModels,true) : null;
             if (isset($connectedModels)){
-                $updated = $this->updateRelationships($instance,$connectedModels);
-                if ($updated !== true){
-                    return $updated;
+                $result = $this->updateRelationships($instance,$connectedModels);
+                if ($result !== true){
+                    return $result;
                 }
             }
-
-            if ($model == 'Message'){
-                event(new OutgoingMessage($instance));
-                Log::info("YEAHHHH");
-            }
-
-            return "checkmark";
+            // $this->currentInstance = $instance;
+            return true;
 
         }
         public function deleteModel($model, $uid, Request $request){
@@ -231,6 +294,38 @@ class ScriptController extends Controller
             catch(\Exception $e){
                 return $e;
             }
+        }
+
+        public function extractEmbeddedImages($string,$instance,$attr){
+            $embeddedImgs = [];
+            $newImgs = preg_match_all('/src="data:([^;.]*);([^".]*)" data-filename="([^"]*)"/', $string, $newImgMatches, PREG_PATTERN_ORDER);
+            $oldImgs = preg_match_all('/src="data:([^;.]*);([^".]*)" data-uuid="([^"]*)" data-filename="([^"]*)"/', $string, $oldImgMatches, PREG_PATTERN_ORDER);
+            if ($newImgs!==false && $newImgs > 0){
+                for ($x = 0; $x < count($newImgMatches[1]); $x++){
+                    $uuid = uuid();
+                    $fullMatch = $newImgMatches[0][$x];
+                    $mimeType = $newImgMatches[1][$x];
+                    $dataStr = $newImgMatches[2][$x];
+                    $fileName = $newImgMatches[3][$x];
+                    $embedStr = 'src="%%EMBEDDED:'.$uuid.'%%"';
+                    array_push($embeddedImgs,[$uuid,$mimeType,$fileName,$dataStr]);
+                    // Log::info($uuid.$mimeType.$fileName.$embedStr);
+                    $string = str_replace($fullMatch,$embedStr,$string);
+                }
+            }
+            if ($oldImgs!==false && $oldImgs > 0){
+                for ($x = 0; $x < count($oldImgMatches[1]); $x++){
+                    $fullMatch = $oldImgMatches[0][$x];
+                    $uuid = $oldImgMatches[3][$x];
+                    $embedStr = 'src="%%EMBEDDED:'.$uuid.'%%"';
+                    // array_push($embeddedImgs,[$uuid,$mimeType,$fileName,$dataStr]);
+                    // Log::info($uuid.$mimeType.$fileName.$embedStr);
+                    $string = str_replace($fullMatch,$embedStr,$string);
+                }
+            }
+            $instance->$attr = $string;
+            $returnVal = ($embeddedImgs == []) ? false : $embeddedImgs;
+            return $returnVal;
         }
 
     // EDIT / SAVE SETTINGS
@@ -256,8 +351,10 @@ class ScriptController extends Controller
             // return $existingInstance;
 
             try{
-                $existingInstance->settings = $request->settings;
-                // return $existingInstance;
+                $existingInstance->settings_json = $request->settings_json;
+                if (isset($request->settings)){
+                    $existingInstance->settings = $request->settings;
+                }
                 $existingInstance->save();
             }catch(\Exception $e){
                 return $e;
@@ -265,11 +362,22 @@ class ScriptController extends Controller
 
             $connectedModels = isset($request->connectedModels) ? json_decode($request->connectedModels,true) : null;
             if (isset($connectedModels)){
-                return $this->updateRelationships($existingInstance,$connectedModels);
-            }else{
-                return "checkmark";
+                $result = $this->updateRelationships($existingInstance,$connectedModels);
+                if ($result !== true){
+                    return $result;
+                }
             }
+            // $this->currentInstance = $instance;
+            return 'checkmark';
         }
+
+    public function fetchModel($model, $uid, Request $request){
+        include_once app_path("php/functions.php");
+        $class = "App\\$model";
+        $existingInstance = $class::find($uid);
+        checkEmbeddedImgs($existingInstance,$model);
+        return $existingInstance;
+    }
 
     public function updateRelationships($instance, $connectedModels){
         // return $connectedModels;
@@ -278,10 +386,12 @@ class ScriptController extends Controller
             $connectedModelName = $connectedModel['model'];
             $class = "App\\$connectedModelName";
             $uids = isset($connectedModel['uidArr']) ? $connectedModel['uidArr'] : null;
+
             if ($uids){
                 try{
                     if ($rel == 'belongsTo'){
                         $uid = $uids[0];
+                        // CHECKS IF THE NAME OF THE RELATIONSHIP (ie METHOD) IS ALSO THE NAME OF THE MODEL
                         $method = checkAliases($instance, strtolower($connectedModelName));
                         $connectedInstance = $class::find($uid);
                         $instance->$method()->associate($connectedInstance);

@@ -71,42 +71,42 @@ $(document).ready(function(){
     
 })
 
-function saveSettings(){
-    var obj = createSubmitObject($("#FormSettings")), settingsObj = {};
-    if (obj){
-        $(this).addClass("disabled");
-        $(loadingRing).appendTo($(this)).css({top:"50%",transform:"translate(-50%,-50%)"});
-        var items = obj['Sections'][0]['Items'];
-        items.forEach(function(item,i){
-            console.log(item);
-            var resp = (item['response'].length>1) ? item['response'] : item['response'][0];
-            settingsObj[item['question']] = resp;
-            if (item['followups']!==undefined){
-                item['followups'].forEach(function(followup,f){
-                    resp = (followup['response'].length>1) ? followup['response'] : followup['response'][0];
-                    settingsObj[followup['question']] = resp;
-                })
-            }
-        })
-//        console.log(settingsObj);
-        var jsonStr = JSON.stringify(settingsObj);
-        $.ajax({
-            method:"POST",
-            url:"/php/launchpad/practitioner/save-formSettings-POST.php",
-            data:{
-                settingsJSON: jsonStr,
-                formUID: $("#formStats").data("uniqueid")
-            },
-            success:function(data){
-                if (data){
-                    //successful update
-                    console.log("WHOOOOOO!");
-                    location.reload();
-                }else{
-                    //fail to update
-                    console.log("NOOOO");
-                }
-            }
-        })
-    }
-}
+// function saveSettings(){
+//     var obj = createSubmitObject($("#FormSettings")), settingsObj = {};
+//     if (obj){
+//         $(this).addClass("disabled");
+//         $(loadingRing).appendTo($(this)).css({top:"50%",transform:"translate(-50%,-50%)"});
+//         var items = obj['Sections'][0]['Items'];
+//         items.forEach(function(item,i){
+//             console.log(item);
+//             var resp = (item['response'].length>1) ? item['response'] : item['response'][0];
+//             settingsObj[item['question']] = resp;
+//             if (item['followups']!==undefined){
+//                 item['followups'].forEach(function(followup,f){
+//                     resp = (followup['response'].length>1) ? followup['response'] : followup['response'][0];
+//                     settingsObj[followup['question']] = resp;
+//                 })
+//             }
+//         })
+// //        console.log(settingsObj);
+//         var jsonStr = JSON.stringify(settingsObj);
+//         $.ajax({
+//             method:"POST",
+//             url:"/php/launchpad/practitioner/save-formSettings-POST.php",
+//             data:{
+//                 settingsJSON: jsonStr,
+//                 formUID: $("#formStats").data("uniqueid")
+//             },
+//             success:function(data){
+//                 if (data){
+//                     //successful update
+//                     console.log("WHOOOOOO!");
+//                     location.reload();
+//                 }else{
+//                     //fail to update
+//                     console.log("NOOOO");
+//                 }
+//             }
+//         })
+//     }
+// }

@@ -17,15 +17,4 @@ class MessageController extends Controller
         $usertype = Auth::user()->user_type;
         return view("portal.$usertype.messages.home");        
     }
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function send()
-    {
-        $client = app('GoogleClient');
-        return dd($client);
-    }
-
 }

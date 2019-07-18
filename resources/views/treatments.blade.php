@@ -13,7 +13,7 @@
             <h1 class='purple paddedXSmall shaded30'>Treatments Offered</h1>
             <div class='button small booknow pink'>book an appointment</div>
         </div>
-        <h2 class='yellow paddedSmall'>The Four Pillars</h2>
+        <h2 class='yellow paddedSmall'>The Four Pillars of Treatment</h2>
         <div class='menuBar website' id='TreatmentMenu' data-populated='no' data-target='window' data-mode='scroll'>
             <div class='tab' id='acu'><div class='title'>Acupuncture</div></div>
             <div class='tab' id='botanical'><div class='title'>Botanical Medicine</div></div>

@@ -55,6 +55,7 @@ function submitRegistration(){
             preferred_name : ($("#preferred_name_optional").val() != "") ? $("#preferred_name_optional").val() : null,
             password : $("#password").val(),
             password_confirmation : $("#confirm_password").val(),
+            date_of_birth: justResponse($("#date_of_birth")),
             full_json: JSON.stringify(obj),
             phone: $("#phone_number").val(),
             email: $("#email_address").val(),

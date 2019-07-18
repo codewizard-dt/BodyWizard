@@ -22,6 +22,7 @@ class CreateUsersTable extends Migration
             $table->string('user_type')->default('patient');
             $table->boolean('super_user')->default(false);
             $table->string('username')->unique();
+            $table->date('date_of_birth');
             $table->string('email');
             $table->string('phone');
             $table->timestamp('email_verified_at')->nullable();

@@ -12,7 +12,8 @@ class StandardEmail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $message;
+    public $data;
+    public $attachments;
 
     /**
      * Create a new message instance.
@@ -21,7 +22,13 @@ class StandardEmail extends Mailable
      */
     public function __construct(Message $message)
     {
-        $this->message = $message;
+        // if (strpos($message->message,'src="data') > -1){
+
+        // }
+        preg_match_all('/src="data:image\/(png|jpeg|jpg);base64,([^".]*)"/', $message->message, $matches);
+
+        $this->data = $message;
+        $this->attachments = $message->attachments;
     }
 
     /**
@@ -31,6 +38,7 @@ class StandardEmail extends Mailable
      */
     public function build()
     {
-        return $this->view('emails.standard');
+        return $this->view('emails.standard')
+                    ->subject($this->data->subject);
     }
 }

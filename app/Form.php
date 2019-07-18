@@ -282,11 +282,9 @@ class Form extends Model
         }
         public function narrative($options){
             $id = isset($options['name'])?$options['name']:"";
-            $narr = $options['text'];
-            $head = $options['title'];
-            $head = ($head != "") ? "<h3>$head</h3>" : $head;
+            $html = $options['markupStr'];
             
-            echo "<div id='$id' class='narrative'>$head$narr</div>";
+            echo "<div id='$id' class='narrative'>$html</div>";
         }
         
         public function answerDisp($type,$options){
@@ -332,13 +330,15 @@ class Form extends Model
             $formID = $this->form_id;
             $formName = $this->form_name;
             $formNameAbbr = str_replace(" ", "", $formName);
+            $settings = json_decode($this->settings,true);
+            // var_dump($settings);
             echo '<div id="'.$formNameAbbr.'" data-formname="'.$formNameAbbr.'" data-formid="'.$formID.'" data-uid="'.$uid.'" class="formDisp indent">';
             for ($x=0;$x<count($sections);$x++){
                 $section = $sections[$x];
                 $name = $section['sectionName'];
                 $items = $section['items'];
                 $formObj = new form();
-                echo "<div class='section display'><h2>$name</h2>";
+                echo "<div class='section display'><h2 class='purple'>$name</h2>";
                 $n = 0;
                 for ($i=0;$i<count($items);$i++){
                     $item = $items[$i];
@@ -367,27 +367,27 @@ class Form extends Model
                     }
                     $formObj->answerDisp($type,$options);
                     if (count($followups)>0){
-                        echo "<div class='itemFUList' data-condition='title'><div>Follow-up questions:</div>";
-                        for ($f=0;$f<count($followups);$f++){
-                            $itemFU = $followups[$f];
-                            $question = $itemFU['question'];
-                            $FUkey = $itemFU['key'];
-                            $type = $itemFU['type'];
-                            $options = isset($itemFU['options']) ? $itemFU['options'] : [];
-                            $disp = json_encode($itemFU['displayOptions']);
-                            $condition = $itemFU['condition'];
-                            $condition = str_replace("'","&apos;",$condition);
-                            $condition = join("***",$condition);
-                            $name = removepunctuation(replacespaces(strtolower(cleaninput($question))));
-                            if (in_array($type, ['radio','checkboxes','dropdown'])){
-                                array_push($options,"ID*".$name);
-                            }else{
-                                $options['name'] = $name;
+                        echo "<div class='itemFUList' data-condition='title'>";
+                            for ($f=0;$f<count($followups);$f++){
+                                $itemFU = $followups[$f];
+                                $question = $itemFU['question'];
+                                $FUkey = $itemFU['key'];
+                                $type = $itemFU['type'];
+                                $options = isset($itemFU['options']) ? $itemFU['options'] : [];
+                                $disp = json_encode($itemFU['displayOptions']);
+                                $condition = $itemFU['condition'];
+                                $condition = str_replace("'","&apos;",$condition);
+                                $condition = join("***",$condition);
+                                $name = removepunctuation(replacespaces(strtolower(cleaninput($question))));
+                                if (in_array($type, ['radio','checkboxes','dropdown'])){
+                                    array_push($options,"ID*".$name);
+                                }else{
+                                    $options['name'] = $name;
+                                }
+                                echo "<div class='itemFU' data-type='$type' data-disp='$disp' data-condition='$condition' data-key='$FUkey'><div class='question'><span class='q'>$question</span></div><br>";
+                                $formObj->answerDisp($type,$options);
+                                echo "</div>";
                             }
-                            echo "<div class='itemFU' data-type='$type' data-disp='$disp' data-condition='$condition' data-key='$FUkey'><div class='question'><span class='q'>$question</span></div><br>";
-                            $formObj->answerDisp($type,$options);
-                            echo "</div>";
-                        }
                         echo "</div>";
                     }
                     echo "</div>";

@@ -111,6 +111,20 @@ $(document).ready(function(){
         $("#NarrativeOptions").show();
         slideFadeIn($("#AddText"));
     })
+    $(".summernote").summernote({
+        height: 200,
+        placeholder: 'Enter your text here',
+        toolbar: [
+          ['style', ['style']],
+          ['font', ['bold', 'underline', 'clear']],
+          ['fontname', ['fontname']],
+          ['color', ['color']],
+          ['para', ['ul', 'ol', 'paragraph']],
+          ['insert', ['link', 'picture']],
+          ['view', ['fullscreen', 'codeview', 'help']],
+        ],
+    });
+
     $("#Sections").on("click",".clear",function(){
         var targetType = $(this).data('target');
         var target = $(this).closest(targetType);
@@ -262,11 +276,14 @@ $(document).ready(function(){
                     $("#Type").change();                    
                 }else{
                     slideFadeIn($("#NarrativeOptions"));
-                    q = (q == "Text block w/o header") ? "" : q;
-                    $("#NarrTitle").val(q);
-                    // console.log(o);
-                    $("#NarrText").val(o.text);
-                    // console.log(q + t);
+                    var markup = o.markupStr;
+                    $("#NarrativeOptions").find(".note-placeholder").hide();
+                    $("#NarrativeOptions").find(".note-editable").html(markup);
+                    // q = (q == "Text block w/o header") ? "" : q;
+                    // $("#NarrTitle").val(q);
+                    // // console.log(o);
+                    // $("#NarrText").val(o.text);
+                    // // console.log(q + t);
                 }
                 
                 t = $(this).closest(".item").find(".question").data('type');
@@ -977,20 +994,21 @@ $(document).ready(function(){
         }
         else{scaleOptions=undefined;}
         
-        var narrativeOptions = $("#NarrativeOptions").find("input, textarea").filter(":visible");
+        var narrativeOptions = $("#NarrativeList").filter(":visible");
         if (narrativeOptions.length!=0){
-            var title = $("#NarrTitle").val();
-            var text = $("#NarrText").val();
+            // var title = $("#NarrTitle").val();
+            // var text = $("#NarrText").val();
                         
-            if (text == ""){
-                alertBox("required",$("#NarrText"),"after","fade");
-                return false;
-            }
+            // if (text == ""){
+            //     alertBox("required",$("#NarrText"),"after","fade");
+            //     return false;
+            // }
+            // return false;
             
             narrativeOptions={
-                "title":title,
-                "text":text
+                "markupStr":$("#NarrativeList").find(".summernote").summernote('code')
             };
+            // console.log(narrativeOptions);
         }
         else{narrativeOptions = undefined;}
 
@@ -1365,14 +1383,12 @@ $(document).ready(function(){
             $(itemNode).appendTo(ItemsList);
             var newItem = ItemsList.find(".item").last();
             
-            if (t == "narrative" && o.title == ""){
-                q = "Text block w/o header";
-            }else if (t == "narrative"){
-                q = o.title;
+            if (t == "narrative"){
+                q = "Custom Text";
             }
             newItem.find(".question").html(q + "<div class='toggle edit'>(edit)</div><div class='toggle copy'>(duplicate)</div><div class='toggle delete'>(delete)</div><div class='toggle save'>(save)</div><div class='toggle cancel'>(cancel edit)</div>").data({"question":q, "key":x, "type":t, "options":o, "toggleFUs":tFUs});
             
-            var tTxt = (i.type == "narrative") ? "Text block" : "Answer type: " + t;
+            var tTxt = (i.type == "narrative") ? "Display Text" : "Answer type: " + t;
             newItem.find(".type").html(tTxt);
             
             if (o==undefined){
@@ -1738,7 +1754,7 @@ $(document).ready(function(){
         ItemArr.sort(function(a,b){
             return a.key-b.key;
         });
-        console.log(ItemArr);
+
         currentItem.animate({
             "height":"-=30px",
             "opacity":0.2

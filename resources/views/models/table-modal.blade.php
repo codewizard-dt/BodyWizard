@@ -10,7 +10,7 @@
     unset($collection);
     $class = "App\\$model";
     $ctrl = new $class;
-    $models = plural($model);
+    $models = title(pluralSpaces($model));
 
     // setting table options and getting collection
     $tableOptions = $ctrl->tableValues;
@@ -58,7 +58,7 @@
     if ($connectedTo == $model){
         dd("KILLIN IT");
     }
-    // dd($connectedTo, $model);   
+
 ?>
 <div id='{{ $modalId }}' class='modalForm connectedModel' data-model='{{ $model }}' data-relationship='{{ $relationship }}' data-connectedto='{{ $connectedTo }}' data-number='{{ $number }}'>
     <h2>Available {{ $models }}</h2>

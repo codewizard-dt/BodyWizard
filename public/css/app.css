@@ -1534,28 +1534,42 @@ select {
 }
 
 @font-face {
-  font-family: "body";
+  font-family: "Roboto";
   src: url("/fonts/roboto-regular.ttf") format("truetype");
   font-weight: normal;
   font-style: normal;
 }
 
 @font-face {
-  font-family: "body";
+  font-family: "Roboto";
   src: url("/fonts/roboto-thin.ttf") format("truetype");
   font-weight: 100;
   font-style: normal;
 }
 
 @font-face {
-  font-family: "body";
+  font-family: "Roboto";
   src: url("/fonts/roboto-thin-italic.ttf") format("truetype");
   font-weight: 100;
   font-style: italic;
 }
 
 @font-face {
-  font-family: "body";
+  font-family: "Roboto";
+  src: url("/fonts/roboto-light.ttf") format("truetype");
+  font-weight: 300;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Roboto";
+  src: url("/fonts/roboto-light-italic.ttf") format("truetype");
+  font-weight: 300;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Roboto";
   src: url("/fonts/roboto-bold.ttf") format("truetype");
   font-weight: bold;
   font-style: normal;
@@ -1563,9 +1577,9 @@ select {
 
 body {
   background-color: transparent;
-  font-family: body;
+  font-family: Roboto, sans-serif;
   font-size: 16px;
-  font-weight: 100;
+  font-weight: 300;
   line-height: 1.5;
   text-align: center;
   min-height: 100vh;
@@ -1580,7 +1594,7 @@ footer {
   text-align: center;
   padding: 1em;
   background-color: var(--purple);
-  font-family: body;
+  font-family: Roboto;
   color: white;
   margin-top: 1em;
   position: absolute;
@@ -1661,7 +1675,7 @@ h2,
 h3,
 h4,
 h5 {
-  font-family: body;
+  font-family: Roboto;
   font-weight: 100;
   text-align: inherit;
 }
@@ -2112,7 +2126,7 @@ a:hover {
   display: inline-block;
   position: relative;
   background-color: black;
-  font-family: body;
+  font-family: Roboto;
   font-weight: normal;
   text-transform: uppercase;
   text-align: center;
@@ -2871,6 +2885,17 @@ a:hover {
   font-size: 0.8em;
 }
 
+.modal,
+.modalForm {
+  background-color: rgb(245, 245, 245);
+  max-height: 90%;
+  max-width: 90%;
+  margin: 0;
+  padding: 2em 3em;
+  border-radius: 5px;
+  box-shadow: 0 0 15px 3px rgba(245, 245, 245);
+}
+
 #LoginForm a {
   color: rgb(170, 170, 170);
   text-decoration: underline;
@@ -3070,7 +3095,6 @@ a:hover {
   height: 100%;
   background-color: rgba(0, 0, 0, 0.4);
   box-shadow: 0 0 20px 10px rgb(120, 120, 120) inset;
-  z-index: 51;
 }
 
 .optionsNav #Block {

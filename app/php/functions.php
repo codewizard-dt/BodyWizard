@@ -14,11 +14,26 @@ use Illuminate\Support\Str;
   function camel($str){
     return Str::camel($str);
   }
+  function title($str){
+    return Str::title($str);
+  }
   function contains($str){
     return Str::contains($str);
   }
   function uuid(){
-    return Str::uuid();
+    return Str::orderedUuid()->toString();
+  }
+  function pluralSpaces($str){
+    $str = plural($str);
+    $str = Str::snake($str);
+    $str = unreplacespaces($str);
+    return $str;
+  }
+  function singularSpaces($str){
+    $str = singular($str);
+    $str = Str::snake($str);
+    $str = unreplacespaces($str);
+    return $str;
   }
 
 
@@ -106,7 +121,6 @@ use Illuminate\Support\Str;
       echo "<div class='button xsmall' data-destination='$destinations[$x]'>$btnText[$x]</div>";
     }
   }
-
   function isCollection($var){
     if ($var instanceof Illuminate\Database\Eloquent\Collection){
       return true;
@@ -114,7 +128,6 @@ use Illuminate\Support\Str;
       return false;
     }
   }
-
   function getNameFromUid($model,$uid){
     $c = "App\\$model";
     $instance = $c::find($uid);
@@ -124,7 +137,6 @@ use Illuminate\Support\Str;
     }
     else {return "none";}
   }
-
   function findFormId($model){
     $id = "";
     if ($model == 'Service'){$id = '2';}
@@ -132,17 +144,48 @@ use Illuminate\Support\Str;
     elseif ($model == 'ServiceCategory'){$id = '3';}
     elseif ($model == 'Code'){$id = '4';}
     elseif ($model == 'Message'){$id = '12';}
+    elseif ($model == 'Template'){$id = '15';}
     elseif ($model == 'Diagnosis'){
       $id = (session('diagnosisType')=='Western') ? '5' : "11";
     }
     return $id;
   }
-
   function checkAliases($instance,$method){
       if (isset($instance->connectedModelAliases) and isset($instance->connectedModelAliases[$method])){
           $method = $instance->connectedModelAliases[$method];
       }
       return $method;
+  }
+  function checkEmbeddedImgs($imgInstance,$model){
+    $hasImages = ['Message','Template'];
+    $attrsToCheck = [['message'],['markup']];
+    $arrKey = array_search($model, $hasImages);
+    // Log::info($arrKey);
+    if ($arrKey){
+    // if (true){
+      // Log::info($attrsToCheck[1]);
+        foreach ($attrsToCheck[$arrKey] as $attr){
+            $n = preg_match_all('/src="%%EMBEDDED:([^%]*)%%"/', $imgInstance->$attr, $imgs, PREG_PATTERN_ORDER);
+            $newAttrStr = false;
+            if ($n!==false && $n > 0){
+                for ($i = 0; $i < count($imgs[1]); $i++){
+                    $uuid = uuid();
+                    $fullMatch = $imgs[0][$i];
+                    $uuid = $imgs[1][$i];
+                    $img = App\Image::find($uuid);
+                    $mimeType = $img->mime_type; 
+                    $dataStr = $img->data_string;
+                    $fileName = $img->file_name;
+                    $imgStr = 'src="data:'.$mimeType.';'.$dataStr.'" data-uuid="'.$uuid.'" data-filename="'.$fileName.'"';
+                    $newAttrStr = $newAttrStr ? $newAttrStr : $imgInstance->$attr;
+                    $newAttrStr = str_replace($fullMatch,$imgStr,$newAttrStr);
+                }
+                $imgInstance->$attr = $newAttrStr;
+                // Log::info($embeddedImgs);
+                // Log::info($imgInstance->$attr);
+            }
+        }
+    }
   }
 
   // FUCK YEAH

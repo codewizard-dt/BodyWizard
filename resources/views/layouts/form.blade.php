@@ -25,6 +25,7 @@
 
 <script type="text/javascript" src="{{ asset('/js/mark/jquery.mark.min.js') }}"></script>
 <script type='text/javascript' src="{{ asset('/js/jonthornton-jquery-timepicker-99bc9e3/jquery.timepicker.min.js') }}"></script>
+<script type='text/javascript' src="{{ asset('/js/summernote-lite.min.js') }}"></script>
 
         @yield('scripts')
 

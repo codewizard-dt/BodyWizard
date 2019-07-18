@@ -15,7 +15,7 @@ use App\User;
 
 class SendMessage implements ShouldQueue
 {
-    public $gmail;
+
     /**
      * Create the event listener.
      *
@@ -23,7 +23,7 @@ class SendMessage implements ShouldQueue
      */
     public function __construct()
     {
-        $this->gmail = app('GoogleGmail');
+        // $this->gmail = app('GoogleGmail');
     }
 
     /**
@@ -36,27 +36,19 @@ class SendMessage implements ShouldQueue
     {
         //access message by $event->message
         $message = $event->message;
+
         $emailArr = [];
         foreach ($message->recipients as $recipient){
-            array_push($emailArr,$recipient->email);
+            // array_push($emailArr,$recipient->email);
+            Mail::to($recipient->email)->send(new StandardEmail($message));
         }
         // Log::info($this->gmail);
-        Mail::to('doctordeetz@gmail.com')->send(new StandardEmail($message));
-
         // try{
-            // $client = $this->gmail;
-            // $user = 'david@bodywizardmedicine.com';
-            // // $result = $this->gmail->users_messages->listUsersMessages($user);
-            // $msg = new \Google_Service_Gmail_Message();
-            // $mime = "RnJvbTogSm9obiBEb2UgPHRpcmVuZ2FyZmlvQGdtYWlsLmVzPiANClRvOiBNYXJ5IFNtaXRoIDx0aXJlbmdhcmZpb0BnbWFpbC5jb20";
-            // $msg->setRaw($mime);
-            // $result = $this->gmail->users_messages->send($user,$msg);
-            // Log::info($result);
         // }catch(\Exception $e){
-
+            // Log::info($e);
         // }
-
     }
+
     public function failed(OutgoingMessage $event, $exception)
     {
         //
