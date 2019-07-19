@@ -1,16 +1,16 @@
 @extends('layouts.site')
 
 @push('metadata')
-<title>Body Wizard Treatments</title>
+<title>Treatments | Body Wizard</title>
 <meta name='description' content="The Four Pillars of Treatment">
 <meta property='og:url' content="https://bodywizardmedicine.com/treatments">
-<meta property='og:title' content="Body Wizard Treatments">
+<meta property='og:title' content="Treatments | Body Wizard">
 <meta property='og:description' content="The Four Pillars of Treatment">
 @endpush
 
 @section('content')
-        <div class='splash btnPopDown' id='head-1'>
-            <h1 class='purple paddedBig shadow'>Treatments Offered</h1>
+        <div class='splash btnPopDown top' id='head-1'>
+            <h1 class='purple paddedXSmall shaded30'>Treatments Offered</h1>
             <div class='button small booknow pink'>book an appointment</div>
         </div>
         <h2 class='yellow paddedSmall'>The Four Pillars</h2>

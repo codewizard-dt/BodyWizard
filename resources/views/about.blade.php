@@ -1,12 +1,16 @@
 @extends('layouts.site')
 
-@section('title', 'About Us')
-@section('description', "At Body Wizard, we embrace the fact that medicine is both a science and an art, using lab work to inform our practice of Chinese medicine and track progress.")
-@section('path', "https://bodywizardmedicine.com/about")
+@push('metadata')
+<title>About Us | Body Wizard</title>
+<meta name='description' content="We practice medicine as both a science and an art. Using labwork to inform our practice and track progress, we diagnose and treat according to the art of Chinese medicine.">
+<meta property='og:url' content="https://bodywizardmedicine.com/about">
+<meta property='og:title' content="About Us | Body Wizard">
+<meta property='og:description' content="We practice medicine as both a science and an art. Using labwork to inform our practice and track progress, we diagnose and treat according to the art of Chinese medicine.">
+@endpush
 
 @section('content')
-        <div class='splash btnPopDown' id='palosanto' style='padding-top:7em'>
-            <h1 class='purple'>About Us</h1>
+        <div class='splash btnPopDown top' id='palosanto'>
+            <h1 class='purple paddedXSmall shaded30'>About Us</h1>
             <div class='button small pink booknow'>book an appointment</div>
         </div>
         

@@ -1555,6 +1555,20 @@ select {
 
 @font-face {
   font-family: "body";
+  src: url("/fonts/roboto-light.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "body";
+  src: url("/fonts/roboto-light-italic.ttf") format("truetype");
+  font-weight: normal;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "body";
   src: url("/fonts/roboto-bold.ttf") format("truetype");
   font-weight: bold;
   font-style: normal;
@@ -1564,7 +1578,7 @@ body {
   background-color: transparent;
   font-family: body;
   font-size: 16px;
-  font-weight: 100;
+  font-weight: normal;
   line-height: 1.5;
   text-align: center;
   min-height: 100vh;
@@ -1599,6 +1613,19 @@ footer .logo {
   margin-left: 0;
 }
 
+footer .logo.mobile,
+footer .icons.mobile {
+  display: block;
+  width: 100%;
+  margin: 1em 0 1em 0;
+}
+
+footer .contact.mobile,
+footer .hours.mobile {
+  text-align: center;
+  display: block;
+}
+
 footer .contact {
   text-align: left;
   display: inline-block;
@@ -1617,6 +1644,7 @@ footer .hours {
 }
 
 footer .hours span {
+  text-align: left;
   display: inline-block;
   width: 5.5em;
 }
@@ -1683,7 +1711,7 @@ h3 {
 h4 {
   font-size: 1.1em;
   color: var(--purple);
-  font-weight: normal;
+  font-weight: bold;
 }
 
 h5 {
@@ -1806,6 +1834,11 @@ h5 {
 .paddedBig {
   padding-top: 1.5em;
   padding-bottom: 1.5em;
+}
+
+.paddedXSmall {
+  padding-top: 0.25em;
+  padding-bottom: 0.25em;
 }
 
 .paddedSmall {
@@ -2073,13 +2106,6 @@ a:hover {
   background-image: url(/images/logo/logo-notext-white.png);
 }
 
-.logo.mobile,
-.icons.mobile {
-  display: block;
-  width: 100%;
-  margin: 1em 0 1em 0;
-}
-
 .logo.popUp {
   -webkit-transform: translateY(-40%);
           transform: translateY(-40%);
@@ -2236,15 +2262,18 @@ a:hover {
   flex: 1 1 auto;
 }
 
-#BookingDetails {
-  margin: 0 auto;
-  width: 24em;
+#ScheduleWidget {
+  margin: 1em auto;
+  width: 800px;
+  max-width: 93%;
   border-radius: 5px;
-  background-color: rgba(255, 255, 255, 0.7);
+  height: 700px;
+  background-color: var(--shaded30);
+  border: 2px solid var(--yellow);
   font-size: 1.1em;
   color: var(--purple);
   font-weight: bold;
-  padding: 1em 2em;
+  padding: 0.5em 1em;
 }
 
 #BookingDetails .label {
@@ -2429,7 +2458,14 @@ a:hover {
 #RateMenu {
   position: -webkit-sticky;
   position: sticky;
-  top: 4em;
+  top: 3.4em;
+  font-size: 1.12em;
+}
+
+#TreatmentMenu .title,
+#ConditionMenu .title,
+#RateMenu .title {
+  background-color: var(--yellow10);
 }
 
 #AcuListing .splash {
@@ -3003,7 +3039,7 @@ a:hover {
 }
 
 .menuBar .title.active {
-  background-color: var(--yellow);
+  background-color: var(--yellow) !important;
   color: white;
 }
 

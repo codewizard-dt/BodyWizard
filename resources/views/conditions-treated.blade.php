@@ -1,16 +1,16 @@
 @extends('layouts.site')
 
 @push('metadata')
-<title>Body Wizard Realms of Healing</title>
+<title>Realms of Healing | Body Wizard</title>
 <meta name='description' content="Appointments are categorized as Evaluation + Diagnosis, Acupuncture, Botanical Medicine, Fascial Release, and Guided Meditation + Breathing">
 <meta property='og:url' content="https://bodywizardmedicine.com/treatments">
-<meta property='og:title' content="Body Wizard Realms of Healing">
+<meta property='og:title' content="Realms of Healing | Body Wizard">
 <meta property='og:description' content="Appointments are categorized as Evaluation + Diagnosis, Acupuncture, Botanical Medicine, Fascial Release, and Guided Meditation + Breathing">
 @endpush
 
 @section('content')
         <div class='splash btnPopDown top' id='pulse-1'>
-            <h1 class='paddedBig shadow purple'>Commonly Treated Conditions</h1>
+            <h1 class='paddedXSmall shaded30 purple'>Commonly Treated Conditions</h1>
             <div class='button booknow small pink'>book an appointment</div>
         </div>
         <h2 class='yellow paddedSmall'>The Three Realms of Healing</h2>
