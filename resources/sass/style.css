@@ -44,13 +44,13 @@
 @font-face{
     font-family: 'Roboto';
     src: url('/fonts/roboto-light.ttf') format('truetype');
-    font-weight: 300;
+    font-weight: normal;
     font-style: normal;
 }
 @font-face{
     font-family: 'Roboto';
     src: url('/fonts/roboto-light-italic.ttf') format('truetype');
-    font-weight: 300;
+    font-weight: normal;
     font-style: italic;
 }
 @font-face{
@@ -64,7 +64,7 @@ body {
     background-color: transparent;
     font-family: Roboto, sans-serif;
     font-size: 16px;
-    font-weight: 300;
+    font-weight: normal;
     line-height: 1.5;
     text-align: center;
     min-height: 100vh;
@@ -96,6 +96,15 @@ footer .logo{
     width:5em;
     margin-left:0;
 }
+footer .logo.mobile, footer .icons.mobile{
+    display: block;
+    width:100%;
+    margin: 1em 0 1em 0;
+}
+footer .contact.mobile, footer .hours.mobile{
+    text-align: center;
+    display: block;
+}
 footer .contact{
     text-align: left;
     display: inline-block;
@@ -110,6 +119,7 @@ footer .hours{
     transform: translateY(-50%);
 }
 footer .hours span{
+    text-align: left;
     display: inline-block;
     width:5.5em;
 }
@@ -160,7 +170,7 @@ h3 {
 h4 {
     font-size: 1.1em;
     color:var(--purple);
-    font-weight: normal;
+    font-weight: bold;
 }
 h5 {font-weight: normal;color:var(--purple);}
 .inline{display: inline;}
@@ -382,11 +392,6 @@ a:hover {color:var(--pink);}
     background-repeat: no-repeat;
 }
 .logo.white{background-image: url(/images/logo/logo-notext-white.png);}
-.logo.mobile, .icons.mobile{
-    display: block;
-    width:100%;
-    margin: 1em 0 1em 0;
-}
 .logo.popUp{
     transform: translateY(-40%);
     margin-bottom: -2em;
@@ -512,15 +517,21 @@ a:hover {color:var(--pink);}
     flex: 1 1 auto;
 }
 
-#BookingDetails{
-    margin: 0 auto;
-    width: 24em;
+#ScheduleWidget{
+    margin: 1em auto;
+    width: 800px;
+    max-width: 93%;
     border-radius: 5px;
-    background-color: rgba(255,255,255,0.7);
+    height: 700px;
+    background-color: var(--shaded30);
+    border: 2px solid var(--yellow);
     font-size: 1.1em;
     color: var(--purple);
     font-weight: bold;
-    padding: 1em 2em;
+    padding: 0.5em 1em;
+    box-sizing: border-box;
+}
+#BookingDetails{
 }
 #BookingDetails .label{
     display: inline-block;
@@ -672,7 +683,11 @@ a:hover {color:var(--pink);}
 
 #TreatmentMenu, #ConditionMenu, #RateMenu{
     position: sticky;
-    top:4em;
+    top:3.4em;
+    font-size: 1.12em;
+}
+#TreatmentMenu .title, #ConditionMenu .title, #RateMenu .title{
+    background-color: var(--yellow10);
 }
 #AcuListing .splash{
     background-image: url(/images/acupuncture/arm-cara-2.jpg);
@@ -1202,7 +1217,7 @@ a:hover {color:var(--pink);}
 }
 
 .menuBar .title.active {
-    background-color: var(--yellow);
+    background-color: var(--yellow) !important;
     color: white;
 }
 .menuBar li.active{

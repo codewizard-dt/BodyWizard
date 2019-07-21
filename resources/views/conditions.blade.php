@@ -1,10 +1,10 @@
 @extends('layouts.site')
 
 @push('metadata')
-<title>Body Wizard Realms of Healing</title>
+<title>Realms of Healing | Body Wizard</title>
 <meta name='description' content="Appointments are categorized as Evaluation + Diagnosis, Acupuncture, Botanical Medicine, Fascial Release, and Guided Meditation + Breathing">
 <meta property='og:url' content="https://bodywizardmedicine.com/treatments">
-<meta property='og:title' content="Body Wizard Realms of Healing">
+<meta property='og:title' content="Realms of Healing | Body Wizard">
 <meta property='og:description' content="Appointments are categorized as Evaluation + Diagnosis, Acupuncture, Botanical Medicine, Fascial Release, and Guided Meditation + Breathing">
 @endpush
 

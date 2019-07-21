@@ -1,18 +1,17 @@
 @extends('layouts.site')
 
 @push('metadata')
-<title>Body Wizard Appointments + Rates</title>
+<title>Appointments + Rates | Body Wizard</title>
 <meta name='description' content="Appointments are categorized as Evaluation + Diagnosis, Acupuncture, Botanical Medicine, Fascial Release, and Guided Meditation + Breathing">
 <meta property='og:url' content="https://bodywizardmedicine.com/treatments">
-<meta property='og:title' content="Body Wizard Appointments + Rates">
+<meta property='og:title' content="Appointments + Rates | Body Wizard">
 <meta property='og:description' content="Appointments are categorized as Evaluation + Diagnosis, Acupuncture, Botanical Medicine, Fascial Release, and Guided Meditation + Breathing">
 @endpush
 
 @section('content')
         <div class='splash top' id='shelf-1'>
-            <h1 class='purple paddedXSmall shaded50'>Appointments and Rates</h1>
+            <h1 class='paddedXSmall shaded30 purple'>Appointments and Rates</h1>
         </div>
-        <h2></h2>
         <div class='menuBar website' id='RateMenu' data-populated='no' data-target='window' data-mode='scroll'>
             <div class='tab' id='eval'><div class='title'>Evaluation + Diagnosis</div></div>
             <div class='tab' id='acu'><div class='title'>Acupuncture</div></div>

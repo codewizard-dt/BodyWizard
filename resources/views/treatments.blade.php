@@ -1,10 +1,10 @@
 @extends('layouts.site')
 
 @push('metadata')
-<title>Body Wizard Treatments</title>
+<title>Treatments | Body Wizard</title>
 <meta name='description' content="The Four Pillars of Treatment">
 <meta property='og:url' content="https://bodywizardmedicine.com/treatments">
-<meta property='og:title' content="Body Wizard Treatments">
+<meta property='og:title' content="Treatments | Body Wizard">
 <meta property='og:description' content="The Four Pillars of Treatment">
 @endpush
 

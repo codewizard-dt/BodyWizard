@@ -1709,8 +1709,12 @@ function resizeMobileMenuAndFooter(){
         tabs.appendTo("#SiteMenu");
         $("#SiteMenu").find(".dropDown").removeClass("active");
     }
-    if (w < 500){$("footer").find(".logo, .icons").addClass("mobile");}
-    else {$("footer").find(".logo, .icons").removeClass("mobile");}
+    if (w < 480){$("footer").find(".logo, .icons, .contact, .hours").addClass("mobile");}
+    else if (w < 750){
+        $("footer").find(".logo, .icons").addClass("mobile");
+        $("footer").find(".contact, .hours").removeClass("mobile");
+    }
+    else {$("footer").find(".logo, .icons, .contact, .hours").removeClass("mobile");}
 }
 $("#MenuToggle").on("click",function(){
     var b = $("#MobileMenu").hasClass("active");
