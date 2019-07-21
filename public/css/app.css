@@ -2274,6 +2274,7 @@ a:hover {
   color: var(--purple);
   font-weight: bold;
   padding: 0.5em 1em;
+  box-sizing: border-box;
 }
 
 #BookingDetails .label {
