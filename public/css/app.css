@@ -3069,8 +3069,8 @@ a:hover {
 }
 
 .menuBar li.active {
-  background-color: var(--yellow);
-  color: white;
+  color: var(--yellow);
+  font-weight: bold;
 }
 
 .menuBar .underline {

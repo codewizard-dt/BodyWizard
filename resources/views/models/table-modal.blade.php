@@ -19,12 +19,16 @@
 
     // SPECIAL STEP FOR DIAGNOSIS
         if ($model=='Diagnosis'){
-            $arr = ['medicine_type','=',$request->type];
-            session(['diagnosisType'=>$request->type]);
-            if (!$where){
-                $where = [$arr];
+            if (isset($request->type)){
+                $arr = ['medicine_type','=',$request->type];
+                session(['diagnosisType'=>$request->type]);
+                if (!$where){
+                    $where = [$arr];
+                }else{
+                    array_push($where,$arr);
+                }
             }else{
-                array_push($where,$arr);
+                session()->forget('diagnosisType');
             }
         }
 

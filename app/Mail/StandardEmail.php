@@ -2,11 +2,14 @@
 
 namespace App\Mail;
 
+
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use App\Message;
+use Illuminate\Support\Facades\Log;
+
 
 class StandardEmail extends Mailable
 {
@@ -22,11 +25,6 @@ class StandardEmail extends Mailable
      */
     public function __construct(Message $message)
     {
-        // if (strpos($message->message,'src="data') > -1){
-
-        // }
-        preg_match_all('/src="data:image\/(png|jpeg|jpg);base64,([^".]*)"/', $message->message, $matches);
-
         $this->data = $message;
         $this->attachments = $message->attachments;
     }
@@ -38,6 +36,18 @@ class StandardEmail extends Mailable
      */
     public function build()
     {
+        include_once app_path("php/functions.php");
+
+        $messageId = $this->data->id;
+        $header = [
+            'unique_args' => [
+                'bw_message_id' => $messageId
+            ]
+        ];
+        $this->withSwiftMessage(function($message) use ($header){
+            $message->getHeaders()
+                    ->addTextHeader('X-SMTPAPI',asString($header));
+        });
         return $this->view('emails.standard')
                     ->subject($this->data->subject);
     }

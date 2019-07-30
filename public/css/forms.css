@@ -865,7 +865,7 @@ input[type=number]{
     border-color: transparent;
     cursor: pointer;
     opacity: 1;
-    transition: color 500ms, background-color 500ms;
+    transition: color 1000ms, background-color 1000ms;
 }
 
 .answer li.disabled {
@@ -934,7 +934,7 @@ li[data-response='no response']{
 
 .answer:not(.blurred) li:hover{
     background-color: white;
-    border-color: var(--yellow70);
+    border-color: var(--yellow30);
     color: var(--yellow);
 }
 
@@ -1562,7 +1562,7 @@ input#PatientName {
 
 .number {
     /*padding: 0.4em 0.5em;*/
-    margin: -0.25em 0;
+    margin: 0.2em 0;
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     touch-action: manipulate;
@@ -1814,10 +1814,10 @@ input#PatientName {
     display: none;
     position: relative;
     border-radius: 5px;
-    border-width: 1px;
+    border-width: 2px;
     border-style: solid;
-    border-color: rgb(120,120,120);
-    background-color: rgb(210,210,210);
+    border-color: var(--purple);
+    background-color: transparent;
     margin: 1em;
     padding: 0.5em;
 }
@@ -1859,13 +1859,13 @@ input#PatientName {
     width: 9em;
 }
 
-#AddItem > div > span, #AddText > div > span {
+#AddItem > div > div > span, #AddText > div > div > span {
     display: inline-block;
     width: 6em;
     vertical-align: top;
 }
 
-#AddItem > div, #AddText > div {
+#AddItem > div > div, #AddText > div > div{
     margin: 0.5em 0.25em;
 }
 
@@ -2100,7 +2100,7 @@ input#PatientName {
 /*#Options, #NumberOptions, #DateOptions, #FollowUpOptions, #ScaleOptions, #SignatureOptions, #TimeOptions {
     display: none;
 }*/
-#FormBuilder .options {
+#FormBuilder .itemOptionList {
     display:none;
 }
 

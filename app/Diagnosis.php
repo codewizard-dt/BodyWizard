@@ -22,6 +22,11 @@ class Diagnosis extends Model
                             "attribute" => 'name'
                         ),
                         array(
+                            "label" => 'Type',
+                            "className" => 'type',
+                            "attribute" => 'medicine_type'
+                        ),
+                        array(
                             "label" => 'Category',
                             "className" => 'category',
                             "attribute" => 'category'
@@ -33,7 +38,18 @@ class Diagnosis extends Model
                         )
                     ),
 	    	'hideOrder' => "category,affects",
-	    	'filtersColumn' => array(),
+	    	'filtersColumn' => [
+                [
+                    "label" => 'Medicine Type',
+                    "filterName" => 'type',
+                    "attribute" => 'medicine_type',
+                    "markOptions" => null,
+                    "filterOptions" => array(
+                        array("label" => 'Western',"value" => 'Western'),
+                        array("label" => 'Chinese',"value" => 'Chinese')
+                    )
+                ]
+            ],
 	    	'filtersOther' => array(),
             'destinations' => array(
                 'edit','settings','delete'

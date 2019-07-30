@@ -282,8 +282,10 @@ function constructColumnObj(model){
 		// console.log(obj);
 	}
 	else if (model == 'Message'){
+		var d = Date.now().toString(), l = d.length;
+		d = Number(d.slice(0, l - 3));
 		var s = {
-			'pending':Date.now(),'processed':null,'dropped':null,'delivered':null,'deferred':null,
+			'pending':[d],'processed':null,'dropped':null,'delivered':null,'deferred':null,
 			'bounce':null,'open':null,'click':null,'spamreport':null,'unsubscribe':null,'group_unsubscribe':null,'group_resubscribe':null
 		};
 		obj = {

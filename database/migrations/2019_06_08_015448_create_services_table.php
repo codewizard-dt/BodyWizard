@@ -25,6 +25,7 @@ class CreateServicesTable extends Migration
             $table->boolean('new_patients_ok')->default(false);
             $table->boolean('new_patients_only')->default(false);
             $table->unsignedInteger('duration');
+            $table->decimal('price',9,2);
             $table->json('full_json');
             $table->json('settings')->nullable()->default(null);
             $table->json('settings_json')->nullable()->default(null);            

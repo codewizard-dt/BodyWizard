@@ -48,7 +48,7 @@ elseif ($uid != null){
 	session(['uidList' => $uidList]);
 
 	// replace image id references with data strings
-	checkEmbeddedImgs($instance,$nospaces);
+	embeddedImgsToDataSrc($instance,$nospaces);
 	// get Display name of instance
 	$name = (isset($instance->nameAttr)) ? complexAttr($instance->nameAttr,$instance) : $instance->name;
 	// include submission data if available

@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class CreateComplaintsTable extends Migration
+class CreateComplaintablesTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,12 +13,10 @@ class CreateComplaintsTable extends Migration
      */
     public function up()
     {
-        Schema::create('complaints', function (Blueprint $table) {
+        Schema::create('complaintables', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->string('name');
-            $table->string('complaint_type');
-            $table->json('full_json');
-            $table->json('settings');
+            $table->unsignedInteger('complaint_id');
+            $table->morphs("complaintable");
             $table->timestamps();
         });
     }
@@ -30,6 +28,6 @@ class CreateComplaintsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('complaints');
+        Schema::dropIfExists('complaintables');
     }
 }

@@ -19,9 +19,9 @@ class Message extends Model
             'model' => "Message",
 	    	'columns' => array(
                         array(
-                            "label" => 'Recipients',
+                            "label" => 'Recipient',
                             "className" => 'name',
-                            "attribute" => 'recipients',
+                            "attribute" => 'recipient_id',
                             "fetchNamesFrom" => 'User'
                         ),
                         array(
@@ -78,8 +78,8 @@ class Message extends Model
         // [Model, relationship]
         $this->connectedModels = array(
             ['User','many','morphToMany'],
-            ['Template','one','belongsTo'],
-            ['Attachment','many','morphToMany']
+            ['Template','one','belongsTo']
+            // ['Attachment','many','morphToMany']
             // ['Form','many','morphToMany']
             // ['Service','many','morphToMany']
         );

@@ -79,6 +79,8 @@
 						}catch(\Exception $e){
 							$val = $val;
 						}
+					}elseif ($model == 'Message' && $attr == 'status'){
+						$val = decodeStatus($instance->$attr);
 					}
 					if (isset($column['fetchNamesFrom'])){
 						if (isCollection($val)){

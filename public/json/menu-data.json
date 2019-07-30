@@ -105,6 +105,7 @@
         {"name":"diagnoses-home",
         "dropdown":true,
           "options":[
+              {"text":"Chief Complaints","uri":"/Complaint/index","id":"complaints-index"},
               {"text":"Chinese Diagnosis","uri":"/Diagnosis/index?type=Chinese","id":"diagnoses-cm-index"},
               {"text":"Western Diagnosis","uri":"/Diagnosis/index?type=Western","id":"diagnoses-ws-index"}
           ]},

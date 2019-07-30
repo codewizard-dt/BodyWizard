@@ -712,10 +712,8 @@ $(document).ready(function(){
     }
     function autoSave(){
         var form = createFormObj();
-        // form['autosaved']="1";
         var jsonStr = JSON.stringify(form);
-        var mode = $("#formdata").data("mode");
-        //console.log($("#formdata").data());
+        // var mode = $("#formdata").data("mode");
         var formId = $("#formdata").data("formid") === undefined ? "none" : $("#formdata").data("formid"),
             uid = $("#formdata").data("formuid") === undefined ? "none" : $("#formdata").data("formuid");
         var dataObj = {
@@ -724,7 +722,7 @@ $(document).ready(function(){
             form_name: form["formName"],
             questions: JSON.stringify(form['sections']),
             full_json: jsonStr
-        }
+        };
         $.ajax({
             method:"POST",
             url:"/forms",

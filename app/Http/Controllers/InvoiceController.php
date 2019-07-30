@@ -2,30 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Diagnosis;
-use App\Form;
+use App\Invoice;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
-class DiagnosisController extends Controller
+class InvoiceController extends Controller
 {
-    public function __construct(){
-        $this->middleware('auth');
-    }
-
-    public function home(){
-        $usertype = Auth::user()->user_type;
-        return view("portal.$usertype.diagnoses.home");        
-    }
-
-    public function loadDxForm($type){
-        include_once app_path("/php/functions.php");
-        $id = ($type=='Western') ? '5' : "11";
-        $form = $CreateNew = Form::where('form_id', $id)->orderBy('version_id','desc')->first();
-        // return $form->form_uid;
-        return $form->formDisplay(false);
-    }
-
     /**
      * Display a listing of the resource.
      *
@@ -60,10 +41,10 @@ class DiagnosisController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  \App\Diagnosis  $diagnosis
+     * @param  \App\Invoice  $invoice
      * @return \Illuminate\Http\Response
      */
-    public function show(Diagnosis $diagnosis)
+    public function show(Invoice $invoice)
     {
         //
     }
@@ -71,10 +52,10 @@ class DiagnosisController extends Controller
     /**
      * Show the form for editing the specified resource.
      *
-     * @param  \App\Diagnosis  $diagnosis
+     * @param  \App\Invoice  $invoice
      * @return \Illuminate\Http\Response
      */
-    public function edit(Diagnosis $diagnosis)
+    public function edit(Invoice $invoice)
     {
         //
     }
@@ -83,10 +64,10 @@ class DiagnosisController extends Controller
      * Update the specified resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Diagnosis  $diagnosis
+     * @param  \App\Invoice  $invoice
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, Diagnosis $diagnosis)
+    public function update(Request $request, Invoice $invoice)
     {
         //
     }
@@ -94,10 +75,10 @@ class DiagnosisController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  \App\Diagnosis  $diagnosis
+     * @param  \App\Invoice  $invoice
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Diagnosis $diagnosis)
+    public function destroy(Invoice $invoice)
     {
         //
     }

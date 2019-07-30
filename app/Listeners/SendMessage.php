@@ -36,17 +36,7 @@ class SendMessage implements ShouldQueue
     {
         //access message by $event->message
         $message = $event->message;
-
-        $emailArr = [];
-        foreach ($message->recipients as $recipient){
-            // array_push($emailArr,$recipient->email);
-            Mail::to($recipient->email)->send(new StandardEmail($message));
-        }
-        // Log::info($this->gmail);
-        // try{
-        // }catch(\Exception $e){
-            // Log::info($e);
-        // }
+        Mail::to($message->recipient->email)->send(new StandardEmail($message));
     }
 
     public function failed(OutgoingMessage $event, $exception)

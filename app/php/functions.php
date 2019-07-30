@@ -1,5 +1,9 @@
 <?php
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
+use App\Image;
+
+
 
 // String related functions
   function plural($str){
@@ -145,6 +149,7 @@ use Illuminate\Support\Str;
     elseif ($model == 'Code'){$id = '4';}
     elseif ($model == 'Message'){$id = '12';}
     elseif ($model == 'Template'){$id = '15';}
+    elseif ($model == 'Complaint'){$id = '17';}
     elseif ($model == 'Diagnosis'){
       $id = (session('diagnosisType')=='Western') ? '5' : "11";
     }
@@ -156,17 +161,77 @@ use Illuminate\Support\Str;
       }
       return $method;
   }
-  function checkEmbeddedImgs($imgInstance,$model){
+  function extractEmbeddedImages($string,$instance,$attr){
+      $embeddedImgs = [];
+      $newImgs = preg_match_all('/src="data:([^;.]*);([^".]*)" data-filename="([^"]*)"/', $string, $newImgMatches, PREG_PATTERN_ORDER);
+      $oldImgs = preg_match_all('/src="data:([^;.]*);([^".]*)" data-uuid="([^"]*)" data-filename="([^"]*)"/', $string, $oldImgMatches, PREG_PATTERN_ORDER);
+      if ($newImgs!==false && $newImgs > 0){
+          for ($x = 0; $x < count($newImgMatches[1]); $x++){
+              $uuid = uuid();
+              $fullMatch = $newImgMatches[0][$x];
+              $mimeType = $newImgMatches[1][$x];
+              $dataStr = $newImgMatches[2][$x];
+              $fileName = $newImgMatches[3][$x];
+              $embedStr = 'src="%%EMBEDDED:'.$uuid.'%%"';
+              // array_push($embeddedImgs,[$uuid,$mimeType,$fileName,$dataStr]);
+              array_push($embeddedImgs,$uuid);
+              $string = str_replace($fullMatch,$embedStr,$string);
+
+              $image = new Image;
+              $image->id = $uuid;
+              $image->mime_type = $mimeType;
+              $image->file_name = $fileName;
+              $image->data_string = $dataStr;
+              $image->save();
+          }
+      }
+      if ($oldImgs!==false && $oldImgs > 0){
+          for ($x = 0; $x < count($oldImgMatches[1]); $x++){
+              $fullMatch = $oldImgMatches[0][$x];
+              $uuid = $oldImgMatches[3][$x];
+              $embedStr = 'src="%%EMBEDDED:'.$uuid.'%%"';
+              $string = str_replace($fullMatch,$embedStr,$string);
+          }
+      }
+      $instance->$attr = $string;
+      $returnVal = ($embeddedImgs == []) ? false : $embeddedImgs;
+      return $returnVal;
+  }
+
+  function embeddedImgsToDataSrc($instanceWithImgs,$model){
+    // UPDATES TO DISPLAY IMGS BUT DOESN'T SAVE IT
     $hasImages = ['Message','Template'];
     $attrsToCheck = [['message'],['markup']];
     $arrKey = array_search($model, $hasImages);
     // Log::info($arrKey);
     if ($arrKey){
-    // if (true){
-      // Log::info($attrsToCheck[1]);
         foreach ($attrsToCheck[$arrKey] as $attr){
-            $n = preg_match_all('/src="%%EMBEDDED:([^%]*)%%"/', $imgInstance->$attr, $imgs, PREG_PATTERN_ORDER);
+            $n = preg_match_all('/src="%%EMBEDDED:([^%]*)%%"/', $instanceWithImgs->$attr, $imgs, PREG_PATTERN_ORDER);
             $newAttrStr = false;
+            if ($n!==false && $n > 0){
+                for ($i = 0; $i < count($imgs[1]); $i++){
+                    // $uuid = uuid();
+                    $fullMatch = $imgs[0][$i];
+                    $uuid = $imgs[1][$i];
+                    $img = App\Image::find($uuid);
+                    $mimeType = $img->mime_type; 
+                    $dataStr = $img->data_string;
+                    $fileName = $img->file_name;
+                    $imgStr = 'src="data:'.$mimeType.';'.$dataStr.'" data-uuid="'.$uuid.'" data-filename="'.$fileName.'"';
+                    $newAttrStr = $newAttrStr ? $newAttrStr : $instanceWithImgs->$attr;
+                    $newAttrStr = str_replace($fullMatch,$imgStr,$newAttrStr);
+                }
+                $instanceWithImgs->$attr = $newAttrStr;
+                // Log::info($imgInstance->$attr);
+            }
+        }
+    }
+  }
+  function embeddedImgsToCIDSrc($messageStr){
+    // RETURNS A STRING
+            $n = preg_match_all('/"%%EMBEDDED:([^%]*)%%"/', $messageStr, $imgs, PREG_PATTERN_ORDER);
+            $newMsgStr = false;
+            $dataArr = [];
             if ($n!==false && $n > 0){
                 for ($i = 0; $i < count($imgs[1]); $i++){
                     $uuid = uuid();
@@ -176,16 +241,17 @@ use Illuminate\Support\Str;
                     $mimeType = $img->mime_type; 
                     $dataStr = $img->data_string;
                     $fileName = $img->file_name;
-                    $imgStr = 'src="data:'.$mimeType.';'.$dataStr.'" data-uuid="'.$uuid.'" data-filename="'.$fileName.'"';
-                    $newAttrStr = $newAttrStr ? $newAttrStr : $imgInstance->$attr;
-                    $newAttrStr = str_replace($fullMatch,$imgStr,$newAttrStr);
+                    // $imgStr = '"{{ $message->embedData('.$dataStr.','.$uuid.') }}"';
+                    $newMsgStr = $newMsgStr ? $newMsgStr : $messageStr;
+                    // $newMsgStr = str_replace($fullMatch,$imgStr,$newMsgStr);
+                    $newMsgStr = str_replace($fullMatch,"%%REPLACE%%",$newMsgStr);
+                    array_push($dataArr, [$dataStr,$uuid]);
                 }
-                $imgInstance->$attr = $newAttrStr;
-                // Log::info($embeddedImgs);
-                // Log::info($imgInstance->$attr);
+            }else{
+              $newMsgStr = $messageStr;
             }
-        }
-    }
+            $newMsgArr = explode("%%REPLACE%%",$newMsgStr);
+            return [$newMsgArr,$dataArr];
   }
 
   // FUCK YEAH
@@ -221,4 +287,38 @@ use Illuminate\Support\Str;
     return $attr;
   }
 
+// Email functions 
+    function asJSON($data){
+        $json = json_encode($data);
+        $json = preg_replace('/(["\]}])([,:])(["\[{])/', '$1$2 $3', $json);
+
+        return $json;
+    }
+    function asString($data){
+        $json = asJSON($data);
+        
+        return wordwrap($json, 76, "\n   ");
+    }
+    function decodeStatus($string){
+      $status = json_decode($string,true);
+      if ($status['open']){
+        $returnVal = ['Last opened at ',lastInArray($status['open'])];
+      }elseif ($status['delivered']){
+        $returnVal = ['Delivered at ',lastInArray($status['delivered'])];
+      }elseif ($status['processed']){
+        $returnVal = ['Processed at ',lastInArray($status['processed'])];
+      }elseif ($status['bounce']){
+        $returnVal = ['Undeliverable at ',lastInArray($status['bounce'])];
+      }elseif ($status['dropped']){
+        $returnVal = ['Dropped at ',lastInArray($status['dropped'])];
+      }elseif ($status['pending']){
+        $returnVal = ['Sent at ',lastInArray($status['pending'])];
+      }
+      $returnVal[1] = date("g:ia n/j/y",$returnVal[1]);
+      return implode("", $returnVal);
+    }
+    function lastInArray($array){
+      $count = count($array);
+      return $array[$count - 1];
+    }
 ?>

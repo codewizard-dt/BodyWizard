@@ -146,7 +146,7 @@ class ScriptController extends Controller
             $recipient_ids = json_decode($request->recipient_ids);
             if ($model == "Message"){
                 $connectedArr = $request->connectedModels;
-                Log::info($connectedArr);
+                // Log::info($connectedArr);
                 $request->message_id = uuid();
                 foreach ($recipient_ids as $id){
                     $newModel = new $class;
@@ -168,16 +168,6 @@ class ScriptController extends Controller
             }else{
                 return $result;
             }
-            
-            // if ($result === true){
-            //     if ($model == 'Message'){
-            //         event(new OutgoingMessage($newModel));
-            //     }
-
-            //     return "checkmark";
-            // }else{
-            //     return $result;
-            // }
         }
         public function UpdateModel($model, $uid, Request $request){
             include_once app_path("php/functions.php");
@@ -218,11 +208,10 @@ class ScriptController extends Controller
 
             // TAKES EACH COLUMN FROM THE REQUEST AND ASSIGNS VALUES TO THE OBJECT
             foreach($columns as $key => $value){
-                if (($model == 'Message' && $key == 'message')
-                    or ($model == 'Template' && $key == 'markup')){
+                if (($model == 'Message' && $key == 'message') || ($model == 'Template' && $key == 'markup')){
                     // RETURNS ARRAY OR FALSE IF NO IMGS ARE EMBEDDED OR IF IMGS ARE ALREADY SAVED
                     // ALSO SETS ATTR MATCHING $KEY
-                    $embeddedImgs = $this->extractEmbeddedImages($columns[$key],$instance,$key);
+                    $embeddedImgs = extractEmbeddedImages($columns[$key],$instance,$key);
                 }else{
                     $instance->$key = $value;
                 }
@@ -244,19 +233,20 @@ class ScriptController extends Controller
                     $model => $newId
                 ]);
                 
-                // SAVES EMBEDDED IMAGES AS \Image RESOURCES
+                // SAVES EMBEDDED IMAGES SYNC INSTANCE
                 if (isset($embeddedImgs) && $embeddedImgs != false){
-                    $imgIdArr = [];
-                    foreach ($embeddedImgs as $embeddedImg){
-                        $image = new Image;
-                        $image->id = $embeddedImg[0];
-                        $image->mime_type = $embeddedImg[1];
-                        $image->file_name = $embeddedImg[2];
-                        $image->data_string = $embeddedImg[3];
-                        $image->save();
-                        array_push($imgIdArr, $embeddedImg[0]);
-                    }
-                    $instance->images()->sync($imgIdArr);
+                    $instance->images()->sync($embeddedImgs);
+                    // $imgIdArr = [];
+                    // foreach ($embeddedImgs as $embeddedImg){
+                    //     // $image = new Image;
+                    //     // $image->id = $embeddedImg[0];
+                    //     // $image->mime_type = $embeddedImg[1];
+                    //     // $image->file_name = $embeddedImg[2];
+                    //     // $image->data_string = $embeddedImg[3];
+                    //     // $image->save();
+                    //     array_push($imgIdArr, $embeddedImg[0]);
+                    // }
+                    // $instance->images()->sync($imgIdArr);
                 }
 
             }
@@ -296,37 +286,37 @@ class ScriptController extends Controller
             }
         }
 
-        public function extractEmbeddedImages($string,$instance,$attr){
-            $embeddedImgs = [];
-            $newImgs = preg_match_all('/src="data:([^;.]*);([^".]*)" data-filename="([^"]*)"/', $string, $newImgMatches, PREG_PATTERN_ORDER);
-            $oldImgs = preg_match_all('/src="data:([^;.]*);([^".]*)" data-uuid="([^"]*)" data-filename="([^"]*)"/', $string, $oldImgMatches, PREG_PATTERN_ORDER);
-            if ($newImgs!==false && $newImgs > 0){
-                for ($x = 0; $x < count($newImgMatches[1]); $x++){
-                    $uuid = uuid();
-                    $fullMatch = $newImgMatches[0][$x];
-                    $mimeType = $newImgMatches[1][$x];
-                    $dataStr = $newImgMatches[2][$x];
-                    $fileName = $newImgMatches[3][$x];
-                    $embedStr = 'src="%%EMBEDDED:'.$uuid.'%%"';
-                    array_push($embeddedImgs,[$uuid,$mimeType,$fileName,$dataStr]);
-                    // Log::info($uuid.$mimeType.$fileName.$embedStr);
-                    $string = str_replace($fullMatch,$embedStr,$string);
-                }
-            }
-            if ($oldImgs!==false && $oldImgs > 0){
-                for ($x = 0; $x < count($oldImgMatches[1]); $x++){
-                    $fullMatch = $oldImgMatches[0][$x];
-                    $uuid = $oldImgMatches[3][$x];
-                    $embedStr = 'src="%%EMBEDDED:'.$uuid.'%%"';
-                    // array_push($embeddedImgs,[$uuid,$mimeType,$fileName,$dataStr]);
-                    // Log::info($uuid.$mimeType.$fileName.$embedStr);
-                    $string = str_replace($fullMatch,$embedStr,$string);
-                }
-            }
-            $instance->$attr = $string;
-            $returnVal = ($embeddedImgs == []) ? false : $embeddedImgs;
-            return $returnVal;
-        }
+        // public function extractEmbeddedImages($string,$instance,$attr){
+        //     $embeddedImgs = [];
+        //     $newImgs = preg_match_all('/src="data:([^;.]*);([^".]*)" data-filename="([^"]*)"/', $string, $newImgMatches, PREG_PATTERN_ORDER);
+        //     $oldImgs = preg_match_all('/src="data:([^;.]*);([^".]*)" data-uuid="([^"]*)" data-filename="([^"]*)"/', $string, $oldImgMatches, PREG_PATTERN_ORDER);
+        //     if ($newImgs!==false && $newImgs > 0){
+        //         for ($x = 0; $x < count($newImgMatches[1]); $x++){
+        //             $uuid = uuid();
+        //             $fullMatch = $newImgMatches[0][$x];
+        //             $mimeType = $newImgMatches[1][$x];
+        //             $dataStr = $newImgMatches[2][$x];
+        //             $fileName = $newImgMatches[3][$x];
+        //             $embedStr = 'src="%%EMBEDDED:'.$uuid.'%%"';
+        //             array_push($embeddedImgs,[$uuid,$mimeType,$fileName,$dataStr]);
+        //             // Log::info($uuid.$mimeType.$fileName.$embedStr);
+        //             $string = str_replace($fullMatch,$embedStr,$string);
+        //         }
+        //     }
+        //     if ($oldImgs!==false && $oldImgs > 0){
+        //         for ($x = 0; $x < count($oldImgMatches[1]); $x++){
+        //             $fullMatch = $oldImgMatches[0][$x];
+        //             $uuid = $oldImgMatches[3][$x];
+        //             $embedStr = 'src="%%EMBEDDED:'.$uuid.'%%"';
+        //             // array_push($embeddedImgs,[$uuid,$mimeType,$fileName,$dataStr]);
+        //             // Log::info($uuid.$mimeType.$fileName.$embedStr);
+        //             $string = str_replace($fullMatch,$embedStr,$string);
+        //         }
+        //     }
+        //     $instance->$attr = $string;
+        //     $returnVal = ($embeddedImgs == []) ? false : $embeddedImgs;
+        //     return $returnVal;
+        // }
 
     // EDIT / SAVE SETTINGS
         public function EditSettings($model, $uid){
@@ -375,7 +365,7 @@ class ScriptController extends Controller
         include_once app_path("php/functions.php");
         $class = "App\\$model";
         $existingInstance = $class::find($uid);
-        checkEmbeddedImgs($existingInstance,$model);
+        embeddedImgsToDataSrc($existingInstance,$model);
         return $existingInstance;
     }
 
@@ -384,10 +374,13 @@ class ScriptController extends Controller
         foreach($connectedModels as $connectedModel){
             $rel = $connectedModel['relationship'];
             $connectedModelName = $connectedModel['model'];
+            $connectedTo = $connectedModel['connectedto'];
             $class = "App\\$connectedModelName";
             $uids = isset($connectedModel['uidArr']) ? $connectedModel['uidArr'] : null;
+            if ($connectedModelName == 'User' && $connectedTo == 'Message'){$skip = true;}
+            else {$skip = false;}
 
-            if ($uids){
+            if ($uids && !$skip){
                 try{
                     if ($rel == 'belongsTo'){
                         $uid = $uids[0];

@@ -458,7 +458,23 @@ $(document).ready(function () {
     $(".clearTableFilters").off("click",clearTableFilters);
     $(".clearTableFilters").on("click",clearTableFilters);
 
+    var loadDxFormBtns = $("#load_dx_form").find("li").filter(function(){
+        return !$(this).data('initialized');
+    });
+    loadDxFormBtns.on("click",loadDxForm);
+    loadDxFormBtns.data("initialized",true);
+
 })
+
+function loadDxForm(){
+    var target = $("#dxFormLoadTarget"), type = $(this).data("value"), uri = "/loadDxForm/"+type;
+    blurElement($("#createDiagnosis"),"#loading");
+    console.log(uri);
+    target.load(uri,function(){
+        unblurElement($("#createDiagnosis"));
+    });
+    attachConnectedModelInputs($("#createDiagnosis"));
+}
 
 function radio() {
     if ($(this).hasClass("active")===false) {

@@ -2,6 +2,7 @@
 
 namespace App;
 
+use App\Image;
 use Illuminate\Database\Eloquent\Model;
 
 class Form extends Model
@@ -92,6 +93,10 @@ class Form extends Model
         return $this->morphedByMany('App\Service', 'formable', null, 'form_id');
     }
 
+    public function images(){
+        return $this->morphToMany('App\Image', 'imageable');
+    }
+
     public function optionsNav($uid){
         $formJSON = json_decode($this->full_json,true);
         $settingsJSON = json_decode($this->settings,true);
@@ -104,7 +109,8 @@ class Form extends Model
         $numQs = $numbers['items'];
         $numFUs = $numbers['followups'];
 
-        $questions = json_decode($this->questions,true);
+        // $questions = json_decode($this->questions,true);
+        $questions = $formJSON['sections'];
 
         $secStr = ($numSecs == 0 or $numSecs>1) ? $numSecs." sections" : $numSecs." section";
         $QStr = ($numQs == 0 or $numQs>1) ? $numQs." questions total" : $numQs." question total";
@@ -282,9 +288,28 @@ class Form extends Model
         }
         public function narrative($options){
             $id = isset($options['name'])?$options['name']:"";
-            $html = $options['markupStr'];
+            $html = $this->checkForImgs($options['markupStr']);
             
             echo "<div id='$id' class='narrative'>$html</div>";
+        }
+        public function checkForImgs($markup){
+            $n = preg_match_all('/src="%%EMBEDDED:([^%]*)%%"/', $markup, $imgs, PREG_PATTERN_ORDER);
+            $newMarkup = false;
+            if ($n!==false && $n > 0){
+                for ($i = 0; $i < count($imgs[1]); $i++){
+                    $fullMatch = $imgs[0][$i];
+                    $uuid = $imgs[1][$i];
+                    $img = Image::find($uuid);
+                    $mimeType = $img->mime_type; 
+                    $dataStr = $img->data_string;
+                    $fileName = $img->file_name;
+                    $imgStr = 'src="data:'.$mimeType.';'.$dataStr.'" data-uuid="'.$uuid.'" data-filename="'.$fileName.'"';
+                    $newMarkup = $newMarkup ? $newMarkup : $markup;
+                    $newMarkup = str_replace($fullMatch,$imgStr,$newMarkup);
+                }
+                $markup = $newMarkup;
+            }
+            return $markup;
         }
         
         public function answerDisp($type,$options){
@@ -325,7 +350,8 @@ class Form extends Model
 
         public function formDisplay($modal){
             $form = json_decode($this->full_json,true);
-            $sections = json_decode($this->questions,true);
+            // $sections = json_decode($this->questions,true);
+            $sections = $form['sections'];            
             $uid = $this->form_uid;
             $formID = $this->form_id;
             $formName = $this->form_name;

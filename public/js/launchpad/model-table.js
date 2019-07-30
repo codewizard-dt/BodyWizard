@@ -87,6 +87,8 @@ $(document).ready(function(){
                     var question = $(this).children(".question").text().toLowerCase().replace(" ","");
                     if (model == 'User'){
                         return chkStrForArrayElement(question,['user','recipient']);
+                    }else if (model == 'Diagnosis'){
+                        return chkStrForArrayElement(question,['diagnosis','diagnoses']);
                     }else{
                         return chkStrForArrayElement(question,[model.toLowerCase()]);
                     }
@@ -246,6 +248,8 @@ function attachConnectedModelInputs(form){
             var question = $(this).children(".question").text().toLowerCase().replace(" ","");
             if (model == 'User'){
                 return chkStrForArrayElement(question,['user','recipient']);
+            }else if (model == 'Diagnosis'){
+                return chkStrForArrayElement(question,['diagnosis','diagnoses']);
             }else{
                 return chkStrForArrayElement(question,[model.toLowerCase()]);
             }
@@ -270,9 +274,9 @@ function activateInput(input,modalId,uidArr){
     }).each(function(){
         filterArr.push($(this));
     })
-    console.log(input);
-    console.log(modalId);
-    console.log(uidArr);
+    // console.log(input);
+    // console.log(modalId);
+    // console.log(uidArr);
 
     input.attr('readonly',true);
     input.data('modal',modalId);
@@ -284,7 +288,7 @@ function openConnectedModelModal(){
     var p = modalOrBody($(this)), modalId = $(this).data('modal'), table = $(modalId).find("table"), currentVals = $(this).val(),
         cModelIds = $(modalId).data('uidArr'), defaultFilters = $(this).data('defaultFilters');
     blurElement(p,modalId);
-    // console.log($(this).data());
+    console.log($(this).data());
 
     $(this).addClass('target');
     table.find("tr.active").removeClass('active');

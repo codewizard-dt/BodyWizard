@@ -38,6 +38,8 @@ Route::get('/portal/logout', 'PagesController@logout');
 Route::get('/home/patients', 'PatientController@home');
 Route::get("/booknow", 'PagesController@booknow');
 
+Route::get("/loadDxForm/{type}", 'DiagnosisController@loadDxForm');
+
 // ROUTES USING DYNAMIC {model} URI
 	Route::get('/optionsNav/{model}/{uid}', 'ScriptController@OptionsNav');
 	Route::get('/display/table/{model}', 'ScriptController@ResourceTable');

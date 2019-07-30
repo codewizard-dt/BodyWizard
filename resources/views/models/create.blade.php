@@ -17,10 +17,20 @@
 	$ctrl = new $class;
 	$connectedModels = isset($ctrl->connectedModels) ? $ctrl->connectedModels : [];
 	$modal = isset($modal) ? $modal : false;
+	if ($modal && $model == 'Diagnosis' && session('diagnosisType') == null){
+		$options = ['Western','Chinese',"ID*load_dx_form"];
+	}
 ?>
 
 @if ($CreateNew)
-	@if ($modal)
+	@if ($modal && $model == 'Diagnosis' && session('diagnosisType') == null)
+	<div id='create{{ $model }}' class='central large createNew modalForm' data-model='{{ $model }}'>
+		<h2 class='purple paddedSmall'>Which Type of Diagnosis?<br>
+		{{ $CreateNew->radio($options) }}
+		</h2>
+		<div id='dxFormLoadTarget'></div>
+	</div>
+	@elseif ($modal)
 	<div id='create{{ $model }}' class='central large createNew modalForm' data-model='{{ $model }}'>
 		<h1 class='purple paddedSmall'>{{ $CreateNew->form_name }}</h1>
 		{{ $CreateNew->formDisplay(true) }}

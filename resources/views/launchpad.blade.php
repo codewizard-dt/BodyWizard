@@ -27,7 +27,3 @@
 		</div>
 	</div>
 @endsection
-
-@section('title', 'Portal Launchpad')
-@section('description', "Bringing Scientific Rigor to the Practice of Chinese Medicine")
-@section('path', "https://bodywizardmedicine.com")
