@@ -114,6 +114,8 @@ class FormController extends Controller
                     $markup = $item['options']['markupStr'];
                     Log::info($markup);
                     $newImgs = preg_match_all('/src="data:([^;.]*);([^".]*)" data-filename="([^"]*)"/', $markup, $newImgMatches, PREG_PATTERN_ORDER);
+                    $oldImgs = preg_match_all('/src="data:([^;.]*);([^".]*)" data-uuid="([^"]*)" data-filename="([^"]*)"/', $markup, $oldImgMatches, PREG_PATTERN_ORDER);
+
                     if ($newImgs!==false && $newImgs > 0){
                         for ($x = 0; $x < count($newImgMatches[1]); $x++){
                             $uuid = uuid();
@@ -134,12 +136,25 @@ class FormController extends Controller
                             $image->save();
                           }
                     }
+                    if ($oldImgs!==false && $oldImgs > 0){
+                        for ($x = 0; $x < count($oldImgMatches[1]); $x++){
+                            $fullMatch = $oldImgMatches[0][$x];
+                            $uuid = $oldImgMatches[3][$x];
+                            $embedStr = 'src="%%EMBEDDED:'.$uuid.'%%"';
+                            $markup = str_replace($fullMatch,$embedStr,$markup);
+                            array_push($embeddedImgs, $uuid);
+                        }
+                    }
                     $json['sections'][$s]['items'][$i]['options']['markupStr'] = $markup;
                 }
             }
         }
         $form->images()->sync($embeddedImgs);
         return json_encode($json);
+    }
+    public function checkNarrativeImgs(Request $request){
+        $ctrl = new Form;
+        return $ctrl->narrative($request);
     }
 
     /**

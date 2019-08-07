@@ -184,53 +184,6 @@ textarea[data-followup]{
     background-color: rgb(220,220,220);
 }
 
-.CCItem.new {
-    display: none;
-}
-
-#CCAdd input{
-    font-size: 1.2em;
-    margin-bottom: 10px;
-}
-
-#CCAdd h3{text-align: left;}
-
-
-/*.CCItem .scale {
-    display: none;
-    margin:0 2em;
-    font-size: 0.9em;
-    border-radius: 5px;
-    background-color: rgba(250,250,250,0.3);
-    padding:10px;
-}*/
-
-.CCItem .ScaleLeft, .CCItem .ScaleRight{
-    background-color: rgb(240,240,240);
-    border-radius: 3px;
-    padding:5px 10px;
-    text-align: center;
-}
-
-.CCItem.Fresh .scale {
-    display: inline-block;
-    opacity: 1;
-}
-
-.showScale, .RemoveCC {
-    cursor: pointer;
-}
-
-.CCAdd {
-    margin:0.25em 2em 0.25em 2em;
-    /*width:45em;*/
-    position: relative;
-}
-
-.CCAdd input, .CCAdd select {
-    font-size: 1em;
-    vertical-align: middle;
-}
 
 .showScale {
     display: inline-block;
@@ -980,7 +933,7 @@ li[data-response='no response']{
     padding-right: 0.2em;
     width: calc(33% - 0.2em);
 }
-.item input{
+.item input:not(.slider, .datePick, .timePick){
     width: calc(100% - 0.4em);
     max-width: 300px;
 }
@@ -1008,15 +961,18 @@ li[data-response='no response']{
     width: calc(100% - 0.5em);
     overflow: hidden;
 }
-
+.narrative{
+    min-height: 5em;
+    position: relative;
+}
+#Templates{
+    display: none;
+}
 .item.inline .text, .item.inline .textbox{
     width:100%;
 }
 .item.inline .answer{
     width:auto;
-}
-.optionsList .answer{
-    width: auto;
 }
 
 .answer.text, .answer.date, .answer.textbox, .answer.dropdown, .answer.time{
@@ -1111,15 +1067,15 @@ li[data-response='no response']{
 .slider {
     -webkit-appearance: none;
     width: 75%;
-    height: 10px;
+    height: 0.7em;
     /*z-index: 1;*/
     position: relative;
-    background: rgb(220,220,220);
+    background: var(--yellow10);
     outline: none;
     margin-top:5px;
     border-radius: 1.5em;   
     border-style: solid;
-    border-color: rgb(170,170,170);
+    border-color: var(--yellow50);
     border-width: 1px;
     box-sizing: border-box;
 }
@@ -1127,32 +1083,32 @@ li[data-response='no response']{
 .slider::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 20px;
-    height: 20px;
+    width: 1.2em;
+    height: 1.2em;
     border-radius: 50%;
-    background: rgb(170,170,170);
+    background: var(--yellow);
     cursor: pointer;
 }
 
 .slider::-moz-range-thumb {
-    width: 20px;
-    height: 20px;
+    width: 1.2em;
+    height: 1.2em;
     border-radius: 50%;
-    background: rgb(170,170,170);
+    background: var(--yellow);
     cursor: pointer;
 }
 
 .slider.disabled {
-    height: 2px;
+    height: 0.15em;
 }
 .slider.disabled::-webkit-slider-thumb {
-    height: 4px;
-    width: 4px;
+    height: 0.3em;
+    width: 0.3em;
     cursor: not-allowed;
 }
 .slider.disabled::-moz-range-thumb {
-    height: 4px;
-    width: 4px;
+    height: 0.3em;
+    width: 0.3em;
     cursor: not-allowed;
 }
 
@@ -1171,20 +1127,18 @@ li[data-response='no response']{
 .SliderValue{
     position: absolute;
     display: none;
-    /*width:1.5em;
-    height: 1.7em;
-    z-index: 0;*/
     padding:.4em .5em;
     left:50%;
     top:-50%;
-    transform: translate(-50%,-1.5em);
+    transform: translate(-50%,-0.7em);
     border-radius: 5px;
     border-style: solid;
     border-width: 1px;
-    border-color: rgb(170,170,170);
+    border-color: var(--purple30);
     font-weight: 700;
-    background-color: rgb(210,210,210);
+    background-color: var(--purple10);
     box-shadow: 0 0 3px 2px rgb(240,240,240);
+    color: var(--purple);
 }
 
 .answer.scale > .left, .answer.scale > .right{
@@ -1311,36 +1265,6 @@ li[data-response='no response']{
 
 .latin{font-weight: 400;font-style: italic;}
 
-#CurrentFormula span {
-    margin:0.25em 0.5em;
-}
-
-#CurrentFormula h3 {text-align: left;}
-
-.HerbData input {font-size: 0.9em;margin-left: 1.3em;}
-.HerbData .xsmall {font-size: 0.75em;}
-
-
-.ActiveSymptoms, .ActiveActions {
-    position:relative;
-}
-
-.ActiveSymptoms li, .ActiveActions li{
-    font-size: 0.8em;
-}
-
-.ActiveHerb {
-    margin:1em 2em;
-    position: relative;
-    border-style: solid;
-    padding: 0.25em 1em;
-    border-width: 1px;
-    border-radius: 3px;
-    border-color: rgba(200,200,200,0);
-}
-.ActiveHerb h4 {margin-left:-3.2em;}
-.ActiveHerb ul {margin-left:1em;}
-
 .hideAttr{
     cursor: pointer;
     position:absolute;
@@ -1350,13 +1274,6 @@ li[data-response='no response']{
     top:0.25em;
 }
 
-
-.removeHerb{
-    cursor: pointer;
-    font-size: 0.8;
-    position: relative;
-    top:0.2em;
-}
 
 #Filters span{
     font-size: 0.8em;
@@ -1574,13 +1491,22 @@ input#PatientName {
 }
 
 .number .label{
-    margin-left: 0.1em;
+    margin-left: 5px;
 }
 
 .number div, .number input, .number span, .secName div, .secName span{
     vertical-align: middle;
     text-align: right;
     touch-action: manipulate;
+}
+.text input{
+    width:20em;
+    max-width: 100%;
+}
+#TextOptions .answer, #TextBoxOptions .answer{
+    display: inline-block;
+    width:auto;
+    margin:0;
 }
 
 .secName, .itemName, .itemFUName {
@@ -1635,7 +1561,7 @@ input#PatientName {
     border-width: 1px;
     border-style: solid;
     border-color: rgb(150,150,150);
-    margin-left: 1em;
+    margin-left: 0.25em;
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
@@ -1664,7 +1590,7 @@ input#PatientName {
 .signHere {
     position: relative;
     background-color: white;
-    padding:0.5em 1em;
+    padding:0;
     border-radius: 5px;
     margin:0.5em;
 }
@@ -1861,7 +1787,7 @@ input#PatientName {
 
 #AddItem > div > div > span, #AddText > div > div > span {
     display: inline-block;
-    width: 6em;
+    width: 8em;
     vertical-align: top;
 }
 
@@ -2172,6 +2098,7 @@ input#PatientName {
 #DateList > div > span, #TimeList > div > span {
     font-weight: 700;
 }
+#TimeList .answer{width:auto;}
 
 #condition span, #FollowUpList select, #FollowUpList .answer, #ScaleList span, #ScaleList .answer{
     vertical-align: middle;
@@ -2184,11 +2111,14 @@ input#PatientName {
 
 .signature {
     position: relative;
-    border-color: rgb(230,230,230);
-    border-width: 1px;
+    border-color: rgb(210,210,210,0.8);
+    border-width: 2px;
     border-radius: 5px;
     border-style: solid;
     overflow: visible;
+}
+.signature .jSignature{
+    border-radius: 5px;
 }
 
 #NarrativeList {
@@ -2199,15 +2129,79 @@ input#PatientName {
     margin: 0;
     overflow: visible;
 }
- 
-#NumberList > span{
+
+#NumberList .answer{
+    position: relative;
+    top:50%;
+    transform: translateY(-50%);
+    width:auto;
+    margin:0;
+}
+#DateList .answer{
+    width:auto;
+}
+#DateList > div > div > div > span {
+    display: inline-block;
+    position: relative;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 7em;
+    text-align: right;
+    font-size: 0.9em;
+}
+#DateList > div > div > div > label{
+    display: inline-block;
+    position: relative;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.9em;    
+    margin-left: 10px;
+}
+#DateList > div > div > div > div > label{
+    font-size: 0.9em;
+    margin-left: 10px;
+}
+#DateList > div > div > div > div{
+    display: inline-block;
+    position: relative;
+    top: 50%;
+    transform: translateY(-50%);
+    margin: 0;
+}
+#DateList .blockable > div > span{
+    position: relative;
+    top: 50%;
+    transform: translateY(-50%);
+    display: inline-block;
+}
+#DateList .dropdown{
+    position: relative;
+    top: 50%;
+    transform: translateY(-70%);
+    display: inline-block;
+}
+#NumberList > div, #DateList > div > div > div:not(.blockable), #DateList .blockable > div {
+    position: relative;
+    height:3.5em;
+}
+#NumberList > div > span{
+    display: inline-block;
+    width: 7em;
+    font-size: 0.9em;
+    text-align: right;
+    top: 50%;
+    position: relative;
+    transform: translateY(-50%);
+    margin-right: 5px;
+}
+/*#NumberList > span{
     display: inline-block;
     width: 6em;
     font-size: 0.9em;
     vertical-align: middle;
     text-align: right;
 }
-
+*/
 #DateList > span{
     display: inline-block;
     vertical-align: top;

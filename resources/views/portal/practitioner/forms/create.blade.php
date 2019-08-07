@@ -9,6 +9,8 @@ if (isset($form)){
     $data = str_replace("'","\u0027",$form->full_json);
 }
 
+$ctrl = new Form; 
+
 ?>
 
 <div id='FormBuilder'>
@@ -47,12 +49,10 @@ if (isset($form)){
             </div>
 
         </div> 
-
-
     </div>
     
     
-    <div id="AddItem" class='prompt'>
+    <div id="AddItem">
         <div>
             <div>
                 <span>Question:</span>
@@ -72,101 +72,6 @@ if (isset($form)){
                     <option value='time'>time</option>
                     <option value='signature'>signature</option>
                 </select>
-                <div class="toggle" data-target='#examples'>(<span>show</span> preview)</div>
-            </div>
-            <div id="examples" class='section'>
-                <?php 
-                
-                $example = new Form();
-
-                $ID = "textPreview";
-                unset($options);
-                $options = [];
-                $options['name'] = $ID;
-                echo "<div class='example'><div class='exampleType'><span>Text</span> type question</div>";
-                echo '<div class="item"><div class="question">What is your question?</div><br>';
-                $example->text($options);
-                echo "</div>";
-                echo '</div>'; 
-
-                $options['name'] = "textboxPreview";
-                echo "<div class='example'><div class='exampleType'><span>Text box</span> type question</div>";
-                echo '<div class="item"><div class="question">What is your question?</div><br>';
-                $example->textbox($options);
-                echo "</div>";
-                echo '</div>'; 
-
-                $ID = "datePreview";
-                echo "<div class='example'><div class='exampleType'><span>Date</span> type question</div>";
-                echo '<div class="item"><div class="question">What is your question?</div><br>';
-                $options = array("yearRange"=>"2017:2019","minDate"=>"null","maxDate"=>"null","name"=>"datePreview");
-                $example->datePick($options);
-                echo "</div>";
-                echo "<div class='toggle refresh'>(update preview with the settings below)</div>";
-                echo '</div>'; 
-
-                $ID = "timePreview";
-                echo "<div class='example'><div class='exampleType'><span>Time</span> type question</div>";
-                echo '<div class="item"><div class="question">What is your question?</div><br>';
-                $options = array('name'=>"timePreview");
-                $example->timePick($options);
-                echo "</div>";
-                echo "<div class='toggle refresh'>(update preview with the settings below)</div>";
-                echo '</div>'; 
-
-                $ID = "numberPreview";
-                echo "<div class='example'><div class='exampleType'><span>Number</span> type question</div>";
-                echo '<div class="item"><div class="question">What is your question?</div><br>';
-                $options = array("min"=>"0", "max"=>"5", "initial"=>"3", "step"=>"0.1", "units"=>"units","name"=>"numberPreview");
-                $example->number($options);
-                echo "</div>";
-                echo "<div class='toggle refresh'>(update preview with the settings below)</div>";
-                echo '</div>'; 
-
-                
-                $ID = "radioPreview";
-                echo "<div class='example'><div class='exampleType'><span>Radio</span> type question (1 response only)</div>";
-                echo '<div class="item"><div class="question">What is your question?</div><br>';
-                $options = array("option 1", "option 2", "option 3", "etc");
-                $example->radio($options);
-                echo "</div>";
-                echo "<div class='toggle refresh'>(update preview with the options below)</div>";
-                echo '</div>'; 
-
-                $ID = "checkboxesPreview";
-                echo "<div class='example'><div class='exampleType'><span>Checkboxes</span> type question (1 or more response)</div>";
-                echo '<div class="item"><div class="question">What is your question?</div><br>';
-                $example->checkboxes($options);
-                echo "</div>";
-                echo "<div class='toggle refresh'>(update preview with the options below)</div>";
-                echo '</div>'; 
-
-                $ID = "dropdownPreview";
-                echo "<div class='example'><div class='exampleType'><span>Dropdown</span> type question</div>";
-                echo '<div class="item"><div class="question">What is your question?</div><br>';
-                $example->dropdown($options);
-                echo "</div>";
-                echo "<div class='toggle refresh'>(update preview with the options below)</div>";
-                echo '</div>'; 
-
-                echo "<div class='example'><div class='exampleType'><span>Scale</span> type question</div>";
-                echo '<div class="item"><div class="question">What is your question?</div><br>';
-                $options = array("min"=>"0", "max"=>"100", "initial"=>"50", "minLabel"=>"label", "maxLabel"=>"label", "displayValue"=>"yes", "displayLabels"=>"yes","name"=>"scalePreview");
-                $example->scale($options);
-                echo "</div>";
-                echo "<div class='toggle refresh'>(update preview with the settings below)</div>";
-                echo '</div>'; 
-
-                echo "<div class='example'><div class='exampleType'><span>Signature</span> type question</div>";
-                echo '<div class="item"><div class="question">What is your question?</div><br>';
-                $options = array("typedName"=>"yes");
-                $example->signature($options);
-                echo "</div>";
-                echo "<div class='toggle refresh'>(update preview with the settings below)</div>";
-                echo '</div>'; 
-                
-                ?>
-                <div class='button hide xsmall'>hide preview</div>
             </div>
 
             <div id='Options' class='itemOptionList'>
@@ -177,37 +82,31 @@ if (isset($form)){
                     <div class='button xsmall add'>add option</div>
                 </div>
             </div>
+            <div id='TextOptions' class='itemOptionList'>
+                <?php $option = new Form(); 
+                $optionsText = ['name'=>'textPlaceholder','placeholder'=>'(optional) disappears when you start typing'];
+                $optionsTextBox = ['name'=>'textAreaPlaceholder','placeholder'=>'(optional) disappears when you start typing'];
+                ?>
+                <span>Placeholder text:</span>{{ $option->answerDisp('text',$optionsText) }}
+            </div>
+            <div id='TextBoxOptions' class='itemOptionList'>
+                <span>Placeholder text:</span>{{ $option->answerDisp('text box',$optionsTextBox) }}
+            </div>
             <div id='NumberOptions' class='itemOptionList'>
                 <span>Options:</span>
                 <div id='NumberList'  class='optionsList'>
                     <?php
-                    $option = new Form();
-                    echo "<span>Minimum: </span>";
-                    unset($options);
-                    $options['min'] = "-9999";
-                    $options['max'] = "9999";
-                    $options['initial'] = "1";
-                    $options['step'] = "1";
-                    $options['units'] = "";
-                    $options['name'] = 'min';
-                    //$option->number($options);
-                    // var_dump($options); 
-                    $option->answerDisp("number",$options);
-                    echo "<br>";
-                    echo "<span>Maximum: </span>";
-                    $options = array("min"=>"-9999", "max"=>"9999", "initial"=>"0", "step"=>"1", "units"=>"","name"=>"max");
-                    $option->number($options);
-                    echo "<br>";
-                    echo "<span>Initial: </span>";
-                    $options = array("min"=>"-9999", "max"=>"9999", "initial"=>"0", "step"=>"1", "units"=>"","name"=>"initial");
-                    $option->number($options);
-                    echo "<br>";
-                    echo "<span>Step size: </span>";
-                    $options = array("min"=>"-100", "max"=>"100", "initial"=>"1", "step"=>"0.1", "units"=>"","name"=>"step");
-                    $option->number($options);
-                    echo "<br>";
+                    $optionsMin = ["min"=>"-9999", "max"=>"9999", "initial"=>"0", "step"=>"1", "units"=>"","name"=>"min"];
+                    $optionsMax = ["min"=>"-9999", "max"=>"9999", "initial"=>"0", "step"=>"1", "units"=>"","name"=>"max"];
+                    $optionsInitial = ["min"=>"-9999", "max"=>"9999", "initial"=>"0", "step"=>"1", "units"=>"","name"=>"initial"];
+                    $optionsStep = ["min"=>"-9999", "max"=>"9999", "initial"=>"0", "step"=>"0.1", "units"=>"","name"=>"step"];
+                    $optionsUnits = ['name'=>'units','placeholder'=>'eg days, weeks, times/day, meals, etc'];
                     ?>
-                    <span>Units: </span><input name='units' type="text"><br>
+                    <div><span>Minimum: </span> {{ $option->answerDisp('number',$optionsMin) }}</div>
+                    <div><span>Maximum: </span> {{ $option->answerDisp('number',$optionsMax) }}</div>
+                    <div><span>Initial: </span> {{ $option->answerDisp('number',$optionsInitial) }}</div>
+                    <div><span>Increment size: </span> {{ $option->answerDisp('number',$optionsStep) }}</div>
+                    <div><span>Units: </span> {{ $option->answerDisp('text',$optionsUnits) }}</div>
                 </div>
             </div>
             <div id='DateOptions' class='itemOptionList'>
@@ -219,141 +118,82 @@ if (isset($form)){
                     $m = $d + 1;
                     $D = $d +10;
                     $v = $d -10;
-                    //$x = "1920, $D, $v, 1, ";
-                    echo "<div data-settings='yearRange'><span>Displayed Date Range</span><br>";
                     unset($options);
-                    $options['min'] = "1920";
-                    $options['max'] = $D;
-                    $options['initial'] = $v;
-                    $options['step'] = "1";
-                    $options['units'] = "";
-                    $options['name'] = 'begin';
-                    $example->answerDisp("number",$options);
-                    $ID = "begin";
-                    //$example->number($x,$ID);
-                    echo "first year displayed<br>";
-                    $options['initial'] = $d;
-                    $options['name'] = 'end';
-                    $example->answerDisp("number",$options);
-                    echo "last year displayed</div>";
-
-                    $x = "1, 100, 1, 1, ";
-                    $ID = "minNum";
-                    $t = "days, weeks, months, years";
-                    echo "<br><div data-settings='minMax'><span>Selectable Date Range</span><br><label><input id='NoRestriction' type='checkbox'>no restrictions</label><br><div class='blockable'>";
-                    unset($options);
-                    $options['min'] = "1";
-                    $options['max'] = "100";
-                    $options['initial'] = "1";
-                    $options['step'] = "1";
-                    $options['units'] = "";
-                    $options['name'] = 'minNum';
-                    $example->answerDisp("number",$options);
-                    $ID = "minType";
-                    unset($options);
-                    $options = array("days", "weeks", "months", "years","ID*minType");
-                    $example->answerDisp("dropdown",$options);
-                    echo " before current date<br>";
-                    unset($options);
-                    $options['min'] = "1";
-                    $options['max'] = "100";
-                    $options['initial'] = "1";
-                    $options['step'] = "1";
-                    $options['units'] = "";
-                    $options['name'] = 'maxNum';
-                    $ID = "maxNum";
-                    $example->answerDisp("number",$options);
-                    unset($options);
-                    $options = array("days", "weeks", "months", "years","ID*maxType");
-                    $example->answerDisp("dropdown",$options);
-                    echo " after current date</div></div>";
-                    
-                    echo "<br><div id='DateTimeOptions'>
-                    <span>Include time of day?</span><br>";
-                    $options = ["yes","no","ID*IncludeTime"];
-                    $example->answerDisp("radio",$options);
-                    unset($options);
-                    echo "</div>";
-                    
+                    $optionsBegin = ['min'=>'1920','max'=>$D,'initial'=>$v,'step'=>'1','units'=>'','name'=>'begin'];
+                    $optionsEnd = ['min'=>'1920','max'=>$D,'initial'=>$d,'step'=>'1','units'=>'','name'=>'end'];
+                    $optionsMinNum = ['min'=>'1','max'=>'100','initial'=>'1','step'=>'1','units'=>'','name'=>'minNum'];
+                    $optionsMinType = ['days','weeks','months','years','ID*minType'];
+                    $optionsMaxNum = ['min'=>'1','max'=>'100','initial'=>'1','step'=>'1','units'=>'','name'=>'maxNum'];
+                    $optionsMaxType = ['days','weeks','months','years','ID*maxType'];
                     ?>
+                    <div>
+                        <div data-settings='yearRange'>
+                            <h5>Which Years should be Available?<br><span>(always opens on current month)<span></h5>
+                            <div><span>beginning with</span> {{ $option->answerDisp('number',$optionsBegin) }} 
+                                <label><input type='checkbox' id='currentYearBegin'>always use current year</label>
+                            </div>
+                            <div><span>ending with</span> {{ $option->answerDisp('number',$optionsEnd) }} 
+                                <div>
+                                    <label><input type='checkbox' id='currentYearEnd'>always use current year</label><br>
+                                    <label><input type='checkbox' id='nextYearEnd'>always use next year</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div data-settings='minMax'>
+                            <h5>Which Dates should be Available?<br><span>(ex: 1 week before/after current date)<span></h5>
+                            <label><input id='NoRestriction' type='checkbox'>no restrictions</label><br>
+                            <div class='blockable'>
+                                <div style='transform:unset;'>
+                                    {{ $option->answerDisp("number",$optionsMinNum) }}
+                                    {{ $option->answerDisp("dropdown",$optionsMinType) }}
+                                    <span>before current date</span>
+                                </div>
+                                <div style='transform:unset;'>
+                                    {{ $option->answerDisp("number",$optionsMaxNum) }}
+                                    {{ $option->answerDisp("dropdown",$optionsMaxType) }}
+                                    <span>after current date</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div id='TimeOptions' class='itemOptionList'>
                 <span>Options:</span>
                 <div id="TimeList" class='optionsList'>
                 <?php
-                    echo "<div id='TimeRestriction' data-condition='yes'><span>Time restrictions</span><br>";
-                    $options = ["allow any time","set range","set interval",'set initial value',"ID*TimeRestrict"];
-                    $example->answerDisp("checkboxes",$options);
-                    echo "</div>";
-                    echo "<div id='TimeRange' data-condition='set range'><span>Allowed Range:</span><br>";
-                    unset($options);
-                    $options['setTime'] = "8:00am";
-                    $options["name"] = 'minTime';
-                    $example->answerDisp("time",$options);
-                    $options['setTime'] = "8:00pm";
-                    $options["name"] = 'maxTime';
-                    echo "<span style='display:inline-block;transform:translateY(-90%);'>to</span>";
-                    $example->answerDisp("time",$options);
-                    echo "</div>";
-                    echo "<div id='TimeIntervalBox' data-condition='set interval'><span>Interval:</span>";
-                    unset($options);
-                    $options['min'] = "0";
-                    $options['max'] = "180";
-                    $options['initial'] = "5";
-                    $options['step'] = "5";
-                    $options['units'] = "minutes";
-                    $options['name'] = 'step';
-                    $example->answerDisp("number",$options);
-                    echo "</div>";
-                    echo "<div id='TimeValue' data-condition='set initial value'><span>Initial time displayed:</span><br>";
-                    unset($options);
-                    $options['setTime'] = "8:00am";
-                    $options['name'] = 'setTime';
-                    $example->answerDisp("time",$options);
-                    echo "</div>";
+                $optionsRestrict = ["allow any time","set range",'set initial value',"set interval","ID*TimeRestrict"];
+                $optionsMinTime = ['setTime'=>"8:00am",'name'=>'minTime'];
+                $optionsMaxTime = ['setTime'=>"8:00pm",'name'=>'maxTime'];
+                $optionsInterval = ['min'=>'0','max'=>'180','initial'=>'5','step'=>'5','units'=>'minutes','name'=>'step'];
+                $optionsInitial = ['setTime'=>'8:00am','name'=>'setTime'];
                 ?>
+                <div id='TimeRestriction' data-condition='yes'><span>Time restrictions</span><br>
+                    {{ $ctrl->answerDisp("checkboxes",$optionsRestrict) }}
+                </div>
+                <div id='TimeRange' data-condition='set range'><span>Allowed Range:</span><br>
+                    {{ $ctrl->answerDisp("time",$optionsMinTime) }}
+                    {{ $ctrl->answerDisp("time",$optionsMaxTime) }}
+                </div>
+                <div id='TimeValue' data-condition='set initial value'><span>Initial time displayed:</span><br>
+                    {{ $ctrl->answerDisp("time",$optionsInitial) }}
+                </div>
+                <div id='TimeIntervalBox' data-condition='set interval'><span>Displayed intervals:</span><br>
+                    {{ $ctrl->answerDisp("number",$optionsInterval) }}
+                </div>
                 </div>
             </div>
             <div id='ScaleOptions' class='itemOptionList'>
                 <span>Settings:</span>
                 <div id="ScaleList" class='optionsList'>
-                    <span style='width:6em;'>Minimum:</span>
                     <?php
-                    unset($options);
-                    $options['min'] = "-100";
-                    $options['max'] = "100";
-                    $options['initial'] = "0";
-                    $options['step'] = "1";
-                    $options['units'] = "";
-                    $options['name'] = 'scalemin';
-                    $example->answerDisp("number",$options);
+                    $optionsMin = ['min'=>'-9999','max'=>'9999','initial'=>'0','step'=>'1','units'=>'','name'=>'scalemin'];
+                    $optionsMax = ['min'=>'-9999','max'=>'9999','initial'=>'0','step'=>'1','units'=>'','name'=>'scalemax'];
+                    $optionsInitial = ['min'=>'-9999','max'=>'9999','initial'=>'0','step'=>'1','units'=>'','name'=>'initial'];
                     ?>
-                    <br>
-                    <span style='width:6em;'>Maximum:</span>
-                    <?php
-                    $options['min'] = "-100";
-                    $options['max'] = "100";
-                    $options['initial'] = "100";
-                    $options['step'] = "1";
-                    $options['units'] = "";
-                    $options['name'] = 'scalemax';
-                    $example->answerDisp("number",$options);
-                    $ID = "scalemax";
-                    ?>
-                    <br>
-                    <span style='width:6em;'>Initial value:</span>
-                    <?php
-                    $options['min'] = "-100";
-                    $options['max'] = "100";
-                    $options['initial'] = "50";
-                    $options['step'] = "1";
-                    $options['units'] = "";
-                    $options['name'] = 'initial';
-                    $example->answerDisp("number",$options);
-                    $ID = "initial";
-                    ?>
-                    <br>
+                    <span style='width:6em;'>Minimum:</span>{{ $ctrl->answerDisp("number",$optionsMin) }}<br>
+                    <span style='width:6em;'>Maximum:</span>{{ $ctrl->answerDisp("number",$optionsMax) }}<br>
+                    <span style='width:6em;'>Initial value:</span>{{ $ctrl->answerDisp("number",$optionsInitial) }}<br>
                     <span style='width:16em;'>Label for minimum end of scale:</span><input name="minLabel" type="text"><br>
                     <span style='width:16em;'>Label for maximum end of scale:</span><input name="maxLabel" type="text"><br>
                     <span style='width:16em;'>Show current value to patient?</span><select name='dispVal'><option value="yes">yes</option><option value="no">no</option></select><br>
@@ -376,8 +216,7 @@ if (isset($form)){
                     </select>
 
                 </div>
-            </div>
-            
+            </div>  
         </div>
         
         <div class="wrapper options">
@@ -386,13 +225,18 @@ if (isset($form)){
         </div>
     </div>
     <div id='AddText'>
-        <div id='NarrativeOptions' class='itemOptionList'>
-            <div id='NarrativeList' class='optionsList'>
-                <div class='summernote'></div>
-            </div>
+        <div>
+            <div id='NarrativeOptions' class='itemOptionList'>
+                <h3>Enter text and images as you'd like them displayed</h3>
+                <div id='NarrativeList' class='optionsList'>
+                    <div class='summernote'></div>
+                </div>
+            </div>            
         </div>
-        <div class="button xsmall save">save text</div>
-        <div class='button xsmall cancel'>cancel</div>
+        <div class="options">
+            <div class="button xsmall save">save text</div>
+            <div class='button xsmall cancel'>cancel</div>
+        </div>
     </div>
     
     <div id="AddFollowUp">
@@ -411,6 +255,55 @@ if (isset($form)){
             <div id="ItemFUList"></div>
         </div>
     </div>
+</div>
+
+<div id='Templates'>
+    <?php 
+        $textOptions = [
+            'name'=>'textTemplate',
+            'placeholder'=>null
+        ];
+        $textboxOptions = [
+            'name'=>'textboxTemplate',
+            'placeholder'=>null
+        ];
+        $numberOptions = [
+            'min' => 0,'max' => 100,'initial' => 60,'step' => 1,'units' => 'units','name' => 'numberTemplate'
+        ];
+        $radioOptions = ["ID*radioTemplate"];
+        $checkboxesOptions = ["ID*checkboxesTemplate"];
+        $dropdownOptions = ["ID*dropdownTemplate"];
+        $scaleOptions = [
+            "min" => 0,"max" => 100,"initial" => 50,"minLabel" => "none","maxLabel" => "a lot","displayValue" => "yes","displayLabels" => "yes","name" => "scaleTemplate"
+        ];
+        $currentYear = date("Y");
+        $tenPast = $currentYear - 10;
+        $dateOptions = [
+            "yearrange" => $tenPast.":".$currentYear,
+            'name' => "dateTemplate"
+        ];
+        $timeOptions = [
+            'minTime' => "8:00am",'maxTime' => '8:00pm','setTime' => '3:00pm','step' => '15','name' => 'timeTemplate'
+        ];
+        $signatureOptions = [
+            'typedName' => 'yes'
+        ];
+        $narrativeOptions = [
+            'name' => 'narrativeTemplate',
+            'markupStr' => "<div class='lds-ring dark' style='position:relative;top:50%,transform:translate(-50%,-50%)'><div></div><div></div><div></div><div></div></div>"
+        ];
+    ?>
+    <div class='template' data-type="narrative" data-defaultoptions="{{ json_encode($narrativeOptions) }}">{{ $ctrl->answerDisp('narrative',$narrativeOptions) }}</div>
+    <div class='template' data-type="text" data-defaultoptions="{{ json_encode($textOptions) }}">{{ $ctrl->answerDisp('text',$textOptions) }}</div>
+    <div class='template' data-type="text box" data-defaultoptions="{{ json_encode($textboxOptions) }}">{{ $ctrl->answerDisp('text box',$textboxOptions) }}</div>
+    <div class='template' data-type="number" data-defaultoptions="{{ json_encode($numberOptions) }}">{{ $ctrl->answerDisp('number',$numberOptions) }}</div>
+    <div class='template' data-type="radio" data-defaultoptions="{{ json_encode($radioOptions) }}">{{ $ctrl->answerDisp('radio',$radioOptions) }}</div>
+    <div class='template' data-type="checkboxes" data-defaultoptions="{{ json_encode($checkboxesOptions) }}">{{ $ctrl->answerDisp('checkboxes',$checkboxesOptions) }}</div>
+    <div class='template' data-type="dropdown" data-defaultoptions="{{ json_encode($dropdownOptions) }}">{{ $ctrl->answerDisp('dropdown',$dropdownOptions) }}</div>
+    <div class='template' data-type="scale" data-defaultoptions="{{ json_encode($scaleOptions) }}">{{ $ctrl->answerDisp('scale',$scaleOptions) }}</div>
+    <div class='template' data-type="date" data-defaultoptions="{{ json_encode($dateOptions) }}">{{ $ctrl->answerDisp('date',$dateOptions) }}</div>
+    <div class='template' data-type="time" data-defaultoptions="{{ json_encode($timeOptions) }}">{{ $ctrl->answerDisp('time',$timeOptions) }}</div>
+    <div class='template' data-type="signature" data-defaultoptions="{{ json_encode($signatureOptions) }}">{{ $ctrl->answerDisp('signature',$signatureOptions) }}</div>
 </div>
 
 <script type="text/javascript" src="{{ asset('/js/launchpad/forms.js') }}"></script>

@@ -1720,6 +1720,10 @@ h5 {
   color: var(--purple);
 }
 
+h5 span {
+  font-size: 0.9em;
+}
+
 .inline {
   display: inline;
 }

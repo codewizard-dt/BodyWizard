@@ -1,42 +1,17 @@
 $(document).ready(function(){
-    $.ajaxSetup({
-            headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-            }
-    });
-    var confirmBool = undefined;
     var defaultDisplayCSS = {"inline":"false"};
-    $(".wrapMe").each(function(){
-        wrapAndCenter($(this));
-    });
-    $(".manageOverflow").each(function(i,ele){
-        checkOverflow(ele);
-    })
+
+    masterStyle();
+
     $("#UnlockFormBtn").on("click",unlockForm);
     $("#FormName").find(".input").show();
     $("#FormName").find(".save").css("display","inline-block");
     $("#FormName").find(".edit").hide();
-    $("#CurrentForm").on("click",".button",function(){
-        if ($(this).hasClass('formList')){
-            setSessionVar({"formUID":"unset"});
-            $(this).addClass("disabled");
-            setTimeout(function(){
-                $("#formList").find(".title").click();
-            },500);
-        }
-        if ($(this).hasClass('hide')){
-            slideFadeOut($("#CurrentForm"));
-        }
-    })
-    
-    $(".optionsNav").on("click",".button",optionsNavBtnClick);
-    
-        
+
     var sectionNode = "<div class='section'><div class='sectionName editable'>Section Name: <div class='pair'><input type='text' class='input'> <span class='value'></span></div><div class='toggle edit'>(edit)</div><div class='toggle save'>(save)</div><div class='toggle cancel'>(cancel)</div></div>  <div class='Items'>  <div class='selectMultiple'> <div class='show button xsmall'>select multiple items</div><div class='hide button xsmall'>cancel selection</div><div class='delete button xsmall'>delete items</div><div class='copy button xsmall'>duplicate items</div> </div>   <p class='hideTarget'><span class='down'></span>No questions yet</p><div class='target'><div style='padding:0.5em 1em;'>Add some questions!</div></div></div>  <div class='itemOptions'><div class='addQuestion button xsmall'>add question</div><div class='addParagraph button xsmall'>add text</div></div>  <div class='clear' data-target='.section'>(delete)</div></div>";
     
     $("#AddSection").on("click",".add",function(){
-        var name = cleanStr($("#SectionName").val());
-        var show = $("#ShowByDefault option:selected").val();
+        var name = $.sanitize($("#SectionName").val());
         var names = $("#Sections").find(".section").find(".sectionName").find("span");
         var nameArray = [];
         names.each(function(){
@@ -65,7 +40,7 @@ $(document).ready(function(){
         }
 
         section.find(".sectionName").find('span').text(name);
-        section.find(".showByDefault").find('span').text(show);
+        // section.find(".showByDefault").find('span').text(show);
         section.find(".selectMultiple").find(".show").on("click",multiItemOptions);
         section.find(".selectMultiple").find(".hide").on("click",hideMultiItemOptions);
         section.find(".selectMultiple").find(".copy").on("click",copyMultiple);
@@ -199,7 +174,7 @@ $(document).ready(function(){
                     if (input.is("select")){
                         text = input.find(":selected").val();
                     }else{
-                        text = cleanStr(input.val());
+                        text = $.sanitize(input.val());
                         if (text == ""){
                             alertBox("enter a value",target.find('.input'),"after","fade");
                             return false;
@@ -234,7 +209,6 @@ $(document).ready(function(){
 
             if ($(this).hasClass("edit")){
                 var type = $(this).closest('.item').find('.question').data('type'), d;
-                console.log(type);
                 if (type != 'narrative'){
                     P = $("#AddItem").parent();
                     d = $("#AddItem");
@@ -242,8 +216,6 @@ $(document).ready(function(){
                     P = $("#AddText").parent();
                     d = $("#AddText");
                 }
-                // var P = $("#AddItem").parent();
-                // if (P.is(".item") && $("#AddItem").is(":visible")){
                 if (P.is(".item") && $("#AddItem, #AddText").is(":visible")){
                     P.find(".toggle").filter(".cancel, .save").hide();
                     P.find(".toggle").filter(".edit, .delete").show();
@@ -255,8 +227,6 @@ $(document).ready(function(){
                     target = $(this).closest(".item");
                 }
                 if (target.is(".itemFU")){
-                    // $("#AddItem").appendTo(target);
-                    // slideFadeIn($("#AddItem"));
                     d.appendTo(target);
                     slideFadeIn(d);
                     showConditionOptions($(item).closest(".item"));
@@ -264,8 +234,6 @@ $(document).ready(function(){
                 }else if (target.is(".item")){
                     $("#FollowUpOptions").hide();
                     target = target.find(".ItemsFU");
-                    // $("#AddItem").insertBefore(target);
-                    // slideFadeIn($("#AddItem"));
                     d.insertBefore(target);
                     slideFadeIn(d);
                 }
@@ -279,11 +247,6 @@ $(document).ready(function(){
                     var markup = o.markupStr;
                     $("#NarrativeOptions").find(".note-placeholder").hide();
                     $("#NarrativeOptions").find(".note-editable").html(markup);
-                    // q = (q == "Text block w/o header") ? "" : q;
-                    // $("#NarrTitle").val(q);
-                    // // console.log(o);
-                    // $("#NarrText").val(o.text);
-                    // // console.log(q + t);
                 }
                 
                 t = $(this).closest(".item").find(".question").data('type');
@@ -297,6 +260,9 @@ $(document).ready(function(){
                 $("#FollowUpOptions").find("input").val(c);
 
                 if ($.isPlainObject(o)){
+                    var items = $("#AddItem").find("input").filter(":visible");
+                    items = items.add($("#AddItem").find("select").filter(":visible"));
+                    console.log(o);
                     if (t == "time"){
                         //$("#TimeList").children("div").not("#TimeRestriction").hide();
                         $("#TimeList").find("li").each(function(){
@@ -312,9 +278,53 @@ $(document).ready(function(){
                             $("#TimeOptions").find("#"+key).val(val);
                             $("#TimeOptions").find("li").filter("[data-value='"+obj[key]+"']").click();
                         })
-                    }else{
-                        var items = $("#AddItem").find("input").filter(":visible");
-                        items = items.add($("#AddItem").find("select").filter(":visible"));
+                    }else if(t == 'date'){
+                        var beginYear = o.yearRange.split(':')[0], endYear = o.yearRange.split(':')[1],
+                            minDate = o.minDate, maxDate = o.maxDate, minNum, minType, maxNum, maxType, currentYear = new Date().getFullYear(),
+                            nextYear = currentYear + 1;
+                        beginYear = (beginYear == "c+0") ? currentYear : beginYear;
+                        endYear = (endYear == "c+0") ? currentYear : endYear;
+                        endYear = (endYear == "c+1") ? nextYear : endYear;
+                        $("#begin").val(beginYear);
+                        $("#end").val(endYear);
+                        if (minDate != null){
+                            minNum = o.minDate.substring(1,o.minDate.length - 1);
+                            maxNum = o.maxDate.substring(1,o.maxDate.length - 1);
+                            minType = o.minDate.substring(o.minDate.length - 1,o.minDate.length);
+                            maxType = o.maxDate.substring(o.maxDate.length - 1,o.maxDate.length);
+                            var guide = {"m":"months","d":"days","w":"weeks","y":"years"};
+                            // console.log(minType + maxType);
+                            minType = guide[minType];
+                            maxType = guide[maxType];
+                            // console.log(minType + maxType);
+                            $("#minNum").val(minNum);
+                            $("#maxNum").val(maxNum);
+                            $("#minType").val(minType).change();
+                            $("#maxType").val(maxType).change();
+                            if ($("#NoRestriction").is(":checked")){$("#NoRestriction").click();}                            
+                        }else{
+                            if (!$("#NoRestriction").is(":checked")){$("#NoRestriction").click();}
+                        }
+                    }else if (t == 'scale'){
+                        $("#scalemin").val(o['min']);
+                        $("#scalemax").val(o['max']);
+                        $("#initial").val(o['initial']);
+                        $("select").filter('[name="dispVal"]').val(o['displayValue']).change();
+                        $("select").filter('[name="dispLabel"]').val(o['displayLabels']).change();
+                        for (var prop in o){
+                            var val = o[prop];
+                            items.filter(function(){
+                                return $(this).attr("name") == prop;
+                            }).val(val);
+                        }
+                    }else if (t == 'text'){
+                        var placeholder = (o != undefined && o['placeholder'] != undefined) ? o['placeholder'] : "";
+                        $("#textPlaceholder").val(placeholder);
+                    }else if (t == 'text box'){
+                        var placeholder = (o != undefined && o['placeholder'] != undefined) ? o['placeholder'] : "";
+                        $("#textBoxPlaceholder").val(placeholder);
+                    }
+                    else{
                         for (var prop in o){
                             var val = o[prop];
                             items.filter(function(){
@@ -449,44 +459,20 @@ $(document).ready(function(){
             slideFadeOut($("#Options"));
         }
         
-        if (value == "number"){
-            slideFadeIn($("#NumberOptions"));
-        }
-        else{
-            slideFadeOut($("#NumberOptions"));
-        }
+        if (value == "number"){slideFadeIn($("#NumberOptions"));}else{slideFadeOut($("#NumberOptions"));}
         
-        if (value == "date"){
-            slideFadeIn($("#DateOptions"));
-        }
-        else{
-            slideFadeOut($("#DateOptions"));
-        }
+        if (value == "date"){slideFadeIn($("#DateOptions"));}else{slideFadeOut($("#DateOptions"));}
+        
+        if (value == "text"){slideFadeIn($("#TextOptions"));}else{slideFadeOut($("#TextOptions"));}
+        
+        if (value == "text box"){slideFadeIn($("#TextBoxOptions"));}else{slideFadeOut($("#TextBoxOptions"));}
                 
-        if (value == 'time'){
-            slideFadeIn($("#TimeOptions"));
-        }else{
-            slideFadeOut($("#TimeOptions"));
-        }
+        if (value == 'time'){slideFadeIn($("#TimeOptions"));}else{slideFadeOut($("#TimeOptions"));}
         
-        if (value == "scale"){
-            slideFadeIn($("#ScaleOptions"));
-        }
-        else{
-            slideFadeOut($("#ScaleOptions"));
-        }
-        if (value == "signature"){
-            slideFadeIn($("#SignatureOptions"));
-        }
-        else{
-            slideFadeOut($("#SignatureOptions"));
-        }
-        
-        slideFadeOut($(".example"));
-        var currentExample = $(".example").filter(function(){
-            return $(this).find(".exampleType").find("span").text().toLowerCase() == value;
-        });
-        slideFadeIn(currentExample);
+        if (value == "scale"){slideFadeIn($("#ScaleOptions"));}else{slideFadeOut($("#ScaleOptions"));}
+
+        if (value == "signature"){slideFadeIn($("#SignatureOptions"));}else{slideFadeOut($("#SignatureOptions"));}
+
     })
     $("#Type").change();
     $("#Text").on("keyup",function(){
@@ -496,7 +482,6 @@ $(document).ready(function(){
         }else{
             $("#examples").find(".question").text("What is your question?");
         }
-        
     })    
     $("#Options").on("click",".add",function(){
         var newOpt = "<div class='option'><input type='text'><div class='UpDown'><div class='up'></div><div class='down'></div></div></div>";
@@ -568,18 +553,6 @@ $(document).ready(function(){
         var i = $(this).find("input"), o = i.data('options');
         i.timepicker(o);
     })
-    $("#IncludeTime").find("li").on("click",function(){
-        if ($(this).data("value")=="yes"){
-            slideFadeIn($("#TimeRestriction"));
-            $("#TimeRestriction").find(".active").each(function(){
-                var c = $(this).data('value'), divs = $("#TimeOptions").children("div").filter("[data-condition='"+c+"']");
-                slideFadeIn(divs);
-            })
-        }else{
-            slideFadeOut($("#TimeRestriction"));
-            slideFadeOut($("#TimeOptions").children("div"));
-        }
-    })
     $("#TimeRestrict").find("li").filter("[data-value='allow any time']").on("click",masterCheckbox);
     $("#TimeRestrict").find("li").on('click',function(){
         if ($(this).hasClass("disabled")){return false;}
@@ -599,6 +572,47 @@ $(document).ready(function(){
     $("#NarrText").css({
         maxWidth:"100%",
         height:"6em"
+    })
+    $("#currentYearBegin").on("click",function(){
+        var currentYear = new Date().getFullYear(), nextYear = currentYear + 1, p = $(this).closest("div");
+        if ($(this).is(":checked")){
+            $("#begin").attr("readonly",true).val(currentYear);
+            p.find(".answer").css("opacity","0.5");
+            p.find(".number").off("mousedown touchstart",'.change',startChange);
+        }else{
+            $("#begin").removeAttr("readonly");
+            p.find(".answer").css("opacity","1");
+            p.find(".number").off("mousedown touchstart",'.change',startChange);
+            p.find(".number").on("mousedown touchstart",'.change',startChange);
+        }
+    })
+    $("#currentYearEnd").on("click",function(){
+        var currentYear = new Date().getFullYear(), nextYear = currentYear + 1, p = $(this).closest("div").parent("div");
+        if ($(this).is(":checked")){
+            $("#end").attr("readonly",true).val(currentYear);
+            if ($("#nextYearEnd").is(":checked")){$("#nextYearEnd").click();}
+            p.find(".answer").css("opacity","0.5");
+            p.find(".number").off("mousedown touchstart",'.change',startChange);
+        }else{
+            $("#end").removeAttr("readonly");
+            p.find(".answer").css("opacity","1");
+            p.find(".number").off("mousedown touchstart",'.change',startChange);
+            p.find(".number").on("mousedown touchstart",'.change',startChange);
+        }
+    })
+    $("#nextYearEnd").on("click",function(){
+        var currentYear = new Date().getFullYear(), nextYear = currentYear + 1, p = $(this).closest("div").parent("div");
+        if ($(this).is(":checked")){
+            $("#end").attr("readonly",true).val(nextYear);
+            if ($("#currentYearEnd").is(":checked")){$("#currentYearEnd").click();}
+            p.find(".answer").css("opacity","0.5");
+            p.find(".number").off("mousedown touchstart",'.change',startChange);
+        }else{
+            $("#end").removeAttr("readonly");
+            p.find(".answer").css("opacity","1");
+            p.find(".number").off("mousedown touchstart",'.change',startChange);
+            p.find(".number").on("mousedown touchstart",'.change',startChange);
+        }
     })
     
     $("#SectionOrder").on('click',".up",updateSecOrder);
@@ -645,9 +659,6 @@ $(document).ready(function(){
     
     function saveItem(){
         var i = $(this).closest("#AddItem, #AddText");
-/*        var p = $("#AddItem").parent();
-        var section = $("#AddItem").closest(".section");
-        var item = $("#AddItem").closest(".item");*/
         var p = i.parent();
         var section = i.closest(".section");
         var item = i.closest(".item");
@@ -674,42 +685,6 @@ $(document).ready(function(){
     $(".saveForm").on("click",function(){
         saveType = $(this).data('type');
     })
-    function saveForm(){
-        $(".saveForm").addClass("disabled");
-        $(".saveForm").off("click",saveForm);
-        var form = createFormObj();
-        form['autosaved']="0";
-        var str = JSON.stringify(form);
-        var mode = $("#formdata").data("mode");
-        $.ajax({
-            method:"POST",
-            url:"/php/launchpad/practitioner/save-form-POST.php",
-            data:{
-                "JSON":str,
-                "type":"clicksave",
-                "mode":mode,
-                "version":saveType
-            },
-            success: function(data){
-                if (data!=false){
-                    var formUID = data.split(":")[0];
-                    var formID = data.split(":")[1];
-                    $("#formdata").data("formuid",formUID);
-                    $("#formdata").data("formid",formID);
-                    $("#formList").find('.title').click();
-                }
-                else{
-                    $("#formdata").text(data);
-                    alert("save error:"+data);
-                    $(".saveForm").on("click",saveForm);
-                }
-            },
-            error:function(data,status,error){
-                $("#formdata").text("Not saved: "+status+","+error);
-                $(".saveForm").on("click",saveForm);
-            }
-        })
-    }
     function autoSave(){
         var form = createFormObj();
         var jsonStr = JSON.stringify(form);
@@ -784,8 +759,7 @@ $(document).ready(function(){
             var k = item.children(".question").data("key");
             var fk = p.find(".question").data("key");
             createTextObj(section,"update",k,fk);
-        }
-        
+        }      
     }
     
     
@@ -826,7 +800,7 @@ $(document).ready(function(){
         
         var ItemObj = {};
         
-        var q = cleanStr($("#Text").val());
+        var q = $.sanitize($("#Text").val());
         var t = ($("#AddText").is(":visible")) ? "narrative" : $("#Type").val();
         // console.log(t);
         var o;
@@ -844,7 +818,7 @@ $(document).ready(function(){
             
             var options = [];
             for (x=0;x<optionsY.length;x++){
-                var check = cleanStr($(optionsY[x]).val());
+                var check = $.sanitize($(optionsY[x]).val());
                 check = check.split("\"").join("");
                 if ($.inArray(check,options)>-1){
                     alertBox("duplicate options not allowed",$(optionsY[x]),"after","fade");
@@ -891,15 +865,18 @@ $(document).ready(function(){
         
         var dateOptions = $("#DateOptions").find("input").filter(":visible");
         if (dateOptions.length!=0){
-            var dateBegin = dateOptions.filter("[data-name='begin']").val();
-            var dateEnd = dateOptions.filter("[data-name='end']").val();
-            var yearRange = dateBegin+":"+dateEnd;
+            var beginCurrent = $("#currentYearBegin").is(":checked"), endCurrent = $("#currentYearEnd").is(":checked"),
+                endNext = $("#nextYearEnd").is(":checked"), 
+                dateBegin = beginCurrent ? "c+0" : dateOptions.filter("[data-name='begin']").val(),
+                dateEnd = endCurrent ? "c+0" : dateOptions.filter("[data-name='end']").val(),
+                dateEnd = endNext ? "c+1" : dateEnd,
+                yearRange = dateBegin+":"+dateEnd;
+            // console.log(yearRange);
             dateOptions = {
                 "yearRange":yearRange
             }
             if ($("#NoRestriction").is(":checked")==false){
                 var stop = $("#DateOptions").find("select").filter(function(){
-                    console.log($(this).find("option:selected").val()) ;
                     return $(this).find("option:selected").val() == "";
                 });
                 if (stop.length > 0){
@@ -914,6 +891,7 @@ $(document).ready(function(){
                 dateOptions["minDate"] = null;
                 dateOptions["maxDate"] = null;
             }
+            console.log(dateOptions);
         }
         else{dateOptions=undefined;}
         
@@ -941,6 +919,19 @@ $(document).ready(function(){
             })
         }
         else{timeOptions=undefined;}
+
+        var textOptions = $("#TextOptions").is(":visible");
+        if (textOptions){
+            textOptions = {
+                'placeholder':$("#textPlaceholder").val()
+            }
+        }else{textOptions=undefined}
+        var textBoxOptions = $("#TextBoxOptions").is(":visible");
+        if (textBoxOptions){
+            textBoxOptions = {
+                'placeholder':$("#textAreaPlaceholder").val()
+            }
+        }else{textBoxOptions=undefined}
 
         var sigOptions = $("#SignatureOptions").find("select").filter(":visible");
         if (sigOptions.length!=0){
@@ -994,19 +985,9 @@ $(document).ready(function(){
         
         var narrativeOptions = $("#NarrativeList").filter(":visible");
         if (narrativeOptions.length!=0){
-            // var title = $("#NarrTitle").val();
-            // var text = $("#NarrText").val();
-                        
-            // if (text == ""){
-            //     alertBox("required",$("#NarrText"),"after","fade");
-            //     return false;
-            // }
-            // return false;
-            
             narrativeOptions={
                 "markupStr":$("#NarrativeList").find(".summernote").summernote('code')
             };
-            // console.log(narrativeOptions);
         }
         else{narrativeOptions = undefined;}
 
@@ -1046,6 +1027,8 @@ $(document).ready(function(){
         if (options!=undefined){o=options}
         else if (numberOptions!=undefined){o=numberOptions}
         else if (dateOptions!=undefined){o=dateOptions}
+        else if (textOptions!=undefined){o=textOptions}
+        else if (textBoxOptions!=undefined){o=textBoxOptions}
         else if (timeOptions!=undefined){o=timeOptions}
         else if (scaleOptions!=undefined){o=scaleOptions}
         else if (sigOptions!=undefined){o=sigOptions}
@@ -1133,62 +1116,21 @@ $(document).ready(function(){
                 }
             }
         }
+        console.log(ItemObj);
         autoSave();
-
     }
-    // function createTextObj(section,mode,itemKey,FUkey){
-    //     var narrativeOptions = $("#NarrativeOptions").find("input, textarea").filter(":visible");
-    //     if (narrativeOptions.length!=0){
-    //         var title = $("#NarrTitle").val();
-    //         var text = $("#NarrText").val();
-                        
-    //         if (text == ""){
-    //             alertBox("required",$("#NarrText"),"after","fade");
-    //             return false;
-    //         }
-            
-    //         narrativeOptions={
-    //             "title":title,
-    //             "text":text
-    //         };
-    //         //console.log(ItemObj);
-    //         //return false;
-    //     }
-        
-    //     ItemObj={
-    //         "type":"narrative",
-    //         "options":narrativeOptions
-    //     };
-
-    //     if (section.is(".section")){
-    //         var Items = section.data('items');
-    //         if (mode=='save'){
-    //             ItemObj["followups"] = [];
-    //             ItemObj['toggleFUs'] = 'hide';
-    //             ItemObj['key'] = Items.length;
-    //             ItemObj['displayOptions'] = defaultDisplayCSS;
-    //             Items.push(ItemObj);
-    //             updateItems(section);
-    //             slideFadeOut($("#AddText"));
-    //             setTimeout(function(){
-    //                 resetAddText();
-    //             },500);
-    //         }
-    //         else if (mode=='update'){}
-    //     }
-    //     else if (section.is(".item")){
-    //         if (mode=='save'){}
-    //         else if (mode=='update'){}            
-    //     }
-        
-    // }
     
     function resetAddItem(){
         var clear = $("#AddItem").find("#Options").find("input");
-        clear = clear.add($("#NumberOptions").find("input"));
+        // clear = clear.add($("#NumberOptions").find("input"));
         clear.add("#Text").add($("#FollowUpOptions").find("input")).val("");
         $("#Type").val("text");
         $("#Type").change();
+        $("#NumberOptions").find("#min").val("0");
+        $("#NumberOptions").find("#max").val("100");
+        $("#NumberOptions").find("#initial").val("5");
+        $("#NumberOptions").find("#step").val("1");
+        $("#NumberOptions").find("#units").val("");
     }
     function resetOptions(){
         var o = $("#OptionsList").find(".option");
@@ -1265,8 +1207,6 @@ $(document).ready(function(){
             $(".sectionOptions").clone().appendTo("#Sections");
         }
         $(".sectionOptions").children("h4").text(secStr);
-
-
     }
     function updateSecOrder(){
         if ($(this).hasClass('up')){
@@ -1369,8 +1309,8 @@ $(document).ready(function(){
         var Items = section.data("items");
         var big = ".Items";
         var little = ".item";
-        var itemNode = "<div class='item'><div class='question'></div><div class='type'></div><div class='details'></div> <div class='ItemsFU'>  <div class='selectMultiple'> <div class='show button xsmall'>select multiple items</div><div class='hide button xsmall'>cancel selection</div><div class='delete button xsmall'>delete items</div><div class='copy button xsmall'>duplicate items</div> </div>  <p class='hideFUs'><span class='right'></span>No followups</p><div class='targetFUs'></div></div>   <div class='newFollowUp'><div class='button xsmall addFollowUp'>add followup question</div></div> <div class='UpDown'><div class='up'></div><div class='down'></div></div> </div>";
-        var textNode = "HEYYYY";
+        // var itemNode = "<div class='item'><div class='question'></div><div class='type'></div><div class='details'></div> <div class='ItemsFU'>  <div class='selectMultiple'> <div class='show button xsmall'>select multiple items</div><div class='hide button xsmall'>cancel selection</div><div class='delete button xsmall'>delete items</div><div class='copy button xsmall'>duplicate items</div> </div>  <p class='hideFUs'><span class='right'></span>No followups</p><div class='targetFUs'></div></div>   <div class='newFollowUp'><div class='button xsmall addFollowUp'>add followup question</div></div> <div class='UpDown'><div class='up'></div><div class='down'></div></div> </div>";
+        var itemNode = "<div class='item'><div class='question'></div><div class='answer'></div> <div class='ItemsFU'>  <div class='selectMultiple'> <div class='show button xsmall'>select multiple items</div><div class='hide button xsmall'>cancel selection</div><div class='delete button xsmall'>delete items</div><div class='copy button xsmall'>duplicate items</div> </div>  <p class='hideFUs'><span class='right'></span>No followups</p><div class='targetFUs'></div></div>   <div class='newFollowUp'><div class='button xsmall addFollowUp'>add followup question</div></div> <div class='UpDown'><div class='up'></div><div class='down'></div></div> </div>";
         var ItemsList = $(section).find(".Items").find(".target"), n = Items.length;
         var itemFUNode = "<div class='itemFU'><div class='question'></div><div class='type'></div><div class='details'></div><div class='condition'></div> <div class='UpDown'><div class='up'></div><div class='down'></div></div> </div>";
 
@@ -1381,44 +1321,19 @@ $(document).ready(function(){
             $(itemNode).appendTo(ItemsList);
             var newItem = ItemsList.find(".item").last();
             
-            if (t == "narrative"){
-                q = "Custom Text";
-            }
+            if (t == "narrative"){q = "Rich Text Block";}
             newItem.find(".question").html(q + "<div class='toggle edit'>(edit)</div><div class='toggle copy'>(duplicate)</div><div class='toggle delete'>(delete)</div><div class='toggle save'>(save)</div><div class='toggle cancel'>(cancel edit)</div>").data({"question":q, "key":x, "type":t, "options":o, "toggleFUs":tFUs});
             
-            var tTxt = (i.type == "narrative") ? "Display Text" : "Answer type: " + t;
-            newItem.find(".type").html(tTxt);
-            
-            if (o==undefined){
-                newItem.find(".details").text("");
-            }
-            else if ($.isArray(o)){
-                var oStr = "Options: ";
-                for (z=0;z<o.length;z++){
-                    oStr += '"'+o[z]+'"';
-                    if (z<o.length-1){oStr+=", ";}
-                }
-                newItem.find(".details").text(oStr);
-            }
-            else if ($.isPlainObject(o)){
-                var oStr = "Settings: ";
-                var pArr = [];
-                for (var p in o) {
-                    if (o.hasOwnProperty(p)) {
-                        var v = o[p];
-                        pArr.push("("+p+":"+v+")");                        
-                    }
-                }
-                oStr += pArr.join(", ");
-                newItem.find(".details").text(oStr);
-            }
-            
-            
-/*            var CurrentItem = $(section).find(".question").filter(function(){
-                //return $(this).data("question") == q;
-                return $(this).data("key") == x;
-            }).closest(".item");  */
-            
+            // var tTxt = (i.type == "narrative") ? "Display Text" : "Answer type: " + t;
+            // newItem.find(".type").html(tTxt);
+            var r = (t == "narrative") ? ".narrative" : ".answer",
+                template = $(".template").filter("[data-type='"+t+"']").find(r).clone();
+
+            template.removeAttr('id');
+            newItem.find(".answer").replaceWith(template);
+            console.log(o);
+            activateItem(newItem,t,o);
+                        
             CurrentItem = newItem;
             
             var ItemsFUList = CurrentItem.find(".ItemsFU").find(".targetFUs");
@@ -1429,31 +1344,34 @@ $(document).ready(function(){
                     $(itemFUNode).appendTo(ItemsFUList);
                     var newItemFU = ItemsFUList.find(".itemFU").last();
                     newItemFU.find(".question").html(qFU + "<div class='toggle edit'>(edit)</div><div class='toggle copy'>(duplicate)</div><div class='toggle delete'>(delete)</div><div class='toggle save'>(save)</div><div class='toggle cancel'>(cancel edit)</div>").data({"question":qFU, "key":xFU, "type":tFU, "options":oFU, "condition":cFU});
-                    newItemFU.find(".type").html("Answer type: "+tFU);
-                    if (oFU==undefined){
-                        newItemFU.find(".details").text("");
-                    }
-                    else if ($.isArray(oFU)){
-                        var oFUStr = "Options: ";
-                        for (y=0;y<oFU.length;y++){
-                            oFUStr += '"'+oFU[y]+'"';
-                            if (y<oFU.length-1){oFUStr+=", ";}
-                        }
-                        newItemFU.find(".details").text(oFUStr);
-                    }
-                    else if ($.isPlainObject(oFU)){
-                        var oFUStr = "Properties: ";
-                        var pFUArr = [];
-                        for (var p in oFU) {
-                            if (oFU.hasOwnProperty(p)) {
-                                var v = oFU[p];
-                                pFUArr.push("("+p+":"+v+")");                        
-                            }
-                        }
-                        oFUStr += pFUArr.join(", ");
-                        newItemFU.find(".details").text(oFUStr);
-                    }
-                    cFU = "\""+cFU.join("\", \"")+"\"";
+                    // newItemFU.find(".type").html("Answer type: "+tFU);
+                        // if (oFU==undefined){
+                        //     newItemFU.find(".details").text("");
+                        // }
+                        // else if ($.isArray(oFU)){
+                        //     var oFUStr = "Options: ";
+                        //     for (y=0;y<oFU.length;y++){
+                        //         oFUStr += '"'+oFU[y]+'"';
+                        //         if (y<oFU.length-1){oFUStr+=", ";}
+                        //     }
+                        //     newItemFU.find(".details").text(oFUStr);
+                        // }
+                        // else if ($.isPlainObject(oFU)){
+                        //     var oFUStr = "Properties: ";
+                        //     var pFUArr = [];
+                        //     for (var p in oFU) {
+                        //         if (oFU.hasOwnProperty(p)) {
+                        //             var v = oFU[p];
+                        //             pFUArr.push("("+p+":"+v+")");                        
+                        //         }
+                        //     }
+                        //     oFUStr += pFUArr.join(", ");
+                        //     newItemFU.find(".details").text(oFUStr);
+                        // }
+                        // cFU = "\""+cFU.join("\", \"")+"\"";
+                    
+                    var template = $(".template").filter("[data-type='"+tFU+"']").find('.answer').clone();
+                    newItemFU.find(".answer").replaceWith(template);
                     newItemFU.find(".condition").text("Condition: "+cFU);
                 })
                 
@@ -1522,17 +1440,7 @@ $(document).ready(function(){
             $("#AddSection").appendTo("#FormBuilder");
             $(".sectionOptions").last().remove();
         }
-        
-        
-        if (qNum>0 && $(".saveForm").hasClass("disabled")==true){
-            $(".saveForm").removeClass('disabled');
-            $(".saveForm").on("click",saveForm);
-        }
-        else if (qNum == 0 && $(".saveForm").hasClass("disabled")==false){
-            $(".saveForm").addClass('disabled');
-            $(".saveForm").off("click",saveForm);
-        }
-        
+                
         if ($(ItemsList).text() == ""){
             $(ItemsList).html("<div style='padding:0.5em 1em;'>Add some questions!</div>");
         }
@@ -1554,8 +1462,7 @@ $(document).ready(function(){
             if (!$(this).find(".targetFUs").is(":visible")){
                 $(this).find(".selectMultiple").hide();
             }
-        })
-        
+        })   
     }
     
     var stickyCSS = {position:"sticky",top:"11em",right:"0",display:"inline-block",margin:"0 1em"}, 
@@ -1908,11 +1815,6 @@ $(document).ready(function(){
         })
         currentItemFU.add(change).css("height","auto");
         
-//        items = $(".itemFUName");
-  //      for (x=0;x<n;x++){
-    //        $(items[x]).data("key",x);
-      //  }
-        
         autoSave();
     }
     function saveItemFUOrder(){
@@ -1956,7 +1858,7 @@ $(document).ready(function(){
             
             var options = [];
             for (x=0;x<optionsY.length;x++){
-                var check = cleanStr($(optionsY[x]).val());
+                var check = $.sanitize($(optionsY[x]).val());
                 if ($.inArray(check,options)>-1){
                     alertBox("duplicate options not allowed",$(optionsY[x]),"after","fade");
                     return false;
@@ -2163,35 +2065,7 @@ $(document).ready(function(){
             }            
         }
     }
-    
-    function checkbox() {
-        $(this).toggleClass("active");
-        if ($(this).parent().hasClass('answer')){
-            var input = $(this).closest(".answer").find(".targetInput"), activeLIs = $(this).closest(".answer").find(".active"), values="";
-            activeLIs.each(function(i, activeLI){
-                var value = $(activeLI).data("value");
-                if (values==""){values=value;}else{
-                    values=values+", "+value;
-                }
-            })
-            input.show();
-            input.val(values);
-        }
-    }  
-    
-    function cleanStr(s){
-        var c = s.replace(/[^a-zA-z0-9,(). \-\"\'\?!\:]/g, "");
-        c = c.split("^").join("");
-        c = c.split('"').join("'");
-//        c = c.split("'").join("");
-//        c = c.split('"').join("\"");
-        return c;
-    }
-    
-    function confirm(target,where,offset){
-        var str = "are you sure? this cannot be undone <span class='confirmY'>yes</span><span class='confirmN'>no</span>";
-        confirmBox(str,target,where,"nofade",offset);
-    }
+        
     function multiCopyOption(target,where,offset){
         var str = "Insert copies <span class='multiCopyOption' data-value='afterOriginal'>after each original</span><span data-value='asBlock' class='multiCopyOption'>as new block at end of list</span><span data-value='cancel' class='multiCopyOption'>cancel</span>";
         var where = "append";
@@ -2199,91 +2073,144 @@ $(document).ready(function(){
         $('.zeroWrap, .confirm').css(rightAlignCSS);
     }
     
-    function inputNum(){
-        var v = $(this).val(), r = v.replace(/[^0-9.]/g, "");
-        if (v != r){
-            alertBox("numbers only",$(this),"below","fade");
-            $(this).val(r);
+    function activateItem(item,type,options){
+        var target;
+        if (type == "radio"){
+            target = item.find("ul");
+            target.find("li").remove();
+            $.each(options,function(i,value){
+                $("<li data-value='"+value+"'>"+value+"</li>").appendTo(target).on("click",radio);
+            });
         }
-        var i = $(this).closest(".number");
-        setTimeout(function(){
-            checkNum(i);
-        },3000)
-    }
-    
-    var mag = 1;
-    // function Adj2(item,val,step,direction){
-    //     var newStep = step;
-        
-    //     while(newStep<1){
-    //         mag *= 10;
-    //         newStep = step * mag;
-    //     }
-    //     step = step * mag;
-    //     val = val * mag;
-        
-    //     if (direction == "down"){
-    //         val = val - step;
-    //     }else if (direction == "up"){
-    //         val = val + step;
-    //     }
-    //     item.find("input").val((val/mag).toString());
-        
-    //     checkNum(item);
-    //     var numInt = setInterval(function(){
-    //         if (direction == "down"){
-    //             val = val - step;
-    //         }else if (direction == "up"){
-    //             val = val + step;
-    //         }
-    //         item.find("input").val((val/mag).toString());
-    //         checkNum(item);
-    //     },100)
-        
-    //     item.data("numAdj",numInt);
-    // }
-    // function startChange(){
-    //     var item = $(this).closest(".number");
-    //     var step = item.find("input").data("step");
-    //     var val = item.find("input").val(), direction;
-    //     step = Number(step);
-    //     val = Number(val);
-    //     if ($(this).hasClass("down")){direction = "down"}
-    //     else if ($(this).hasClass("up")){direction = "up"}
-    //     Adj2(item,val,step,direction);
-    // }
-    // function stopChange(){
-    //     var item = $(this).closest(".number");
-    //     clearInterval(item.data("numAdj"));
-    //     mag = 1;
-    // }
-    // function checkNum(target){
-    //     //target is .number
-    //     var i = target.find("input");
-    //     var min = i.data("min"), max = i.data("max");
-    //     var val = i.val();
-    //     min = Number(min);
-    //     max = Number(max);
-    //     val = Number(val);
-    //     if (val < min){
-    //         alertBox(min + " is the minimum",i,"below","fade");
-    //         i.val(min);
-    //         clearInterval(target.data('numAdj'));
-    //     }else if (val > max){
-    //         alertBox(max + " is the maximum",i,"below","fade");
-    //         i.val(max);
-    //         clearInterval(target.data('numAdj'));
-    //     }
-    // }
-    
-    /*function slideFadeOut(elem) {
-        const fade = { opacity: 0, transition: 'opacity 0.5s' };
-        elem.css(fade).delay(100).slideUp();
-    }
-    function slideFadeIn(elem){
-        const solid = { opacity: 1, transition: 'opacity 0.5s'};
-        elem.css("opacity","0")
-        elem.slideDown().delay(100).css(solid);
-    }  */
+        else if (type == "narrative"){
+            target = item.find(".narrative");
+            setTimeout(function(){
+                $.ajax({
+                    url: "/narrativeImgData",
+                    method: "POST",
+                    data: options,
+                    success: function(data){
+                        var markup = $(data).html();
+                        target.html(markup);
+                        // UPDATE ITEM FOR EDITING PURPOSES
+                        options['markupStr'] = markup;
+                        item.find('.question').data('options',options);
+                        target.css('min-height','unset');
+                    }
+                })
+            },100);
+        }
+        else if (type == "number"){
+            target = item.find('.number').find("input");
+            target.data(options);
+            target.val(options['initial']);
+            item.find('.number').find(".label").text(options['units']);
+            item.find('.number').on("mousedown touchstart",".change",startChange);
+            item.find('.number').on("mouseup touchend",".change",stopChange);
+            item.find('.number').on('keyup',"input",inputNum);
+            item.data('options',options);
+        }
+        else if (type == "checkboxes"){
+            target = item.find("ul");
+            target.find("li").remove();
+            $.each(options,function(i,value){
+                $("<li data-value='"+value+"'>"+value+"</li>").appendTo(target).on("click",checkbox);
+            });
+        }
+        else if (type == "dropdown"){
+            target = item.find("select");
+            target.find("li").remove();
+            $.each(options,function(i,value){
+                $("<option value='"+value+"'>"+value+"</option>").appendTo(target).on("click",radio);
+            });
+        }
+        else if (type == "scale"){
+            target = item;
+            var displayValue = (options['displayValue'] == "yes") ? true:false,
+                displayLabel = (options['displayLabels'] == "yes") ? true:false,
+                minLabelStr, maxLabelStr,
+                min = options['min'], max = options['max'], initial = options['initial'],
+                minLabel = options['minLabel'], maxLabel = options['maxLabel'],
+                scale = item.find(".scale"), slider = item.find(".slider"),
+                showValue = (options['displayValue'] == 'yes') ? true : false;
+            if (displayLabel){
+                minLabelStr = "("+min+") " + minLabel;
+                maxLabelStr = maxLabel + " ("+max+")";
+            }else if (!displayLabel){
+                minLabelStr = minLabel;
+                maxLabelStr = maxLabel;
+            }
+            target.find(".answer").find(".left").text(minLabelStr);
+            target.find(".answer").find(".right").text(maxLabelStr);
+            target.find(".slider").attr({
+                "value":initial, "min":min, "max":max
+            });
 
+            scale.on("mouseenter",function(){
+                var item = $(this).closest('.item');
+                
+                clearTimeout(item.data("timeoutId"));
+                changeSliderValue(item);
+            });    
+            scale.on("mouseleave touchend", function(){
+                var item = $(this).closest('.item');
+                var timeoutId = setTimeout(function(){
+                    hideSliderValue(item);
+                }, 1000);
+                
+                clearInterval(item.data('updateId'));
+                item.data("updateId","clear");
+                item.data('timeoutId', timeoutId); 
+                var response = item.find("input").val();
+                showFollowUps(response,item);
+            });
+            slider.closest(".item").data("updateId","clear");
+            slider.on("mousedown touchstart",function(){
+                var item = $(this).closest('.item');
+                if (item.data("updateId")=="clear"){
+                    var updateId = setInterval(function(){
+                        changeSliderValue(item);
+                    },100);
+                    showSliderValue(item);
+                    item.data('updateId',updateId);
+                }
+            });
+            if (showValue){slider.addClass('showValue');}
+            else {slider.removeClass('showValue');}
+        }
+        else if (type == "date"){
+            target = item.find("input");
+            target.on("focus",function(e){
+                e.preventDefault();
+            });
+            target.removeAttr('id');
+            target.removeClass('is-datepick');
+            target.datepick(options);
+        }
+        else if (type == "text"){
+            target = item.find('input');
+            t = (options != undefined && options['placeholder'] != undefined) ? options['placeholder'] : "";
+            target.attr('placeholder',t);
+        }
+        else if (type == "text box"){
+            target = item.find('textarea');
+            t = (options != undefined && options['placeholder'] != undefined) ? options['placeholder'] : "";
+            target.attr('placeholder',t);
+        }
+        else if (type == "signature"){
+            target = item.find(".signature");
+            target.find(".jSignature").remove();
+            target.jSignature();
+            target.on("click",".clear",function(){
+                target.parent().jSignature("reset");
+            });
+            if (options['typedName'] == 'yes'){item.find(".printed").show();}else{item.find(".printed").hide();}
+        }
+        else if (type == "time"){
+            target = item.find('input');
+            target.removeAttr('id').removeClass('ui-timepicker-input').val(options['setTime']);
+            target.timepicker(options);
+            // console.log(options);
+        }
+    }
 })

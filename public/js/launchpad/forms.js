@@ -16,9 +16,7 @@ $(document).ready(function () {
         }
     })
 
-    var fullscreenBtn = $(".btn-fullscreen").filter(function(){
-        return !$(this).data('initialized');
-    })
+    var fullscreenBtn = filterUninitialized(".btn-fullscreen");
     fullscreenBtn.on('click',function(){
         var p = modalOrBody($(this));
         p.scrollTo($(this).closest(".note-editor"),200);
@@ -28,12 +26,10 @@ $(document).ready(function () {
     //update defaultDisplayCSS in form-builder.js to reflect any changes here
     var defaultCSS = {"inline":"false"};
     function UpdateCss(item){
-        var cssObj = {};
-        var dispObj = (item.data('disp') != null) ? item.data('disp') : defaultCSS ;
-        
-        var inline = dispObj.inline;
-        
-        var dispClass = inline.includes("true") ? "inline" : "ownLine";
+        var cssObj = {},
+            dispObj = (item.data('disp') != null) ? item.data('disp') : defaultCSS,
+            inline = dispObj.inline,
+            dispClass = inline.includes("true") ? "inline" : "ownLine";
         
         dispClass = (item.is(".itemFU") && item.closest(".item").data('disp').inline.includes("true")) ? "ownLine" : dispClass;
         
@@ -58,32 +54,19 @@ $(document).ready(function () {
             UpdateCss($(item));
         })
             
-        var checkboxes = $(".checkboxes").filter(function(){
-            return !$(this).data('initialized');
-        });
+        var checkboxes = filterUninitialized(".checkboxes");
         var plzSelectNode = $("<div class='plzselect'>(select as many as apply)</div>");
         checkboxes.each(function(){
             plzSelectNode.clone().insertBefore($(this));
         })
         checkboxes.on("click","li",checkbox);
         checkboxes.data("initialized",true);
-
-        function followup() {
-            var response = $(this).data('value'), item = $(this).closest(".item, .itemFU");
-            if (item.is(".item")){
-                showFollowUps(response,item);
-            }
-        }
         
-        var radios = $(".radio").filter(function(){
-            return !$(this).data('initialized');
-        });
+        var radios = filterUninitialized(".radio");
         radios.on("click","li",radio);
         radios.data("initialized",true);
 
-        var dropdowns = $(".dropdown").filter(function(){
-            return !$(this).data('initialized');
-        });
+        var dropdowns = filterUninitialized(".dropdown");
         dropdowns.on("change","select",function(){
             var response = $(this).val();
             var item = $(this).closest(".item, .itemFU");
@@ -93,9 +76,7 @@ $(document).ready(function () {
         })
         dropdowns.data("initialized",true);
 
-        var datepickers = $(".datepicker").filter(function(){
-            return !$(this).data('initialized');
-        });
+        var datepickers = filterUninitialized(".datepicker");
         datepickers.each(function(){
             $(this).on("focus",function(e){
                 e.preventDefault();
@@ -115,9 +96,7 @@ $(document).ready(function () {
         })
         datepickers.data("initialized",true);
 
-        var signatures = $(".signature").filter(function(){
-            return !$(this).data('initialized');
-        });
+        var signatures = filterUninitialized(".signature");
         signatures.each(function(){
             $(this).jSignature();
             $(this).on("click",".clear",function(){
@@ -126,10 +105,8 @@ $(document).ready(function () {
         })
         signatures.data("initialized",true);
 
-        var times = $(".time").filter(function(){
-            return !$(this).data('initialized');
-        });
-       times.each(function(){
+        var times = filterUninitialized(".time");
+        times.each(function(){
             var i = $(this).find("input"), o = i.data('options');
             i.timepicker(o);
         })
@@ -150,14 +127,11 @@ $(document).ready(function () {
            
         var sliderXPos;
         
-        var scales = $(".scale").filter(function(){
-            return !$(this).data('initialized');
-        });
+        var scales = filterUninitialized(".scale");
         scales.on("mouseenter",function(){
             var item = $(this).closest('.item');
             
             clearTimeout(item.data("timeoutId"));
-            //showSliderValue(item);
             changeSliderValue(item);
         });    
         scales.on("mouseleave touchend", function(){
@@ -175,9 +149,7 @@ $(document).ready(function () {
         scales.data("initialized",true);
 
 
-        var sliders = $(".slider").filter(function(){
-            return !$(this).data('initialized');
-        });
+        var sliders = filterUninitialized(".slider");
         sliders.closest(".item").data("updateId","clear");
         sliders.on("mousedown touchstart",function(){
             var item = $(this).closest('.item');
@@ -196,275 +168,154 @@ $(document).ready(function () {
         $(".SliderValue").css("opacity",1);
     
     
+        var submitBtns = filterUninitialized(".submitForm");
+        submitBtns.on('click',submitForm);
+        submitBtns.data("initialized",true);
+        
+        
+        var numbers = filterUninitialized(".number");
+        numbers.on("mousedown touchstart",".change",startChange);
+        numbers.on("mouseup touchend",".change",stopChange);
+        numbers.on('keyup',"input",inputNum);
+        numbers.data("initialized",true);
+
+        $(".clearTableFilters").off("click",clearTableFilters);
+        $(".clearTableFilters").on("click",clearTableFilters);
+
+        var loadDxFormBtns = filterUninitialized($("#load_dx_form").find("li"));
+        loadDxFormBtns.on("click",loadDxForm);
+        loadDxFormBtns.data("initialized",true);
+
+})
+
+function followup() {
+    var response = $(this).data('value'), item = $(this).closest(".item, .itemFU");
+    if (item.is(".item")){
+        showFollowUps(response,item);
+    }
+}
+
+function inputNum(){
+    var v = $(this).val(), r = v.replace(/[^0-9.-]/g, "");
+    if (v != r){
+        alertBox("numbers only",$(this),"below","fade");
+        $(this).val(r);
+        return false;
+    }
+    var i = $(this).closest(".number");
+    setTimeout(function(){
+        checkNum(i);
+    },3000)
+    if ($(this).closest(".item, .itemFU").is('.item')){
+        showFollowUps(v,$(this).closest('.item'));
+    }
+}
+var mag = 1;
+function Adj2(item,val,step,direction){
+    var newStep = step;
     
-    function showSliderValue(item){
-        var showBool = $(item).find(".slider").hasClass("showValue");
-        if (showBool){
-            $(item).find(".SliderValue").fadeIn();
-        }
+    while(newStep<1){
+        mag *= 10;
+        newStep = step * mag;
     }
-    function hideSliderValue(item){
-        $(item).find(".SliderValue").fadeOut();
-    }
-    function changeSliderValue(item){
-        var val = $(item).find('input').val();
-        $(item).find(".SliderValue").text("Current Value: "+val);
-    }
-            
-    function PainBox(xPos,yPos){
-        var wrap = $('<div class="paincircle" data-left="'+xPos.toFixed(1)+'" data-top="'+yPos.toFixed(1)+'"></div>'),newBox;
-        wrap.appendTo("#model");
-        newBox = $("#model").find(".paincircle").last();
-        newBox.css({
-            "left": xPos+"px",
-            "top": yPos+"px"            
-        })
-        updatePainBoxValue();
-    }
-    function updatePainBoxValue(){
-        var paincircles = $(".paincircle"), values="", input = $("#painwrapper").closest(".item").find("#painLocation");
-        paincircles.each(function(i,paincircle){
-            var value = "X"+$(paincircle).data("left")+"_Y"+$(paincircle).data("top");
-            if (values===""){
-                values=value;
-            }else{
-                values= values +", "+ value;
-            }
-        })
-        input.val(values);
-    }
+    step = step * mag;
+    val = val * mag;
     
-    // $("#model").on("click",".clear",function(){
-        //     $("#model").find(".paincircle").last().remove();
-        //     if ($("#model").find(".paincircle").length===0) {$("#model").find(".clear").hide();}
-        //     updatePainBoxValue();
-        // })
-        
-        // $("#model").on("mousedown touchstart", function(ev){
-        //     ev.preventDefault();
-        //     var coords = pointerEventToXY(ev), offset = $("#model").offset(), clear;
-        //     var newX = coords.x - offset.left;
-        //     var newY = coords.y - offset.top;
-        //     if (newX>230 && newX<330 && newY<120){clear="yes"}
-        //     if (clear!="yes"){
-        //         PainBox(newX,newY);
-        //     }
-        //     if ($("#model").find(".paincircle").length>0){
-        //         $("#model").find(".clear").show();
-        //     }
-        // })
-        
-        // var painCount = 1;
-        // var painStr = painCount.toString();
-        // function SavePain() {
-        //     var form = $("#painwrapper");
-        //     if (checkForm(form)){
-        //         painStr = painCount.toString();
-        //         var newLocation = painStr+"painLocation", newScale = painStr+"painScale", newQualities = painStr+"painQualities";
-        //         var LocationVal = $("#painLocation").val(), ScaleVal = $("#painScale").val(), QualVal = $("#painQualitiesCombined").val();
-        //         var newNode = '<input hidden name="'+newLocation+'" value="'+LocationVal+'"><input hidden name="'+newScale+'" value="'+ScaleVal+'"><input hidden name="'+newQualities+'" value="'+QualVal+'">';
-        //         $(newNode).appendTo("#painwrapper");
-        //         updatePainBoxValue();
-        //         $("#painScale").val(0);
-        //         $("painLocation").val("");
-        //         $("#painwrapper").find(".clear").hide();
-        //         var savedPain = "<li>Pain #"+painStr+": "+ScaleVal+"/10, "+QualVal+"</li>";
-        //         $(savedPain).appendTo("#savedPains");
-        //         $(".paincircle").remove();
-        //         $("#painwrapper").find(".active").click();
-        //         $("#ConfirmFinishPain").find("span").text(painStr);
-        //         painCount += 1;
-        //         return true;
-        //     }else {return false;}
-        // }
-        
-        // function CompletePainChart(animation){
-        //     $("#painwrapper").find("input").attr("required",false);
-        //     $("#model, #painratings, #saveAndContinuePain, #saveAndFinishPain, #finishPain").css({
-        //         "opacity": "0.3",
-        //         "cursor": "not-allowed"
-        //     });
-        //     $(".paincircle").remove();
-        //     $("#painwrapper").find(".active").click();
-        //     $("#model").css({"background-size":"contain"});
-        //     $("#painratings").find(".slider").addClass("disabled");
-        //     if (animation=="animate"){
-        //         $("#model").animate({"height":"6em"});
-        //         $("#painratings").animate({"font-size":"0.4em"});
-        //     }else{
-        //         $("#model").css({"height":"6em"});
-        //         $("#painratings").css({"font-size":"0.4em"});
-        //     }
-        //     $("#painratings").find(".SliderValue").hide();
-        //     $("#painratings").find("*").css("cursor","not-allowed");
-        //     $("#painratings").find("*").unbind("mousemove touchmove mousedown touchstart change mouseup touchend click");
-        //     $("#model").unbind("mousedown touchstart");
-        //     $("#saveAndContinuePain, #saveAndFinishPain, #finishPain").unbind("click");
-        //     $("#painLocation, #painScale, #painQualities, #painQualitiesCombined").remove();
-        //     $("#painwrapper").data("finished","yes");
-        //     return true;
-        // }
-        // $("#saveAndContinuePain").on("click", function(){
-        //     if (SavePain()){
-        //         confirmBox("Pain #"+painStr+" saved",$("#PleaseClick"),"ontop","fade","-64px,0px");
-        //         $.scrollTo("#model");
-        //     }
-        // })
-        // $("#saveAndFinishPain").on("click", function(){
-        //     if (SavePain()){
-        //         confirmBox("Pain #"+painStr+" saved",$("#PleaseClick"),"ontop","fade","-64px,0px");
-        //         $.scrollTo("#model");
-        //         $("#ConfirmFinishPain").modal();
-        //     }
-        // })
-        // $("#savePain").on("click",function(){
-        //     SavePain();
-        //     CompletePainChart();
-        // })
-        // $("#finishPain").on("click",function(){
-        //     $("#ConfirmFinishPain").modal();
-        // });
-        // $("#ConfirmFinishPain").on("click",".yes",function(){
-        //     CompletePainChart("animate");
-        //     CheckMark($("#finishPain"));
-        //     $.scrollTo($("#painwrapper"));
-        // })
-        
-        // $(".hideAllItems").on("change","input",function(){
-        //     var allItems = $(this).closest(".section").find(".item"), checkedBoxes = $(this).closest(".section").find(".hideAllItems").find("input:checked").length;
-        //     if (checkedBoxes>0){
-        //         allItems.slideUp();
-        //         allItems.find("input").attr("required",false);
-        //     }else {allItems.slideDown();}
-        // })
-                    
-        // $(".reportFilters").on("click","li",function(){
-        //     var response = $(this).data("filter");
-        //     var items = $("li").filter("[data-response='"+response+"']").closest(".item");
-        //     var sections = items.closest(".section");
-        //     $(this).toggleClass("active");
-        //     if ($(this).hasClass("active")){
-        //         items.hide();
-        //     }else {
-        //         items.show();
-        //         sections.show();
-        //     }
-        //     sections.each(function(i,section){
-        //         var count = $(section).find(".item:visible").length;
-        //         if (count==0){$(section).hide();}
-        //     })
-            
-        // })
-        // $(".reportFilters").find("li").click();
-        
-    var submitBtns = $(".time").filter(function(){
-        return !$(this).data('initialized');
-    });
-    submitBtns.on('click',submitForm);
-    submitBtns.data("initialized",true);
-    
-    function inputNum(){
-        var v = $(this).val(), r = v.replace(/[^0-9.-]/g, "");
-        if (v != r){
-            alertBox("numbers only",$(this),"below","fade");
-            $(this).val(r);
-            return false;
-        }
-        var i = $(this).closest(".number");
-        setTimeout(function(){
-            checkNum(i);
-        },3000)
-        if ($(this).closest(".item, .itemFU").is('.item')){
-            showFollowUps(v,$(this).closest('.item'));
-        }
+    if (direction == "down"){
+        val = val - step;
+    }else if (direction == "up"){
+        val = val + step;
     }
-    var mag = 1;
-    function Adj2(item,val,step,direction){
-        var newStep = step;
-        
-        while(newStep<1){
-            mag *= 10;
-            newStep = step * mag;
-        }
-        step = step * mag;
-        val = val * mag;
-        
+    item.find("input").val((val/mag).toString());
+    
+    checkNum(item);
+    var numInt = setInterval(function(){
         if (direction == "down"){
             val = val - step;
         }else if (direction == "up"){
             val = val + step;
         }
         item.find("input").val((val/mag).toString());
-        
         checkNum(item);
-        var numInt = setInterval(function(){
-            if (direction == "down"){
-                val = val - step;
-            }else if (direction == "up"){
-                val = val + step;
-            }
-            item.find("input").val((val/mag).toString());
-            checkNum(item);
-        },100)
-        
-        item.data("numAdj",numInt);
-    }
-    function startChange(){
-        var item = $(this).closest(".number");
-        var step = item.find("input").data("step");
-        var val = item.find("input").val(), direction;
-        step = Number(step);
-        val = Number(val);
-        if ($(this).hasClass("down")){direction = "down"}
-        else if ($(this).hasClass("up")){direction = "up"}
-        Adj2(item,val,step,direction);
-    }
-    function stopChange(){
-        var item = $(this).closest(".number");
-        clearInterval(item.data("numAdj"));
-        mag = 1;
-        var response = item.find("input").val();
-        if ($(this).closest(".item, .itemFU").is('.item')){
-            showFollowUps(response,$(this).closest(".item"));
-        }
-    }
-    function checkNum(target){
-        //target is .number
-        var i = target.find("input");
-        var min = i.data("min"), max = i.data("max");
-        var val = i.val();
-        min = Number(min);
-        max = Number(max);
-        val = Number(val);        
-        if (val < min){
-            alertBox(min + " is the minimum",i,"below","fade");
-            i.val(min);
-            clearInterval(target.data('numAdj'));
-        }else if (val > max){
-            alertBox(max + " is the maximum",i,"below","fade");
-            i.val(max);
-            clearInterval(target.data('numAdj'));
-        }
-    }
+    },100)
     
-    var numbers = $(".number").filter(function(){
-        return !$(this).data('initialized');
-    });
-    numbers.on("mousedown touchstart",".change",startChange);
-    numbers.on("mouseup touchend",".change",stopChange);
-    numbers.on('keyup',"input",inputNum);
-    numbers.data("initialized",true);
+    item.data("numAdj",numInt);
+}
+function startChange(){
+    var item = $(this).closest(".number");
+    var step = item.find("input").data("step");
+    var val = item.find("input").val(), direction;
+    step = Number(step);
+    val = Number(val);
+    if ($(this).hasClass("down")){direction = "down"}
+    else if ($(this).hasClass("up")){direction = "up"}
+    Adj2(item,val,step,direction);
+}
+function stopChange(){
+    var item = $(this).closest(".number");
+    clearInterval(item.data("numAdj"));
+    mag = 1;
+    var response = item.find("input").val();
+    if ($(this).closest(".item, .itemFU").is('.item')){
+        showFollowUps(response,$(this).closest(".item"));
+    }
+}
+function checkNum(target){
+    //target is .number
+    var i = target.find("input");
+    var min = i.data("min"), max = i.data("max");
+    var val = i.val();
+    min = Number(min);
+    max = Number(max);
+    val = Number(val);        
+    if (val < min){
+        alertBox(min + " is the minimum",i,"below","fade");
+        i.val(min);
+        clearInterval(target.data('numAdj'));
+    }else if (val > max){
+        alertBox(max + " is the maximum",i,"below","fade");
+        i.val(max);
+        clearInterval(target.data('numAdj'));
+    }
+}
 
-    $(".clearTableFilters").off("click",clearTableFilters);
-    $(".clearTableFilters").on("click",clearTableFilters);
+function showSliderValue(item){
+    var showBool = $(item).find(".slider").hasClass("showValue");
+    if (showBool){
+        $(item).find(".SliderValue").fadeIn();
+    }
+}
+function hideSliderValue(item){
+    $(item).find(".SliderValue").fadeOut();
+}
+function changeSliderValue(item){
+    var val = $(item).find('input').val();
+    $(item).find(".SliderValue").text("Current Value: "+val);
+}
+        
+function PainBox(xPos,yPos){
+    var wrap = $('<div class="paincircle" data-left="'+xPos.toFixed(1)+'" data-top="'+yPos.toFixed(1)+'"></div>'),newBox;
+    wrap.appendTo("#model");
+    newBox = $("#model").find(".paincircle").last();
+    newBox.css({
+        "left": xPos+"px",
+        "top": yPos+"px"            
+    })
+    updatePainBoxValue();
+}
+function updatePainBoxValue(){
+    var paincircles = $(".paincircle"), values="", input = $("#painwrapper").closest(".item").find("#painLocation");
+    paincircles.each(function(i,paincircle){
+        var value = "X"+$(paincircle).data("left")+"_Y"+$(paincircle).data("top");
+        if (values===""){
+            values=value;
+        }else{
+            values= values +", "+ value;
+        }
+    })
+    input.val(values);
+}
 
-    var loadDxFormBtns = $("#load_dx_form").find("li").filter(function(){
-        return !$(this).data('initialized');
-    });
-    loadDxFormBtns.on("click",loadDxForm);
-    loadDxFormBtns.data("initialized",true);
-
-})
 
 function loadDxForm(){
     var target = $("#dxFormLoadTarget"), type = $(this).data("value"), uri = "/loadDxForm/"+type;

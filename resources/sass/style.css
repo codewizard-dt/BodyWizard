@@ -173,6 +173,7 @@ h4 {
     font-weight: bold;
 }
 h5 {font-weight: normal;color:var(--purple);}
+h5 span {font-size: 0.9em;}
 .inline{display: inline;}
 .little{
     font-size: 0.85em;

@@ -13,6 +13,17 @@ $(".jump").on("click",function(){
     };
 })(jQuery);
 
+function filterUninitialized(selector){
+    var uninitialized, obj;
+    if (selector instanceof jQuery){obj = selector;}
+    else if(typeof selector == 'string'){obj = $(selector);}
+    else {return false;}
+    uninitialized = obj.filter(function(){
+        return !$(this).data('initialized');
+    });
+    return uninitialized;
+}
+
 function chkStrForArrayElement(yourstring,substrings){
     var length = substrings.length;
     while(length--) {
@@ -35,12 +46,15 @@ $(document).ajaxError(function(ev,xhr,settings,error){
     if (error !== 'abort'){
         // console.log("ev");
         // console.log(ev);
-        console.log("xhr");
+        // console.log("xhr");
         console.log(xhr);
         // console.log("settings");
         // console.log(settings);
         // console.log("error");
         // console.log(error);
+        if ($("#Error").length > 0){
+            $("#Error").find(".submit").data('error',xhr);
+        }
     }
 })
 
@@ -60,18 +74,18 @@ function getDefaultCSS(){
 }
 
 
-function checkName(){
-    setTimeout(function(){
-        if ($("#FName").val()==""){
-            var noName = $('<div id="NoName" class="modal">There is no patient information loaded. You will be redirected to the Practitioner Launchpad shortly...</div>');
-            $('body').append(noName);
-            $("#NoName").modal();
-            setTimeout(function(){
-                location.replace("/portal/launchpad");
-            },2000)
-        }        
-    },1500)        
-}
+// function checkName(){
+//     setTimeout(function(){
+//         if ($("#FName").val()==""){
+//             var noName = $('<div id="NoName" class="modal">There is no patient information loaded. You will be redirected to the Practitioner Launchpad shortly...</div>');
+//             $('body').append(noName);
+//             $("#NoName").modal();
+//             setTimeout(function(){
+//                 location.replace("/portal/launchpad");
+//             },2000)
+//         }        
+//     },1500)        
+// }
 
 function alertBox(str,What,Where,Fade,Offset){
     var h = What.outerHeight(true), w = What.outerWidth(true), ele, w2;

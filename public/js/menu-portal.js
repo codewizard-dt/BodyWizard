@@ -179,17 +179,19 @@ $(document).ready(function(){
                 action = uri[3];
                     
             var match = $(".optionsNav").filter(function(){
-                return $(this).data('tabanchor') == plural(model);
+                var d = $(this).data('tabanchor');
+                return (d == plural(model) || d == model);
             })
-            // return false;
-            // console.log(uri[2]);
+
             if (uri[2] == "UID"){
-                // console.log(uri);
                 var uid = match.data("uid");
-                // console.log(uid);
-                // return false;
+                if (uid == undefined || uid == ""){
+                    var uidList = JSON.parse($("#uidList").text());
+                    uid = (uidList[Model] !== undefined) ? uidList[Model] : uid;
+                }
+
                 if ((uid == undefined || uid == "") && $("#"+Model+"List").length > 0){
-                    $.scrollTo($("#"+model+"List"));
+                    $.scrollTo($("#"+Model+"List"));
                     alertBox('select a ' + model + ' to edit',$("#"+Model+"List"),"ontop",1000,"-50%,-50%");
                     return false;
                 }else if ((uid == undefined || uid == "") && $("#"+Model+"List").length == 0){
@@ -276,8 +278,6 @@ $(document).ready(function(){
         }
         
         animateMenuV2(menu);
-        
-        
     })
     
     MenuItems.on("click","li",function(){

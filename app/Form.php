@@ -202,7 +202,7 @@ class Form extends Model
             foreach ($options as $key => $option){
                 $dataStr .= "data-$key='$option' ";
             }
-            $label = $options['units'];
+            $label = isset($options['units']) ? $options['units'] : "";
             $initial = $options['initial'];
             $name = (isset($options['name'])) ? $options['name'] : "";
             echo "<div class='answer number' ><input size='5' id='$name' name='$name' type='text' $dataStr value='$initial'><span class='label'>$label</span>
@@ -252,7 +252,7 @@ class Form extends Model
             $name = (isset($options['name'])) ? $options['name'] : "";
 
             if ($displayLabel){
-                $minLabelStr = "$minLabel ($min)";
+                $minLabelStr = "($min) $minLabel";
                 $maxLabelStr = "$maxLabel ($max)";
             }elseif (!$displayLabel){
                 $minLabelStr = "$minLabel";
@@ -263,11 +263,11 @@ class Form extends Model
             // echo "<div class='answer scale' $x>
             echo "<div class='answer scale'>
             <span class='left'>$minLabelStr</span>
-            <input class='slider targetInput $class' data-name='$name' id='$name' type='range' min='$min' max='$max'>
+            <input class='slider targetInput $class' data-name='$name' value='$initial' id='$name' type='range' min='$min' max='$max'>
             <span class='right'>$maxLabelStr</span><div class='SliderValue' style='opacity:0;'></div></div>";
         }
         public function signature($options){
-            $printed = ($options['typedName']=='yes') ? "<span class='printed'>Type your full legal name here: <input type='text'></span>":"";
+            $printed = ($options['typedName']=='yes') ? "<span class='printed'>Type your full legal name here: <span class='text'><input type='text'></span></span>":"";
             echo "<div class='answer signHere'>$printed Sign your name in the box below
             <div class='signature'><div class='clear'>reset</div></div>
             </div>";
@@ -284,7 +284,7 @@ class Form extends Model
             $name = $options['name'];
             $optJSON = json_encode($options);
             $initial = isset($options['setTime'])?$options['setTime']:"";
-            echo "<div class='answer time'><input id='$name' size='8' placeholder='HH:MM' value='$initial' data-options='$optJSON' type='text'></div>";
+            echo "<div class='answer time'><input id='$name' class='timePick' size='8' placeholder='HH:MM' value='$initial' data-options='$optJSON' type='text'></div>";
         }
         public function narrative($options){
             $id = isset($options['name'])?$options['name']:"";
