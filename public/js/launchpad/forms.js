@@ -50,9 +50,11 @@ $(document).ready(function () {
     
 
     // INITIALIZING ITEMS
-        $(".item, .itemFU").each(function(i,item){
+        items = filterUninitialized($(".formDisp").find(".item, .itemFU"));
+        items.each(function(i,item){
             UpdateCss($(item));
-        })
+        });
+        items.data('initialized',true);
             
         var checkboxes = filterUninitialized(".checkboxes");
         var plzSelectNode = $("<div class='plzselect'>(select as many as apply)</div>");

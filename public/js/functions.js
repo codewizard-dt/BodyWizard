@@ -37,9 +37,6 @@ function chkStrForArrayElement(yourstring,substrings){
 $.ajaxSetup({
         headers: {
             'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-        },
-        error:function(e){
-            console.log(e);
         }
 });
 $(document).ajaxError(function(ev,xhr,settings,error){
@@ -47,16 +44,31 @@ $(document).ajaxError(function(ev,xhr,settings,error){
         // console.log("ev");
         // console.log(ev);
         // console.log("xhr");
-        console.log(xhr);
+        // console.log(xhr);
         // console.log("settings");
         // console.log(settings);
         // console.log("error");
         // console.log(error);
-        if ($("#Error").length > 0){
-            $("#Error").find(".submit").data('error',xhr);
+        console.log(error);
+        var status = xhr.status;
+        if (status == 419){
+            blurElement($("body"),"#Refresh");
+            setTimeout(function(){
+                location.reload();
+            },500)
+        }else{
+            if ($("#Error").length > 0){
+                $("#Error").find(".submit").data('error',xhr);
+                $("#Error").find(".message").html("<h2>Error</h2><div>"+xhr.responseJSON.message+"</div>");
+                blurElement($("body"),"#Error");
+            }            
         }
     }
 })
+
+function submitErrorReport(){
+    console.log($(this).data('error'));
+}
 
 $(document).on("mousedown",".button",function(e){
 //    console.log(e.target);
@@ -361,13 +373,6 @@ function blurElement(elem,modal,time,callback){
     }
 
     if (!block.is("#Block")){$("#loading").addClass("dark");}
-
-    // if ($("#Block").length==0){
-    //     $("body").append("<div id='Block' class='Block'></div>");
-    // }
-    // var home = $("#ModalHome").length>0? $("#ModalHome"):$("body");
-    // $("#Block").children().hide().appendTo(home);
-    
     
     var showCSS = {};
     var w = $(elem).outerWidth(), h = $(elem).outerHeight();
@@ -393,31 +398,22 @@ function blurElement(elem,modal,time,callback){
         top:"50%",
         transform:"translate(-50%,-50%)",
     }
-    var modalCSS = {
-        // display: "inline-block",
-        // backgroundColor: "rgb(230,230,230)",
-        // maxHeight: "90%",
-        // maxWidth: "90%",
-        // margin: 0,
-        // padding: "2em 3em",
-        // borderRadius: "5px",
-        // boxShadow: "0 0 15px 3px rgba(230,230,230)"
-    }        
 
-    if (!block.is("#Block")){
-        modalCSS['boxShadow'] = "0 0 15px 3px rgb(190,190,190)";
-    }
+    // if (!block.is("#Block")){
+    //     modalCSS['boxShadow'] = "0 0 15px 3px rgb(190,190,190)";
+    // }
 
     if (modal!=undefined){
         $(modal).css("opacity","1");
-        if (modal!="#loading" && modal!="#checkmark"){
-            $(modal).css(modalCSS);
-        }else if (modal=="#loading"){
+        if (modal=="#loading"){
             $(modal).css({opacity:1,display:"inline-block"});
         }
-        if (modal==".c"){
+        if ($(modal).is("#Warn, #Error, #Confirm")){
+            $(modal).css("box-shadow","0 0 15px 3px rgb(245,245,245)");
+        }
+        if (modal==".c" || modal=='.a'){
             $(modal).css({backgroundColor:"transparent",boxShadow:""});
-            $(modal).find(".confirm").css(center);
+            $(modal).find(".confirm, .alert").css(center);
         }
         // $(modal).appendTo("#Block").css(center);
         $(modal).appendTo(block).css(center);
@@ -428,10 +424,8 @@ function blurElement(elem,modal,time,callback){
             })
         }
         if ($(modal).is(":visible")==false){
-            // slideFadeIn($(modal),time);
             $(modal).fadeIn(time);
         }
-        // console.log($(modal).find(".button"));
         $(modal).find('.cancel').on("click",function(){
             unblurElement(elem);
         })
@@ -781,6 +775,7 @@ $(document).ready(function(){
     $('.manageOverflow').each(function(i,ele){
         checkOverflow(ele);
     })
+    $("#Error").find(".submit").on('click',submitErrorReport);
 })
 
 function allowButtonFocus(){
@@ -1092,7 +1087,8 @@ function confirm(target,where,offset){
     var str = "<span class='confirmQ'>are you sure? this cannot be undone</span> <span class='confirmY'>yes</span><span class='confirmN'>no</span>";
     confirmBox(str,target,where,"nofade",offset);
 }
-function warn(target,where,offset,customText){
+function warn(target,where,offset,customText=""){
+    customText = (customText != '') ? " "+customText : "";
     var str = "<span class='confirmQ'>are you sure"+customText+"? this cannot be undone</span> <span class='confirmY'>yes</span><span class='confirmN'>no</span>";
     alertBox(str,target,where,"nofade",offset);
 }

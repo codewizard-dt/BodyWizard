@@ -25,5 +25,28 @@
 				<div class='button small cancel'>dismiss</div>
 			</div>
 		</div>
+		<div id="Warn" class='prompt'>
+			<div class='message'></div>
+			<div class='options'>
+				<div class='button large submit pink confirmY'>YES</div>
+				<div class='button large cancel confirmN'>cancel</div>
+			</div>
+		</div>
+		<div id="Confirm" class='prompt'>
+			<div class='message'></div>
+			<div class='options'>
+				<div class='button small submit pink confirmY'>confirm</div>
+				<div class='button small cancel confirmN'>dismiss</div>
+			</div>
+		</div>
+		<div id="Refresh" class='prompt'>
+			<div class="message">
+				<h2>Session Timeout</h2>
+				<div>It's been too long! Let's log in again.</div>
+			</div>
+			<div class="options">
+				<div class="button pink70 medium">automatically refreshing</div>
+			</div>
+		</div>
 	</div>
 @endsection

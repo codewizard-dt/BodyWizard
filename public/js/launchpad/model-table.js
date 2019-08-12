@@ -122,8 +122,6 @@ $(document).ready(function(){
 
 var formLoadXHR = undefined;
 function rowClickLoadModel(){
-	// console.log($(this).closest(".modalForm"));
-    console.log("HI");
     var uid = $(this).data('uid'), 
     	table = $(this).closest(".styledTable"),
     	target = $(table).data('target'), 

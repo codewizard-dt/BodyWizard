@@ -15,13 +15,13 @@ $(document).ready(function(){
         }
         $("<div/>",{
             class:"button xsmall dispOptions"
-        }).insertAfter($(".question"));
+        }).insertAfter($("#FormPreview").find(".question"));
         $(this).data("displaying",true);
         $(this).text("hide display and layout options");
         $(".dispOptions").on("click",showDispOptions);
         if ($("#SaveDispOpt").length==0){
             $("<div/>",{
-                class:"button xsmall",
+                class:"button xxsmall yellow",
                 id:"SaveDispOpt",
                 html:"save display options"
             }).insertAfter($(this));
@@ -112,11 +112,8 @@ $(document).ready(function(){
         $("#SaveDispOpt").addClass("disabled");
         $("#SaveDispOpt").off("click",saveDispOptions);
         var formObj = $("#formdata").data("json"), sections = formObj['sections'];
-        // console.log(formObj);
-        $(".section").each(function(s,section){
+        $("#FormPreview").find(".section").each(function(s,section){
             var items = $(section).find(".item, .itemFU");
-            //console.log($(section).find('h2').text());
-            //console.log(sections[s]['sectionName']);
             items.each(function(i,item){
                 if ($(item).is(".itemFU")){
                     var kFU = $(item).data('key');
@@ -150,8 +147,7 @@ $(document).ready(function(){
             url: url,
             method:"PATCH",
             data:{
-                full_json: formJsonStr,
-                questions: questionsStr
+                full_json: formJsonStr
             },
             success:function(data){
                 // console.log(data);
@@ -159,14 +155,8 @@ $(document).ready(function(){
                 setTimeout(function(){
                     unblurElement($("#FormPreview"));
                 },800)
-                // unblurButton($("#SaveDispOpt"),true,true);
                 $("#ShowAllDispOpt").click();
-                // $("#SaveDispOpt").on("click",saveDispOptions);
                 $("#SaveDispOpt").remove();
-
-            },
-            error:function(e){
-                console.log(e);
             }
         })
     }    

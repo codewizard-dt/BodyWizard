@@ -7,6 +7,9 @@ if (isset($form)){
     $formUID = $form->getkey();
     $formId = $form->form_id;
     $data = str_replace("'","\u0027",$form->full_json);
+    $name = $form->form_name;
+}else{
+    $name = "";
 }
 
 $ctrl = new Form; 
@@ -20,80 +23,95 @@ $ctrl = new Form;
         <div id="formdata"></div>
     @endif
     <div id='FormInfo'>
-        <div id='FormName' class='editable'>
-            <span>Form Name: </span>
+        <h2 id='FormName' class='editable'>
             <div class='pair'>
-                <input class='input' id='FormName' type='text'>
-                <span class='value'></span>
+                <input class='input' id='FormName' type='text' placeholder='Form Name'>
+                <span class='value'> {{ $name }} </span>
             </div>
-            <div class='toggle edit'>(edit)</div>
-            <div class='toggle save'>(save)</div>
+            <div class='toggle edit'>(edit form name)</div>
+            <div class='toggle save'>(save name)</div>
             <div class='toggle cancel'>(cancel)</div>
-        </div>
+        </h2>
         <div id="Sections">
-            <div class='sectionOptions'>
-                <h4>No Sections Yet</h4>
-                <div class="addSectionBtn button xsmall">add section</div>
-                <div class="sectionOrderBtn button xsmall">change section order</div><br>
+            <div id='SectionOptions' class='prompt'>
+                <div class="message whiteBG">
+                    <h3>No Sections Yet</h3>
+                    <span class='little'>click to scroll</span><br>
+                    <ul></ul>
+                </div>
+                <div class="options">
+                    <div class="addSectionBtn button pink medium">add section</div>
+                    <div id='PreviewFormBtn' class='button medium pink70'>preview form</div>
+                </div>
             </div>
 
-            <div id='AddSection'>
-                <h4>New Section</h4>
-                <div>
-                    <span>Section Name:</span>
-                    <input id="SectionName" type='text'>
+            <div id='AddSection' class='prompt'>
+                <div class="message">
+                    <h2>New Section</h2>
+                    <h3><input id="SectionName" style='text-align: center;' type='text' placeholder='Enter Section Name'></h3>
                 </div>
-                <div class="xs-pad"></div>
-                <div class='button xsmall add'>add to form</div>
-                <div class="clear">(cancel)</div>
+                <div class="options">
+                    <div class='button medium pink add'>add to form</div>
+                    <div class="button medium cancel">cancel</div>
+                </div>
             </div>
 
         </div> 
     </div>
     
     
-    <div id="AddItem">
-        <div>
+    <div id="AddItem" class='prompt'>
+        <div id="AddItemProxy"></div>
+        <div class='message'>
+            <h2 class='purple'>New Question</h2>
             <div>
-                <span>Question:</span>
-                <input id='Text' type='text'>
+                <h3 class='black'><span>Question Text: </span><input id='Text' type='text' placeholder='How are you today?'></h3>
             </div>
             <div>
-                <span>Type:</span>
-                <select id='Type'>
-                    <option value='text'>text</option>
-                    <option value='text box'>text box</option>
-                    <option value='number'>number</option>
-                    <option value='radio'>radio</option>
-                    <option value='checkboxes'>checkboxes</option>
-                    <option value='dropdown'>dropdown</option>
-                    <option value='scale'>scale</option>
-                    <option value='date'>date</option>
-                    <option value='time'>time</option>
-                    <option value='signature'>signature</option>
-                </select>
+                <h4 class='black'>
+                    <span>Answer Type:</span>
+                    <select id='Type'>
+                        <option value='text'>single line text</option>
+                        <option value='text box'>text box</option>
+                        <option value='number'>number</option>
+                        <option value='radio'>select one answer</option>
+                        <option value='checkboxes'>select one or more answers</option>
+                        <option value='dropdown'>dropdown menu</option>
+                        <option value='scale'>slider scale</option>
+                        <option value='date'>date</option>
+                        <option value='time'>time</option>
+                        <option value='signature'>signature</option>
+                    </select>
+                </h4>
             </div>
 
             <div id='Options' class='itemOptionList'>
-                <span>Options:</span>
+                <span class="settingsLabel">Options:</span>
+                <span class='little'>add as many as you'd like. use enter key to move down. use arrows to rearrange</span>
                 <div id='OptionsList' class='optionsList'>
                     <div class='option'><input type='text'><div class="UpDown"><div class="up"></div><div class="down"></div></div></div>
                     <div class='option'><input type='text'><div class="UpDown"><div class="up"></div><div class="down"></div></div></div>
-                    <div class='button xsmall add'>add option</div>
+                    <div class='button xxsmall pink70 add'>add option</div>
                 </div>
             </div>
             <div id='TextOptions' class='itemOptionList'>
                 <?php $option = new Form(); 
-                $optionsText = ['name'=>'textPlaceholder','placeholder'=>'(optional) disappears when you start typing'];
-                $optionsTextBox = ['name'=>'textAreaPlaceholder','placeholder'=>'(optional) disappears when you start typing'];
+                $optionsText = ['name'=>'textPlaceholder','placeholder'=>'(optional) disappears when you type'];
+                $optionsTextBox = ['name'=>'textAreaPlaceholder','placeholder'=>'(optional) disappears when you type'];
                 ?>
-                <span>Placeholder text:</span>{{ $option->answerDisp('text',$optionsText) }}
+                <span class="settingsLabel">Settings:</span>
+                <div class="optionsList">                    
+                    <span>Placeholder text:</span>{{ $option->answerDisp('text',$optionsText) }}
+                </div>
             </div>
             <div id='TextBoxOptions' class='itemOptionList'>
-                <span>Placeholder text:</span>{{ $option->answerDisp('text box',$optionsTextBox) }}
+                <span class="settingsLabel">Settings:</span>
+                <div class="optionsList">
+                    <span>Placeholder text:</span>{{ $option->answerDisp('text box',$optionsTextBox) }}                
+                </div>
             </div>
             <div id='NumberOptions' class='itemOptionList'>
-                <span>Options:</span>
+                <span class="settingsLabel">Settings:</span>
                 <div id='NumberList'  class='optionsList'>
                     <?php
                     $optionsMin = ["min"=>"-9999", "max"=>"9999", "initial"=>"0", "step"=>"1", "units"=>"","name"=>"min"];
@@ -110,7 +128,7 @@ $ctrl = new Form;
                 </div>
             </div>
             <div id='DateOptions' class='itemOptionList'>
-                <span>Options:</span>
+                <span class="settingsLabel">Settings:</span>
                 <div id='DateList' class='optionsList'>
 
                     <?php 
@@ -159,32 +177,32 @@ $ctrl = new Form;
                 </div>
             </div>
             <div id='TimeOptions' class='itemOptionList'>
-                <span>Options:</span>
+                <span class="settingsLabel">Settings:</span>
                 <div id="TimeList" class='optionsList'>
-                <?php
-                $optionsRestrict = ["allow any time","set range",'set initial value',"set interval","ID*TimeRestrict"];
-                $optionsMinTime = ['setTime'=>"8:00am",'name'=>'minTime'];
-                $optionsMaxTime = ['setTime'=>"8:00pm",'name'=>'maxTime'];
-                $optionsInterval = ['min'=>'0','max'=>'180','initial'=>'5','step'=>'5','units'=>'minutes','name'=>'step'];
-                $optionsInitial = ['setTime'=>'8:00am','name'=>'setTime'];
-                ?>
-                <div id='TimeRestriction' data-condition='yes'><span>Time restrictions</span><br>
-                    {{ $ctrl->answerDisp("checkboxes",$optionsRestrict) }}
-                </div>
-                <div id='TimeRange' data-condition='set range'><span>Allowed Range:</span><br>
-                    {{ $ctrl->answerDisp("time",$optionsMinTime) }}
-                    {{ $ctrl->answerDisp("time",$optionsMaxTime) }}
-                </div>
-                <div id='TimeValue' data-condition='set initial value'><span>Initial time displayed:</span><br>
-                    {{ $ctrl->answerDisp("time",$optionsInitial) }}
-                </div>
-                <div id='TimeIntervalBox' data-condition='set interval'><span>Displayed intervals:</span><br>
-                    {{ $ctrl->answerDisp("number",$optionsInterval) }}
-                </div>
+                    <?php
+                    $optionsRestrict = ["allow any time","set range",'set initial value',"set interval","ID*TimeRestrict"];
+                    $optionsMinTime = ['setTime'=>"8:00am",'name'=>'minTime'];
+                    $optionsMaxTime = ['setTime'=>"8:00pm",'name'=>'maxTime'];
+                    $optionsInterval = ['min'=>'0','max'=>'180','initial'=>'5','step'=>'5','units'=>'minutes','name'=>'step'];
+                    $optionsInitial = ['setTime'=>'8:00am','name'=>'setTime'];
+                    ?>
+                    <div id='TimeRestriction' data-condition='yes'><span>Time restrictions</span><br>
+                        {{ $ctrl->answerDisp("checkboxes",$optionsRestrict) }}
+                    </div>
+                    <div id='TimeRange' data-condition='set range'><span>Allowed Range:</span><br>
+                        {{ $ctrl->answerDisp("time",$optionsMinTime) }}
+                        {{ $ctrl->answerDisp("time",$optionsMaxTime) }}
+                    </div>
+                    <div id='TimeValue' data-condition='set initial value'><span>Initial time displayed:</span><br>
+                        {{ $ctrl->answerDisp("time",$optionsInitial) }}
+                    </div>
+                    <div id='TimeIntervalBox' data-condition='set interval'><span>Displayed intervals:</span><br>
+                        {{ $ctrl->answerDisp("number",$optionsInterval) }}
+                    </div>
                 </div>
             </div>
             <div id='ScaleOptions' class='itemOptionList'>
-                <span>Settings:</span>
+                <span class="settingsLabel">Settings:</span>
                 <div id="ScaleList" class='optionsList'>
                     <?php
                     $optionsMin = ['min'=>'-9999','max'=>'9999','initial'=>'0','step'=>'1','units'=>'','name'=>'scalemin'];
@@ -201,47 +219,47 @@ $ctrl = new Form;
                 </div>
             </div>
             <div id="FollowUpOptions" class='itemOptionList'>
-                <span>Condition:</span>
+                <span class="settingsLabel">Followup Condition:</span>
                 <div id='FollowUpList' class='optionsList'>
-                    <span>This followup question will only be asked when your patient responds to <span id="DisplayQ"></span> with <span id="Conditionality"></span>: </span><div id='condition'></div>
+                    <span><span class='switch'>Ask this question</span> only when <span id="DisplayQ"></span> is <span id="Conditionality"></span>: </span><div id='condition'></div>
                 </div>
             </div>
             <div id='SignatureOptions' class='itemOptionList'>
-                <span>Settings:</span>
+                <span class="settingsLabel">Settings:</span>
                 <div id='SignatureList' class='optionsList'>
                     <span>Ask for typed name as well as signature?</span>
                     <select name='typedName' id='typedName'>
                         <option value='yes'>yes</option>
                         <option value='no'>no</option>
                     </select>
-
                 </div>
             </div>  
         </div>
         
         <div class="wrapper options">
-	        <div class="button xsmall save">save question</div>
-	        <div class='button xsmall cancel'>cancel</div>
+	        <div class="button medium pink save">save question</div>
+	        <div class='button medium cancel'>cancel</div>
         </div>
     </div>
-    <div id='AddText'>
+    <div id='AddText' class='prompt'>
         <div>
             <div id='NarrativeOptions' class='itemOptionList'>
-                <h3>Enter text and images as you'd like them displayed</h3>
+                <h2 class='purple'>Text and Image Display</h2>
+                <div class='central'>You can display any explanatory, descriptive, or instructive information you like. It will be displayed exactly as you see here, including images, links, and formatting.</div>
                 <div id='NarrativeList' class='optionsList'>
                     <div class='summernote'></div>
                 </div>
             </div>            
         </div>
         <div class="options">
-            <div class="button xsmall save">save text</div>
-            <div class='button xsmall cancel'>cancel</div>
+            <div class="button medium pink save">save text</div>
+            <div class='button medium cancel'>cancel</div>
         </div>
     </div>
     
-    <div id="AddFollowUp">
+<!--     <div id="AddFollowUp">
     </div>
-    
+ -->    
     <div id="SectionOrder">
         <div style='display:inline-block'>
             <span>Section Order</span><div class='toggle save'>(save)</div><div class="toggle cancel">(cancel)</div>
@@ -304,6 +322,8 @@ $ctrl = new Form;
     <div class='template' data-type="date" data-defaultoptions="{{ json_encode($dateOptions) }}">{{ $ctrl->answerDisp('date',$dateOptions) }}</div>
     <div class='template' data-type="time" data-defaultoptions="{{ json_encode($timeOptions) }}">{{ $ctrl->answerDisp('time',$timeOptions) }}</div>
     <div class='template' data-type="signature" data-defaultoptions="{{ json_encode($signatureOptions) }}">{{ $ctrl->answerDisp('signature',$signatureOptions) }}</div>
+</div>
+<div id="FormPreview" class="modalForm">
 </div>
 
 <script type="text/javascript" src="{{ asset('/js/launchpad/forms.js') }}"></script>

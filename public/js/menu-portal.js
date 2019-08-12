@@ -482,11 +482,8 @@ function LoadingContent(target,uri){
     loadXHR = $.ajax({
         url:uri,
         success:function(data){
-            $("#ModalHome").children().not("#Error").remove();
+            $("#ModalHome").children().not("#Error, #Warn, #Confirm, #Refresh").remove();
             $(target).html(data);
-        },
-        error:function(e){
-            console.log(e);
         }
     })
 }

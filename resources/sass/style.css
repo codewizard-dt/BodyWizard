@@ -3,12 +3,20 @@
     --purple:rgb(105,12,104);
     --yellow:rgb(240,154,53);
     --yellow10:rgba(240,154,53,0.1);
+    --yellow30:rgba(240,154,53,0.3);
     --yellow40:rgba(240,154,53,0.4);
     --pink:rgb(234,78,80);
     --pink30:rgba(234,78,80,0.3);
+    --pink50:rgba(234,78,80,0.5);
+    --pink70:rgba(234,78,80,0.7);
+    --white10:rgba(255,255,255,0.1);
     --white30:rgba(255,255,255,0.3);
     --white50:rgba(255,255,255,0.5);
     --white70:rgba(255,255,255,0.7);
+    --black10:rgba(0,0,0,0.1);
+    --black30:rgba(0,0,0,0.3);
+    --black50:rgba(0,0,0,0.5);
+    --black70:rgba(0,0,0,0.7);
 }
 
 @font-face{
@@ -182,15 +190,18 @@ h5 span {font-size: 0.9em;}
 .italic{font-style: italic}
 .underlined{text-decoration: underline;}
 .caps{text-transform: uppercase;}
+.black{color:black;}
 .pink{color: var(--pink);}
 .purple{color: var(--purple);}
 .yellow{color: var(--yellow);}
 .white{color: white;}
 .shadow{text-shadow: 0 0 8px white;}
+.whiteBG{background-color: white;}
 .pinkBG{background-color: var(--pink);}
 .purpleBG{background-color: var(--purple);}
 .yellowBG{background-color: var(--yellow);}
 .yellow10BG{background-color: var(--yellow10);}
+.shaded10{background-color: var(--white10);}
 .shaded30{background-color: var(--white30);}
 .shaded50{background-color: var(--white50);}
 .shaded70{background-color: var(--white70);}
@@ -440,21 +451,19 @@ a:hover {color:var(--pink);}
 .button:hover{
     color: var(--white70);
 }
-.button.large {
-    font-size: 1.1em;
-}
-.button.medium {
-    font-size: 1em;
-}
-.button.small {
-    font-size: 0.9em;
-}
-.button.xsmall {
-    font-size: 0.8em;
-}
+.button.large {font-size: 1.1em;}
+.button.medium {font-size: 1em;}
+.button.small {font-size: 0.9em;}
+.button.xsmall {font-size: 0.8em;}
+.button.xxsmall {font-size: 0.7em;}
 .button.purple {
     background-color: var(--purple);
     border-color: var(--purple);
+}
+.button.white {
+    background-color: white;
+    color: var(--pink);
+    border-color: white;
 }
 .button.pink {
     background-color: var(--pink);
@@ -464,7 +473,30 @@ a:hover {color:var(--pink);}
     background-color: var(--yellow);
     border-color: var(--yellow);
 }
-
+.button.pink70 {
+    background-color: var(--pink70);
+    border-color: var(--pink70);
+}
+.button.yellow70 {
+    background-color: var(--yellow70);
+    border-color: var(--yellow70);
+}
+.button.pink70:hover{
+    background-color: var(--pink);
+    color: white;
+}
+.button.yellow70:hover{
+    background-color: var(--yellow);
+    color: white;
+}
+.button.cancel{
+    background-color: var(--black70);
+    border-color: var(--black70);
+}
+.button.cancel:hover{
+    background-color: black;
+    color: white;
+}
 .splash {
     position: relative;
     width:100%;

@@ -237,7 +237,8 @@ function constructColumnObj(model){
 			name: justResponse($("#service_name")),
 			description_calendar: justResponse($("#description_for_scheduling_and_website")),
 			description_admin: justResponse($("#description_for_invoicing_and_superbills")),
-			duration: justResponse($("#duration")).split(" ")[0]
+			duration: justResponse($("#duration")).split(" ")[0],
+			price: justResponse($("#price")).split(" ")[0]
 		}
 	}
 	else if (model == 'Code'){

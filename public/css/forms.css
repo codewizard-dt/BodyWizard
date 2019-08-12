@@ -141,6 +141,9 @@ textarea[data-followup]{
     color:rgb(189, 48, 40);
 }
 
+#formdata{
+    color:green;
+}
 
 /*.Question {
     display: inline-block;
@@ -943,7 +946,7 @@ li[data-response='no response']{
     height:5em;
 }
 .number input{
-    width:5em;
+    width:4em;
 }
 .item.ownLine{
     display: block; 
@@ -973,6 +976,7 @@ li[data-response='no response']{
 }
 .item.inline .answer{
     width:auto;
+    max-width: 95%;
 }
 
 .answer.text, .answer.date, .answer.textbox, .answer.dropdown, .answer.time{
@@ -981,6 +985,10 @@ li[data-response='no response']{
 }
 .answer.textbox{
     min-width: 65%;
+}
+.answer textarea{
+    width: 98%;
+    height: 4em;
 }
 
 .answer.checkboxes, .answer.radio {
@@ -1141,12 +1149,19 @@ li[data-response='no response']{
     color: var(--purple);
 }
 
-.answer.scale > .left, .answer.scale > .right{
+.answer.scale > .left{
     display: inline-block;
     font-size: 0.9em;
-    /*height:25px;*/
     vertical-align: top;
     width: 10%;
+    text-align: right;
+}
+ .answer.scale > .right{
+    display: inline-block;
+    font-size: 0.9em;
+    vertical-align: top;
+    width: 10%;
+    text-align: left;
 }
 
 .section h2{
@@ -1501,7 +1516,7 @@ input#PatientName {
 }
 .text input{
     width:20em;
-    max-width: 100%;
+    max-width: 98%;
 }
 #TextOptions .answer, #TextBoxOptions .answer{
     display: inline-block;
@@ -1648,7 +1663,6 @@ input#PatientName {
     border-color: rgb(190,190,190);
     transition: height 1200ms;
     vertical-align: middle;
-
 }
 .prompt > div {
     padding: 1.5em;
@@ -1740,28 +1754,49 @@ input#PatientName {
     display: none;
     position: relative;
     border-radius: 5px;
-    border-width: 2px;
+    border-width: 1px;
     border-style: solid;
-    border-color: var(--purple);
-    background-color: transparent;
-    margin: 1em;
-    padding: 0.5em;
+    border-color: rgb(190,190,190);
+    background-color: rgb(230,230,230);
+    padding: 2em 3em;
 }
-
-#AddItem {
-    text-align:left;
+#AddText {
+    width:85%;
+    max-width: 85%;
 }
+#AddItemProxy{display: none;}
+#AddItem {text-align:left;}
+#AddItem h2{text-align: center;}
+#AddItem h4{font-weight: normal;}
 
-.sectionOptions {
+#SectionOptions {
     border-radius: 5px;
     border-width: 1px;
     border-style: solid;
     border-color: rgb(120,120,120);
     background-color: rgb(240,240,240);
-    margin: 1em;
-    padding: 0.5em;
     display: inline-block;
-    width: 24em;
+}
+#SectionOptions .name{
+    display: inline-block;
+    text-align: right;
+}
+
+#SectionOptions ul{
+    display: inline-block;
+    width: auto;
+    list-style: none;
+    border-radius: 5px;
+    border: 1px solid rgb(190,190,190);
+    background-color: rgb(255,255,255) !important;
+}
+#SectionOptions .details{
+    display: inline-block;
+    text-align: left;
+    font-size: 0.9em;
+    vertical-align: baseline;
+    margin-left: 20px;
+    background-color: var(--white10);
 }
 
 #SectionList, #ItemList, #ItemFUList {
@@ -1785,20 +1820,20 @@ input#PatientName {
     width: 9em;
 }
 
-#AddItem > div > div > span, #AddText > div > div > span {
+/*#AddItem > div > div > span, #AddText > div > div > span {
     display: inline-block;
     width: 8em;
     vertical-align: top;
 }
-
-#AddItem > div > div, #AddText > div > div{
+*/
+/*#AddItem > div > div, #AddText > div > div{
     margin: 0.5em 0.25em;
 }
 
 #AddItem .button, #AddText .button {
     display: inline-block;
 }
-
+*/
 #AutoSaveWrap {
     height: 5em;
     position:fixed;
@@ -1814,10 +1849,6 @@ input#PatientName {
     font-size:1.2em;
     z-index:9999;
     transform: translateY(-50%);
-}
-
-#FormBuilder .button {
-    font-size: 0.7em;
 }
 
 #FormBuilder {
@@ -1838,22 +1869,16 @@ input#PatientName {
     margin-right: 1em;
 }
 
-/*#FormBuilder .question > .toggle {
-    font-weight: 400;
-    vertical-align: middle;
+#FormName .pair, .sectionName .pair{
+    display: block !important;
 }
-*/
-.sectionName {
-    text-transform: capitalize;
-    font-weight: 700;
-    font-size: 1.2em;
+#FormName .toggle, .sectionName .toggle{
+    vertical-align: top;
+    font-size: 0.6em;
 }
-
-#FormName > span, #FormName .value{
-    font-weight: 700;
-    font-size: 1.2em;
+#FormName input{
+    text-align: center;
 }
-
 #FormName .value {
     text-transform: capitalize;
 }
@@ -1898,28 +1923,6 @@ input#PatientName {
 }
 .selectMultiple .delete, .selectMultiple .hide, .selectMultiple .copy {
     display: none;
-}
-
-.multiCopyOption {
-    cursor: pointer;
-    border-width: 1px;
-    border-color: rgb(90,90,90);
-    background-color: rgb(210,210,210);
-    color: rgb(120,120,120);
-    margin: 0 0 0 5px;
-    padding: 3px 5px 3px 7px;
-    transition: color 800ms;
-}
-
-.multiCopyOption:hover {
-    color: black;
-}
-
-.multiCopyOption:first-of-type{
-    border-radius: 5px 0 0 5px;
-}
-.multiCopyOption:last-of-type{
-    border-radius: 0 5px 5px 0;
 }
 
 .ItemsFU .targetFUs {
@@ -1970,7 +1973,7 @@ input#PatientName {
     font-weight: 700;
 }
 
-.confirmY, .confirmN {
+.confirm .confirmY, .confirm .confirmN, .alert .confirmY, .alert .confirmN {
     cursor: pointer;
     border-radius: 5px 0 0 5px;
     border-width: 1px;
@@ -1982,12 +1985,12 @@ input#PatientName {
     transition: color 800ms;
 }
 
-.confirmN {
+.confirm .confirmN, .alert .confirmN {
     border-radius: 0 5px 5px 0;
     padding: 3px 7px 3px 5px;
 }
 
-.confirmY:hover, .confirmN:hover {
+.confirm .confirmY:hover, .confirm .confirmN:hover, .alert .confirmY:hover, .alert .confirmN:hover {
     color: black;
 }
 
@@ -2026,8 +2029,76 @@ input#PatientName {
 /*#Options, #NumberOptions, #DateOptions, #FollowUpOptions, #ScaleOptions, #SignatureOptions, #TimeOptions {
     display: none;
 }*/
+#FollowUpOptions{text-align: left;}
 #FormBuilder .itemOptionList {
     display:none;
+}
+.insertProxy{
+    display: inline-block;
+    position:absolute;
+    /*left: 0;*/
+    height:1.5em;
+    width:20em;
+    margin:-0.75em 0 -0.75em -19em;
+    border-radius: 2em;
+    background-color: white;
+    transition: margin 0.5s, height 0.5s, width 0.5s, box-shadow 0.5s;
+    z-index: 45;
+}
+.insertProxy:hover{
+    height:2.5em;
+    margin:-1.25em 0 -1.25em -1em;
+    box-shadow: 0 0 10px 3px rgb(130,130,130);
+}
+.insertProxy .button{
+    margin:0 10px;
+    position: relative;
+    top:50%;
+    opacity: 0;
+    transform: translateY(-50%);
+    font-weight: bold;
+    transition: opacity 0.5s;
+}
+.insertProxy:hover .button{
+    opacity:1;
+}
+.insertBtns {
+    position: relative;
+    border-radius: 2em;
+    height: 100%;
+    width: 100%;
+    text-align: right;
+    padding-right:0.5em;
+    box-sizing: border-box;
+    background-color: var(--pink70);
+}
+.insertBtns:hover{
+    background-color: var(--pink);
+}
+.insertProxy .plus{
+    display: inline-block;
+    position: absolute;
+    top:50%;
+    right: 0.45em;
+    color: white;
+    font-weight: bold;
+    opacity: 1;
+    font-size: 0.9em;
+    transform: translateY(-50%);
+}
+.insertProxy:hover .plus{
+    opacity:0;
+}
+.itemOptionList .settingsLabel{
+    display: block;
+    font-weight: bold;
+    width:100%;
+    color: var(--yellow);
+    border-bottom: 2px solid var(--yellow);
+    margin: 10px 0 0 0;
+}
+.optionsList{
+    margin-top:5px;
 }
 
 /*#OptionsList, #NumberList, #DateList, #FollowUpList, #ScaleList, #SignatureList, #TimeList {
@@ -2039,6 +2110,7 @@ input#PatientName {
     width: calc(100% - 7em);
 }
 #Text{
+    width: 30em;
     max-width: calc(100% - 7em);
 }
 .option input{
@@ -2128,6 +2200,7 @@ input#PatientName {
 #condition .answer, #ScaleList .answer, #NarrativeList .answer {
     margin: 0;
     overflow: visible;
+    width: auto;
 }
 
 #NumberList .answer{
@@ -2296,7 +2369,7 @@ input#PatientName {
     max-width: 400px;
 }
 
-.tableWrapper {
+.tableWrapper, #SectionOptions ul {
     display: inline-block;
     border-radius: 5px;
     border-width: 2px;
@@ -2306,6 +2379,9 @@ input#PatientName {
     max-height: 20em;
     box-sizing: border-box;
     background-color: var(--purple);
+}
+#SectionOptions ul{
+    border-width: 1px;
 }
 
 .styledTable th{
@@ -2319,22 +2395,13 @@ input#PatientName {
     text-align: center;
     padding: 0.25em 0.5em;
 }
-
-#AvailFormList .name, #ServicesList .name{
-    font-weight: 700;
+#SectionOptions li {
+    padding: 3px 10px;
+    cursor: pointer;
+    border-width: 0 !important;
 }
 
-#AvailFormList span {
-    font-size: 0.8em;
-    padding: 0 3px;
-    font-weight: 400;
-}
-
-/*#AvailFormList .created, #AvailFormList .modified{
-    flex: 2 1 auto;
-}*/
-
-.styledTable tr {
+.styledTable tr, #SectionOptions li {
     border-style: solid;
     border-width: 1px 0px;
     border-color: var(--purple30);
@@ -2343,7 +2410,8 @@ input#PatientName {
     box-sizing: border-box;
     z-index: 2;
 }
-.styledTable tr.hover {
+
+.styledTable tr.hover{
     background-color: var(--yellow30);
     border-color: var(--yellow50);
     z-index: 3;
@@ -2366,14 +2434,14 @@ input#PatientName {
 .styledTable tr.a {
     background-color: rgb(255,255,255);
 }
-.styledTable tr.b {
+.styledTable tr.b, #SectionOptions li:nth-child(even){
     background-color: var(--purple10);
 }
-.styledTable tr.a.hover {
+.styledTable tr.a.hover, #SectionOptions li:nth-child(odd):hover {
     background-color: var(--yellow30);
     border-color: var(--yellow50);
 }
-.styledTable tr.b.hover {
+.styledTable tr.b.hover, #SectionOptions li:nth-child(even):hover {
     background-color: var(--yellow30);
     border-color: var(--yellow50);
 }

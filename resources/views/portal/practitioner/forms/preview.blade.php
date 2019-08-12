@@ -10,7 +10,7 @@ $formJSON = $form->full_json;
     <div id='formdata' data-mode='view' data-formuid='{{ $uid }}' data-formid='{{ $formId }}' data-json='{{ $formJSON }}'></div>
     {{ $form->form_name }} (preview)<br>{{ $today }}
 </h1>
-<div class="button xsmall ye" id="ShowAllDispOpt">edit display and layout options</div>
+<div class="button xxsmall yellow" id="ShowAllDispOpt">edit display and layout options</div>
 <?php 
 $form->formDisplay(true);
 ?>

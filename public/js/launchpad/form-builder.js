@@ -8,7 +8,18 @@ $(document).ready(function(){
     $("#FormName").find(".save").css("display","inline-block");
     $("#FormName").find(".edit").hide();
 
-    var sectionNode = "<div class='section'><div class='sectionName editable'>Section Name: <div class='pair'><input type='text' class='input'> <span class='value'></span></div><div class='toggle edit'>(edit)</div><div class='toggle save'>(save)</div><div class='toggle cancel'>(cancel)</div></div>  <div class='Items'>  <div class='selectMultiple'> <div class='show button xsmall'>select multiple items</div><div class='hide button xsmall'>cancel selection</div><div class='delete button xsmall'>delete items</div><div class='copy button xsmall'>duplicate items</div> </div>   <p class='hideTarget'><span class='down'></span>No questions yet</p><div class='target'><div style='padding:0.5em 1em;'>Add some questions!</div></div></div>  <div class='itemOptions'><div class='addQuestion button xsmall'>add question</div><div class='addParagraph button xsmall'>add text</div></div>  <div class='clear' data-target='.section'>(delete)</div></div>";
+    var sectionNode = "<div class='section'><h2 class='sectionName editable'><div class='pair'><input type='text' class='input'> <span class='value'></span></div><div class='toggle edit'>(edit section name)</div><div class='toggle save'>(save)</div><div class='toggle cancel'>(cancel)</div></h2>  <div class='Items'>  <div class='selectMultiple'> <div class='show button xxsmall yellow70'>select multiple items</div><div class='hide button xxsmall'>cancel selection</div><div class='delete button pink70 xxsmall'>delete items</div><div class='copy button pink70 xxsmall'>duplicate items</div> </div>   <p class='hideTarget'><span class='down'></span>No questions yet</p><div class='target'><div style='padding:0.5em 1em;'>Add some questions!</div></div></div>  <div class='itemOptions'><div class='addQuestion button pink xsmall'>add question</div><div class='addText button pink xsmall'>add text</div><div class='button xsmall deleteSection'>delete section</div></div> </div>",
+        itemNode = "<div class='item'><div class='question'></div><div class='answer'></div> <div class='ItemsFU'>  <div class='selectMultiple'> <div class='show button xxsmall yellow70'>select multiple followup items</div><div class='hide button xxsmall'>cancel selection</div><div class='delete button xxsmall pink70'>delete items</div><div class='copy button pink70 xxsmall'>duplicate items</div> </div>  <p class='hideFUs'><span class='right'></span>Follow up based on response</p><div class='targetFUs'></div></div>   <div class='newFollowUp'><div class='button pink70 xxsmall addFollowUp'>add followup question</div><div class='button pink70 xxsmall addFollowUpText'>add followup text</div></div> <div class='UpDown'><div class='up'></div><div class='down'></div></div> </div>",
+        itemFUNode = "<div class='itemFU'><div class='question'></div><div class='condition'></div><div class='answer'></div> <div class='UpDown'><div class='up'></div><div class='down'></div></div> </div>";
+
+    $("#PreviewFormBtn").on('click',function(){
+        var uid = $("#formdata").data('formuid');
+        blurElement($("body"),"#loading");
+        $("#FormPreview").load("/forms/"+uid+"/preview",function(){
+            blurElement($('body'),"#FormPreview");
+            $("#FormPreview").find(".cancel").text("close");
+        })
+    })
     
     $("#AddSection").on("click",".add",function(){
         var name = $.sanitize($("#SectionName").val());
@@ -25,19 +36,19 @@ $(document).ready(function(){
             alertBox("name already in use",$("#SectionName"),"after","fade","-4em,-50%");
             return false;
         }
-        var section = $("#Sections").find(".section").not("#examples");
-        if (section.length==0){
+        var sections = $("#Sections").find(".section");
+        if (sections.length==0){
             $(sectionNode).appendTo("#Sections");
         }else{
-            $(sectionNode).insertAfter(section.last());
+            $(sectionNode).insertAfter(sections.last());
         }
-        var section = $("#Sections").find(".section").not("#examples");
-        var num = section.length;
+        var sections = $("#Sections").find(".section");
+        var num = sections.length;
         var secStr = "";
         
-        if (num>1){
-            section = section.last();
-        }
+        // if (num>1){
+            section = sections.last();
+        // }
 
         section.find(".sectionName").find('span').text(name);
         // section.find(".showByDefault").find('span').text(show);
@@ -52,39 +63,37 @@ $(document).ready(function(){
         section.data("items",Items);
         
         $("#SectionName").val("");
-        slideFadeOut($("#AddSection"));
+        // slideFadeOut($("#AddSection"));
+        unblurElement($("body"));
         
         updateSections();
+        // autoSave();
     })
     $("#AddSection").on("click",".clear",function(){
         slideFadeOut($("#AddSection"));
     })
     
     $("#Sections").on('click',".addQuestion",function(){
-        var c = $(this).closest(".section").find(".Items").find(".toggle").filter(function(){
-            return $(this).hasClass("cancel") == true && $(this).is(":visible") == true;
-        });
         var t = $(this).closest(".section").find(".itemOptions");
         $("#FollowUpOptions").hide();
-        if (c.length > 0){
-            c.click();
-            setTimeout(function(){
-                resetAddItem();
-                $("#AddItem").insertBefore(t);
-                slideFadeIn($("#AddItem"));
-            },801);
-        }else{
-            resetAddItem();
-            $("#AddItem").insertBefore(t);
-            slideFadeIn($("#AddItem"));
-        }
-        slideFadeOut($("#ItemOrder"));
+        resetAddItem();
+        $("#AddItemProxy").insertBefore(t);
+        blurElement($("body"),"#AddItem");
     })
-    $("#Sections").on("click",'.addParagraph',function(){
+    $("#Sections").on("click",'.addText',function(){
         var t = $(this).closest(".section").find(".itemOptions");
-        $("#AddText").insertBefore(t);
+        $("#AddItemProxy").insertBefore(t);
         $("#NarrativeOptions").show();
-        slideFadeIn($("#AddText"));
+        blurElement($("body"),"#AddText");
+    })
+    $("#Sections").on('click','.insertQuestion',function(){
+        var t = $(this).closest(".insertProxy");
+        $("#AddItemProxy").appendTo(t);
+        resetAddItem();
+        blurElement($("body"),"#AddItem");
+    })
+    $("#Sections").on('click','.insertText',function(){
+        
     })
     $(".summernote").summernote({
         height: 200,
@@ -100,26 +109,24 @@ $(document).ready(function(){
         ],
     });
 
-    $("#Sections").on("click",".clear",function(){
-        var targetType = $(this).data('target');
-        var target = $(this).closest(targetType);
-        confirm(target.find(".sectionName"),"ontop","115%,-70%");
-        
+    $("#Sections").on("click",".deleteSection",function(){
+        // var targetType = $(this).data('target');
+        var target = $(this).closest(".section"), name = target.find('.sectionName').find(".value").text();
+        // confirm(target.find(".sectionName"),"ontop","115%,-70%");
+        $("#Warn").find(".message").html('<h2>Warning!</h2><div>Are you sure you want to delete "'+name+'"? This will delete all of the questions and followups it contains.</div>');
+        $("#Warn").find(".submit").text("Delete section and its questions");
+        blurElement($("body"),"#Warn");
         var check = setInterval(function(){
             if (confirmBool == true){
                 slideFadeOut(target)
                 setTimeout(function(){
-                    $("#AddItem").appendTo("#FormBuilder");
                     $(target).remove();
-                    if (targetType==".section"){
-                        updateSections();
-                    }
+                    updateSections();
                 },600);
-                $(".zeroWrap.c").remove();
                 confirmBool = undefined;
                 clearInterval(check);
+                unblurElement($("body"));
             }else if (confirmBool == false){
-                $(".zeroWrap.c").remove();
                 confirmBool = undefined;
                 clearInterval(check);                
             }
@@ -127,24 +134,15 @@ $(document).ready(function(){
     })
     
     var toggleBool = false;
-    $("#FormBuilder").on('click',".confirmY",function(){
-        confirmBool = true;
-    })    
-    $("#FormBuilder").on('click',".confirmN",function(){
-        confirmBool = false;
-    })    
+    // $("#FormBuilder").on('click',".confirmY",function(){
+    //     confirmBool = true;
+    // })    
+    // $("#FormBuilder").on('click',".confirmN",function(){
+    //     confirmBool = false;
+    // })    
     $("#FormBuilder").on("click",".toggle",function(){
         var p = $(this).parent();
-        
-        if ($(this).data('target')=="#examples"){
-            $("#AddItem").find("input").keyup();
-            if ($("#Type").val()=='signature'){
-                setTimeout(function(){
-                    $("#signaturePreview").jSignature();
-                },100)
-            }
-        }
-        
+                
         if (p.hasClass("editable")){
             if ($(this).hasClass("edit")){
                 var target = $(this).closest(".editable");
@@ -194,48 +192,39 @@ $(document).ready(function(){
                 var pairs = target.find(".pair");
                 target.find(".value, .edit").css("display","inline");
                 target.find(".input, .save, .cancel").hide();
-            }
-            
+            }  
         }
-        
         else if (p.hasClass("question")){
-            var all = p.find(".toggle");
-            var v = all.filter(function(){return $(this).is(":visible") == true;});
-            var h = all.filter(function(){return $(this).is(":visible") == false});
             var q = p.data("question"), k = p.data("key"), t = p.data("type"), o = p.data("options"), c = p.data("condition");
             var section = $(this).closest(".section");
             
             var item = p.parent();
 
             if ($(this).hasClass("edit")){
-                var type = $(this).closest('.item').find('.question').data('type'), d;
-                if (type != 'narrative'){
-                    P = $("#AddItem").parent();
-                    d = $("#AddItem");
-                }else{
-                    P = $("#AddText").parent();
-                    d = $("#AddText");
-                }
+                var type = $(this).closest('.item').find('.question').data('type'), d,
+                    addNode = (type == 'narrative') ? "#AddText" : "#AddItem";
+
+                P = $(addNode).parent();
+                d = $("#AddItemProxy");
                 if (P.is(".item") && $("#AddItem, #AddText").is(":visible")){
                     P.find(".toggle").filter(".cancel, .save").hide();
                     P.find(".toggle").filter(".edit, .delete").show();
                 }
-                v.hide();
-                h.css("display","inline-block");
+
                 var target = $(this).closest(".itemFU");
                 if (target.length==0){
                     target = $(this).closest(".item");
                 }
                 if (target.is(".itemFU")){
                     d.appendTo(target);
-                    slideFadeIn(d);
+                    blurElement($("body"),addNode);
                     showConditionOptions($(item).closest(".item"));
                     $("#FollowUpOptions").show();
                 }else if (target.is(".item")){
                     $("#FollowUpOptions").hide();
                     target = target.find(".ItemsFU");
                     d.insertBefore(target);
-                    slideFadeIn(d);
+                    blurElement($("body"),addNode);
                 }
 
                 if (type != 'narrative'){
@@ -256,13 +245,20 @@ $(document).ready(function(){
                     c = c.split("less than ").join("");
                     c = c.split("greater than ").join("");
                     c = c.split("equal to ").join("");
+                    $("#FollowUpOptions").find("input").val(c);
+                }else{
+                    $("#FollowUpOptions").find(".active").removeClass('active');
+                    $("#FollowUpOptions").find("li").each(function(){
+                        var active = ($.inArray($(this).data('value'),c) > -1);
+                        if (active){$(this).addClass('active')} 
+                    })
                 }
-                $("#FollowUpOptions").find("input").val(c);
+                // console.log(c);
 
                 if ($.isPlainObject(o)){
                     var items = $("#AddItem").find("input").filter(":visible");
                     items = items.add($("#AddItem").find("select").filter(":visible"));
-                    console.log(o);
+                    // console.log(o);
                     if (t == "time"){
                         //$("#TimeList").children("div").not("#TimeRestriction").hide();
                         $("#TimeList").find("li").each(function(){
@@ -350,9 +346,16 @@ $(document).ready(function(){
                 saveItem();
             }
             else if ($(this).hasClass("delete")){
-                var target = p;
-                confirm($(this),"below","");
-                blurElement($(this).closest(".itemFU, .item"),".c");
+                var target = p, itemOrFU = $(this).closest(".itemFU, .item"), countFUs = itemOrFU.find(".itemFU").length,
+                    warningText = (countFUs == 1) ? "There is currently <u>1 followup</u> under this question." : "There are currently <u>"+countFUs+" followups</u> under this question.";
+                if (itemOrFU.is(".item") && countFUs > 0){
+                    $("#Warn").find(".message").html("<h2>ATTENTION</h2><div>Deleting this question will also delete all of the followup questions attached to it. "+warningText+" This cannot be undone.</div>");
+                    $("#Warn").find(".confirmY").text("delete question and followups");
+                    blurElement($("body"),"#Warn");
+                }else{
+                    warn($(this),"below","","you want to delete this");
+                    blurElement($(this).closest(".itemFU, .item"),".a");
+                }
                 var check = setInterval(function(){
                     if (confirmBool == true){
                         slideFadeOut(item);
@@ -367,12 +370,12 @@ $(document).ready(function(){
                             updateItems(section);
                             autoSave();
                         },500);
-                        $(".zeroWrap.c").remove();
+                        $(".zeroWrap.a").remove();
                         confirmBool = undefined;
                         clearInterval(check);
                     }else if (confirmBool == false){
                         unblurElement(item);
-                        $(".zeroWrap.c").remove();
+                        $(".zeroWrap.a").remove();
                         confirmBool = undefined;
                         clearInterval(check);                
                     }
@@ -398,7 +401,7 @@ $(document).ready(function(){
                 var copy = {};
                 $.extend(true,copy,Items[k]);
                 copy.question = copy.question + " COPY";
-                console.log(copy);
+                // console.log(copy);
                 Items.splice(k+1,0,copy);
                 updateItems(section);
                 autoSave();
@@ -408,13 +411,27 @@ $(document).ready(function(){
         }
     })
     $("#FormBuilder").on("click",".addFollowUp",function(){
-        $("#AddItem").insertBefore($(this));
-        slideFadeOut($("#ItemFUOrder"));
+        $("#AddItemProxy").insertBefore($(this));
         $("#Type").val("text");
         $("#Type").change();
         $("#FollowUpOptions").show();
-        slideFadeIn($("#AddItem"));
+        // slideFadeIn($("#AddItem"));
+        blurElement($("body"),"#AddItem");
         var item = $(this).closest(".item");
+        $("#FollowUpOptions").appendTo($("#AddItem").find(".message"));
+        $("#FollowUpOptions").find(".switch").text("Ask this question");
+        showConditionOptions(item);
+        if (!item.find(".targetFUs").is(":visible")){
+            item.find(".hideFUs").click();
+        }
+    });
+    $("#FormBuilder").on('click',".addFollowUpText",function(){
+        $("#AddItemProxy").insertBefore($(this));
+        resetAddText();
+        blurElement($("body"),"#AddText");
+        var item = $(this).closest(".item");
+        $("#FollowUpOptions").insertAfter($("#NarrativeOptions"));
+        $("#FollowUpOptions").find(".switch").text("Display this text");
         showConditionOptions(item);
         if (!item.find(".targetFUs").is(":visible")){
             item.find(".hideFUs").click();
@@ -422,16 +439,7 @@ $(document).ready(function(){
     })
     $("#FormBuilder").on("click",".addSectionBtn",function(){
         $("#FormName").find(".save").click();
-        if (toggleBool){
-            toggleBool = false;
-        }else{
-            return false;
-        }
-        $("#AddSection").appendTo($(this).closest(".sectionOptions"));
-        slideFadeIn($("#AddSection"));
-        slideFadeOut($("#SectionOrder"));
-        $("#AddSection").find("option").removeAttr("selected");
-        $("#AddSection").find("select").find("option").first().attr("selected","true");
+        blurElement($("body"),"#AddSection");
     });
     $("#FormBuilder").on("click",".sectionOrderBtn",function(){
         $("#SectionOrder").appendTo($(this).closest(".sectionOptions"));
@@ -517,7 +525,6 @@ $(document).ready(function(){
     })
         
     $("#AddItem, #AddText").on("click",".save",saveItem);
-    $("#AddItem").on("click",".refresh",updatePreview);
     $("#AddItem").on("click",".cancel",function(){
         slideFadeOut($("#AddItem"));
         var p = $("#AddItem").parent();
@@ -528,8 +535,7 @@ $(document).ready(function(){
             resetAddItem();
         },500)
     })
-    //$("#AddText").on("click",".save",saveText);
-    $("#AddText").on("click",".refresh",updatePreview);
+
     $("#AddText").on("click",".cancel",function(){
         slideFadeOut($("#AddText"));
         var p = $("#AddText").parent();
@@ -541,11 +547,6 @@ $(document).ready(function(){
         },500)
     })
     
-    $("#examples").on("click",".hide",function(){
-        $(".toggle").filter(function(){
-            return $(this).data("target") == "#examples";
-        }).click();
-    })
     $('.signHere').on("click",".reset",function(e){
         $(this).parent().find(".signature").jSignature("reset");
     })
@@ -621,12 +622,12 @@ $(document).ready(function(){
     $("#SectionOrder").on('click',".cancel",function(){
         slideFadeOut($("#SectionOrder"));
     });
-    $("#ItemFUOrder").on('click',".up",updateItemFUOrder);
-    $("#ItemFUOrder").on('click',".down",updateItemFUOrder);
-    $("#ItemFUOrder").on('click',".save",saveItemFUOrder);
-    $("#ItemFUOrder").on('click',".cancel",function(){
-        slideFadeOut($("#ItemFUOrder"))
-    });
+    // $("#ItemFUOrder").on('click',".up",updateItemFUOrder);
+    // $("#ItemFUOrder").on('click',".down",updateItemFUOrder);
+    // $("#ItemFUOrder").on('click',".save",saveItemFUOrder);
+    // $("#ItemFUOrder").on('click',".cancel",function(){
+    //     slideFadeOut($("#ItemFUOrder"))
+    // });
     
     $("#NoRestriction").on("click",function(){
         var block = $("<div class='block selected disabled' style='border-radius:5px;'></div>");
@@ -656,10 +657,20 @@ $(document).ready(function(){
         span.toggleClass("right").toggleClass("down");
         target.slideToggle();
     })
+
+    $("#SectionOptions").on("click","li",function(){
+        var name = $(this).find(".name").text().toLowerCase();
+        var section = $(".section").filter(function(){
+            return $(this).find(".sectionName").find(".value").text().toLowerCase() == name;
+        });
+        $.scrollTo(section);
+    })
     
     function saveItem(){
-        var i = $(this).closest("#AddItem, #AddText");
+        // var i = $(this).closest("#AddItem, #AddText");
+        var i = $("#AddItemProxy");
         var p = i.parent();
+        // var p = $("#AddItemProxy").parent();
         var section = i.closest(".section");
         var item = i.closest(".item");
         
@@ -667,7 +678,7 @@ $(document).ready(function(){
         setTimeout(function(){
             i.on("click",".save",saveItem);
         },1600);
-                
+        
         if (p.is(".section")){
             createItemObj(section,"save");
         }else if (p.is(".item")){
@@ -680,11 +691,14 @@ $(document).ready(function(){
             var k = item.children(".question").data("key");
             var fk = p.find(".question").data("key");
             createItemObj(section,"update",k,fk);
+        }else if (p.is(".insertProxy")){
+
+        }else{
+            console.log(p);
         }
+        unblurElement($("body"));
     }
-    $(".saveForm").on("click",function(){
-        saveType = $(this).data('type');
-    })
+
     function autoSave(){
         var form = createFormObj();
         var jsonStr = JSON.stringify(form);
@@ -729,40 +743,9 @@ $(document).ready(function(){
                     // $("#formdata").text(data);
                     alert("There was an error saving the form. Your changes have NOT been saved.");
                 }
-            },
-            error:function(data,status,error){
-                console.log(data);
-                alert("Not saved: " + status + "," + error);
             }
         })
     }
-    function saveText(){
-        var p = $("#AddText").parent();
-        var section = $("#AddText").closest(".section");
-        var item = $("#AddText").closest(".item");
-        
-        $("#AddText").off("click",".save",saveText);
-        setTimeout(function(){
-            $("#AddText").on("click",".save",saveText);
-        },1600);
-
-        
-        if (p.is(".section")){
-            createTextObj(section,"save");
-        }else if (p.is(".item")){
-            var k = p.find(".question").data("key");
-            createTextObj(section,"update",k);
-        }else if (p.is(".newFollowUp")){
-            var k = item.children(".question").data("key");
-            createTextObj(item,"save",k);
-        }else if (p.is(".itemFU")){
-            var k = item.children(".question").data("key");
-            var fk = p.find(".question").data("key");
-            createTextObj(section,"update",k,fk);
-        }      
-    }
-    
-    
     function createFormObj(){
         var sections = $("#FormBuilder").find(".section").not("#examples");
         var sectionArr = [];
@@ -805,223 +788,224 @@ $(document).ready(function(){
         // console.log(t);
         var o;
         
-        var options = $("#Options").find("input").filter(":visible");
-        if (options.length!=0){
-            optionsY = options.filter(function(){
-                return $(this).val() != "";
-            })
-            optionsN = options.not(optionsY);
-            if (optionsY.length < 2){
-                alertBox("must have at least two options",optionsN.first(),"after","fade");
-                return false;
-            }
-            
-            var options = [];
-            for (x=0;x<optionsY.length;x++){
-                var check = $.sanitize($(optionsY[x]).val());
-                check = check.split("\"").join("");
-                if ($.inArray(check,options)>-1){
-                    alertBox("duplicate options not allowed",$(optionsY[x]),"after","fade");
-                    return false;
-                }else{
-                    options[x] = check;
-                }
-            }
-        }
-        else {options=undefined;}
-        
-        var numberOptions = $("#NumberOptions").find("input").filter(":visible");
-        if (numberOptions.length!=0){
-            for (x=0;x<numberOptions.length;x++){
-                var i = $(numberOptions[x]);
-                if (i.val() == ""){
-                    alertBox("required",i,"after","fade");
+        // DEFINE OPTIONS BASED ON TYPE
+            var options = $("#Options").find("input").filter(":visible");
+            if (options.length!=0){
+                optionsY = options.filter(function(){
+                    return $(this).val() != "";
+                })
+                optionsN = options.not(optionsY);
+                if (optionsY.length < 2){
+                    alertBox("must have at least two options",optionsN.first(),"after","fade");
                     return false;
                 }
-            }
-            var min = Number(numberOptions.filter("[name='min']").val());
-            var max = Number(numberOptions.filter("[name='max']").val());
-            var inital = Number(numberOptions.filter("[name='initial']").val());
-            var step = Number(numberOptions.filter("[name='step']").val());
-            var units = numberOptions.filter("[name='units']").val();
-            
-            if (min>max){
-                alertBox("must be lesser than max",numberOptions.filter("[name='min']"),"after","2500");
-                return false;
-            }
-            if (inital>max || inital<min){
-                alertBox("must be between min and max",numberOptions.filter("[name='initial']"),"after","2500");
-                return false;
-            }
-            numberOptions = {
-                "min":min,
-                "max":max,
-                "initial":inital,
-                "step":step,
-                "units":units
-            };
-        }
-        else {numberOptions = undefined;}
-        
-        var dateOptions = $("#DateOptions").find("input").filter(":visible");
-        if (dateOptions.length!=0){
-            var beginCurrent = $("#currentYearBegin").is(":checked"), endCurrent = $("#currentYearEnd").is(":checked"),
-                endNext = $("#nextYearEnd").is(":checked"), 
-                dateBegin = beginCurrent ? "c+0" : dateOptions.filter("[data-name='begin']").val(),
-                dateEnd = endCurrent ? "c+0" : dateOptions.filter("[data-name='end']").val(),
-                dateEnd = endNext ? "c+1" : dateEnd,
-                yearRange = dateBegin+":"+dateEnd;
-            // console.log(yearRange);
-            dateOptions = {
-                "yearRange":yearRange
-            }
-            if ($("#NoRestriction").is(":checked")==false){
-                var stop = $("#DateOptions").find("select").filter(function(){
-                    return $(this).find("option:selected").val() == "";
-                });
-                if (stop.length > 0){
-                    alertBox("required if you want to restrict dates",stop.first(),"after");
-                    return false;
-                }
-                var minDate = "-"+$("[data-name='minNum']").val() + $("[data-name='minType']").val().charAt(0);
-                var maxDate = "+"+$("[data-name='maxNum']").val() + $("[data-name='maxType']").val().charAt(0);
-                dateOptions["minDate"] = minDate;
-                dateOptions["maxDate"] = maxDate;
-            }else{
-                dateOptions["minDate"] = null;
-                dateOptions["maxDate"] = null;
-            }
-            console.log(dateOptions);
-        }
-        else{dateOptions=undefined;}
-        
-        var timeOptions = $("#TimeList").is(":visible");
-        if (timeOptions){
-            if ($("#TimeRestriction").find(".active").length==0){
-                alertBox("required",$("#TimeRestrict"));
-                $.scrollTo($("#TimeRestrict"));
-                return false;
-            }
-            var r = $("#TimeRestriction").find(".active");
-            timeOptions = {};
-            r.each(function(){
-                var v = $(this).data('value');
-                if (v == "allow any time"){
-                    timeOptions['all'] = "default";
-                }else if (v == 'set range'){
-                    timeOptions['minTime'] = $("#minTime").val();
-                    timeOptions['maxTime'] = $("#maxTime").val();
-                }else if (v == 'set interval'){
-                    timeOptions['step'] = $("#TimeOptions").find("#step").val();
-                }else if (v == 'set initial value'){
-                    timeOptions['setTime'] = $("#setTime").val();
-                }
-            })
-        }
-        else{timeOptions=undefined;}
-
-        var textOptions = $("#TextOptions").is(":visible");
-        if (textOptions){
-            textOptions = {
-                'placeholder':$("#textPlaceholder").val()
-            }
-        }else{textOptions=undefined}
-        var textBoxOptions = $("#TextBoxOptions").is(":visible");
-        if (textBoxOptions){
-            textBoxOptions = {
-                'placeholder':$("#textAreaPlaceholder").val()
-            }
-        }else{textBoxOptions=undefined}
-
-        var sigOptions = $("#SignatureOptions").find("select").filter(":visible");
-        if (sigOptions.length!=0){
-            var printBool = $("#typedName").val();
-            sigOptions = {
-                "typedName":printBool
-            }
-        }
-        else{sigOptions=undefined;}
-        
-        var scaleOptions = $("#ScaleOptions").find("input, select").filter(":visible");
-        if (scaleOptions.length!=0){
-            var min = scaleOptions.filter("[data-name='scalemin']").val();
-            var max = scaleOptions.filter("[data-name='scalemax']").val();
-            var initial = scaleOptions.filter("[data-name='initial']").val();
-            var minL = scaleOptions.filter("[name='minLabel']").val();
-            var maxL = scaleOptions.filter("[name='maxLabel']").val();
-            var dispL = scaleOptions.filter("[name='dispLabel']").val();
-            var dispV = scaleOptions.filter("[name='dispVal']").val();
-                        
-            min = Number(min);
-            max = Number(max);
-            initial = Number(initial);
-            if (min>max || min==max){
-                alertBox("must be less than max value",scaleOptions.filter("[name='scalemin']"),"after","fade");
-                return false;
-            }
-            if (inital < min || initial > max){
-                alertBox("must be within min and max values",scaleOptions.filter("[name='initial']"),"after","fade");
-                return false;
-            }
-            for (x=0;x<scaleOptions.length;x++){
-                var v = $(scaleOptions[x]).val();
-                if (v==""){
-                    alertBox("required",$(scaleOptions[x]),"after","fade");
-                    return false;
-                }
-            }
-        
-            scaleOptions = {
-                "min":min,
-                "max":max,
-                "initial":initial,
-                "minLabel":minL,
-                "maxLabel":maxL,
-                "displayValue":dispV,
-                "displayLabels":dispL
-            };
-        }
-        else{scaleOptions=undefined;}
-        
-        var narrativeOptions = $("#NarrativeList").filter(":visible");
-        if (narrativeOptions.length!=0){
-            narrativeOptions={
-                "markupStr":$("#NarrativeList").find(".summernote").summernote('code')
-            };
-        }
-        else{narrativeOptions = undefined;}
-
-        
-        var followUpOptions = $("#FollowUpOptions").find("input, select");
-        if ($("#FollowUpOptions").is(":visible")){
-            if ($("#condition").find(".checkboxes").length>0){
-                if ($("#condition").find(".active").length==0){
-                    var t = $("#condition").find(".answer");
-                    alertBox("required",t,"after","fade");
-                    return false;
-                }else{
-                    var conditions=[];
-                    $("#condition").find(".active").each(function(){
-                        conditions.push($(this).data("value"));
-                    });
-                    followUpOptions = conditions;
-                }
-            }
-            else{
-                var conditionInputs=[];
-                for (x=0;x<followUpOptions.length;x++){
-                    var i = $(followUpOptions[x]);
-                    if (i.val() == ""){
-                        alertBox("required",i.closest(".answer"),"after","fade");
+                
+                var options = [];
+                for (x=0;x<optionsY.length;x++){
+                    var check = $.sanitize($(optionsY[x]).val());
+                    check = check.split("\"").join("");
+                    if ($.inArray(check,options)>-1){
+                        alertBox("duplicate options not allowed",$(optionsY[x]),"after","fade");
                         return false;
                     }else{
-                        conditionInputs.push(i.val());
+                        options[x] = check;
                     }
                 }
-                followUpOptions = [conditionInputs.join(" ")];
             }
-        }
-        else{followUpOptions=undefined;}
+            else {options=undefined;}
+            
+            var numberOptions = $("#NumberOptions").find("input").filter(":visible");
+            if (numberOptions.length!=0){
+                for (x=0;x<numberOptions.length;x++){
+                    var i = $(numberOptions[x]);
+                    if (i.val() == ""){
+                        alertBox("required",i,"after","fade");
+                        return false;
+                    }
+                }
+                var min = Number(numberOptions.filter("[name='min']").val());
+                var max = Number(numberOptions.filter("[name='max']").val());
+                var inital = Number(numberOptions.filter("[name='initial']").val());
+                var step = Number(numberOptions.filter("[name='step']").val());
+                var units = numberOptions.filter("[name='units']").val();
+                
+                if (min>max){
+                    alertBox("must be lesser than max",numberOptions.filter("[name='min']"),"after","2500");
+                    return false;
+                }
+                if (inital>max || inital<min){
+                    alertBox("must be between min and max",numberOptions.filter("[name='initial']"),"after","2500");
+                    return false;
+                }
+                numberOptions = {
+                    "min":min,
+                    "max":max,
+                    "initial":inital,
+                    "step":step,
+                    "units":units
+                };
+            }
+            else {numberOptions = undefined;}
+            
+            var dateOptions = $("#DateOptions").find("input").filter(":visible");
+            if (dateOptions.length!=0){
+                var beginCurrent = $("#currentYearBegin").is(":checked"), endCurrent = $("#currentYearEnd").is(":checked"),
+                    endNext = $("#nextYearEnd").is(":checked"), 
+                    dateBegin = beginCurrent ? "c+0" : dateOptions.filter("[data-name='begin']").val(),
+                    dateEnd = endCurrent ? "c+0" : dateOptions.filter("[data-name='end']").val(),
+                    dateEnd = endNext ? "c+1" : dateEnd,
+                    yearRange = dateBegin+":"+dateEnd;
+                // console.log(yearRange);
+                dateOptions = {
+                    "yearRange":yearRange
+                }
+                if ($("#NoRestriction").is(":checked")==false){
+                    var stop = $("#DateOptions").find("select").filter(function(){
+                        return $(this).find("option:selected").val() == "";
+                    });
+                    if (stop.length > 0){
+                        alertBox("required if you want to restrict dates",stop.first(),"after");
+                        return false;
+                    }
+                    var minDate = "-"+$("[data-name='minNum']").val() + $("[data-name='minType']").val().charAt(0);
+                    var maxDate = "+"+$("[data-name='maxNum']").val() + $("[data-name='maxType']").val().charAt(0);
+                    dateOptions["minDate"] = minDate;
+                    dateOptions["maxDate"] = maxDate;
+                }else{
+                    dateOptions["minDate"] = null;
+                    dateOptions["maxDate"] = null;
+                }
+                console.log(dateOptions);
+            }
+            else{dateOptions=undefined;}
+            
+            var timeOptions = $("#TimeList").is(":visible");
+            if (timeOptions){
+                if ($("#TimeRestriction").find(".active").length==0){
+                    alertBox("required",$("#TimeRestrict"));
+                    $.scrollTo($("#TimeRestrict"));
+                    return false;
+                }
+                var r = $("#TimeRestriction").find(".active");
+                timeOptions = {};
+                r.each(function(){
+                    var v = $(this).data('value');
+                    if (v == "allow any time"){
+                        timeOptions['all'] = "default";
+                    }else if (v == 'set range'){
+                        timeOptions['minTime'] = $("#minTime").val();
+                        timeOptions['maxTime'] = $("#maxTime").val();
+                    }else if (v == 'set interval'){
+                        timeOptions['step'] = $("#TimeOptions").find("#step").val();
+                    }else if (v == 'set initial value'){
+                        timeOptions['setTime'] = $("#setTime").val();
+                    }
+                })
+            }
+            else{timeOptions=undefined;}
+
+            var textOptions = $("#TextOptions").is(":visible");
+            if (textOptions){
+                textOptions = {
+                    'placeholder':$("#textPlaceholder").val()
+                }
+            }else{textOptions=undefined}
+            var textBoxOptions = $("#TextBoxOptions").is(":visible");
+            if (textBoxOptions){
+                textBoxOptions = {
+                    'placeholder':$("#textAreaPlaceholder").val()
+                }
+            }else{textBoxOptions=undefined}
+
+            var sigOptions = $("#SignatureOptions").find("select").filter(":visible");
+            if (sigOptions.length!=0){
+                var printBool = $("#typedName").val();
+                sigOptions = {
+                    "typedName":printBool
+                }
+            }
+            else{sigOptions=undefined;}
+            
+            var scaleOptions = $("#ScaleOptions").find("input, select").filter(":visible");
+            if (scaleOptions.length!=0){
+                var min = scaleOptions.filter("[data-name='scalemin']").val();
+                var max = scaleOptions.filter("[data-name='scalemax']").val();
+                var initial = scaleOptions.filter("[data-name='initial']").val();
+                var minL = scaleOptions.filter("[name='minLabel']").val();
+                var maxL = scaleOptions.filter("[name='maxLabel']").val();
+                var dispL = scaleOptions.filter("[name='dispLabel']").val();
+                var dispV = scaleOptions.filter("[name='dispVal']").val();
+                            
+                min = Number(min);
+                max = Number(max);
+                initial = Number(initial);
+                if (min>max || min==max){
+                    alertBox("must be less than max value",scaleOptions.filter("[name='scalemin']"),"after","fade");
+                    return false;
+                }
+                if (inital < min || initial > max){
+                    alertBox("must be within min and max values",scaleOptions.filter("[name='initial']"),"after","fade");
+                    return false;
+                }
+                for (x=0;x<scaleOptions.length;x++){
+                    var v = $(scaleOptions[x]).val();
+                    if (v==""){
+                        alertBox("required",$(scaleOptions[x]),"after","fade");
+                        return false;
+                    }
+                }
+            
+                scaleOptions = {
+                    "min":min,
+                    "max":max,
+                    "initial":initial,
+                    "minLabel":minL,
+                    "maxLabel":maxL,
+                    "displayValue":dispV,
+                    "displayLabels":dispL
+                };
+            }
+            else{scaleOptions=undefined;}
+            
+            var narrativeOptions = $("#NarrativeList").filter(":visible");
+            if (narrativeOptions.length!=0){
+                narrativeOptions={
+                    "markupStr":$("#NarrativeList").find(".summernote").summernote('code')
+                };
+            }
+            else{narrativeOptions = undefined;}
+
+            
+            var followUpOptions = $("#FollowUpOptions").find("input, select");
+            if ($("#FollowUpOptions").is(":visible")){
+                if ($("#condition").find(".checkboxes").length>0){
+                    if ($("#condition").find(".active").length==0){
+                        var t = $("#condition").find(".answer");
+                        alertBox("required",t,"after","fade");
+                        return false;
+                    }else{
+                        var conditions=[];
+                        $("#condition").find(".active").each(function(){
+                            conditions.push($(this).data("value"));
+                        });
+                        followUpOptions = conditions;
+                    }
+                }
+                else{
+                    var conditionInputs=[];
+                    for (x=0;x<followUpOptions.length;x++){
+                        var i = $(followUpOptions[x]);
+                        if (i.val() == ""){
+                            alertBox("required",i.closest(".answer"),"after","fade");
+                            return false;
+                        }else{
+                            conditionInputs.push(i.val());
+                        }
+                    }
+                    followUpOptions = [conditionInputs.join(" ")];
+                }
+            }
+            else{followUpOptions=undefined;}
         
         
         if (options!=undefined){o=options}
@@ -1044,7 +1028,7 @@ $(document).ready(function(){
                 
         if (followUpOptions!=undefined){
             ItemObj["condition"] = followUpOptions;
-            section = $("#AddItem").closest(".item");
+            section = $("#AddItemProxy").closest(".item");
         }        
         
 
@@ -1058,8 +1042,8 @@ $(document).ready(function(){
                     ItemObj['displayOptions'] = (Items[itemKey].displayOptions!==undefined) ? Items[itemKey].displayOptions : defaultDisplayCSS ;
                     Items[itemKey] = ItemObj;
 
-                    updateItems(section);
-                    slideFadeOut($("#AddItem"));
+                    // updateItems(section);
+                    // slideFadeOut($("#AddItem"));
                     setTimeout(function(){
                         resetAddItem();
                         resetOptions();
@@ -1073,8 +1057,8 @@ $(document).ready(function(){
                     ItemObj['key'] = Items.length;
                     ItemObj['displayOptions'] = defaultDisplayCSS;
                     Items.push(ItemObj);
-                    updateItems(section);
-                    slideFadeOut($("#AddItem"));
+                    // updateItems(section);
+                    // slideFadeOut($("#AddItem"));
                     setTimeout(function(){
                         resetAddItem();
                         resetOptions();
@@ -1091,8 +1075,8 @@ $(document).ready(function(){
                     ItemObj['displayOptions'] = defaultDisplayCSS;
                 
                     FUs.push(ItemObj);
-                    updateItems(section.closest(".section"));
-                    slideFadeOut($("#AddItem"));
+                    // updateItems(section.closest(".section"));
+                    // slideFadeOut($("#AddItem"));
                     setTimeout(function(){
                         resetAddItem();
                         resetOptions();
@@ -1107,8 +1091,8 @@ $(document).ready(function(){
                     ItemObj['displayOptions'] = (FUs[FUkey].displayOptions!=undefined) ? FUs[FUkey].displayOptions : defaultDisplayCSS ;
 
                     FUs[FUkey] = ItemObj;
-                    updateItems(section.closest(".section"));
-                    slideFadeOut($("#AddItem"));
+                    // updateItems(section.closest(".section"));
+                    // slideFadeOut($("#AddItem"));
                     setTimeout(function(){
                         resetAddItem();
                         resetOptions();
@@ -1117,7 +1101,13 @@ $(document).ready(function(){
             }
         }
         console.log(ItemObj);
+        $(".section").each(function(){
+            updateItems($(this));
+        })
         autoSave();
+    }
+    function saveItemObj(){
+        
     }
     
     function resetAddItem(){
@@ -1143,13 +1133,9 @@ $(document).ready(function(){
         }
         o.val("");
     }
-    function resetAddText(){
-        $("#NarrTitle, #NarrText").val("");
-    }
+    function resetAddText(){$("#NarrTitle, #NarrText").val("");}
         
-    if ($("#formdata").data("json")!=undefined){
-        loadFormData();
-    }
+    if ($("#formdata").data("json")!=undefined){loadFormData();}
     function loadFormData(){
         var data = $("#formdata").data("json");
         var sections = data['sections'];
@@ -1160,7 +1146,6 @@ $(document).ready(function(){
         $("#FormName").find(".save").click();
         sections.forEach(function(section,i){
             var name = section.sectionName, items = section.items, showByDefault = section.showByDefault;
-            $("#ShowByDefault").val(showByDefault);
             $("#SectionName").val(name);
             $("#AddSection").find(".add").click();
             var newSec = $(".section").not("#examples").last();
@@ -1170,43 +1155,55 @@ $(document).ready(function(){
         })
     }
     
-    if ($("#formdata").data("mode")=="new"){
-        $(".saveForm").filter("[data-type='keepVersionID']").hide();
-    }
+    // if ($("#formdata").data("mode")=="new"){
+    //     $(".saveForm").filter("[data-type='keepVersionID']").hide();
+    // }
     
     function updateSections(){
-        var section = $("#Sections").find(".section").not("#examples");
-        var num = section.length;
-        var secStr = "";
+        var sections = $("#Sections").find(".section"), sectionHeight = $("#Sections").height();
+        var sectionCount = sections.length;
         var names = $("#Sections").find(".section").find(".sectionName").find("span");
-        var nameStr = "";
-        for (x=0;x<names.length;x++){
-            nameStr += $(names[x]).text();
-            if (x<names.length-1){nameStr += ", ";}
-        }
+        var nameArr = [], sectionLists, 
+            node = $('<li><span class="name"></span><span class="details">loading . . .</span></li>'), Qs, FUs, name, newNode, headerText;
+    
+        $("#SectionOptions").find("li").remove();
+        sections.each(function(s, section){
+            name = $(section).find(".sectionName").find("span").text();
+            newNode = node.clone();
+            newNode.find(".name").text(name);
+            $("#SectionOptions").find("ul").append(newNode);
+        });
+        setTimeout(function(){
+            updateSecItemCount();
+        },100)
 
-        if (num>1){
-            section = section.last();
-            secStr = num + " Sections";
-        }else if (num == 1){
-            secStr = "1 Section";
-        }else if (num == 0){
-            secStr = "No Sections Yet";
+        if (sectionCount == 0){
+            headerText = "No Sections Yet";
+            $("#SectionOptions").find("ul").hide();
+        }else{
+            headerText = "Sections";
+            $("#SectionOptions").find("ul").show();
         }
-                
-        if (nameStr != ""){secStr += ": "+nameStr;}
-        
-        soNum = $(".sectionOptions").length;
-        if (num==0 && soNum==2){
-            $("#AddSection").appendTo("#FormBuilder");
-            $("#SectionOrder").appendTo("#FormBuilder");
-            $(".sectionOptions").last().remove();
-        }else if (num>1 && soNum==1){
-            $("#AddSection").appendTo("#FormBuilder");
-            $("#SectionOrder").appendTo("#FormBuilder");
-            $(".sectionOptions").clone().appendTo("#Sections");
-        }
-        $(".sectionOptions").children("h4").text(secStr);
+        var text = (sectionCount != 0) ? "Sections" : "No Sections Yet";
+        $("#SectionOptions").find("h3").text(text);
+    }
+    function updateSecItemCount(){
+        var Qs, FUs, sections = $(".section"), node, wName = 0, wDetails = 0;
+        sections.each(function(s,section){
+            Qs = $(section).find(".item").not(".narrative").length;
+            FUs = $(section).find(".itemFU").not(".narrative").length;
+            Qs = (Qs == 1) ? Qs + " question" : Qs + " questions";
+            FUs = (FUs == 1) ? FUs + " followup" : FUs + " followups";
+            node = $("#SectionOptions").find("li").filter(function(){
+                wName = (wName < $(this).find(".name").width()) ? $(this).find(".name").width() : wName;
+                return $(this).find('.name').text().toLowerCase() == $(section).find(".sectionName").find(".value").text().toLowerCase();
+            }).find(".details").text(Qs + ", " + FUs);
+            $(".details").each(function(){
+                wDetails = (wDetails < $(this).width()) ? $(this).width() : wDetails;
+            })
+        })
+        $("#SectionOptions").find(".name").width(wName);
+        $("#SectionOptions").find(".details").width(wDetails);
     }
     function updateSecOrder(){
         if ($(this).hasClass('up')){
@@ -1309,10 +1306,7 @@ $(document).ready(function(){
         var Items = section.data("items");
         var big = ".Items";
         var little = ".item";
-        // var itemNode = "<div class='item'><div class='question'></div><div class='type'></div><div class='details'></div> <div class='ItemsFU'>  <div class='selectMultiple'> <div class='show button xsmall'>select multiple items</div><div class='hide button xsmall'>cancel selection</div><div class='delete button xsmall'>delete items</div><div class='copy button xsmall'>duplicate items</div> </div>  <p class='hideFUs'><span class='right'></span>No followups</p><div class='targetFUs'></div></div>   <div class='newFollowUp'><div class='button xsmall addFollowUp'>add followup question</div></div> <div class='UpDown'><div class='up'></div><div class='down'></div></div> </div>";
-        var itemNode = "<div class='item'><div class='question'></div><div class='answer'></div> <div class='ItemsFU'>  <div class='selectMultiple'> <div class='show button xsmall'>select multiple items</div><div class='hide button xsmall'>cancel selection</div><div class='delete button xsmall'>delete items</div><div class='copy button xsmall'>duplicate items</div> </div>  <p class='hideFUs'><span class='right'></span>No followups</p><div class='targetFUs'></div></div>   <div class='newFollowUp'><div class='button xsmall addFollowUp'>add followup question</div></div> <div class='UpDown'><div class='up'></div><div class='down'></div></div> </div>";
         var ItemsList = $(section).find(".Items").find(".target"), n = Items.length;
-        var itemFUNode = "<div class='itemFU'><div class='question'></div><div class='type'></div><div class='details'></div><div class='condition'></div> <div class='UpDown'><div class='up'></div><div class='down'></div></div> </div>";
 
         $("#AddItem, #AddText").hide().appendTo("#FormBuilder");
         ItemsList.html("");
@@ -1324,14 +1318,11 @@ $(document).ready(function(){
             if (t == "narrative"){q = "Rich Text Block";}
             newItem.find(".question").html(q + "<div class='toggle edit'>(edit)</div><div class='toggle copy'>(duplicate)</div><div class='toggle delete'>(delete)</div><div class='toggle save'>(save)</div><div class='toggle cancel'>(cancel edit)</div>").data({"question":q, "key":x, "type":t, "options":o, "toggleFUs":tFUs});
             
-            // var tTxt = (i.type == "narrative") ? "Display Text" : "Answer type: " + t;
-            // newItem.find(".type").html(tTxt);
             var r = (t == "narrative") ? ".narrative" : ".answer",
                 template = $(".template").filter("[data-type='"+t+"']").find(r).clone();
 
             template.removeAttr('id');
             newItem.find(".answer").replaceWith(template);
-            console.log(o);
             activateItem(newItem,t,o);
                         
             CurrentItem = newItem;
@@ -1340,49 +1331,40 @@ $(document).ready(function(){
             
             if (ItemsFU.length>0){
                 ItemsFU.forEach(function(f,xFU){
-                    var tFU = f.type, qFU = f.question, oFU = f.options, cFU = f.condition;
+                    var tFU = f.type, qFU = f.question, oFU = f.options, cFU = f.condition, cStr = "is <span class='bold underline'>";
                     $(itemFUNode).appendTo(ItemsFUList);
                     var newItemFU = ItemsFUList.find(".itemFU").last();
+                    if (tFU == "narrative"){qFU = "Rich Text Block";}
                     newItemFU.find(".question").html(qFU + "<div class='toggle edit'>(edit)</div><div class='toggle copy'>(duplicate)</div><div class='toggle delete'>(delete)</div><div class='toggle save'>(save)</div><div class='toggle cancel'>(cancel edit)</div>").data({"question":qFU, "key":xFU, "type":tFU, "options":oFU, "condition":cFU});
-                    // newItemFU.find(".type").html("Answer type: "+tFU);
-                        // if (oFU==undefined){
-                        //     newItemFU.find(".details").text("");
-                        // }
-                        // else if ($.isArray(oFU)){
-                        //     var oFUStr = "Options: ";
-                        //     for (y=0;y<oFU.length;y++){
-                        //         oFUStr += '"'+oFU[y]+'"';
-                        //         if (y<oFU.length-1){oFUStr+=", ";}
-                        //     }
-                        //     newItemFU.find(".details").text(oFUStr);
-                        // }
-                        // else if ($.isPlainObject(oFU)){
-                        //     var oFUStr = "Properties: ";
-                        //     var pFUArr = [];
-                        //     for (var p in oFU) {
-                        //         if (oFU.hasOwnProperty(p)) {
-                        //             var v = oFU[p];
-                        //             pFUArr.push("("+p+":"+v+")");                        
-                        //         }
-                        //     }
-                        //     oFUStr += pFUArr.join(", ");
-                        //     newItemFU.find(".details").text(oFUStr);
-                        // }
-                        // cFU = "\""+cFU.join("\", \"")+"\"";
                     
-                    var template = $(".template").filter("[data-type='"+tFU+"']").find('.answer').clone();
-                    newItemFU.find(".answer").replaceWith(template);
-                    newItemFU.find(".condition").text("Condition: "+cFU);
-                })
-                
+                    var rFU = (tFU == "narrative") ? ".narrative" : ".answer",
+                        template = $(".template").filter("[data-type='"+tFU+"']").find(rFU).clone();
 
+                    template.removeAttr('id');
+                    newItemFU.find(".answer").replaceWith(template);
+                    // cFU = cFU.join(", or ");
+                    // console.log(cFU.length);
+
+                    if (cFU.length == 1){
+                        cStr = "is <span class='bold underline'>"+cFU+"</span>";
+                    }else if (cFU.length == 2){
+                        cStr = "is <span class='bold underline'>"+cFU.join(" or ")+"</span>";
+                    }else{
+                        for (c = 0;c < cFU.length; c++){
+                            var add = (c == cFU.length - 1) ? " or " + cFU[c] + "</span>" : " " + cFU[c] + ",";
+                            cStr += add;
+                        }
+                    }
+                    newItemFU.find(".condition").html("Condition: <span class='bold underline'>"+q+"</span> "+cStr);
+                    activateItem(newItemFU,tFU,oFU);
+                })
             }
             
             var nFU = ItemsFU.length;
             var s = CurrentItem.find(".ItemsFU").children("p").find("span").clone();
             var text;
             if (nFU == 0){
-                text = "No followups";
+                text = "Follow up based on response";
             }else if (nFU==1){
                 text = "1 followup";
             }else {
@@ -1429,17 +1411,7 @@ $(document).ready(function(){
         
         $(section).find(".Items").children("p").html(text).prepend(s);
         
-        var qNum = $(".section").not("#examples").find(".item").length;
-        var soNum = $(".sectionOptions").length;
-        if (qNum > 4 && soNum ==1){
-            $("#SectionOrder").appendTo("#FormBuilder");
-            $("#AddSection").appendTo("#FormBuilder");
-            $(".sectionOptions").clone().appendTo("#Sections");
-        }else if (qNum < 5 && soNum==2){
-            $("#SectionOrder").appendTo("#FormBuilder");
-            $("#AddSection").appendTo("#FormBuilder");
-            $(".sectionOptions").last().remove();
-        }
+        updateSections();
                 
         if ($(ItemsList).text() == ""){
             $(ItemsList).html("<div style='padding:0.5em 1em;'>Add some questions!</div>");
@@ -1462,7 +1434,17 @@ $(document).ready(function(){
             if (!$(this).find(".targetFUs").is(":visible")){
                 $(this).find(".selectMultiple").hide();
             }
-        })   
+        })
+        var insertNode = $("<div/>",{
+            class: "insertProxy",
+            html:"<div class='insertBtns'><div class='button white xxsmall insertQuestion'>insert question</div><div class='button white xxsmall insertText'>insert text</div></div><div class='plus'>+</div>"
+        })
+        $(".target, .targetFUs").each(function(t, target){
+            var items = $(target).children().not($(target).children().last());
+            items.each(function(){
+                insertNode.clone().insertAfter($(this));
+            })
+        })
     }
     
     var stickyCSS = {position:"sticky",top:"11em",right:"0",display:"inline-block",margin:"0 1em"}, 
@@ -1472,7 +1454,6 @@ $(document).ready(function(){
     
     function multiItemOptions(){
         var section = $(this).closest(".Items, .ItemsFU");
-        //$(this).text("cancel selection");
         $(this).hide();
         $(this).parent().css(stickyCSS);
         $(".selectMultiple").find(".hide").filter(":visible").click();
@@ -1488,7 +1469,6 @@ $(document).ready(function(){
         items.children('.question').find(".toggle").fadeOut();
         items.children(".UpDown").html("<input class='selectChkBx' type='checkbox'>");
         items.each(function(i,item){
-//            $(item).on("hover",hoverItem,unhoverItem).on("click",selectItem) ;
             $("<div/>",{class:"block multiItem"}).prependTo($(item))
                 .on("mouseenter",hoverItem)
                 .on("mouseleave",unhoverItem)
@@ -1513,21 +1493,42 @@ $(document).ready(function(){
             section.children(".selectMultiple").find(".delete, .copy").fadeOut();
         }
     };
-    function hoverItem(){
-        $(this).addClass("hover");
-    };
-    function unhoverItem(){
-        $(this).removeClass("hover");
-    };
+    function hoverItem(){$(this).addClass("hover");};
+    function unhoverItem(){$(this).removeClass("hover");};
+
     function copyMultiple(){
         var optBox = $(this).closest(".selectMultiple"),
-            itemList = $(this).closest(".Items, .ItemsFU");
-        multiCopyOption(optBox,"append","0,0");
-        $(".multiCopyOption").on("click",function(){
-            var opt = $(this).data("value");
+            itemList = $(this).closest(".Items, .ItemsFU"),
             section = $(this).closest(".section");
+
+        var Items = section.data("items"), selected = section.find(".block").filter(".selected").closest(".item, .itemFU"),
+            confirmText = (selected.length == 1) ? "Duplicating 1 item" : "Duplicating " + selected.length + " items";
+
+        $("#Confirm").clone().attr('id','MultiCopy').appendTo("#ModalHome");
+        $("#MultiCopy").find(".message").html("<h2>"+confirmText+"</h2><div>Where would you like to put the new copies?</div>");
+        $("#MultiCopy").find(".options").find(".submit").remove();
+        $("#MultiCopy").find(".options").find(".cancel").text("cancel").addClass('multiCopyOption');
+        $("<div/>",{
+            class:"multiCopyOption button small pink",
+            data:{
+                value:"asBlock"
+            },
+            text:"end of section"
+        }).prependTo($("#MultiCopy").find(".options"));
+        $("<div/>",{
+            class:"multiCopyOption button small pink",
+            data:{
+                value:"afterOriginal"
+            },
+            text:"after each original"
+        }).prependTo($("#MultiCopy").find(".options"));
+        blurElement($("body"),"#MultiCopy");
+
+        $(".multiCopyOption").on("click",function(){
+            var opt = $(this).data("value"), section = $(".section").filter(function(){
+                    return $(this).find(".selectMultiple").find(".hide").is(":visible");
+                }), Items = section.data("items"), selected = section.find(".block").filter(".selected").closest(".item, .itemFU");
             if (opt=="asBlock"){
-                var Items = section.data("items"), selected = section.find(".block").filter(".selected").closest(".item, .itemFU");
                 selected.each(function(i,x){
                     var item = $(x), k = item.find('.question').data('key');
                     if (item.is(".itemFU")){
@@ -1544,7 +1545,8 @@ $(document).ready(function(){
                 autoSave();
                 $(".zeroWrap").remove();
                 optBox.find(".hide").click();
-                
+                unblurElement($("body"));
+                $("#MultiCopy").removeAttr("id").remove();
             }
             else if (opt=="afterOriginal"){
                 var Items = section.data("items"), selected = section.find(".block").filter(".selected").closest(".item, .itemFU");
@@ -1562,22 +1564,20 @@ $(document).ready(function(){
                 })
                 updateItems(section);
                 autoSave();
-                $(".zeroWrap").remove();
                 optBox.find(".hide").click();
+                unblurElement($("body"));
+                $("#MultiCopy").removeAttr("id").remove();
             }
-            else if (opt=="cancel"){
-                $(".zeroWrap").remove();
-            }
-            
-        })
-        
+        })    
     }
     function deleteMultiple(){
         var section = $(this).closest(".section"), optBox = $(this).closest(".selectMultiple");
-        var Items = section.data("items"), selected = section.find(".block").filter(".selected").closest(".item, .itemFU");
-        confirm(optBox,"append","0,0");
-        $('.zeroWrap, .confirm').css(rightAlignCSS);
-        $(".confirm").html("delete "+selected.length+" items? this cannot be undone <span class='confirmY'>yes</span><span class='confirmN'>no</span>");
+        var Items = section.data("items"), selected = section.find(".block").filter(".selected").closest(".item, .itemFU"),
+            warningText = (selected.length == 1) ? "DELETE 1 ITEM" : "DELETE " + selected.length + " ITEMS";
+
+        $("#Warn").find(".message").html("<h2 class='pink'>"+warningText+"?</h2><div>Are you sure you want to do this? It <u>cannot be undone.</u></div>");
+        $("#Warn").find(".submit").text(warningText);
+        blurElement($("body"),"#Warn");
         var wait = setInterval(function(){
             if (confirmBool!=undefined){
                 if (confirmBool==true){
@@ -1591,22 +1591,19 @@ $(document).ready(function(){
                         Items.splice(k-i,1);
                     })
                     updateItems(section);
-                    $(".zeroWrap").remove();
                     optBox.find(".hide").click();
                     autoSave();
                     confirmBool=undefined;
+                    unblurElement($("body"));
                     clearInterval(wait);
                 }
                 else if (confirmBool==false){
-                    $(".zeroWrap").remove();
                     confirmBool=undefined;
                     clearInterval(wait);
                 }
             }
         },100);
     }
-
-    
     function hideMultiItemOptions(){
         var section = $(this).closest(".Items, .ItemsFU");
         section.find(".block").remove();
@@ -1681,13 +1678,7 @@ $(document).ready(function(){
             },400,function(){
                 change.css("height","auto");
             })
-        })
-
-        
-//        items = $(".itemName");
-  //      for (x=0;x<n;x++){
-    //        $(items[x]).data("key",x);
-      //  }
+        })        
         autoSave();
     }
     function updateOptionOrder(){
@@ -1839,169 +1830,6 @@ $(document).ready(function(){
         autoSave();
     }
     
-    function updatePreview(){
-        var t = $("#Type").val();
-        var ex = $("#AddItem").find(".example").filter(function(){
-            return $(this).find(".exampleType").find("span").text().toLowerCase() == t;
-        })
-        
-        var options = $("#Options").find("input").filter(":visible");
-        if (options.length!=0){
-            optionsY = options.filter(function(){
-                return $(this).val() != "";
-            })
-            optionsN = options.not(optionsY);
-            if (optionsY.length < 2){
-                alertBox("must have at least two options",optionsN.first(),"after","fade");
-                return false;
-            }
-            
-            var options = [];
-            for (x=0;x<optionsY.length;x++){
-                var check = $.sanitize($(optionsY[x]).val());
-                if ($.inArray(check,options)>-1){
-                    alertBox("duplicate options not allowed",$(optionsY[x]),"after","fade");
-                    return false;
-                }else{
-                    options[x] = check;
-                }
-            }
-            if (t == "radio" || t == "checkboxes"){
-                var optionStr = "";
-                for (x=0;x<options.length;x++){
-                    optionStr += "<li value='"+options[x]+"'>"+options[x]+"</li>";
-                }
-                ex.find("ul").html(optionStr);
-            }
-            else if (t == "dropdown"){
-                var optionStr = "";
-                for (x=0;x<options.length;x++){
-                    optionStr += "<option value='"+options[x]+"'>"+options[x]+"</option>";
-                }
-                ex.find("select").html(optionStr);
-            }
-        }
- 
-        var scaleOptions = $("#ScaleOptions").find("input, select").filter(":visible");
-        if (scaleOptions.length!=0){
-            var min = scaleOptions.filter("[data-name='scalemin']").val();
-            var max = scaleOptions.filter("[data-name='scalemax']").val();
-            var initial = scaleOptions.filter("[data-name='initial']").val();
-            var minL = scaleOptions.filter("[name='minLabel']").val();
-            var maxL = scaleOptions.filter("[name='maxLabel']").val();
-            var dispL = scaleOptions.filter("[name='dispLabel']").val();
-            var dispV = scaleOptions.filter("[name='dispVal']").val();
-                        
-            min = Number(min);
-            max = Number(max);
-            initial = Number(initial);
-            if (min>max || min==max){
-                alertBox("must be less than max value",scaleOptions.filter("[data-name='scalemin']"),"after","fade");
-                return false;
-            }
-            if (initial < min || initial > max){
-                alertBox("must be within min and max values",scaleOptions.filter("[data-name='initial']"),"after","fade");
-                return false;
-            }
-            for (x=0;x<scaleOptions.length;x++){
-                var v = $(scaleOptions[x]).val();
-                if (v==""){
-                    alertBox("required",$(scaleOptions[x]),"after","fade");
-                    return false;
-                }
-            }
-            $("#scalePreview").attr({
-                "min":min,
-                "max":max,
-                "value":initial
-            })
-            if (dispV == "yes"){
-                $("#scalePreview").addClass("showValue");
-            }else{
-                $("#scalePreview").removeClass("showValue");
-            }
-            var minDisp='', maxDisp='';
-            if (dispL == "yes"){
-                minDisp = " ("+min+")";
-                maxDisp = " ("+max+")";
-            }
-            $("#scalePreview").parent().find(".left").text(minL+minDisp);
-            $("#scalePreview").parent().find(".right").text(maxL+maxDisp);
-        }
-        
-        var numberOptions = $("#NumberOptions").find("input").filter(":visible");
-        if (numberOptions.length!=0){
-            for (x=0;x<numberOptions.length;x++){
-                var i = $(numberOptions[x]);
-                if (i.val() == ""){
-                    alertBox("required",i,"after","fade");
-                    return false;
-                }
-            }
-            var min = Number(numberOptions.filter("[name='min']").val());
-            var max = Number(numberOptions.filter("[name='max']").val());
-            var inital = Number(numberOptions.filter("[name='initial']").val());
-            var step = Number(numberOptions.filter("[name='step']").val());
-            var units = numberOptions.filter("[name='units']").val();
-            
-            if (min>max){
-                alertBox("must be lesser than max",numberOptions.filter("[data-name='min']"),"after","2500");
-                return false;
-            }
-            if (inital>max || inital<min){
-                alertBox("must be between min and max",numberOptions.filter("[data-name='initial']"),"after","2500");
-                return false;
-            }
-            $("#numberPreview").data({
-                "min":min,
-                "max":max,
-                "step":step
-            });
-            $("#numberPreview").closest(".item").find(".label").text(units);
-            $("#numberPreview").val(inital);
-        }
-
-        var dateOptions = $("#DateOptions").find("input").filter(":visible");
-        if (dateOptions.length!=0){
-            var dateBegin = dateOptions.filter("[data-name='begin']").val();
-            var dateEnd = dateOptions.filter("[data-name='end']").val();
-            var dateNode = $("<input readonly placeholder='tap to pick date' id='datePreview' name='datePreview' data-begin='"+dateBegin+"' data-end='"+dateEnd+"'>");
-            $("#datePreview").remove();
-            $(".example").filter(function(){
-                return $(this).find('.exampleType').find("span").text().toLowerCase() == "date";
-            }).find(".answer").append(dateNode);
-            var optObj = {
-                yearRange:dateBegin+":"+dateEnd
-            }
-            if ($("#NoRestriction").is(":checked")==false){
-                var stop = $("#DateOptions").find("select").filter(function(){
-                    console.log($(this).find("option:selected").val()) ;
-                    return $(this).find("option:selected").val() == "";
-                });
-                if (stop.length > 0){
-                    alertBox("required if you want to restrict dates",stop.first(),"after");
-                    return false;
-                }
-
-                var min = "-" + $("#minNum").val() + $("#minType").val().charAt(0);
-                var max = "+" + $("#maxNum").val() + $("#maxType").val().charAt(0);
-                optObj['minDate'] = min;
-                optObj['maxDate'] = max;
-            }
-            $("#datePreview").datepick(optObj);
-        }
-        
-        var signOptions = $("#SignatureOptions").find("select").filter(":visible");
-        if (signOptions.length!=0){
-            var tn = $("#typedName").val(), t = $("#examples").find(".signHere").find("span");
-            if (tn == "yes"){
-                t.show();
-            }else {
-                t.hide();
-            }
-        }
-    }
-    
     function showConditionOptions(item){
         var k = item.find(".question").data('key');
         var Items = item.closest(".section").data('items');
@@ -2054,7 +1882,7 @@ $(document).ready(function(){
             //var oNode = $("<input type='slider'>")
         }
         
-        p = $("#AddItem").parent();
+        p = $("#AddItemProxy").parent();
         if (p.is(".itemFU")){
             c = p.find(".question").data("condition");
             //c = c.split(", ");
@@ -2064,13 +1892,6 @@ $(document).ready(function(){
                 }).click();
             }            
         }
-    }
-        
-    function multiCopyOption(target,where,offset){
-        var str = "Insert copies <span class='multiCopyOption' data-value='afterOriginal'>after each original</span><span data-value='asBlock' class='multiCopyOption'>as new block at end of list</span><span data-value='cancel' class='multiCopyOption'>cancel</span>";
-        var where = "append";
-        confirmBox(str,target,where,"nofade",offset);
-        $('.zeroWrap, .confirm').css(rightAlignCSS);
     }
     
     function activateItem(item,type,options){
