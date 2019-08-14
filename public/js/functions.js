@@ -50,16 +50,17 @@ $(document).ajaxError(function(ev,xhr,settings,error){
         // console.log("error");
         // console.log(error);
         console.log(error);
-        var status = xhr.status;
+        var status = xhr.status,
+            message = (xhr.responseJSON != undefined) ? xhr.responseJSON.message : error;
         if (status == 419){
             blurElement($("body"),"#Refresh");
             setTimeout(function(){
                 location.reload();
-            },500)
+            },1500)
         }else{
             if ($("#Error").length > 0){
                 $("#Error").find(".submit").data('error',xhr);
-                $("#Error").find(".message").html("<h2>Error</h2><div>"+xhr.responseJSON.message+"</div>");
+                $("#Error").find(".message").html("<h2>Error</h2><div>"+message+"</div>");
                 blurElement($("body"),"#Error");
             }            
         }
@@ -80,9 +81,16 @@ $(document).on("mousedown","li",function(e){
         e.preventDefault();
 });
 
-var defaultCSS = {"inline":"false"};
-function getDefaultCSS(){
-    return defaultCSS;
+var defaultCSS = {
+    "item": {
+        "inline":"false"
+    },
+    'section': {
+        'displayNumbers':"false"
+    }
+};
+function getDefaultCSS(type){
+    return defaultCSS[type];
 }
 
 
@@ -340,6 +348,9 @@ function blurElement(elem,modal,time,callback){
             backgroundColor:"rgba(230,230,230,0.8)",
             border:"2px solid green"
         });
+    }else{
+        if (elem.is("body")){$(modal).css("box-shadow","0 0 15px 10px rgba(230,230,230,0.4)");}
+        else {$(modal).css("box-shadow","0 0 15px 10px rgba(190,190,190,0.4)");} 
     }
     if ($(modal).find(".cancel").length>0){
         $(modal).find(".cancel").on("click",function(){
@@ -461,206 +472,6 @@ function unblurElement(elem){
         overflowY:"auto"
     });
 }
-
-// function blurModal(modal,submodal){
-//     var position = $(modal).css("position");
-//     $("#loading, #checkmark").remove();
-//     if (submodal=="#loading"){
-//         $("<div id='loading' class='lds-ring'><div></div><div></div><div></div><div></div></div>").appendTo("body");
-//     }else if (submodal=="#checkmark"){
-//         $("<span id='checkmark' class='checkmark' style='font-size:4em'>✓</span>").appendTo("body").css({
-//             borderRadius:"50%",
-//             padding:"0.1em 0.5em",
-//             boxShadow:"0 0 20px 10px rgba(230,230,230,0.4)",
-//             backgroundColor:"rgba(230,230,230,0.4)",
-//             border:"2px solid green"
-//         });
-//     }
-//     if ($(submodal).find(".cancel").length>0){
-//         $(submodal).find(".cancel").on("click",function(){
-//             unblurModal($(modal));
-//         });
-//     }
-//     if ($("#Block2").length==0){
-//         $("body").append("<div id='Block2'></div>");
-//     }
-//     if ($("#ModalHome").length==0){
-//         $("#Block2").children().hide().appendTo($("body"));
-//     }else{
-//         $("#Block2").children().hide().appendTo($("#ModalHome"));
-//     }
-//     $(modal).css("overflow","hidden");
-//     $("#loading").addClass("dark");
-//     var showCSS = {};
-//     var w = $(modal).outerWidth(), h = $(modal).innerHeight();
-//     showCSS.width = w;
-//     showCSS.height = h;
-//     showCSS.zIndex = 100;
-//     var d = Math.abs(modal[0].scrollHeight - $(modal).innerHeight());
-//     if (d>1){
-//         showCSS.top = modal[0].scrollTop.toString() + "px";
-//     }
-//     if ($(submodal).find(".formDisp").length>0){
-//         $(submodal).css({
-//             overflowX:"auto",
-//             overflowY:'auto'
-//         })
-//     }
-
-//     $("#Block2").prependTo(modal).css(showCSS).fadeIn();
-//     var center = {
-//         position: "absolute",
-//         left:"50%",
-//         top:"50%",
-//         transform:"translate(-50%,-50%)",
-//     }
-//     var submodalCSS = {
-//         display: "inline-block",
-//         backgroundColor: "rgb(230,230,230)",
-//         padding: "2em 3em",
-//         borderRadius: "5px",
-//         boxShadow: "0 0 15px 3px rgb(200,200,200)"
-//     }        
-
-//     if (submodal!=undefined){
-//         if (submodal!="#loading" && submodal!="#checkmark"){
-//             $(submodal).css(submodalCSS);
-//         }
-//         if (submodal==".c"){
-//             $(submodal).css({backgroundColor:"transparent",boxShadow:""});
-//             $(submodal).find(".confirm").css(center);
-//         }
-//         $(submodal).appendTo("#Block2").css(center);
-//         if ($(submodal).is(":visible")==false){
-//             slideFadeIn($(submodal));
-//         }
-//     }
-// }
-// function unblurModal(modal,time,callback){
-//     time = (time != undefined) ? time : "400";
-//     $("#Block2, #loading").fadeOut(time);
-//     $("#Block2").children().fadeOut(time,function(){
-//         if ($("#ModalHome").length==0){
-//             $("#Block2").children().hide().appendTo($("body"));
-//         }else{
-//             $("#Block2").children().hide().appendTo($("#ModalHome"));
-//         }
-//         $("#Block2").remove();
-//     });
-//     if ($(modal).find(".formDisp").length>0 || $(modal).is(".modalForm")){
-//         // console.log(modal);
-//         // console.log($(modal));
-//         $(modal).css({
-//             // width:"80%",
-//             // maxHeight:"80%",
-//             overflowX:"hidden",
-//             overflowY:'auto'
-//         })
-//     }
-//     if (callback!=undefined){
-//         setTimeout(callback,time+101);
-//     }
-// }
-// function blurSubModal(submodal,supermodal){
-//     var position = $(submodal).css("position");
-//     $("#loading, #checkmark").remove();
-//     if (supermodal=="#loading"){
-//         $("<div id='loading' class='lds-ring'><div></div><div></div><div></div><div></div></div>").appendTo("body");
-//     }else if (supermodal=="#checkmark"){
-//         $("<span id='checkmark' class='checkmark' style='font-size:4em'>✓</span>").appendTo("body").css({
-//             borderRadius:"50%",
-//             padding:"0.1em 0.5em",
-//             boxShadow:"0 0 20px 10px rgba(230,230,230,0.4)",
-//             backgroundColor:"rgba(230,230,230,0.4)",
-//             border:"2px solid green"
-//         });
-//     }
-//     if ($(supermodal).find(".cancel").length>0){
-//         $(supermodal).find(".cancel").on("click",function(){
-//             unblurSubModal($(submodal));
-//         });
-//     }
-//     if ($("#Block3").length==0){
-//         $("body").append("<div id='Block3'></div>");
-//     }
-//     if ($("#ModalHome").length==0){
-//         $("#Block3").children().hide().appendTo($("body"));
-//     }else{
-//         $("#Block3").children().hide().appendTo($("#ModalHome"));
-//     }
-//     $(submodal).css("overflow","hidden");
-//     $("#loading").addClass("dark");
-//     var showCSS = {};
-//     var w = $(submodal).outerWidth(), h = $(submodal).innerHeight();
-//     showCSS.width = w;
-//     showCSS.height = h;
-//     showCSS.zIndex = 100;
-//     var d = Math.abs(submodal[0].scrollHeight - $(submodal).innerHeight());
-//     if (d>1){
-//         showCSS.top = submodal[0].scrollTop.toString() + "px";
-//     }
-//     if ($(supermodal).find(".formDisp").length>0){
-//         $(supermodal).css({
-//             overflowX:"auto",
-//             overflowY:'auto'
-//         })
-//     }
-
-//     $("#Block3").prependTo(submodal).css(showCSS).fadeIn();
-//     var center = {
-//         position: "absolute",
-//         left:"50%",
-//         top:"50%",
-//         transform:"translate(-50%,-50%)",
-//     }
-//     var submodalCSS = {
-//         display: "inline-block",
-//         backgroundColor: "rgb(230,230,230)",
-//         padding: "2em 3em",
-//         borderRadius: "5px",
-//         boxShadow: "0 0 15px 3px rgb(200,200,200)"
-//     }        
-
-//     if (supermodal!=undefined){
-//         if (supermodal!="#loading" && supermodal!="#checkmark"){
-//             $(supermodal).css(submodalCSS);
-//         }
-//         if (supermodal==".c"){
-//             $(supermodal).css({backgroundColor:"transparent",boxShadow:""});
-//             $(supermodal).find(".confirm").css(center);
-//         }
-//         $(supermodal).appendTo("#Block3").css(center);
-//         if ($(supermodal).is(":visible")==false){
-//             slideFadeIn($(supermodal));
-//         }
-//     }
-// }
-// function unblurSubModal(submodal,time,callback){
-//     time = (time != undefined) ? time : "400";
-//     $("#Block3, #loading").fadeOut(time);
-//     $("#Block3").children().fadeOut(time,function(){
-//         if ($("#ModalHome").length==0){
-//             $("#Block3").children().hide().appendTo($("body"));
-//         }else{
-//             $("#Block3").children().hide().appendTo($("#ModalHome"));
-//         }
-//         $("#Block3").remove();
-//     });
-//     if ($(submodal).find(".formDisp").length>0 || $(submodal).is(".modalForm")){
-//         // console.log(modal);
-//         // console.log($(modal));
-//         $(submodal).css({
-//             // width:"80%",
-//             // maxHeight:"80%",
-//             overflowX:"hidden",
-//             overflowY:'auto'
-//         })
-//     }
-//     if (callback!=undefined){
-//         setTimeout(callback,time+101);
-//     }
-// }
-
 function loadBlurLight(elem){
     if ($("#loading").length==0){
         $("<div id='loading' class='lds-ring'><div></div><div></div><div></div><div></div></div>").appendTo("body");

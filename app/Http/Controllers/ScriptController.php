@@ -175,6 +175,7 @@ class ScriptController extends Controller
             $existingInstance = $class::find($uid);
 
             $result = $this->saveModel($model, $existingInstance, $request);
+            // Log::info($result);
             if ($result === true){
                 return "checkmark";
             }else{
@@ -183,7 +184,7 @@ class ScriptController extends Controller
         }
         public function saveModel($model, $instance, Request $request){
             $models = strtolower(plural($model));
-            $columns = json_decode($request->columnObj,true);
+            $columns = isset($request->columnObj) ? json_decode($request->columnObj,true) : [];
 
             // SPECIAL STEP FOR USER / MESSAGE
                 if ($model == "User"){
@@ -236,17 +237,6 @@ class ScriptController extends Controller
                 // SAVES EMBEDDED IMAGES SYNC INSTANCE
                 if (isset($embeddedImgs) && $embeddedImgs != false){
                     $instance->images()->sync($embeddedImgs);
-                    // $imgIdArr = [];
-                    // foreach ($embeddedImgs as $embeddedImg){
-                    //     // $image = new Image;
-                    //     // $image->id = $embeddedImg[0];
-                    //     // $image->mime_type = $embeddedImg[1];
-                    //     // $image->file_name = $embeddedImg[2];
-                    //     // $image->data_string = $embeddedImg[3];
-                    //     // $image->save();
-                    //     array_push($imgIdArr, $embeddedImg[0]);
-                    // }
-                    // $instance->images()->sync($imgIdArr);
                 }
 
             }

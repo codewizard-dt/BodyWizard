@@ -39,12 +39,12 @@ class Service extends Model
                             "attribute" => 'duration'
                         ),
                         array(
-                            "label" => 'Is Add-On',
-                            "className" => 'addon',
-                            "attribute" => 'is_addon'
+                            "label" => 'Price ($)',
+                            "className" => 'price',
+                            "attribute" => 'price'
                         )
                     ),
-	    	'hideOrder' => "addon,category,duration",
+	    	'hideOrder' => "price,category,duration",
 	    	'filtersColumn' => array(),
 	    	'filtersOther' => array(),
             'destinations' => array(

@@ -23,30 +23,6 @@ $(document).ready(function () {
     })
     fullscreenBtn.data('initialized',true);
     
-    //update defaultDisplayCSS in form-builder.js to reflect any changes here
-    var defaultCSS = {"inline":"false"};
-    function UpdateCss(item){
-        var cssObj = {},
-            dispObj = (item.data('disp') != null) ? item.data('disp') : defaultCSS,
-            inline = dispObj.inline,
-            dispClass = inline.includes("true") ? "inline" : "ownLine";
-        
-        dispClass = (item.is(".itemFU") && item.closest(".item").data('disp').inline.includes("true")) ? "ownLine" : dispClass;
-        
-        item.addClass(dispClass);
-        
-        if (inline.includes("BR")){
-            $("<div/>",{
-                class:"break"
-            }).insertBefore(item);
-        }else{
-            if (item.prev().hasClass("break")){
-                item.prev().remove();
-            }
-        }
-
-        item.css(cssObj);
-    }
     
 
     // INITIALIZING ITEMS
@@ -189,6 +165,42 @@ $(document).ready(function () {
         loadDxFormBtns.data("initialized",true);
 
 })
+
+//update defaultDisplayCSS in form-builder.js to reflect any changes here
+var itemCss = getDefaultCSS('item');
+function UpdateCss(item){
+    var type = (item.is(".item, .itemFU")) ? 'item' : 'section',
+        dispObj = (item.data('display') != null) ? item.data('display') : getDefaultCSS(type);
+    if (type == 'item'){
+        var inline = dispObj.inline,
+            dispClass = inline.includes("true") ? "inline" : "ownLine";
+        
+        dispClass = (item.is(".itemFU") && item.closest(".item").data('display').inline.includes("true")) ? "ownLine" : dispClass;
+        item.removeClass('ownLine inline');
+        item.addClass(dispClass);
+        
+        if (inline.includes("BR")){
+            $("<div/>",{
+                class:"break"
+            }).insertBefore(item);
+        }else{
+            if (item.prev().hasClass("break")){
+                item.prev().remove();
+            }
+        }
+    }else{
+        var dispNum = (dispObj.displayNumbers == "true") ? true : false;
+        if (dispNum){item.removeClass("noNums")}
+        else{item.addClass("noNums")}
+    }
+    $("#FormPreview").find(".break").text("new line break - only visible in preview").css({
+        borderBottom:"1px solid var(--pink)",
+        fontSize:"0.8em",
+        color:"var(--pink)"
+    })
+    // item.css(cssObj);
+}
+
 
 function followup() {
     var response = $(this).data('value'), item = $(this).closest(".item, .itemFU");

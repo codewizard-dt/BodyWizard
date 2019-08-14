@@ -42,10 +42,10 @@
 		<div id="Refresh" class='prompt'>
 			<div class="message">
 				<h2>Session Timeout</h2>
-				<div>It's been too long! Let's log in again.</div>
+				<div>It's been too long! Let's log in again. You'll be automatically redirected shortly.<br>If not redirected, click below to reload.</div>
 			</div>
 			<div class="options">
-				<div class="button pink70 medium">automatically refreshing</div>
+				<div class="button pink medium">Click here to manually refresh</div>
 			</div>
 		</div>
 	</div>

@@ -6,33 +6,77 @@ $(document).ready(function(){
 
     $("#FormPreview").find(".submitForm").addClass("disabled");
 
-    $("#ShowAllDispOpt").on("click",function(){
-        if ($(this).data("displaying")){
-            $(".dispOptions").remove();
-            $(this).data("displaying",false);
-            $(this).text("edit display and layout options");
-            return false;
+    $("#ItemOptionsBtn").on("click",function(){
+        var notTemplate = $(".displayOptions").filter("[data-type='item']").not(".template");
+        var showing = (notTemplate.length > 0) ? true : false;
+        if (!showing){
+            $(".displayOptions").filter("[data-type!='item']").not(".template").remove();
+            $(".optionBtn").not($(this)).removeClass('yellow').addClass('yellow70');
+            var template = $(".template").filter("[data-type='item']");
+            $("#FormPreview").find(".item, .itemFU").each(function(){
+                template.clone().appendTo($(this)).removeClass("template").show().on("change",'select',updateItem);
+            });
+            $(".showOptions").on('click',showOptions);
+            $(this).removeClass('yellow70').addClass('yellow');
+        }else{
+            notTemplate.remove();
+            $(this).removeClass('yellow').addClass('yellow70');
         }
-        $("<div/>",{
-            class:"button xsmall dispOptions"
-        }).insertAfter($("#FormPreview").find(".question"));
-        $(this).data("displaying",true);
-        $(this).text("hide display and layout options");
-        $(".dispOptions").on("click",showDispOptions);
-        if ($("#SaveDispOpt").length==0){
-            $("<div/>",{
-                class:"button xxsmall yellow",
-                id:"SaveDispOpt",
-                html:"save display options"
-            }).insertAfter($(this));
-            $("#SaveDispOpt").on("click",saveDispOptions);
-        }
-        $("#SaveDispOpt").show();
     })
-    
-    $(".item, .itemFU").each(function(){
-        if ($(this).data("disp")==undefined){
-            $(this).data("disp",{});
+    $("#SectionOptionsBtn").on("click",function(){
+        var notTemplate = $(".displayOptions").filter("[data-type='section']").not(".template");
+        var showing = (notTemplate.length > 0) ? true : false;
+        if (!showing){
+            $(".displayOptions").filter("[data-type!='section']").not(".template").remove();
+            $(".optionBtn").not($(this)).removeClass('yellow').addClass('yellow70');
+
+            var template = $(".template").filter("[data-type='section']");
+            $("#FormPreview").find(".section").each(function(){
+                template.clone().appendTo($(this)).removeClass("template").show().on("change",'select',updateItem);
+            });
+            $(".showOptions").on('click',showOptions);
+            $(this).removeClass('yellow70').addClass('yellow');
+        }else{
+            notTemplate.remove();
+            $(this).removeClass('yellow').addClass('yellow70');
+        }
+    })
+    // $("#FormPreview").on('change','select',updateItem);
+    $("#SaveDisplayOptions").on('click',saveDisplayOptions);
+    function updateItem(){
+        var item = $(this).closest(".section, .item, .itemFU"),
+            dispObj = item.data("display"),
+            setting = $(this).attr('name');
+
+        dispObj[setting] = $(this).val();
+        item.data('display',dispObj);
+        UpdateCss(item);
+        $("#SaveDisplayOptions").removeClass("disabled");
+    }
+    function showOptions(){
+        var p = $(this).parent(), t = $(this), displayOptions = $(this).closest(".item, .itemFU, .section").data('display');
+        $(".showOptions").filter(function(){return $(this).text() == 'close';}).click();
+        // displayOptions.forEach(function(name,value){
+        $.each(displayOptions,function(name,value){
+            p.find('select').filter("[name='"+name+"'").val(value);
+        })
+        slideFadeIn(p.find(".options"));
+        $(this).text('close');
+        $(this).off('click',showOptions).on('click',hideOptions);
+    }
+    function hideOptions(){
+        var p = $(this).parent(), t = $(this);
+        slideFadeOut(p.find(".options"),400,function(){t.text('+');});
+        $(this).off('click',hideOptions).on('click',showOptions);
+    }
+    $("#FormPreview").on("mousedown touchstart",function(e){
+        var btn = $(".displayOptions").filter(function(){return $(this).find(".options").is(":visible");}).find(".showOptions"), t = $(e.target);
+        if (btn.length > 0 && !t.is("select") && !t.hasClass("showOptions")){btn.click();}
+    })
+    $("#FormPreview").find(".item, .itemFU, .section").each(function(){
+        var type = $(this).is(".item, .itemFU") ? 'item' : 'section';
+        if ($(this).data("display")==undefined){
+            $(this).data("display",getDefaultCSS(type));
         }
     })
     
@@ -40,80 +84,15 @@ $(document).ready(function(){
     $(".wrapMe").each(function(){
         wrapAndCenter($(this));
     })
-     
-    function showDispOptions() {
-        $(".dispOptions").find(".button").click();
-        // $(".dispOptions").not($(this)).css("opacity","0.5");
-        var options = "<select data-name='inline' style='font-size:1.4em;margin-right:10px'><option value='false'>display on own line</option><option value='true'>condensed display</option><option value='trueBR'>condensed on new line</option></select>";
-        $(this).html(options).addClass("active");
-        // console.log($(this).closest(".item, .itemFU").data("type"));
-        if ($(this).closest(".item, .itemFU").data("type")=="scale"){
-            $(this).find("option").filter(function(){
-                return $(this).val() != "false";
-            }).remove();
-        }
-        $("<div/>",{
-            class:"button xsmall"
-        }).prependTo($(this));
-        $(this).off("click",showDispOptions);
-        $(this).find("div").on("click",hideDispOptions);
-        $(this).find("select").each(function(){
-            var item = $(this).closest(".itemFU, .item"), optName = $(this).data('name');
-            if (item.data("disp")[optName] != undefined){
-                $(this).val(item.data('disp')[optName]);
-            }
-        })
-        $(this).find("select").on('change',updateDisp);
-    }
-    function hideDispOptions() {
-        // console.log($(this).parent());
-        var p = $(this).parent();
-        p.removeClass("active").children().remove();
-        setTimeout(function(){
-            p.on("click",showDispOptions);
-        },100)
-    }
-    function updateDisp(){
-        var item = $(this).closest(".itemFU, .item");
-        var cssObj = {};
-        var inline = item.find("[data-name='inline']").find(":selected").val();
-
-
-        cssObj['display'] = (inline.includes("true")) ? "inline-block" : "block";
-        cssObj['paddingRight'] = (inline.includes("true")) ? "0.2em" : "0";
-        cssObj['width'] = (inline.includes("true")) ? "calc(33% - 0.2em)" : "100%";
-        if (item.is(".itemFU") && inline.includes("true")){
-            cssObj['width'] = item.closest(".item").data('disp').inline.includes("true") ? "100%" : "28%";
-        }
-        item.css(cssObj);
-        if (inline.includes("BR")){
-            $("<div/>",{
-                class:"break"
-            }).insertBefore(item);
-        }else{
-            if (item.prev().hasClass("break")){
-                item.prev().remove();
-            }
-        }
-        
-        var obj = {};
-        item.find('.dispOptions').find("select").each(function(i,select){
-            var n = $(select).data('name'), o = $(select).find(":selected");
-            if (o.length==0){
-                console.log("not selected");
-                o = $(select).find("option").first();
-            }
-            obj[n] = o.val();
-        })
-        item.data("disp",obj);
-    }
-    function saveDispOptions() {
+    function saveDisplayOptions() {
+        if ($(this).hasClass('disabled')){return false;}
         blurElement($("#FormPreview"),"#loading");
-        $("#SaveDispOpt").addClass("disabled");
-        $("#SaveDispOpt").off("click",saveDispOptions);
         var formObj = $("#formdata").data("json"), sections = formObj['sections'];
         $("#FormPreview").find(".section").each(function(s,section){
             var items = $(section).find(".item, .itemFU");
+            formObj['sections'][s]['displayOptions'] = $(section).data('display');
+            // console.log($(section).data());
+            // console.log(formObj['sections'][s]['displayOptions']);
             items.each(function(i,item){
                 if ($(item).is(".itemFU")){
                     var kFU = $(item).data('key');
@@ -121,16 +100,9 @@ $(document).ready(function(){
                 }else{
                     var k = $(item).data('key');
                 }
-                var defaultOpt = {
-                    inline:"false"
-                };
-                var disp = $(item).data("disp");
-                for (var prop in defaultOpt){
-                    if (defaultOpt.hasOwnProperty(prop) && !disp.hasOwnProperty(prop)){
-                        disp[prop] = defaultOpt[prop];
-                    }
-                }
-                $(item).data('disp',disp);
+                var defaultOptions = getDefaultCSS('item');
+                var disp = $(item).data("display");
+                $(item).data('display',disp);
                 if ($(item).is(".item")){
                     formObj['sections'][s]['items'][k]['displayOptions'] = disp;
                 }else if ($(item).is(".itemFU")){
@@ -142,7 +114,8 @@ $(document).ready(function(){
         var formJsonStr = JSON.stringify(formObj),
             questionsStr = JSON.stringify(formObj['sections']);
 
-        var url = "/forms/" + $("#formdata").data("formuid");
+        // console.log(formObj);
+        var url = "/save/Form/" + $("#formdata").data("formuid");
         $.ajax({
             url: url,
             method:"PATCH",
@@ -155,8 +128,11 @@ $(document).ready(function(){
                 setTimeout(function(){
                     unblurElement($("#FormPreview"));
                 },800)
-                $("#ShowAllDispOpt").click();
-                $("#SaveDispOpt").remove();
+                if ($(".displayOptions").filter(":visible").length > 0){
+                    var t = $(".displayOptions").filter(":visible").first().data('type');
+                    $(".optionBtn").filter("[data-type='"+t+"']").click();                    
+                }
+                $("#SaveDisplayOptions").addClass('disabled');
             }
         })
     }    

@@ -35,7 +35,11 @@ $ctrl = new Form;
         <div id="Sections">
             <div id='SectionOptions' class='prompt'>
                 <div class="message whiteBG">
-                    <h3>No Sections Yet</h3>
+                    @if (isset($form))
+                        <h3>Loading Sections</h3>
+                    @else
+                        <h3>No Sections Yet</h3>
+                    @endif
                     <span class='little'>click to scroll</span><br>
                     <ul></ul>
                 </div>
@@ -65,10 +69,10 @@ $ctrl = new Form;
         <div class='message'>
             <h2 class='purple'>New Question</h2>
             <div>
-                <h3 class='black'><span>Question Text: </span><input id='Text' type='text' placeholder='How are you today?'></h3>
+                <h3 class='black paddedXSmall'><span>Question Text: </span><input id='Text' type='text' placeholder='How are you today?'></h3>
             </div>
             <div>
-                <h4 class='black'>
+                <h4 class='black paddedXSmall'>
                     <span>Answer Type:</span>
                     <select id='Type'>
                         <option value='text'>single line text</option>
@@ -208,14 +212,16 @@ $ctrl = new Form;
                     $optionsMin = ['min'=>'-9999','max'=>'9999','initial'=>'0','step'=>'1','units'=>'','name'=>'scalemin'];
                     $optionsMax = ['min'=>'-9999','max'=>'9999','initial'=>'0','step'=>'1','units'=>'','name'=>'scalemax'];
                     $optionsInitial = ['min'=>'-9999','max'=>'9999','initial'=>'0','step'=>'1','units'=>'','name'=>'initial'];
+                    $optionsMinLabel = ['name'=>'minLabel','placeholder'=>'e.g. no pain, none, bad'];
+                    $optionsMaxLabel = ['name'=>'maxLabel','placeholder'=>'e.g. excruciating, constant, good'];
                     ?>
-                    <span style='width:6em;'>Minimum:</span>{{ $ctrl->answerDisp("number",$optionsMin) }}<br>
-                    <span style='width:6em;'>Maximum:</span>{{ $ctrl->answerDisp("number",$optionsMax) }}<br>
-                    <span style='width:6em;'>Initial value:</span>{{ $ctrl->answerDisp("number",$optionsInitial) }}<br>
-                    <span style='width:16em;'>Label for minimum end of scale:</span><input name="minLabel" type="text"><br>
-                    <span style='width:16em;'>Label for maximum end of scale:</span><input name="maxLabel" type="text"><br>
-                    <span style='width:16em;'>Show current value to patient?</span><select name='dispVal'><option value="yes">yes</option><option value="no">no</option></select><br>
-                    <span style='width:16em;'>Show min/max values to patient?</span><select name='dispLabel'><option value="yes">yes</option><option value="no">no</option></select>
+                    <div><span style='width:16em;'>Minimum value:</span>{{ $ctrl->answerDisp("number",$optionsMin) }}</div>
+                    <div><span style='width:16em;'>Maximum value:</span>{{ $ctrl->answerDisp("number",$optionsMax) }}</div>
+                    <div><span style='width:16em;'>Initial value:</span>{{ $ctrl->answerDisp("number",$optionsInitial) }}</div>
+                    <div><span style='width:16em;'>Label for minimum end of scale:</span>{{ $ctrl->answerDisp("text",$optionsMinLabel) }}</div>
+                    <div><span style='width:16em;'>Label for maximum end of scale:</span>{{ $ctrl->answerDisp("text",$optionsMaxLabel) }}</div>
+                    <div><span style='width:16em;'>Show current value to patient?</span><select name='dispVal'><option value="yes">yes</option><option value="no">no</option></select></div>
+                    <div><span style='width:16em;'>Show min/max values to patient?</span><select name='dispLabel'><option value="yes">yes</option><option value="no">no</option></select></div>
                 </div>
             </div>
             <div id="FollowUpOptions" class='itemOptionList'>
@@ -257,9 +263,6 @@ $ctrl = new Form;
         </div>
     </div>
     
-<!--     <div id="AddFollowUp">
-    </div>
- -->    
     <div id="SectionOrder">
         <div style='display:inline-block'>
             <span>Section Order</span><div class='toggle save'>(save)</div><div class="toggle cancel">(cancel)</div>
@@ -267,14 +270,6 @@ $ctrl = new Form;
         </div>
     </div>
         
-    <div id="ItemFUOrder">
-        <div style='display:inline-block'>
-            <span>FollowUp Order</span><div class='toggle save'>(save)</div><div class="toggle cancel">(cancel)</div>
-            <div id="ItemFUList"></div>
-        </div>
-    </div>
-</div>
-
 <div id='Templates'>
     <?php 
         $textOptions = [
@@ -308,7 +303,7 @@ $ctrl = new Form;
         ];
         $narrativeOptions = [
             'name' => 'narrativeTemplate',
-            'markupStr' => "<div class='lds-ring dark' style='position:relative;top:50%,transform:translate(-50%,-50%)'><div></div><div></div><div></div><div></div></div>"
+            'markupStr' => "demo"
         ];
     ?>
     <div class='template' data-type="narrative" data-defaultoptions="{{ json_encode($narrativeOptions) }}">{{ $ctrl->answerDisp('narrative',$narrativeOptions) }}</div>
@@ -325,7 +320,9 @@ $ctrl = new Form;
 </div>
 <div id="FormPreview" class="modalForm">
 </div>
-
+<div id="AutoSaveWrap" class="wrapper">
+    <div id="AutoConfirm"><span class='message'>form autosaved</span><span style="margin-left:10px" class="checkmark">✓</span></div>
+</div>
 <script type="text/javascript" src="{{ asset('/js/launchpad/forms.js') }}"></script>
 <script type="text/javascript" src="{{ asset('/js/jquery.datepick.min.js') }}"></script>
 <script type="text/javascript" src="{{ asset('/js/jSignature.min.js') }}"></script>

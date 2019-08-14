@@ -5,6 +5,7 @@
     --yellow10:rgba(240,154,53,0.1);
     --yellow30:rgba(240,154,53,0.3);
     --yellow40:rgba(240,154,53,0.4);
+    --yellow70:rgba(240,154,53,0.7);
     --pink:rgb(234,78,80);
     --pink30:rgba(234,78,80,0.3);
     --pink50:rgba(234,78,80,0.5);
@@ -549,7 +550,6 @@ a:hover {color:var(--pink);}
     width:60%;
     flex: 1 1 auto;
 }
-
 #ScheduleWidget{
     margin: 1em auto;
     width: 800px;
@@ -775,11 +775,10 @@ a:hover {color:var(--pink);}
     border-top: 2px solid rgb(190,190,190);
     padding: 10px 0;
 }
-.price{float: right}
 #Rates > div {
     margin-bottom: 2em;
 }
-#Rates .price {padding-left: 5px;}
+#Rates .price {padding-left: 5px;float:right;}
 #Rates .splash{
     min-height: 15em;
 }

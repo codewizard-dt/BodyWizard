@@ -560,42 +560,6 @@ input[type=number]{
     width: 35px;
 } 
 
-.QualIndBoxes {display: none;}
-
-.QualInd a.showBoxes {
-    color: rgb(170,170,170);
-    transition: color 1s;
-}
-
-.QualInd a:hover, .QualInd a:active {
-    color:rgb(189, 48, 40);
-}
-
-#NewFocus {display: none}
-
-#FormLinks, #ReportLinks{
-    vertical-align: top;
-    background-color: rgb(230,230,230);
-    padding:0.5em;
-    border-radius: 5px;
-    border-style: solid;
-    border-width: 1px;
-    border-color: rgb(170,170,170);
-    display: inline-block;
-    margin:0.5em;
-}
-
-/*#FormLinks.next {
-    position: -webkit-sticky;
-    position: -moz-sticky;
-    position: -ms-sticky;
-    position: -o-sticky;
-    position: sticky;
-    top:6em;
-    vertical-align: top;
-    width:20%;
-}*/
-
 .formReport {
     display: block;
     margin: auto;
@@ -606,11 +570,6 @@ input[type=number]{
 .formReport p.hideTarget{
     padding:10px;
     font-size: 1.5em;
-/*    background-color: rgb(230,230,230);
-    border-radius: 5px;
-    border-style: solid;
-    border-width: 1px;
-    border-color: rgb(170,170,170);    */
 }
 
 .dateReport {
@@ -911,8 +870,17 @@ li[data-response='no response']{
 
 .question span.n {
     display: inline-block;
-    width: 1.5em;
+    min-width: 1em;
 }
+.question p {
+    margin:0;
+}
+/*.question .n, .question .q{
+    top: 100%;
+    position: relative;
+    transform: translateY(-100%);
+    display: inline-block;
+}*/
 .section.noNums span.n{
     display: none;
 }
@@ -927,6 +895,7 @@ li[data-response='no response']{
 }
 
 .item {
+    position: relative;
     margin:0.25em 0 1em 0;
     vertical-align: top;
     text-align: left;
@@ -965,7 +934,6 @@ li[data-response='no response']{
     overflow: hidden;
 }
 .narrative{
-    min-height: 5em;
     position: relative;
 }
 #Templates{
@@ -1750,7 +1718,7 @@ input#PatientName {
     display: none;
 }
 
-#AddSection, #AddItem, #AddText, #AddFollowUp, #SectionOrder>div, #ItemOrder>div, #ItemFUOrder>div {
+#AddSection, #AddItem, #AddText{
     display: none;
     position: relative;
     border-radius: 5px;
@@ -1759,6 +1727,8 @@ input#PatientName {
     border-color: rgb(190,190,190);
     background-color: rgb(230,230,230);
     padding: 2em 3em;
+    max-width: 95%;
+/*    box-shadow: 0 0 10px 5px rgb(230,230,230);*/
 }
 #AddText {
     width:85%;
@@ -1768,6 +1738,35 @@ input#PatientName {
 #AddItem {text-align:left;}
 #AddItem h2{text-align: center;}
 #AddItem h4{font-weight: normal;}
+#AddItem h3 span{
+    display: inline-block;
+    width: 6.8em;
+    text-align: right;
+    padding-right: 0.5em;
+    box-sizing: border-box;
+}
+#AddItem h4 span{
+    display: inline-block;
+    width: 9.1em;
+    text-align: right;
+    padding-right: 0.5em;
+    box-sizing: border-box;
+}
+#TextOptions span, #TextBoxOptions span {
+    vertical-align: text-top;
+    padding-right: 0.5em;
+}
+#ScaleList > div {
+    margin: 5px 0;
+}
+#ScaleList > div > span{
+    display: inline-block;
+    font-size: 0.9em;
+    position: relative;
+    margin-right: 1em;
+    text-align: right;
+    width:16em;
+}
 
 #SectionOptions {
     border-radius: 5px;
@@ -1835,20 +1834,28 @@ input#PatientName {
 }
 */
 #AutoSaveWrap {
-    height: 5em;
+    height: 4em;
     position:fixed;
+    top:0;
     width:100%;
     display:none;
     opacity: 0;
     z-index: 9999;
-    box-shadow: 0 0 10px 5px rgba(250,250,250,0.95);
 }
 #AutoConfirm {
     position:relative;
+    font-family: Roboto, sans serif;
+    font-weight: normal;
+    background-color: rgb(46, 107, 53);
+    border-radius: 5px;
+    top:50%;
     display:inline-block;
     font-size:1.2em;
     z-index:9999;
     transform: translateY(-50%);
+    box-shadow: 0 0 10px 5px rgba(220,220,220);
+    padding: 0.1em 0.3em;
+    color:white;
 }
 
 #FormBuilder {
@@ -2111,7 +2118,7 @@ input#PatientName {
 }
 #Text{
     width: 30em;
-    max-width: calc(100% - 7em);
+    max-width: calc(100% - 9em);
 }
 .option input{
     margin-top: 0.2em;
@@ -2119,7 +2126,36 @@ input#PatientName {
     max-width: 250px;
 }
 
-.dispOptions {
+.displayOptions{
+    position: absolute;
+    display:none;
+    width:auto;
+    height:auto;
+    min-height: 1em;
+    min-width: 1em;
+    border-radius: 1em;
+    top:5px;
+    right:5px;
+    background-color: var(--pink70);
+    transition: background-color 500ms;
+}
+.displayOptions:hover{
+    background-color: var(--pink);
+}
+.displayOptions .options{
+    display: none;
+    font-size: 0.9em;
+}
+.displayOptions .showOptions{
+    color:white;
+    font-size: 0.7em;
+    text-align: center;
+    min-height: 1em;
+    min-width: 1em;
+    border-radius: 1em;
+    cursor: pointer;
+}
+/*.dispOptions {
     white-space: nowrap;
     position: absolute;
     font-size:0.5em !important;
@@ -2156,7 +2192,7 @@ input#PatientName {
     height:1.1em;
     margin:2px;
 }
-
+*/
 #DateList > div, #TimeList > div {
     padding: 0.5em;
     margin: 0.5em;
@@ -2292,10 +2328,6 @@ input#PatientName {
 #NarrativeList {
     width: 100% !important;
     max-width: 100%;
-}
-
-#SignatureOptions > span {
-    width: 8em;
 }
 
 #DateList .answer {
