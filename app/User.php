@@ -1,14 +1,17 @@
 <?php
 
 namespace App;
+use App\Traits\TrackChanges;
+use Illuminate\Support\Facades\Log;
 
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     use Notifiable;
+    use TrackChanges;
 
     /**
      * The attributes that are mass assignable.
@@ -16,7 +19,7 @@ class User extends Authenticatable
      * @var array
      */
         protected $fillable = [
-            'name', 'email', 'password', 'first_name', 'middle_name', 'last_name', 'preferred_name', 'username', 'phone'
+            'first_name', 'last_name', 'username', 'date_of_birth', 'email', 'phone', 'password'
         ];
 
         /**
@@ -35,14 +38,25 @@ class User extends Authenticatable
      */
         protected $casts = [
             'email_verified_at' => 'datetime',
+            'created_at' => 'datetime',
+            'updated_at' => 'datetime',
+            'date_of_birth' => 'date',
+            'security_questions' => 'array'
         ];
 
     public $tableValues;
     public $optionsNavValues;
     public $nameAttr;
     public $connectedModels;
+    public $auditOptions;
 
-    public function __construct(){
+    public function __construct($attributes = []){
+        parent::__construct($attributes);
+
+        $this->auditOptions = [
+            'audit_table' => 'users_audit',
+            'includeFullJson' => false
+        ];
         $this->nameAttr = 'preferred_name!!%preferred_name% %last_name%!!%first_name% %last_name%';
         $this->tableValues = array(
             'tableId' => 'UserList',
@@ -58,6 +72,11 @@ class User extends Authenticatable
                             "className" => 'lastName',
                             "attribute" => 'last_name'
                         ),
+                        [
+                            'label' => 'User Type',
+                            'className' => 'userType',
+                            'attribute' => 'user_type'
+                        ],
                         array(
                             "label" => 'Email',
                             "className" => 'email',
@@ -78,11 +97,14 @@ class User extends Authenticatable
             'destinations' => array("settings","edit","delete","create"),
             'btnText' => array("settings","edit","delete","add new patient"),
         );
-        $this->connectedModels = [
+        $this->connectedModels = [  
             // ['Service','many','morphToMany']
         ];
     }
     public function optionsNav(){
-        
+        Log::info("optionsNav");
+    }
+    public function patientInfo(){
+        return $this->hasOne('App\Patient');
     }
 }

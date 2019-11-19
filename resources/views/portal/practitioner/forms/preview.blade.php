@@ -3,7 +3,7 @@ Use App\Form;
 $today = date("m/d/Y");
 $form = Form::find($uid);
 $formId = $form->form_id;
-$formJSON = $form->full_json;
+$formJSON = str_replace("'","\u0027",$form->full_json);
 ?>
 
 <h1 class='purple'>

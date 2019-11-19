@@ -24,6 +24,7 @@ class CreateMessagesTable extends Migration
             $table->string('subject')->nullable()->default(null);
             $table->unsignedInteger('template_id')->nullable()->default(null);
             $table->json('status');
+            $table->softdeletes();
             $table->timestamps();
         });
     }

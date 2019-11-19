@@ -17,6 +17,7 @@
         "laravel/framework": "5.8.*",
         "laravel/tinker": "^1.0",
         "moontoast/math": "^1.1",
+        "predis/predis": "^1.1",
         "twilio/sdk": "^5.34"
     },
     "require-dev": {

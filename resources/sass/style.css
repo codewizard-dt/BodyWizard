@@ -1,8 +1,11 @@
 :root {
     --main-color:#06c;
     --purple:rgb(105,12,104);
+    --purple5:rgba(105,12,104,0.05);
+    --purple90:rgba(105,12,104,0.90);
     --yellow:rgb(240,154,53);
     --yellow10:rgba(240,154,53,0.1);
+    --yellow20:rgba(240,154,53,0.2);
     --yellow30:rgba(240,154,53,0.3);
     --yellow40:rgba(240,154,53,0.4);
     --yellow70:rgba(240,154,53,0.7);
@@ -10,6 +13,8 @@
     --pink30:rgba(234,78,80,0.3);
     --pink50:rgba(234,78,80,0.5);
     --pink70:rgba(234,78,80,0.7);
+    --pink80:rgba(234,78,80,0.80);
+    --pink85:rgba(234,78,80,0.85);
     --white10:rgba(255,255,255,0.1);
     --white30:rgba(255,255,255,0.3);
     --white50:rgba(255,255,255,0.5);
@@ -157,12 +162,12 @@ footer .copyright{
     padding: 1em;
 }
 
-#tabList {
+#tabList, #uidList {
     display: none;
 }
-
 h1, h2, h3, h4, h5 {
-    font-family: Roboto;
+    position: relative;
+    font-family: Roboto, sans-serif;
     font-weight: 100;
     text-align: inherit;
 }
@@ -174,7 +179,6 @@ h2 {font-size: 2em}
 h3 {
     font-size: 1.5em;
     color:var(--purple);
-    font-weight: normal;
 }
 h4 {
     font-size: 1.1em;
@@ -215,7 +219,12 @@ h5 span {font-size: 0.9em;}
 }
 .central.xs{width:200px;}
 .central.small{width:350px;}
+.central.medium{width:450px;}
 .central.large{width:750px;}
+.central.auto{
+    display:inline-block;
+    width:auto;
+}
 .marginBig{margin-top: 1.5em;margin-bottom: 1.5em;}
 .marginSmall{margin-top: 0.5em;margin-bottom: 0.5em;}
 .marginBig.topOnly, .marginSmall.topOnly{margin-bottom: 0;}
@@ -225,6 +234,7 @@ h5 span {font-size: 0.9em;}
 .paddedBig{padding-top:1.5em;padding-bottom: 1.5em;}
 .paddedXSmall{padding-top:0.25em;padding-bottom: 0.25em;}
 .paddedSmall{padding-top:0.5em;padding-bottom: 0.5em;}
+.paddedSmall.bottomOnly{padding-top: 0em;}
 .paddedSides{padding-left:2.5em;padding-right: 2.5em;box-sizing: border-box;}
 .paddedSides.small{padding-left:1em;padding-right: 1em;}
 .paddedSides.leftOnly{padding-right:0;}
@@ -295,7 +305,20 @@ a:hover {color:var(--pink);}
     margin-bottom: 0.8em;
 }
 .mobile #MobileMenu{display: inline-block;}
-#MobileMenu div {display: none;}
+#MobileMenu #MenuDisplay {display: none;}
+#MobileMenu .divide{
+    height: 1px !important;
+    top:0;
+    margin: 7px 0;
+}
+#MobileMenu .divide .title{
+    padding: 0 !important;
+    border: 2px solid var(--yellow30) !important;
+    background-color: var(--yellow30) !important;
+    width: 6em;
+    display: inline-block !important;
+    right: -5px !important;
+}
 #MenuDisplay {
     display:inline-block !important;
     transform:scale(0);
@@ -326,42 +349,26 @@ a:hover {color:var(--pink);}
     border-top-style: dotted;
     text-align: center;
     z-index: 2;
-    padding:0;
+    /*padding:0;*/
     background-color: rgba(255,255,255,0.95);
-    /*border-radius: 5px;*/
+    transform: translateX(-50%) scaleX(1);
     transform-origin: center;
 }
-#MobileMenu.active .dropDown li{
-    background-color: rgba(255,255,255,0.95);
-    border: 1px solid var(--yellow);
-    padding:0.4em 0.8em;
-    margin: 0 5px 5px 5px;
-    border-radius: 5px;
+#MobileMenu.active .dropDown .title{
+    position: relative;
+    border-color: transparent;
 }
-#MobileMenu.active .dropDown li.active{
-    background-color: var(--yellow);
-}
-#MobileMenu.active .dropDown li:first-of-type{
-    margin:5px;
-}
-
 .siteMenu .title.active {
     background-color: var(--yellow);
     color:white;
 }
 .siteMenu .underline {bottom:-0.5em}
 .siteMenu .dropDown {
-    border-width: 0;
+    background-color: rgba(250, 250, 250, 0.97);
+    border: 4px solid rgba(240, 240, 240, 0.97);
+    border-top-style: dotted;
+    z-index: 51;
 }
-.siteMenu .dropDown li{
-    background-color: rgba(255,255,255,0.95);
-    border: 1px solid var(--yellow);
-    padding:0.4em 0.8em;
-    margin:5px;
-    border-radius: 4px;
-}
-.siteMenu .dropDown li.active{background-color: var(--yellow);}
-
 #LoggedOut{
     top:8em;
     right:7em;
@@ -470,6 +477,19 @@ a:hover {color:var(--pink);}
     background-color: var(--pink);
     border-color: var(--pink);
 }
+.button.pinkflash {
+    animation: pinkFlash linear 500ms infinite alternate;
+    border-color: var(--pink);
+}
+.button.pinkflash:hover {
+    animation: none;
+    background-color: var(--pink);
+    color:white;
+}
+.button.pinkflashConstant {
+    animation: pinkFlash linear 500ms infinite alternate;
+    border-color: var(--pink);
+}
 .button.yellow {
     background-color: var(--yellow);
     border-color: var(--yellow);
@@ -490,11 +510,15 @@ a:hover {color:var(--pink);}
     background-color: var(--yellow);
     color: white;
 }
-.button.cancel{
+.button.cancel, .button.black70{
     background-color: var(--black70);
     border-color: var(--black70);
 }
-.button.cancel:hover{
+.button.black50{
+    background-color: var(--black50);
+    border-color: var(--black50);    
+}
+.button.cancel:hover, .button.black70:hover, .button.black50:hover{
     background-color: black;
     color: white;
 }
@@ -515,7 +539,9 @@ a:hover {color:var(--pink);}
     bottom: 0;
     transform: translate(-50%,50%);
 }
-
+.yellowBgFlash {
+    animation: yellowBackgroundFlash linear 500ms infinite alternate;
+}
 .split50, .split60, .split40{
     display: flex;
     align-items: stretch;   
@@ -716,8 +742,10 @@ a:hover {color:var(--pink);}
 
 #TreatmentMenu, #ConditionMenu, #RateMenu{
     position: sticky;
-    top:3.4em;
+    top:3.6em;
     font-size: 1.12em;
+    background-color: rgba(255,255,255,0.9);
+    z-index: 10;
 }
 #TreatmentMenu .title, #ConditionMenu .title, #RateMenu .title{
     background-color: var(--yellow10);
@@ -1185,6 +1213,9 @@ a:hover {color:var(--pink);}
     top:1.5em;
     transform: translateY(-50%);
 }
+.divide .title{
+    display: none !important;
+}
 
 .topMenu {
     position: sticky;
@@ -1233,11 +1264,24 @@ a:hover {color:var(--pink);}
     z-index:49;
 }
 
-.menuBar .tab {
+.menuBar .tab:not(.divide) {
     position: relative;
     cursor: pointer;
     padding: 0 0.3em;
     height: 3em;
+}
+.menuBar .dropDown .tab {
+    height: auto !important;
+    /* background-color: gray; */
+    width: calc(100% + 28px);
+    margin-left: -14px;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    box-sizing: border-box;
+}
+.menuBar .dropDown .tab:hover{
+    border-left-color: var(--yellow30);
+    border-right-color: var(--yellow30);
 }
 .menuBar .title{
     display:inline-block;
@@ -1247,16 +1291,32 @@ a:hover {color:var(--pink);}
     top:50%;
     transform:translateY(-50%);
 }
-
-.menuBar .title.active {
+.menuBar > .tab > .title.active{
     background-color: var(--yellow) !important;
     color: white;
 }
-.menuBar li.active{
+.menuBar .title.showingDD {
+    color: var(--yellow);
+}
+.menuBar .title:hover{
+    color: var(--yellow);
+}
+.menuBar .dropDown .title{
+    top:auto;
+    transform: unset;
+    padding: 0; 
+    width: 100%;
+}
+.menuBar .dropDown .title.active{
+    background-color: var(--yellow);
+    color:white;
+}
+
+/*.menuBar li.active{
     color: var(--yellow);
     font-weight: bold;
 }
-
+*/
 .menuBar .underline{
     position: absolute;
     width: 0;
@@ -1267,7 +1327,13 @@ a:hover {color:var(--pink);}
     transform: translateX(-50%);
     bottom: -1px;
 }
-
+/*.menuBar .tab:hover .underline{
+    width: calc(105% - 1.6em);
+}
+*/
+.menuBar .dropDown .underline{
+    width: 0% !important;
+}
 .menuBar .dropDown{
     display: none;
     list-style: none;
@@ -1282,6 +1348,19 @@ a:hover {color:var(--pink);}
     /*border-top: 1px solid black;*/
     transition: transform 400ms;
     box-sizing: border-box;
+}
+.menuBar > .tab > .dropDown.active{
+    transform: translateX(-50%) scaleX(1);
+}
+.menuBar .dropDown .dropDown.active{
+    transform: translateX(-100%) scaleX(1);
+    border-top-color: var(--yellow30);
+    border-right-color: var(--yellow30);
+    border-right-style: dotted;
+}
+.menuBar .dropDown .dropDown{
+    left: 0;
+    top: calc(100% - 1.75em);
 }
 
 #Block{
@@ -1310,17 +1389,11 @@ a:hover {color:var(--pink);}
     box-shadow: 0 0 20px 10px rgb(230,230,230) inset;
     z-index:52; 
 }
-/*#Block3 {
-    display: none;
-    position: absolute;
-    top:0;
-    left:0;
-    padding:0;
-    background-color: rgba(230,230,230,0.7);
-    box-shadow: 0 0 20px 10px rgb(230,230,230) inset;
-    z-index:52; 
+body > .blur {
+    background-color: rgba(0,0,0,0.4) !important;
+    box-shadow: 0 0 20px 10px rgb(120,120,120) inset !important;
 }
-*/
+
 .blockable {
     position: relative;
     border-radius: 5px;
@@ -1436,4 +1509,26 @@ a:hover {color:var(--pink);}
   100% {
     transform: rotate(360deg);
   }
+}
+
+@keyframes pinkFlash {
+    0% {
+        background-color: var(--pink50);
+    }
+    100% {
+        background-color: var(--pink);
+    }
+}
+
+@keyframes yellowBackgroundFlash {
+    0% {
+        background-color: transparent;
+    }
+    100% {
+        background-color: var(--yellow20);
+    }
+}
+
+.xdebug-var-dump{
+    text-align: left;
 }

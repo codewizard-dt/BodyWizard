@@ -59,14 +59,19 @@
     $tableOptions['modal'] = true;
     $tableOptions['connectedTo'] = $connectedTo;
 
+    $skip = false;
     if ($connectedTo == $model){
-        dd("KILLIN IT");
+        $skip = true;
+    }elseif ($model == 'Patient' && \Auth::user()->user_type == 'patient'){
+        $skip = true;
     }
 
 ?>
+@if (!$skip)
 <div id='{{ $modalId }}' class='modalForm connectedModel' data-model='{{ $model }}' data-relationship='{{ $relationship }}' data-connectedto='{{ $connectedTo }}' data-number='{{ $number }}'>
     <h2>Available {{ $models }}</h2>
     @include('models.table',$tableOptions)
 </div>
 
 <script src="{{ asset('/js/launchpad/forms.js') }}"></script>
+@endif

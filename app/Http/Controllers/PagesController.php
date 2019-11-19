@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class PagesController extends Controller
 {
@@ -36,5 +37,13 @@ class PagesController extends Controller
     }
     public function headspace(){
         return view('headspace');
+    }
+    public function portalsettings(){
+        $usertype = Auth::user()->user_type;
+        return view('portal.'.$usertype.'.settings');
+    }
+    public function practicesettings(){
+        $usertype = Auth::user()->user_type;
+        return view('portal.'.$usertype.'.practice-settings');
     }
 }

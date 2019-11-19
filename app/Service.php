@@ -6,15 +6,17 @@ use Illuminate\Database\Eloquent\Model;
 
 class Service extends Model
 {
-    protected $fillable = [
-        'service_id','version_id','form_name','questions','settings','has_submissions','full_json','locked','current'
-    ];
-    // protected $primaryKey = 'service_id';
-
-
     public $tableValues;
     public $optionsNavValues;
     public $connectedModels;
+
+    protected $casts = [
+        'is_addon' => 'boolean',
+        'addon_only' => 'boolean',
+        'addon_services' => 'array',
+        'new_patients_ok' => 'boolean',
+        'new_patients_only' => 'boolean'
+    ];
 
     public function __construct(){
 	    $this->tableValues = array(
@@ -39,7 +41,7 @@ class Service extends Model
                             "attribute" => 'duration'
                         ),
                         array(
-                            "label" => 'Price ($)',
+                            "label" => 'Price',
                             "className" => 'price',
                             "attribute" => 'price'
                         )

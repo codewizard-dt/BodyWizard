@@ -1,72 +1,94 @@
 <?php
-Namespace App;
-Use Carbon\Carbon;
+    Namespace App;
+    Use Carbon\Carbon;
+    Use App\Form;
+    Use App\Practitioner;
+    Use App\Appointment;
+    use Illuminate\Support\Facades\Storage;
+    use Illuminate\Support\Facades\Log;
+    use Illuminate\Support\Facades\Request;
 
-if (isset($_POST['OptParams'])){
-	// echo "opt params passed";	
-}else{
-	// echo "no opt params passed";
-}
 
-$calendar = app('GoogleCalendar');
-$calendarId = config('google')['calendar_id'];
-try{
-    $results = $calendar->events->listEvents($calendarId);
-    $events = $results->getItems();
-}
-catch(\Exception $e){
-    $events = null;
-}
+    include_once app_path("/php/functions.php");
 
-$eventArr = [];
-if (!empty($events)) {
-    foreach ($events as $event) {
-    	// reset vars
-    	$newEvent = [];
-    	unset($start, $end, $allDay, $id, $title, $extendedProps);
+    $ctrl = new Form;
+    $changeTitleOptions = ['names','service','no label','ID*ChangeTitle'];
 
-        $start = $event->start->dateTime;
-        $allDay = false;
-        if (empty($start)) {
-            $start = $event->start->date;
-            $allDay = true;
-        }
-        $end = $event->end->dateTime;
-        if (empty($end)) {
-            $end = $event->end->date;
-        }
-        $id = $event->id;
-        $title = $event->summary;
-        $extendedProperties = $event->extendedProperties->shared;
-        $newEvent = array(
-        	"start" => $start,
-        	"end" => $end,
-        	"allDay" => $allDay,
-        	"id" => $id,
-        	"title" => $title,
-        	"extendedProperties" => $extendedProperties
-        );
-        $eventArr[] = $newEvent;
-        // printf("%s (%s)\n", $event->getSummary(), $start);
+    if (isset($_POST['OptParams'])){
+    	// echo "opt params passed";	
+    }else{
+    	// echo "no opt params passed";
     }
-}
-else{
-    echo "Calendar NOT loaded";
-}
-file_put_contents(storage_path('app/calendar/practitioner-feed.php'), json_encode($eventArr));
-// dd($eventArr);
-?>
+?>  
+
 <h2 class="purple paddedSmall">Appointment Calendar</h2>
-<div id="calendar"><div class='lds-ring dark'><div></div><div></div><div></div><div></div></div></div>
-<div id='calfeedtarget'></div>
-<!-- <script type="text/javascript" src="{{ asset('/js/fullcalendar-3.9.0/fullcalendar.js') }}"></script> -->
-<!-- <script type='text/javascript' src="{{ asset('/js/app.js') }}"></script> -->
-<script type='text/javascript' src="{{ asset('/fullcalendar4.1/core/main.js') }}"></script>
-<script type='text/javascript' src="{{ asset('/fullcalendar4.1/daygrid/main.js') }}"></script>
-<script type='text/javascript' src="{{ asset('/fullcalendar4.1/interaction/main.js') }}"></script>
-<script type='text/javascript' src="{{ asset('/fullcalendar4.1/list/main.js') }}"></script>
-<script type='text/javascript' src="{{ asset('/fullcalendar4.1/timegrid/main.js') }}"></script>
-<script type='text/javascript' src="{{ asset('/js/moment.js') }}"></script>
+{{$ctrl->answerDisp('radio',$changeTitleOptions)}}
+<div id="PractitionerCalendar" class='calendar practitioner'>
+    <div class='lds-ring dark'><div></div><div></div><div></div><div></div></div>
+</div>
+<div id='ScheduleFeedTarget'></div>
+<div id="ApptInfo" class="modalForm prompt">
+    <div class="message">
+        <h1 class='purple'>Appointment Details</h1>
+        <div class='split3366KeyValues'>
+            <div>
+                <span class="label">Patient:</span>
+                <span class='value' id="PatientName"></span>
+            </div>
+            <div>
+                <span class="label">Practitioner:</span>
+                <span class='value' id="PractitionerName"></span>
+            </div>
+            <div>
+                <span class="label">Date + Time:</span>
+                <span class='value' id="ApptDateTime"></span>
+            </div>
+            <div>
+                <span class="label">Services:</span>
+                <span class='value' id="ServiceInfo"></span>
+            </div>
+        </div>
+    </div>
+    <div class="options">
+        <div class="button medium pink" id="EditApptBtn">edit details</div>
+        <div class="button medium pink70" id="DeleteApptBtn">delete</div>
+        <div class="button medium cancel">dismiss</div>
+    </div>
+</div>
+<div id="NonEhrInfo" class="modalForm prompt">
+    <div class="message">
+        <h1 class='purple'>Non-EHR Event</h1>
+        <div class='split50KeyValues'>
+            <div>
+                <span class="label">Title:</span>
+                <span class='value' id="NonEhrTitle"></span>
+            </div>
+            <div>
+                <span class="label">Date:</span>
+                <span class='value' id="NonEhrDate"></span>
+            </div>
+            <div>
+                <span class="label">Start Time:</span>
+                <span class='value' id="NonEhrStart"></span>
+            </div>
+            <div>
+                <span class="label">End Time:</span>
+                <span class='value' id="NonEhrEnd"></span>
+            </div>
+        </div>
+    </div>
+    <div class="options">
+        <div class="button medium pink" id="EditApptBtn">block schedule</div>
+        <div class="button medium pink70" id="DeleteApptBtn">delete</div>
+        <div class="button medium cancel">dismiss</div>
+    </div>
+</div>
+@include ('models.create-modal',["model" => "Appointment"])
+@include ('models.edit-modal',["model" => "Appointment"])
+
+@include ('schedules.services')
+
+@include ('schedules.scripts')
 <script type='text/javascript' src="{{ asset('/js/calendar-practitioner.js') }}"></script>
 
 

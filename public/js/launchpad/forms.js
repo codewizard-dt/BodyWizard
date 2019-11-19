@@ -23,8 +23,6 @@ $(document).ready(function () {
     })
     fullscreenBtn.data('initialized',true);
     
-    
-
     // INITIALIZING ITEMS
         items = filterUninitialized($(".formDisp").find(".item, .itemFU"));
         items.each(function(i,item){
@@ -87,6 +85,9 @@ $(document).ready(function () {
         times.each(function(){
             var i = $(this).find("input"), o = i.data('options');
             i.timepicker(o);
+            i.on('focus',function(){
+                $(this).blur();
+            })
         })
         times.data("initialized",true);
 
@@ -163,11 +164,9 @@ $(document).ready(function () {
         var loadDxFormBtns = filterUninitialized($("#load_dx_form").find("li"));
         loadDxFormBtns.on("click",loadDxForm);
         loadDxFormBtns.data("initialized",true);
-
 })
 
-//update defaultDisplayCSS in form-builder.js to reflect any changes here
-var itemCss = getDefaultCSS('item');
+// var itemCss = getDefaultCSS('item');
 function UpdateCss(item){
     var type = (item.is(".item, .itemFU")) ? 'item' : 'section',
         dispObj = (item.data('display') != null) ? item.data('display') : getDefaultCSS(type);
@@ -342,19 +341,20 @@ function loadDxForm(){
 }
 
 function radio() {
-    if ($(this).hasClass("active")===false) {
+    var disabled = $(this).hasClass("disabled");
+    if ($(this).hasClass("active")===false && !disabled) {
         $(this).closest(".radio").find("li").removeClass("active");
         $(this).addClass("active");
     } 
-    var item = $(this).closest(".item, .itemFU");
-    if (item.is(".item")){
+    var item = $(this).closest(".item, .itemFU, .itemFUList");
+    if (item.is(".item") && !disabled){
         showFollowUps($(this).data("value"),item);
     }
 }
 function checkbox() {
     if ($(this).hasClass('disabled')){return false;}
     $(this).toggleClass("active");
-    var item = $(this).closest(".item, .itemFU");
+    var item = $(this).closest(".item, .itemFU, .itemFUList");
     if (item.is(".item") && item.find(".itemFU").length>0){
         var responses = $(this).closest(".answer").find(".active");
         var respArr=[];
@@ -375,7 +375,7 @@ function masterCheckbox(){
     }
 }
 function showFollowUps(responseStr,item){
-    if (item.is(".itemFU")){
+    if (item.is(".itemFU, .itemFUList")){
         return false;
     }
     var FUs = $(item).find(".itemFU");
@@ -444,8 +444,8 @@ function showFollowUps(responseStr,item){
     },550)
 }
 
-function checkForm(form){
-    var obj = createSubmitObject(form);
+function checkForm(form, includeInvisible = false){
+    var obj = createSubmitObject(form, includeInvisible);
     if (obj){
         return obj;
     }else{
@@ -460,16 +460,16 @@ function submitForm(){
         return false;
     }
 }
-function createSubmitObject(form){
+function createSubmitObject(form, includeInvisible = false){
     var SubmitObj = {};
     SubmitObj['Sections'] = [];
     SubmitObj['UID'] = form.data('uid');
     SubmitObj['FormID'] = form.data('formid');
     SubmitObj['FormName'] = form.data('formname');
-    var sections = form.find(".section").filter(":visible"), uid = form.data("uid"), check = false;
+    var sections = includeInvisible ? form.find(".section") : form.find(".section").filter(":visible"), uid = form.data("uid"), check = false;
     sections.each(function(s, section){
         section = $(section), secName = section.find("h2").text();
-        var ItemsArr = [], items = section.find(".item").filter(":visible");
+        var ItemsArr = [], items = includeInvisible ? section.find(".item") : section.find(".item").filter(":visible");
         items.each(function(i, item){
             item = $(item);
             if (validateItem(item)){
@@ -478,9 +478,6 @@ function createSubmitObject(form){
             }
             else {
                 check = false;
-                var p = modalOrBody(item), m = parentModalOrBody(item);
-                p.scrollTo(item);
-                $.scrollTo("#Block",0);
                 return false;
             }
         })
@@ -498,48 +495,59 @@ function createSubmitObject(form){
     }
 }
 function scrollToInvalidItem(target){
-    var p = modalOrBody(target), m = parentModalOrBody(target);
-    p.scrollTo(target);
-    $.scrollTo("#Block",0);
+    var p = modalOrBody(target), m = parentModalOrBody(target),
+        dif = Math.abs(p.outerHeight(true) - p[0].scrollHeight);
+
+    console.log(dif);
+    // console.log(p[0].scrollHeight);
+
+    if (!p.is("body") && (Math.abs(p.outerHeight(true) - p[0].scrollHeight) > 10)){
+        p.scrollTo(target);
+        // $.scrollTo("#Block",0);
+    }else{
+        p.scrollTo(target);
+    }
 }
 function validateItem(item){
         var t = item.data("type"), pass = true;
-
-        if (!item.children(".question").find(".q").text().toLowerCase().includes("optional")){
-            if (t==="text" && item.find("input").val().length==0){
-                    alertBox("required",item.find(".answer"),"after","fade");
+        // if (!item.children(".question").find(".q").text().toLowerCase().includes("optional")){
+        if (item.data('required')){
+            if ($.inArray(t,['text','date','time','number']) > -1 && item.find("input").val().length==0){
+                    alertBox("required",item.find("input"),"after","fade");
                     // $.scrollTo(item.find(".answer"));
-                    scrollToInvalidItem(item.find('.answer'));
+                    scrollToInvalidItem(item.find('input'));
                     return false;
             }
             else if (t==="text box" && item.find("textarea").val().length==0){
-                    alertBox("required",item.find(".answer"),"ontop","fade","2em,-1em");
-                    scrollToInvalidItem(item.find('.answer'));
+                    alertBox("required",item.find("textarea"),"ontop","fade","2em,-1em");
+                    scrollToInvalidItem(item.find('textarea'));
                     return false;
             }
             else if (t==="date" && item.find("input").val().length==0){
-                    alertBox("required",item.find(".answer"),"after","fade");
-                    scrollToInvalidItem(item.find('.answer'));
+                    alertBox("required",item.find("input"),"after","fade");
+                    scrollToInvalidItem(item.find('input'));
                     return false;
             }
             else if (t==="number" && item.find("input").val().length==0){
-                    alertBox("required",item.find(".answer"),"after","fade");
-                    scrollToInvalidItem(item.find('.answer'));
+                    alertBox("required",item.find("input"),"after","fade");
+                    scrollToInvalidItem(item.find('input'));
                     return false;
             }
             else if (t==="radio" && item.find(".active").length==0){
-                    alertBox("required",item.find(".answer"),"after","fade");
-                    scrollToInvalidItem(item.find('.answer'));
+                    alertBox("required",item.find("ul"),"below","fade");
+                    scrollToInvalidItem(item.find('ul'));
                     return false;
             }
             else if (t==="checkboxes" && item.find(".active").length==0){
-                    alertBox("required",item.find(".answer"),"after","fade");
-                    scrollToInvalidItem(item.find('.answer'));
+                    alertBox("required",item.find("ul"),"below","fade");
+                    scrollToInvalidItem(item.find('ul'));
                     return false;
             }
-            else if (t==="dropdown" && item.find("option").filter(":selected").length>0 && item.find("option").filter(":selected").val()==""){
-                    alertBox("required",item.find(".answer"),"after","fade");
-                    scrollToInvalidItem(item.find('.answer'));
+            // else if (t==="dropdown" && (item.find("option").filter(":selected").length>0 || item.find("option").filter(":selected").val()=="")){
+            else if (t=='dropdown' && item.find("option:selected").val() == ""){
+                    console.log(item.find("option:selected").val());
+                    alertBox("required",item.find("select"),"after","fade");
+                    scrollToInvalidItem(item.find('select'));
                     return false;
             }
             else if (t==="scale"){
@@ -563,7 +571,6 @@ function validateItem(item){
             var FUs = item.find(".itemFU").filter(":visible");
             FUs.each(function(i,FU){
                 if (!validateItem($(FU))){
-                    // console.log($(FU));
                     pass = false;
                 }
             })
@@ -575,7 +582,7 @@ function validateItem(item){
 function getResponse(item){
     var t = item.data("type"), q = item.children(".question").find(".q").text(), r = [];
 
-    if (t=="text"){
+    if (t=="text" || t == 'time'){
         r.push($.sanitize(item.children('.answer').find("input").val()));
     }
     else if (t=="text box"){
@@ -597,7 +604,8 @@ function getResponse(item){
         })
     }
     else if (t=="dropdown"){
-        r.push(item.children('.answer').find("option:selected").val());
+        var val = item.children('.answer').find("option:selected").val();
+        r.push(val);
     }
     else if (t=="scale"){
         r.push(item.children('.answer').find("input").val());
@@ -638,7 +646,13 @@ function justResponse(input){
         return r[0];
     }
 }
-
+function matchingLI(answer,response){
+    response = response.replace("'","");
+    var match = answer.find("li").filter(function(){
+        return $(this).data('value').replace("'","") == response;
+    });
+    return match;
+}
 function fillAnswer(item,response){
     var t = $(item).data("type"), answer = $(item).children('.answer');
     if (!$.isArray(response)){
@@ -651,12 +665,10 @@ function fillAnswer(item,response){
     if ($.inArray(t,['radio','checkboxes'])>-1){
         $(item).find(".active").removeClass("active");
         if (!$.isArray(response)){
-            answer.find("li").filter("[data-value='"+response+"']").click();
+            matchingLI(answer,response).click();
         }else{
-            //console.log(response);
             for (x=0;x<response.length;x++){
-                answer.find("li").filter("[data-value='"+response[x]+"']").click();
-                //console.log(response[x]);
+                matchingLI(answer,response[x]).click();
             }
         }
     }

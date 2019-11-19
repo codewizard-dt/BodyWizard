@@ -41,7 +41,6 @@ $(document).ready(function(){
             $(this).removeClass('yellow').addClass('yellow70');
         }
     })
-    // $("#FormPreview").on('change','select',updateItem);
     $("#SaveDisplayOptions").on('click',saveDisplayOptions);
     function updateItem(){
         var item = $(this).closest(".section, .item, .itemFU"),
@@ -50,6 +49,7 @@ $(document).ready(function(){
 
         dispObj[setting] = $(this).val();
         item.data('display',dispObj);
+        if (item.is(".section")){console.log(item.data())}
         UpdateCss(item);
         $("#SaveDisplayOptions").removeClass("disabled");
     }
@@ -88,11 +88,12 @@ $(document).ready(function(){
         if ($(this).hasClass('disabled')){return false;}
         blurElement($("#FormPreview"),"#loading");
         var formObj = $("#formdata").data("json"), sections = formObj['sections'];
+        console.log(sections);
         $("#FormPreview").find(".section").each(function(s,section){
             var items = $(section).find(".item, .itemFU");
             formObj['sections'][s]['displayOptions'] = $(section).data('display');
             // console.log($(section).data());
-            // console.log(formObj['sections'][s]['displayOptions']);
+            // console.log(formObj['sections'][s]);
             items.each(function(i,item){
                 if ($(item).is(".itemFU")){
                     var kFU = $(item).data('key');
@@ -100,7 +101,13 @@ $(document).ready(function(){
                 }else{
                     var k = $(item).data('key');
                 }
-                var defaultOptions = getDefaultCSS('item');
+                console.log(formObj['sections'][s]['items'][k]);
+                console.log(k);
+                console.log(formObj['sections'][s]['items'][i]);
+                console.log(i);
+                console.log($(item));
+                // console.log(kFU);
+                // var defaultOptions = getDefaultCSS('item');
                 var disp = $(item).data("display");
                 $(item).data('display',disp);
                 if ($(item).is(".item")){
@@ -114,7 +121,7 @@ $(document).ready(function(){
         var formJsonStr = JSON.stringify(formObj),
             questionsStr = JSON.stringify(formObj['sections']);
 
-        // console.log(formObj);
+        console.log(formObj);
         var url = "/save/Form/" + $("#formdata").data("formuid");
         $.ajax({
             url: url,

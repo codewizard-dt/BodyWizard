@@ -4,6 +4,8 @@ namespace App;
 
 use App\Image;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
+
 
 class Form extends Model
 {
@@ -67,7 +69,11 @@ class Form extends Model
                                 'reverseFilter' => true,
                                 "markOptions" => null,
                                 "filterOptions" => [
-                                    ["label" => 'previous versions',"value" => 'current:0','attribute'=>'current'],
+                                    [
+                                        "label" => 'previous versions',
+                                        "value" => 'current:0',
+                                        'attribute'=>'current'
+                                    ],
                                     ["label" => 'system forms',"value" => 'form_type:system','attribute'=>'form_type'],
                                     ["label" => 'locked forms',"value" => 'locked:1','attribute'=>'locked']
                                 ]
@@ -147,7 +153,7 @@ class Form extends Model
 
    
     //form functionality
-        public function formDisplay($modal){
+        public function formDisplay($modal = false){
             $form = json_decode($this->full_json,true);
             // $sections = json_decode($this->questions,true);
             $sections = $form['sections'];            
@@ -157,7 +163,7 @@ class Form extends Model
             $formNameAbbr = str_replace(" ", "", $formName);
             $settings = json_decode($this->settings,true);
             // var_dump($settings);
-            echo '<div id="'.$formNameAbbr.'" data-formname="'.$formNameAbbr.'" data-formid="'.$formID.'" data-uid="'.$uid.'" class="formDisp">';
+            echo '<form id="'.$formNameAbbr.'" data-formname="'.$formNameAbbr.'" data-formid="'.$formID.'" data-uid="'.$uid.'" class="formDisp">';
             for ($x=0;$x<count($sections);$x++){
                 $section = $sections[$x];
                 $name = $section['sectionName'];
@@ -171,70 +177,109 @@ class Form extends Model
                     $optStr = "";
                 }
                 $nums = ($nums == 'true') ? "" : "noNums"; 
-                // $formObj = new form();
-                echo "<div class='section display $nums' data-display='$optStr'><h2 class='purple'>$name</h2>";
-                $n = 0;
-                for ($i=0;$i<count($items);$i++){
-                    $item = $items[$i];
-                    $question = $item['question'];
-                    $type = $item['type'];
-                    $key = $item['key'];
-                    $options = isset($item['options']) ? $item['options'] : [];
-                    $disp = $item['displayOptions'];
-                    $dispStr = json_encode($item['displayOptions']);
-                    // $inline = $disp['inline'];
-                    $inline = (strpos($disp['inline'],"true") > -1) ? "inline" : "" ;
-                    $newline = (strpos($disp['inline'],"BR") > -1) ? true : false;
-                    $followups = $item['followups'];
-                    echo "<div class='item $inline' data-display='$dispStr' data-type='$type' data-key='$key'>";
-                    // echo "<div class='item$inline' data-disp='$dispStr' data-type='$type'>";
-                    if ($type !== "narrative"){
-                        $n++;
-                        echo "<div class='question'><p><span class='n'>$n.</span><span class='q'>$question</span></p></div><br>";
-                    }
-                    include_once app_path("/php/functions.php");
-                    $name = removepunctuation(replacespaces(strtolower(cleaninput($question))));
-                    if (in_array($type, ['radio','checkboxes','dropdown'])){
-                        array_push($options,"ID*".$name);
+
+                $secSettings = isset($section['settings']) ? $section['settings'] : "";
+                if ($secSettings != "" && $secSettings['dynamic'][0] == 'only display to admins'){
+                    if (!Auth::check()){
+                        $show = false;
+                    }elseif(Auth::user()->is_admin){
+                        $show = true;
                     }else{
-                        $options['name'] = $name;
+                        $show = false;
                     }
-                    $this->answerDisp($type,$options);
-                    if (count($followups)>0){
-                        echo "<div class='itemFUList' data-condition='title'>";
-                            for ($f=0;$f<count($followups);$f++){
-                                $itemFU = $followups[$f];
-                                $question = $itemFU['question'];
-                                $FUkey = $itemFU['key'];
-                                $type = $itemFU['type'];
-                                $options = isset($itemFU['options']) ? $itemFU['options'] : [];
-                                $disp = json_encode($itemFU['displayOptions']);
-                                $condition = $itemFU['condition'];
-                                $condition = str_replace("'","&apos;",$condition);
-                                $condition = join("***",$condition);
-                                $name = removepunctuation(replacespaces(strtolower(cleaninput($question))));
-                                if (in_array($type, ['radio','checkboxes','dropdown'])){
-                                    array_push($options,"ID*".$name);
-                                }else{
-                                    $options['name'] = $name;
+                }else{
+                    $show = true;
+                }
+                $secSettings = json_encode($secSettings);
+                if ($show){
+                    echo "<div class='section display $nums' data-display='$optStr' data-settings='$secSettings'><h2 class='purple'>$name</h2><div class='requireSign'>* <i>required</i></div>";
+                    $n = 0;
+                    for ($i=0;$i<count($items);$i++){
+                        $item = $items[$i];
+                        $question = $item['question'];
+                        $type = $item['type'];
+                        $key = $item['key'];
+                        $options = isset($item['options']) ? $item['options'] : [];
+                        // $required = isset($item['required']) ? $item['required'] : true;
+                        if ($type == 'narrative'){
+                            $required = false;
+                        }elseif (isset($item['required'])){
+                            $required = $item['required'];
+                        }else{
+                            $required = true;
+                        }
+                        $requireStar = $required ? "*" : "";
+                        $disp = $item['displayOptions'];
+                        $dispStr = json_encode($item['displayOptions']);
+                        // $inline = $disp['inline'];
+                        $inline = (strpos($disp['inline'],"true") > -1) ? "inline" : "" ;
+                        $newline = (strpos($disp['inline'],"BR") > -1) ? true : false;
+                        $followups = $item['followups'];
+                        // echo "<div class='item $inline' data-display='$dispStr' data-type='$type' data-required='$required' data-key='$key'>";
+                        echo "<div class='item $inline' data-display='$dispStr' data-type='$type' data-required='$required' data-key='$i'>";
+                        // echo "<div class='item$inline' data-disp='$dispStr' data-type='$type'>";
+                        if ($type !== "narrative"){
+                            $n++;
+                            echo "<div class='question'><p><span class='n'>$n.</span><span class='q'>$question</span><span class='requireSign'>$requireStar</span></p></div><br>";
+                        }
+                        include_once app_path("/php/functions.php");
+                        $name = removepunctuation(replacespaces(strtolower(cleaninput($question))));
+                        if (in_array($type, ['radio','checkboxes','dropdown'])){
+                            array_push($options,"ID*".$name);
+                        }else{
+                            $options['name'] = $name;
+                        }
+                        $this->answerDisp($type,$options);
+                        if (count($followups)>0){
+                            echo "<div class='itemFUList' data-condition='title'>";
+                                for ($f=0;$f<count($followups);$f++){
+                                    $itemFU = $followups[$f];
+                                    $question = $itemFU['question'];
+                                    $FUkey = $itemFU['key'];
+                                    $type = $itemFU['type'];
+                                    if ($type == 'narrative'){
+                                        $required = false;
+                                    }elseif (isset($itemFU['required'])){
+                                        $required = $itemFU['required'];
+                                    }else{
+                                        $required = true;
+                                    }
+                                    $requireStar = $required ? "*" : "";
+                                    $options = isset($itemFU['options']) ? $itemFU['options'] : [];
+                                    $disp = json_encode($itemFU['displayOptions']);
+                                    $condition = $itemFU['condition'];
+                                    $condition = str_replace("'","&apos;",$condition);
+                                    $condition = join("***",$condition);
+                                    $name = removepunctuation(replacespaces(strtolower(cleaninput($question))));
+                                    if (in_array($type, ['radio','checkboxes','dropdown'])){
+                                        array_push($options,"ID*".$name);
+                                    }else{
+                                        $options['name'] = $name;
+                                    }
+                                    // echo "<div class='itemFU' data-type='$type' data-required='$required' data-disp='$disp' data-condition='$condition' data-key='$FUkey'>";
+                                    echo "<div class='itemFU' data-type='$type' data-required='$required' data-disp='$disp' data-condition='$condition' data-key='$f'>";
+                                    if ($type != "narrative"){
+                                        echo "<div class='question'><p><span class='q'>$question</span><span class='requireSign'>$requireStar</span></p></div><br>";
+                                    }
+                                    // echo "<div class='question'><span class='q'>$question</span></div><br>";
+                                    // echo "<div class='itemFU' data-type='$type' data-disp='$disp' data-condition='$condition'><div class='question'><span class='q'>$question</span></div><br>";
+                                    $this->answerDisp($type,$options);
+                                    echo "</div>";
                                 }
-                                echo "<div class='itemFU' data-type='$type' data-disp='$disp' data-condition='$condition' data-key='$FUkey'><div class='question'><span class='q'>$question</span></div><br>";
-                                // echo "<div class='itemFU' data-type='$type' data-disp='$disp' data-condition='$condition'><div class='question'><span class='q'>$question</span></div><br>";
-                                $this->answerDisp($type,$options);
-                                echo "</div>";
-                            }
+                            echo "</div>";
+                        }
                         echo "</div>";
                     }
                     echo "</div>";
                 }
-                echo "</div>";
+
             }
             echo "<div class='wrapper'>";
                 echo "<div class='button small submitForm pink' data-formName='$formNameAbbr'>submit</div>";
                 if ($modal){
                     echo "<div class='button small cancel'>dismiss</div>";
                 } 
-            echo "</div>";
+            echo "</form>";
             echo "</div>";
             echo "<script type='text/javascript' src='/js/launchpad/forms.js'></script>";
         }
@@ -297,7 +342,7 @@ class Form extends Model
             $initial = $options['initial'];
             $name = (isset($options['name'])) ? $options['name'] : "";
             echo "<div class='answer number' ><input size='5' id='$name' name='$name' type='text' $dataStr value='$initial'><span class='label'>$label</span>
-            <div><div class='change up'></div><div class='change down'></div></div></div>";
+            <div class='numberUpDown'><div class='change up'></div><div class='change down'></div></div></div>";
         }
         public function checkboxes($options){
             unset($name);
@@ -404,6 +449,12 @@ class Form extends Model
         }
         
         public function answerDisp($type,$options){
+            if ($type != "narrative"){
+                foreach ($options as &$option){
+                    $option = e($option);
+                }
+                unset($option);
+            }
             if ($type=='radio'){
                 $this->radio($options);
             }

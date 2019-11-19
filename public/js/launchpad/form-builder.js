@@ -8,8 +8,8 @@ $(document).ready(function(){
     $("#FormName").find(".save").css("display","inline-block");
     $("#FormName").find(".edit").hide();
 
-    var sectionNode = "<div class='section'><h2 class='sectionName editable'><div class='pair'><input type='text' class='input'> <span class='value'></span></div><div class='toggle edit'>(edit section name)</div><div class='toggle save'>(save)</div><div class='toggle cancel'>(cancel)</div></h2>  <div class='Items'>  <div class='selectMultiple'> <div class='show button xxsmall yellow70'>select multiple items</div><div class='hide button xxsmall'>cancel selection</div><div class='delete button pink70 xxsmall'>delete items</div><div class='copy button pink70 xxsmall'>duplicate items</div> </div>   <p class='hideTarget'><span class='down'></span>No questions yet</p><div class='target' data-contains='item'><div style='padding:0.5em 1em;'>Add some questions!</div></div></div>  <div class='itemOptions'><div class='addQuestion button pink xsmall'>add question</div><div class='addText button pink xsmall'>add text</div><div class='button xsmall deleteSection'>delete section</div></div> </div>",
-        itemNode = "<div class='item'><div class='question'></div><div class='answer'></div> <div class='ItemsFU'>  <div class='selectMultiple'> <div class='show button xxsmall yellow70'>select multiple followup items</div><div class='hide button xxsmall'>cancel selection</div><div class='delete button xxsmall pink70'>delete items</div><div class='copy button pink70 xxsmall'>duplicate items</div> </div>  <p class='hideFUs'><span class='right'></span>Follow up based on response</p><div class='targetFUs' data-contains='itemFU'></div></div>   <div class='newFollowUp'><div class='button pink70 xxsmall addFollowUp'>add followup question</div><div class='button pink70 xxsmall addFollowUpText'>add followup text</div></div> <div class='UpDown'><div class='up'></div><div class='down'></div></div> </div>",
+    var sectionNode = "<div class='section'><h2 class='sectionName editable'><div class='pair'><input type='text' class='input'> <span class='value'></span></div><div class='toggle edit'>(edit section name)</div><div class='toggle save'>(save)</div><div class='toggle cancel'>(cancel)</div></h2>  <div class='Items'>  <div class='selectMultiple'> <div class='show button xxsmall yellow70'>select multiple items</div><div class='hide button xxsmall'>cancel selection</div><div class='delete button pink70 xxsmall'>delete items</div><div class='copy button pink70 xxsmall'>duplicate items</div> </div>   <p class='hideTarget'><span class='down'></span>No questions yet</p><div class='target' data-contains='item'><div style='padding:0.5em 1em;'>Add some questions!</div></div><div class='requireSign'>* <i>required</i></div></div>  <div class='itemOptions'><div class='addQuestion button pink xsmall'>add question</div><div class='addText button pink xsmall'>add text</div><div class='button xsmall deleteSection'>delete section</div></div> </div>",
+        itemNode = "<div class='item'><div class='question'></div><br><div class='answer'></div> <div class='ItemsFU'>  <div class='selectMultiple'> <div class='show button xxsmall yellow70'>select multiple followup items</div><div class='hide button xxsmall'>cancel selection</div><div class='delete button xxsmall pink70'>delete items</div><div class='copy button pink70 xxsmall'>duplicate items</div> </div>  <p class='hideFUs'><span class='right'></span>Follow up based on response</p><div class='targetFUs' data-contains='itemFU'></div></div>   <div class='newFollowUp'><div class='button pink70 xxsmall addFollowUp'>add followup question</div><div class='button pink70 xxsmall addFollowUpText'>add followup text</div></div> <div class='UpDown'><div class='up'></div><div class='down'></div></div> </div>",
         itemFUNode = "<div class='itemFU'><div class='question'></div><div class='condition'></div><div class='answer'></div> <div class='UpDown'><div class='up'></div><div class='down'></div></div> </div>";
 
     $("#PreviewFormBtn").on('click',function(){
@@ -85,12 +85,13 @@ $(document).ready(function(){
         $("#NarrativeOptions").show();
         blurElement($("body"),"#AddText");
     })
-    $("#Sections").on('click','.insertQuestion',function(){
+    $("#Sections").on('click','.insertQuestion, .insertText',function(){
+        var addNode = $(this).is(".insertQuestion") ? "#AddItem" : "#AddText";
         var t = $(this).closest(".insertProxy"), item;
         if (t.parent().data('contains') == 'item'){
             $("#FollowUpOptions").hide();
         }else{
-            $("#FollowUpOptions").show();
+            $("#FollowUpOptions").appendTo($(addNode).find(".message")).show();
             item = $(this).closest('.item');
             showConditionOptions(item);
             if (!item.find(".targetFUs").is(":visible")){
@@ -99,7 +100,7 @@ $(document).ready(function(){
         }
         $("#AddItemProxy").appendTo(t);
         resetAddItem();
-        blurElement($("body"),"#AddItem");
+        blurElement($("body"),addNode);
     })
     $("#Sections").on('click','.insertText',function(){
         
@@ -109,12 +110,13 @@ $(document).ready(function(){
         placeholder: 'Enter your text here',
         toolbar: [
           ['style', ['style']],
-          ['font', ['bold', 'underline', 'clear']],
+          ['font', ['bold', 'underline', 'italic', 'strikethrough', 'clear']],
           ['fontname', ['fontname']],
+          ['fontsize'],
           ['color', ['color']],
-          ['para', ['ul', 'ol', 'paragraph']],
-          ['insert', ['link', 'picture']],
-          ['view', ['fullscreen', 'codeview', 'help']],
+          ['para', ['ul', 'ol', 'paragraph', 'height']],
+          ['insert', ['link', 'picture','hr']],
+          ['view', ['fullscreen', 'codeview', 'undo', 'redo', 'help']],
         ],
     });
 
@@ -196,73 +198,73 @@ $(document).ready(function(){
             }  
         }
         else if (p.hasClass("question")){
-            var q = p.data("question"), k = p.data("key"), t = p.data("type"), o = p.data("options"), c = p.data("condition");
-            var section = $(this).closest(".section");
-            
-            var item = p.parent();
+
+            var question = p.data("question"), k = p.data("key"), type = p.data("type"), options = p.data("options"), condition = p.data("condition"), required =p.data('required'), section = $(this).closest(".section"), item = p.closest(".item, .itemFU");
+
+            // console.log(p.data());
+            if (required === undefined){required = "true"}
+            else{required = (required === true) ? "true" : "false";}
 
             if ($(this).hasClass("edit")){
-                var type = $(this).closest('.item').find('.question').data('type'), d,
-                    addNode = (type == 'narrative') ? "#AddText" : "#AddItem";
+                var proxy = $("#AddItemProxy"), addNode = (type == 'narrative') ? "#AddText" : "#AddItem";
 
-                P = $(addNode).parent();
-                d = $("#AddItemProxy");
-                if (P.is(".item") && $("#AddItem, #AddText").is(":visible")){
-                    P.find(".toggle").filter(".cancel, .save").hide();
-                    P.find(".toggle").filter(".edit, .delete").show();
-                }
+                // P = $(addNode).parent();
+                // console.log(item);
+                if (item.is(".itemFU")){
+                    addNode = (item.find(".question").data('type') == 'narrative') ? "#AddText" : "#AddItem";
 
-                var target = $(this).closest(".itemFU");
-                if (target.length==0){
-                    target = $(this).closest(".item");
-                }
-                if (target.is(".itemFU")){
-                    d.appendTo(target);
+                    proxy.appendTo(item);
                     blurElement($("body"),addNode);
                     showConditionOptions($(item).closest(".item"));
-                    $("#FollowUpOptions").show();
-                }else if (target.is(".item")){
+                    $("#FollowUpOptions").appendTo($(addNode).find(".message")).show();
+                }else if (item.is(".item")){
                     $("#FollowUpOptions").hide();
-                    target = target.find(".ItemsFU");
-                    d.insertBefore(target);
+                    item = item.find(".ItemsFU");
+                    proxy.insertBefore(item);
                     blurElement($("body"),addNode);
                 }
 
+                // console.log(type);
                 if (type != 'narrative'){
-                    $("#Text").val(q);
-                    $("#Type").val(t);
-                    $("#Type").change();                    
+                    $("#Text").val(question);
+                    $("#Type").val(type);
+                    $("#Type").change();
+                    $("#Required").val(required);          
+                    console.log("uhoh");
                 }else{
+                    console.log("uhhuh");
                     slideFadeIn($("#NarrativeOptions"));
-                    var markup = o.markupStr;
+                    // o = target.is(".item") ? o : target.find(".question").data('options');
+                    console.log(options);
+                    var markup = options.markupStr;
                     $("#NarrativeOptions").find(".note-placeholder").hide();
                     $("#NarrativeOptions").find(".note-editable").html(markup);
                 }
                 
                 t = $(this).closest(".item").find(".question").data('type');
                 
-                if (c != undefined && (t == "number" || t == "scale")){
-                    c = c[0];
-                    c = c.split("less than ").join("");
-                    c = c.split("greater than ").join("");
-                    c = c.split("equal to ").join("");
-                    $("#FollowUpOptions").find("input").val(c);
+                if (condition != undefined && (t == "number" || t == "scale")){
+                    condition = condition[0];
+                    condition = condition.split("less than ").join("");
+                    condition = condition.split("greater than ").join("");
+                    condition = condition.split("equal to ").join("");
+                    $("#FollowUpOptions").find("input").val(condition);
                 }else{
                     $("#FollowUpOptions").find(".active").removeClass('active');
                     $("#FollowUpOptions").find("li").each(function(){
-                        var active = ($.inArray($(this).data('value'),c) > -1);
+                        var active = ($.inArray($(this).data('value'),condition) > -1);
                         if (active){$(this).addClass('active')} 
                     })
                 }
 
-                if ($.isPlainObject(o)){
+                if ($.isPlainObject(options)){
                     var items = $("#AddItem").find("input").filter(":visible");
                     items = items.add($("#AddItem").find("select").filter(":visible"));
                     if (t == "time"){
                         $("#TimeList").find("li").each(function(){
                             if ($(this).hasClass("active")){$(this).click();}
                         })
-                        $.each(o,function(key, val){
+                        $.each(options,function(key, val){
                             var obj = {
                                 all:"allow any time",
                                 minTime:"set range",
@@ -273,8 +275,8 @@ $(document).ready(function(){
                             $("#TimeOptions").find("li").filter("[data-value='"+obj[key]+"']").click();
                         })
                     }else if(t == 'date'){
-                        var beginYear = o.yearRange.split(':')[0], endYear = o.yearRange.split(':')[1],
-                            minDate = o.minDate, maxDate = o.maxDate, minNum, minType, maxNum, maxType, currentYear = new Date().getFullYear(),
+                        var beginYear = options.yearRange.split(':')[0], endYear = options.yearRange.split(':')[1],
+                            minDate = options.minDate, maxDate = options.maxDate, minNum, minType, maxNum, maxType, currentYear = new Date().getFullYear(),
                             nextYear = currentYear + 1;
                         beginYear = (beginYear == "c+0") ? currentYear : beginYear;
                         endYear = (endYear == "c+0") ? currentYear : endYear;
@@ -282,10 +284,10 @@ $(document).ready(function(){
                         $("#begin").val(beginYear);
                         $("#end").val(endYear);
                         if (minDate != null){
-                            minNum = o.minDate.substring(1,o.minDate.length - 1);
-                            maxNum = o.maxDate.substring(1,o.maxDate.length - 1);
-                            minType = o.minDate.substring(o.minDate.length - 1,o.minDate.length);
-                            maxType = o.maxDate.substring(o.maxDate.length - 1,o.maxDate.length);
+                            minNum = options.minDate.substring(1,options.minDate.length - 1);
+                            maxNum = options.maxDate.substring(1,options.maxDate.length - 1);
+                            minType = options.minDate.substring(options.minDate.length - 1,options.minDate.length);
+                            maxType = options.maxDate.substring(options.maxDate.length - 1,options.maxDate.length);
                             var guide = {"m":"months","d":"days","w":"weeks","y":"years"};
                             // console.log(minType + maxType);
                             minType = guide[minType];
@@ -300,45 +302,51 @@ $(document).ready(function(){
                             if (!$("#NoRestriction").is(":checked")){$("#NoRestriction").click();}
                         }
                     }else if (t == 'scale'){
-                        $("#scalemin").val(o['min']);
-                        $("#scalemax").val(o['max']);
-                        $("#initial").val(o['initial']);
-                        $("select").filter('[name="dispVal"]').val(o['displayValue']).change();
-                        $("select").filter('[name="dispLabel"]').val(o['displayLabels']).change();
-                        for (var prop in o){
-                            var val = o[prop];
+                        $("#scalemin").val(options['min']);
+                        $("#scalemax").val(options['max']);
+                        $("#initial").val(options['initial']);
+                        $("select").filter('[name="dispVal"]').val(options['displayValue']).change();
+                        $("select").filter('[name="dispLabel"]').val(options['displayLabels']).change();
+                        for (var prop in options){
+                            var val = options[prop];
                             items.filter(function(){
                                 return $(this).attr("name") == prop;
                             }).val(val);
                         }
                     }else if (t == 'text'){
-                        var placeholder = (o != undefined && o['placeholder'] != undefined) ? o['placeholder'] : "";
+                        var placeholder = (options != undefined && options['placeholder'] != undefined) ? options['placeholder'] : "";
                         $("#textPlaceholder").val(placeholder);
                     }else if (t == 'text box'){
-                        var placeholder = (o != undefined && o['placeholder'] != undefined) ? o['placeholder'] : "";
-                        $("#textBoxPlaceholder").val(placeholder);
+                        var placeholder = (options != undefined && options['placeholder'] != undefined) ? options['placeholder'] : "";
+                        $("#textAreaPlaceholder").val(placeholder);
                     }
                     else{
-                        for (var prop in o){
-                            var val = o[prop];
+                        for (var prop in options){
+                            var val = options[prop];
                             items.filter(function(){
                                 return $(this).attr("name") == prop;
                             }).val(val);
                         }
                     }
                 }
-                else if ($.isArray(o)){
-                    var n = o.length, c = n - 2;
-                    for (x=0;x<c;x++){
+                else if ($.isArray(options)){
+                    var optionCount = options.length, 
+                        inputCount = $("#OptionsList").find(".option").length,
+                        dif = optionCount - inputCount,
+                        extraCount = -dif;
+                    console.log(dif);
+                    for (x = 0; x < dif; x++){
                         $("#OptionsList").find(".add").click();
                     }
+                    for (x = 0; x < extraCount; x++){
+                        $("#OptionsList").find(".option").last().remove();
+                    }
                     var inputs = $("#OptionsList").find("input");
-                    for (x=0;x<n;x++){
-                        var val = o[x];
+                    for (x = 0; x < optionCount; x++){
+                        var val = options[x];
                         $(inputs[x]).val(val);
                     }
                 }
-                
             }
             else if ($(this).hasClass("delete")){
                 var target = p, itemOrFU = $(this).closest(".itemFU, .item"), countFUs = itemOrFU.find(".itemFU").length,
@@ -348,8 +356,9 @@ $(document).ready(function(){
                     $("#Warn").find(".confirmY").text("delete question and followups");
                     blurElement($("body"),"#Warn");
                 }else{
-                    warn($(this),"below","","you want to delete this");
-                    blurElement($(this).closest(".itemFU, .item"),".a");
+                    $("#Warn").find(".message").html("<h2>ATTENTION</h2><div>Are you sure you want to delete this question?</div>");
+                    $("#Warn").find(".confirmY").text("delete question");
+                    blurElement($("body"),"#Warn");
                 }
                 var check = setInterval(function(){
                     if (confirmBool == true){
@@ -367,10 +376,11 @@ $(document).ready(function(){
                         },500);
                         $(".zeroWrap.a").remove();
                         confirmBool = undefined;
+                        unblurAll();
                         clearInterval(check);
                     }else if (confirmBool == false){
                         unblurElement(item);
-                        $(".zeroWrap.a").remove();
+                        // $(".zeroWrap.a").remove();
                         confirmBool = undefined;
                         clearInterval(check);                
                     }
@@ -414,7 +424,7 @@ $(document).ready(function(){
         resetAddText();
         blurElement($("body"),"#AddText");
         var item = $(this).closest(".item");
-        $("#FollowUpOptions").insertAfter($("#NarrativeOptions"));
+        $("#FollowUpOptions").insertAfter($("#NarrativeOptions")).show();
         $("#FollowUpOptions").find(".switch").text("Display this text");
         showConditionOptions(item);
         if (!item.find(".targetFUs").is(":visible")){
@@ -422,24 +432,10 @@ $(document).ready(function(){
         }
     })
     $("#FormBuilder").on("click",".addSectionBtn",function(){
-        $("#FormName").find(".save").click();
+        // $("#FormName").find(".save").click();
         blurElement($("body"),"#AddSection");
     });
-    $("#FormBuilder").on("click",".sectionOrderBtn",function(){
-        $("#SectionOrder").appendTo($(this).closest(".sectionOptions"));
-        slideFadeIn($("#SectionOrder"));
-        slideFadeOut($("#AddSection"));
-        var sections = $(".section").not("#examples");
-        $("#SectionList").html('');
-        sections.each(function(i,section){
-            var name = $(section).find(".sectionName").find("span").text();
-            var node = $("<div class='secName' data-key='"+i+"'><span>"+name+"</span><div class='UpDown'><div class='up'></div><div class='down'></div></div></div>");
-            $("#SectionList").append(node);
-        })
-        if (sections.length==0){
-            $("#SectionList").html("<span style='padding:0.5em 1em;'>Add some sections first!</span>");
-        }
-    })
+
     
     $("#Type").on("change",function(){
         var needOptions = ['radio','checkboxes','dropdown'], value = $(this).val();
@@ -588,16 +584,10 @@ $(document).ready(function(){
         
         $("#SectionOrder").on('click',".up",updateSecOrder);
         $("#SectionOrder").on('click',".down",updateSecOrder);
-        $("#SectionOrder").on('click',".save",saveSecOrder);
+        // $("#SectionOrder").on('click',".save",saveSecOrder);
         $("#SectionOrder").on('click',".cancel",function(){
             slideFadeOut($("#SectionOrder"));
         });
-        // $("#ItemFUOrder").on('click',".up",updateItemFUOrder);
-        // $("#ItemFUOrder").on('click',".down",updateItemFUOrder);
-        // $("#ItemFUOrder").on('click',".save",saveItemFUOrder);
-        // $("#ItemFUOrder").on('click',".cancel",function(){
-        //     slideFadeOut($("#ItemFUOrder"))
-        // });
         
         $("#NoRestriction").on("click",function(){
             var block = $("<div class='block selected disabled' style='border-radius:5px;'></div>");
@@ -628,13 +618,15 @@ $(document).ready(function(){
         target.slideToggle();
     })
 
-    $("#SectionOptions").on("click","li",function(){
+    $("#SectionOptions").on("click","li",function(e){
+        if ($(e.target).is(".up, .down")){console.log($(this).closest("li").data());return false;}
         var name = $(this).find(".name").text().toLowerCase();
         var section = $(".section").filter(function(){
             return $(this).find(".sectionName").find(".value").text().toLowerCase() == name;
         });
         $.scrollTo(section);
     })
+    $("#SectionOptions").on('click',".up, .down",updateSecOrder);
     
     function saveItem(){
         var i = $("#AddItemProxy");
@@ -655,7 +647,8 @@ $(document).ready(function(){
             }else if (p.is(".itemFU")){
                 var k = item.children(".question").data("key");
                 var fk = p.find(".question").data("key");
-                saved = saveItemObj(obj,section,"update",k,fk);
+                // saved = saveItemObj(obj,section,"update",k,fk);
+                saved = saveItemObj(obj,item,"update",k,fk);
             }else if (p.is(".insertProxy")){
                 var type = p.parent().data('contains'), kP;
                 k = p.data('key');
@@ -675,7 +668,7 @@ $(document).ready(function(){
             },500);
 
             $("#AddItemProxy").appendTo('#modalHome');
-            $(".section").each(function(){updateItems($(this));});
+            $("#FormBuilder").find(".section").each(function(){updateItems($(this));});
             autoSave();
             unblurElement($("body"));
         }
@@ -683,6 +676,7 @@ $(document).ready(function(){
     var autoSaveCount;
     function autoSave(){
         var form = createFormObj();
+        if (!form){return false;}
         var jsonStr = JSON.stringify(form);
         // var mode = $("#formdata").data("mode");
         var formId = $("#formdata").data("formid") === undefined ? "none" : $("#formdata").data("formid"),
@@ -716,9 +710,6 @@ $(document).ready(function(){
                         autoSaveCount = setTimeout(function(){
                             slideFadeOut(wrap);
                         },2500);
-                        // autoSaveCount = setTimeout(function(){
-                        //     slideFadeOut(wrap);
-                        // },2500)
                     }else{
                         $("#AutoConfirm").find(".message").text("Autosaved at " + timeStr);
                         slideFadeIn(wrap);
@@ -726,21 +717,8 @@ $(document).ready(function(){
                                 slideFadeOut(wrap);
                         },2500);
                     }
-                    // var last = $('.menuBar').last();
-                    // $("<div/>",{
-                    //     html:"form autosaved<span style='margin-left:10px' class='checkmark'>✓</span>",
-                    //     class:"confirm",
-                    //     id:"AutoConfirm"
-                    // }).insertAfter(last).wrap("<div id='AutoSaveWrap' class='wrapper'></div>");
-                    // slideFadeIn($("#AutoSaveWrap"));
-                    // setTimeout(function(){
-                    //     slideFadeOut($("#AutoSaveWrap"),800,function(){
-                    //         // $("#AutoSaveWrap").remove()
-                    //     })
-                    // },3000)
                 }
                 else{
-                    // $("#formdata").text(data);
                     alert("There was an error saving the form. Your changes have NOT been saved.");
                 }
             }
@@ -759,7 +737,16 @@ $(document).ready(function(){
             obj['displayOptions'] = ($(section).data('display') != undefined) ? $(section).data('display') : getDefaultCSS('section');
             sectionArr.push(obj);
         })
-        var formName = $("#FormName").find(".value").text();
+
+        var formName = $.sanitize($("h2#FormName").find("input").val());
+        if (formName == ""){
+            setTimeout(function(){
+                alertBox("enter a form name",$("h2#FormName").find('.input'),"after","fade");
+                scrollToInvalidItem($("h2#FormName"));
+            },300)
+            return false;
+        }
+
         var formID = $("#formdata").data("formid");
         var form = {
             "formName":formName,
@@ -786,7 +773,7 @@ $(document).ready(function(){
         
         var q = $.sanitize($("#Text").val());
         var t = ($("#AddText").is(":visible")) ? "narrative" : $("#Type").val();
-        // console.log(t);
+        var r = ($("#Required").val() == 'true') ? true : false;
         var o;
         
         // DEFINE OPTIONS BASED ON TYPE
@@ -814,7 +801,7 @@ $(document).ready(function(){
                 }
             }
             else {options=undefined;}
-            
+
             var numberOptions = $("#NumberOptions").find("input").filter(":visible");
             if (numberOptions.length!=0){
                 for (x=0;x<numberOptions.length;x++){
@@ -847,7 +834,7 @@ $(document).ready(function(){
                 };
             }
             else {numberOptions = undefined;}
-            
+
             var dateOptions = $("#DateOptions").find("input").filter(":visible");
             if (dateOptions.length!=0){
                 var beginCurrent = $("#currentYearBegin").is(":checked"), endCurrent = $("#currentYearEnd").is(":checked"),
@@ -879,7 +866,7 @@ $(document).ready(function(){
                 console.log(dateOptions);
             }
             else{dateOptions=undefined;}
-            
+
             var timeOptions = $("#TimeList").is(":visible");
             if (timeOptions){
                 if ($("#TimeRestriction").find(".active").length==0){
@@ -887,9 +874,9 @@ $(document).ready(function(){
                     $.scrollTo($("#TimeRestrict"));
                     return false;
                 }
-                var r = $("#TimeRestriction").find(".active");
+                var restrictions = $("#TimeRestriction").find(".active");
                 timeOptions = {};
-                r.each(function(){
+                restrictions.each(function(){
                     var v = $(this).data('value');
                     if (v == "allow any time"){
                         timeOptions['all'] = "default";
@@ -1021,90 +1008,16 @@ $(document).ready(function(){
         ItemObj={
             "question":q,
             "type":t,
-            "options":o
+            "options":o,
+            'required':r
         };
 
         if (followUpOptions!=undefined){
             ItemObj["condition"] = followUpOptions;
             section = $("#AddItemProxy").closest(".item");
         }        
+
         return ItemObj;
-                
-        
-
-        // if (section.is(".section")){
-            //     var Items = section.data('items');
-            //     if (mode=="update"){
-            //         if (checkItem(ItemObj,section)){
-            //             ItemObj["followups"] = Items[itemKey].followups;
-            //             ItemObj['toggleFUs'] = Items[itemKey].toggleFUs;
-            //             ItemObj['key'] = itemKey;
-            //             ItemObj['displayOptions'] = (Items[itemKey].displayOptions!==undefined) ? Items[itemKey].displayOptions : defaultDisplayCSS ;
-            //             Items[itemKey] = ItemObj;
-
-            //             // updateItems(section);
-            //             // slideFadeOut($("#AddItem"));
-            //             setTimeout(function(){
-            //                 resetAddItem();
-            //                 resetOptions();
-            //             },500);
-            //         }        
-            //     }
-            //     else if (mode=="save"){
-            //         if (checkItem(ItemObj,section)){
-            //             ItemObj["followups"] = [];
-            //             ItemObj['toggleFUs'] = 'hide';
-            //             ItemObj['key'] = Items.length;
-            //             ItemObj['displayOptions'] = defaultDisplayCSS;
-            //             Items.push(ItemObj);
-            //             // updateItems(section);
-            //             // slideFadeOut($("#AddItem"));
-            //             setTimeout(function(){
-            //                 resetAddItem();
-            //                 resetOptions();
-            //             },500);
-            //         }        
-            //     }            
-            // }
-            // else if (section.is('.item')){
-            //     if (mode=='save'){
-            //         if (checkItem(ItemObj,section)){
-            //             var Items = section.closest(".section").data('items');
-            //             var FUs = Items[itemKey].followups;
-            //             ItemObj['key'] = FUs.length;
-            //             ItemObj['displayOptions'] = defaultDisplayCSS;
-                    
-            //             FUs.push(ItemObj);
-            //             // updateItems(section.closest(".section"));
-            //             // slideFadeOut($("#AddItem"));
-            //             setTimeout(function(){
-            //                 resetAddItem();
-            //                 resetOptions();
-            //             },500);
-            //         }
-            //     }
-            //     else if (mode=='update'){
-            //         if (checkItem(ItemObj,section)){
-            //             var Items = section.closest(".section").data('items');
-            //             var FUs = Items[itemKey].followups;
-            //             ItemObj['key'] = FUkey;
-            //             ItemObj['displayOptions'] = (FUs[FUkey].displayOptions!=undefined) ? FUs[FUkey].displayOptions : defaultDisplayCSS ;
-
-            //             FUs[FUkey] = ItemObj;
-            //             // updateItems(section.closest(".section"));
-            //             // slideFadeOut($("#AddItem"));
-            //             setTimeout(function(){
-            //                 resetAddItem();
-            //                 resetOptions();
-            //             },500);
-            //         }
-            //     }
-            // }
-            // console.log(ItemObj);
-            // $(".section").each(function(){
-            //     updateItems($(this));
-            // })
-            // autoSave();
     }
     function saveItemObj(ItemObj,section,mode,itemKey,FUkey){
         if (section.is(".section")){
@@ -1141,7 +1054,7 @@ $(document).ready(function(){
                     ItemObj['toggleFUs'] = 'hide';
                     // ItemObj['key'] = Items.length;
                     ItemObj['displayOptions'] = getDefaultCSS('item');
-                    Items.splice(itemKey+1,0,ItemObj);
+                    Items.splice(itemKey+1, 0, ItemObj);
                     Items.forEach(function(item, i){
                         item['key'] = i;
                     })
@@ -1197,6 +1110,9 @@ $(document).ready(function(){
         clear.add("#Text").add($("#FollowUpOptions").find("input")).val("");
         $("#Type").val("text");
         $("#Type").change();
+        $("#Required").val("true");
+        $("#textPlaceholder").val("");
+        $("#textAreaPlaceholder").val("");
         $("#NumberOptions").find("#min").val("0");
         $("#NumberOptions").find("#max").val("100");
         $("#NumberOptions").find("#initial").val("5");
@@ -1241,12 +1157,12 @@ $(document).ready(function(){
         var sectionCount = sections.length;
         var names = $("#Sections").find(".section").find(".sectionName").find("span");
         var nameArr = [], sectionLists, 
-            node = $('<li><span class="name"></span><span class="details">loading . . .</span></li>'), Qs, FUs, name, newNode, headerText;
+            node = $('<li><span class="name"></span><span class="details">loading . . .</span><div class="UpDown"><div class="up"></div> <div class="down"></div></div>  </li>'), Qs, FUs, name, newNode, headerText;
     
         $("#SectionOptions").find("li").remove();
         sections.each(function(s, section){
             name = $(section).find(".sectionName").find("span").text();
-            newNode = node.clone();
+            newNode = node.clone().data('key',s);
             newNode.find(".name").text(name);
             $("#SectionOptions").find("ul").append(newNode);
         });
@@ -1271,10 +1187,12 @@ $(document).ready(function(){
             FUs = $(section).find(".itemFU").not(".narrative").length;
             Qs = (Qs == 1) ? Qs + " question" : Qs + " questions";
             FUs = (FUs == 1) ? FUs + " followup" : FUs + " followups";
+            
             node = $("#SectionOptions").find("li").filter(function(){
                 wName = (wName < $(this).find(".name").width()) ? $(this).find(".name").width() : wName;
                 return $(this).find('.name').text().toLowerCase() == $(section).find(".sectionName").find(".value").text().toLowerCase();
             }).find(".details").text(Qs + ", " + FUs);
+            
             $(".details").each(function(){
                 wDetails = (wDetails < $(this).width()) ? $(this).width() : wDetails;
             })
@@ -1283,25 +1201,34 @@ $(document).ready(function(){
         $("#SectionOptions").find(".details").width(wDetails);
     }
     function updateSecOrder(){
+        var d, currentLI = $(this).closest("li"), name = currentLI.find(".name").text(), currentSec, changeSec, changeLI, sections = $(".section"), n = sections.length, currentSec, k = currentLI.data('key'), allLIs = $("#SectionOptions").find("li"), current, change;
         if ($(this).hasClass('up')){
-            var d = 'up';
+            d = 'up';
         }else if ($(this).hasClass("down")){
-            var d = 'down';
+            d = 'down';
         }
-        var sections = $(".secName");
-        var currentSec = $(this).closest(".secName");
-        var n = sections.length, k = Number($(this).closest(".secName").data("key"));
+        currentSec = $(".section").filter(function(){
+            return $(this).find(".sectionName").find(".value").text() == name;
+        })
+
         if ((k == 0 && d == "up") || (k == n -1 && d == "down")){
             return false;
         }
+
         if (d == "up"){
-            var change = $(sections[k-1]);
-            currentSec.insertBefore(change);            
+            changeSec = $(sections[k-1]);
+            currentSec.insertBefore(changeSec);            
+            changeLI = $(allLIs[k-1]);
+            currentLI.insertBefore(changeLI);            
         }else if (d == "down"){
-            var change = $(sections[k+1])
-            currentSec.insertAfter(change);
+            changeSec = $(sections[k+1])
+            currentSec.insertAfter(changeSec);
+            changeLI = $(allLIs[k+1]);
+            currentLI.insertAfter(changeLI);            
         }
         
+        current = currentSec.add(currentLI);
+        change = changeSec.add(changeLI);
         currentSec.animate({
             "height":"-=30px",
             "opacity":0.2
@@ -1309,40 +1236,50 @@ $(document).ready(function(){
             currentSec.animate({
                 "height":"+=30px",
                 "opacity":1
-            },400)
+            },400,function(){
+                currentSec.css("height","auto");
+            })
         })
-        change.animate({
+        changeSec.animate({
             "height":"+=30px",
             "opacity":0.2
         },100,function(){
-            change.animate({
+            changeSec.animate({
                 "height":"-=30px",
                 "opacity":1
-            },400)
+            },400,function(){
+                changeSec.css("height","auto");
+            })
         })
-        
-        sections = $(".secName");
-        for (x=0;x<n;x++){
-            $(sections[x]).data("key",x);
-        }
+        currentLI.animate({
+            "height":"-=30px",
+            "opacity":0.2
+        },100,function(){
+            currentLI.animate({
+                "height":"+=30px",
+                "opacity":1
+            },400,function(){
+                currentLI.css("height","auto");
+            })
+        })
+        changeLI.animate({
+            "height":"+=30px",
+            "opacity":0.2
+        },100,function(){
+            changeLI.animate({
+                "height":"-=30px",
+                "opacity":1
+            },400,function(){
+                changeLI.css("height","auto");
+            })
+        })
+
+        allLIs = $("#SectionOptions").find("li");
+        allLIs.each(function(l,LI){
+            $(LI).data('key',l);
+        });
+        autoSave();         
     }
-    function saveSecOrder(){
-        var newSecOrder = $(".secName");
-        var sections = $(".section").not("#examples");
-        for (x=0;x<newSecOrder.length;x++){
-            var name = $(newSecOrder[x]).find("span").text();
-            sections.filter(function(){
-                return $(this).find(".sectionName").find("span").text() == name;
-            }).appendTo("#Sections");
-        }
-        slideFadeOut($("#SectionOrder"));
-        updateSections();
-        if ($(".sectionOptions").length==2){
-            $(".sectionOptions").last().appendTo("#Sections");
-        }
-        autoSave();
-    }
-    
     function checkItem(i,section){
         var q = i.question, big, little ;
         if (i.type == 'narrative'){
@@ -1358,11 +1295,6 @@ $(document).ready(function(){
         var items = $(section).find(big).find(little).find(".question");
         var qArr = [];
                 
-        // console.log(q);
-        // console.log(big);
-        // console.log(little);
-        // console.log(items);
-
         items.each(function(i,item){
             var t = $(item).data("question");
             qArr.push(t);
@@ -1393,15 +1325,15 @@ $(document).ready(function(){
         $("#AddItem, #AddText, #AddItemProxy").hide().appendTo("#FormBuilder");
         ItemsList.html("");
         Items.forEach(function(i,x){
-            var t = i.type, q = i.question, o = i.options, c = i.condition, ItemsFU = i.followups, tFUs = i.toggleFUs;
+            var t = i.type, q = i.question, o = i.options, c = i.condition, ItemsFU = i.followups, tFUs = i.toggleFUs, r = (i.required == undefined) ? true : i.required,
+                rStr = ((r === false) || (t == 'narrative')) ? "" : "<span class='requireSign'>*</span>";
             $(itemNode).appendTo(ItemsList);
             var newItem = ItemsList.find(".item").last();
-            
             if (t == "narrative"){q = "Rich Text Block";}
-            newItem.find(".question").html(q + "<div class='toggle edit'>(edit)</div><div class='toggle copy'>(duplicate)</div><div class='toggle delete'>(delete)</div><div class='toggle save'>(save)</div><div class='toggle cancel'>(cancel edit)</div>").data({"question":q, "key":x, "type":t, "options":o, "toggleFUs":tFUs});
+            newItem.find(".question").html(q + rStr + "<div class='toggle edit'>(edit)</div><div class='toggle copy'>(duplicate)</div><div class='toggle delete'>(delete)</div><div class='toggle save'>(save)</div><div class='toggle cancel'>(cancel edit)</div>").data({"question":q, "key":x, "type":t, "options":o, "toggleFUs":tFUs, 'required':r});
             
-            var r = (t == "narrative") ? ".narrative" : ".answer",
-                template = $(".template").filter("[data-type='"+t+"']").find(r).clone();
+            var target = (t == "narrative") ? ".narrative" : ".answer",
+                template = $(".template").filter("[data-type='"+t+"']").find(target).clone();
 
             template.removeAttr('id');
             newItem.find(".answer").replaceWith(template);
@@ -1413,11 +1345,11 @@ $(document).ready(function(){
             
             if (ItemsFU.length>0){
                 ItemsFU.forEach(function(f,xFU){
-                    var tFU = f.type, qFU = f.question, oFU = f.options, cFU = f.condition, cStr = "is <span class='bold underline'>";
+                    var tFU = f.type, qFU = f.question, oFU = f.options, cFU = f.condition, cStr = "is <span class='bold underline'>", rFU = (f.required == undefined) ? true : f.required, rFUStr = ((rFU === false) || (tFU == 'narrative')) ? "" : "<span class='requireSign'>*</span>";
                     $(itemFUNode).appendTo(ItemsFUList);
                     var newItemFU = ItemsFUList.find(".itemFU").last();
                     if (tFU == "narrative"){qFU = "Rich Text Block";}
-                    newItemFU.find(".question").html(qFU + "<div class='toggle edit'>(edit)</div><div class='toggle copy'>(duplicate)</div><div class='toggle delete'>(delete)</div><div class='toggle save'>(save)</div><div class='toggle cancel'>(cancel edit)</div>").data({"question":qFU, "key":xFU, "type":tFU, "options":oFU, "condition":cFU});
+                    newItemFU.find(".question").html(qFU + rFUStr + "<div class='toggle edit'>(edit)</div><div class='toggle copy'>(duplicate)</div><div class='toggle delete'>(delete)</div><div class='toggle save'>(save)</div><div class='toggle cancel'>(cancel edit)</div>").data({"question":qFU, "key":xFU, "type":tFU, "options":oFU, "condition":cFU, 'required':rFU});
                     
                     var rFU = (tFU == "narrative") ? ".narrative" : ".answer",
                         template = $(".template").filter("[data-type='"+tFU+"']").find(rFU).clone();
@@ -1475,22 +1407,15 @@ $(document).ready(function(){
         
         var s = $(section).find(".Items").children("p").find("span").clone();
         var text;
-        if (n == 0){
-            text = "No questions";
-        }else if (n==1){
-            text = "1 question";
-        }else {
-            text = n + " questions";
-        }
+        if (n == 0){text = "No questions";}
+        else if (n==1){text = "1 question";}
+        else {text = n + " questions";}
+
         n = $(section).find(".itemFU").length;
-        if (n == 0){
-            text += "";
-        }else if (n==1){
-            text += " with 1 followup question";
-        }else {
-            text += " with " + n + " followup questions";
-        }
-        
+        if (n == 0){text += "";}
+        else if (n==1){text += " with 1 followup question";}
+        else {text += " with " + n + " followup questions";}
+
         $(section).find(".Items").children("p").html(text).prepend(s);
         
         updateSections();
@@ -1614,7 +1539,7 @@ $(document).ready(function(){
         blurElement($("body"),"#MultiCopy");
 
         $(".multiCopyOption").on("click",function(){
-            var opt = $(this).data("value"), section = $(".section").filter(function(){
+            var opt = $(this).data("value"), section = $("#FormBuilder").find(".section").filter(function(){
                     return $(this).find(".selectMultiple").find(".hide").is(":visible");
                 }), Items = section.data("items"), selected = section.find(".block").filter(".selected").closest(".item, .itemFU");
             if (opt=="asBlock"){

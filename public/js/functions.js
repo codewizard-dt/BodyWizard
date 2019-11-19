@@ -3,6 +3,8 @@ $(".jump").on("click",function(){
     $.scrollTo(target);
 });
 
+var systemModalList = ['Confirm','Warn','Error','Feedback','Refresh'],
+    systemModals = $('#Confirm, #Warn, #Error, #Feedback, #Refresh');
 (function($) {
     $.sanitize = function(input) {
         var output = input.replace(/<script[^>]*?>.*?<\/script>/gi, '').
@@ -12,6 +14,22 @@ $(".jump").on("click",function(){
         return output;
     };
 })(jQuery);
+
+function commaSeparated (arr, quotes = false) {
+    if (quotes){
+        $.each(arr,function(a,item){
+            arr[a] = "'"+arr[a]+"'";
+        });
+    }
+    var last = arr.pop();
+    if (arr.length == 0){
+        return last;    
+    }else if (arr.length == 1){
+        return arr.join(', ') + ' and ' + last;    
+    }else{
+        return arr.join(', ') + ', and ' + last;
+    }
+}
 
 function filterUninitialized(selector){
     var uninitialized, obj;
@@ -23,6 +41,20 @@ function filterUninitialized(selector){
     });
     return uninitialized;
 }
+function filterByData(selector,key,value){
+    var matches, obj;
+    if (selector instanceof jQuery){obj = selector;}
+    else if(typeof selector == 'string'){obj = $(selector);}
+    else {return false;}
+    matches = obj.filter(function(){
+        if ($.inArray(value,['unset','null','undefined',false,"false"]) > -1){
+            return !$(this).data(key);
+        }else{
+            return $(this).data(key) === value;
+        }
+    });
+    return matches;
+}
 
 function chkStrForArrayElement(yourstring,substrings){
     var length = substrings.length;
@@ -33,42 +65,73 @@ function chkStrForArrayElement(yourstring,substrings){
     }
     return false;
 }
+function randomArrayElement(array){
+    return array[Math.floor(Math.random() * array.length)];
+}
 
 $.ajaxSetup({
         headers: {
             'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        },
+        dataFilter: function(data,type){
+            data = data.trim();
+            return data;
         }
 });
+var SystemModalBtnFlash;
+$(document).ajaxSuccess(function(ev,xhr,settings){
+    // console.log(xhr.responseText);
+    if (xhr.responseText.trim() == "no changes"){
+        $("#Feedback").find(".message").html("<h2>Update failed</h2><div>No update performed because there were <u>no changes to the record.</u></div>");
+        blurTopMost("#Feedback");
+    }
+})
 $(document).ajaxError(function(ev,xhr,settings,error){
     if (error !== 'abort'){
-        // console.log("ev");
-        // console.log(ev);
-        // console.log("xhr");
-        // console.log(xhr);
-        // console.log("settings");
-        // console.log(settings);
-        // console.log("error");
-        // console.log(error);
         console.log(error);
         var status = xhr.status,
-            message = (xhr.responseJSON != undefined) ? xhr.responseJSON.message : error;
-        if (status == 419){
-            blurElement($("body"),"#Refresh");
+            message = (xhr.responseJSON != undefined) ? xhr.responseJSON.message : error,
+            modal = "#Error";
+
+        if ($.inArray(status, [419, 401]) > -1){
+            modal = "#Refresh";
+            blurTopMost(modal);
             setTimeout(function(){
                 location.reload();
-            },1500)
+            },1500);
+        }else if (status === 404){
+            $(modal).find('.message').html("<h2>Not Found</h2><div>The content you asked for is not available</div>");
+            $(modal).find(".submit").data('error',xhr);
+            blurTopMost(modal);
+            // blurElement($("body"),modal);
         }else{
-            if ($("#Error").length > 0){
-                $("#Error").find(".submit").data('error',xhr);
-                $("#Error").find(".message").html("<h2>Error</h2><div>"+message+"</div>");
-                blurElement($("body"),"#Error");
-            }            
+            $(modal).find(".submit").data('error',xhr);
+            $(modal).find(".message").html("<h2>Error</h2><div>"+message+"</div>");
+            blurTopMost(modal);
+            // blurElement($("body"),modal);
         }
+        var btn = $(modal).find(".submit");
+        SystemModalBtnFlash = setInterval(function(){
+            btn.toggleClass("pink70 pink");
+        },500);
+
     }
 })
 
 function submitErrorReport(){
-    console.log($(this).data('error'));
+    console.log($("#Error").find(".submit").data('error'));
+}
+function updateUidList(){
+    $.ajax({
+        url:"/getvar",
+        method:"POST",
+        data:{
+            "getVar":"uidList"
+        },
+        success:function(data){
+            $("#uidList").text(data);
+        }
+    })
 }
 
 $(document).on("mousedown",".button",function(e){
@@ -92,23 +155,161 @@ var defaultCSS = {
 function getDefaultCSS(type){
     return defaultCSS[type];
 }
+function formatDate(jsDateObj) {
+      var day = jsDateObj.getDate(), monthIndex = jsDateObj.getMonth() +1, year = jsDateObj.getFullYear();
+      return monthIndex + "/"+ day + '/' + year;
+}
+function formatTime(jsDateObj){
+    var hour = jsDateObj.getHours(), mins = jsDateObj.getMinutes(), meridian = (hour - 11 > 0) ? "pm" : "am";
+    if (mins == "0"){mins = "00";}
+    if (hour > 12){hour = hour - 12;}
+    return hour + ":" + mins + meridian;
+}
 
 
-// function checkName(){
-//     setTimeout(function(){
-//         if ($("#FName").val()==""){
-//             var noName = $('<div id="NoName" class="modal">There is no patient information loaded. You will be redirected to the Practitioner Launchpad shortly...</div>');
-//             $('body').append(noName);
-//             $("#NoName").modal();
-//             setTimeout(function(){
-//                 location.replace("/portal/launchpad");
-//             },2000)
-//         }        
-//     },1500)        
-// }
+// EMAIL PHONE USERNAME FUNCTIONS
+    function validateUsername(){
+        // console.log("HI");
+        var i = $(this);
+        var val = i.val();
+        var m = val.match(/[^a-zA-Z0-9._\-]/);
+        val = val.replace(/[^a-zA-Z0-9._\-]/g,"");
+        if (i.val()!=val){
+            i.off("keyup",validateUsername);
+            i.val(val);
+            var alertStr = (m == " ") ? "no spaces allowed" : m + " is not allowed";
+            alertBox(alertStr,i,"after",800);
+            setTimeout(function(){
+                i.on("keyup",validateUsername);
+            },801)
+        }
+    }
+    function finalizeUsername(i){
+        var val = i.val();
+        if (val.length !=0 && (val.length < 5 || val.length > 15)){
+            i.off("focusout",finalizeUsername);
+            // $(this).val(val);
+            alertBox('must be between 5 and 15 characters',i,"after",800);
+            scrollToInvalidItem(i);
+            // setTimeout(function(){
+            //     i.on("focusout",finalizeUsername);
+            // },801)
+            return false;
+        }
+        return true;
+    }
+    function validateEmail(){
+        var val = $(this).val(), i = $(this);
+        var m = val.match(/[^a-zA-Z0-9@._\-]/);
+        val = val.replace(/[^a-zA-Z0-9@._\-]/g,"");
+        if ($(this).val()!=val){
+            i.off("keyup",validateEmail);
+            $(this).val(val);
+            alertBox(m+" is an invalid character",$(this),"after",800);
+            setTimeout(function(){
+                i.on("keyup",validateEmail);
+            },801)
+        }
+    }
+    function finalizeEmail(i){
+        var val = i.val();
+        var pattern = /[a-zA-Z0-9._\-]*@[a-zA-Z0-9._\-]*\.[a-zA-Z0-9.]*/;
+        if (!pattern.test(val)){
+            // i.off("keyup",validateEmail);
+            // $(this).val(val);
+            scrollToInvalidItem(i);
+            alertBox('enter a valid email',i,"after",800);
+            // setTimeout(function(){
+            //     i.on("keyup",validateEmail);
+            // },801)
+            return false;
+        }
+        return true;
+    }
+    function validatePhone(){
+        var i = $(this), val = i.val();
+        var m = val.match(/[^0-9.()-]/);
+        val = val.replace(/[^0-9.()-]/g,"");
+        if ($(this).val()!=val){
+            i.off("keyup",validatePhone);
+            $(this).val(val);
+            alertBox("numbers only",$(this),"after",800);
+            setTimeout(function(){
+                i.on("keyup",validatePhone);
+            },801)
+        }
+    }
+    function finalizePhone(i){
+        var val = i.val();
+        var digits = val.match(/\d/g);
+        if (digits != null && digits.length!=10){
+            // i.off("keyup",validatePhone);
+            scrollToInvalidItem(i);
+            alertBox("invalid phone number",i,"after",800);
+            // setTimeout(function(){
+            //     i.on("keyup",validatePhone);
+            // },801);
+            return false;
+        }else if (digits != null){
+            var ph = digits[0]+digits[1]+digits[2]+"-"+digits[3]+digits[4]+digits[5]+"-"+digits[6]+digits[7]+digits[8]+digits[9];
+            i.val(ph);
+            return true;
+        }else{
+            alertBox("required",i,"after",800);
+            return false;
+        }
+    }
+    function checkPasswordStrength(i){
+        var pw = i.val(), errors = [];
+        if (!/[a-z]/.test(pw)){
+            errors.push('Password must contain a lower case letter.');
+        }
+        if (!/[A-Z]/.test(pw)){
+            errors.push('Password must contain an upper case letter.');
+        }
+        if (!/[0-9]/.test(pw)){
+            errors.push('Password must contain a number.');
+        }
+        if (pw.length < 5){
+            errors.push('Password must be at least 6 characters.');
+        }
+        if (errors.length == 0){
+            return true;
+        }else{
+            str = errors.join("<br>");
+            feedback("Attention",str);
+            return false;
+        }
+    }
+
+function feedback(header, message, delay = null){
+    $("#Feedback").find('.message').html("<h2>"+header+"</h2><div>"+message+"</div>");
+    if (delay != null){
+        setTimeout(function(){
+            blurTopMost("#Feedback");            
+        },delay);
+    }else{
+        blurTopMost("#Feedback");   
+    }
+}
+function confirm(header, message, yesText = null, noText = null, delay = null){
+    $("#Confirm").find('.message').html("<h2>"+header+"</h2><div>"+message+"</div>");
+    if (yesText){$("#Confirm").find(".confirmY").text(yesText);}
+    else{$("#Confirm").find(".confirmY").text("confirm");}
+    if (noText){$("#Confirm").find(".confirmN").text(noText);}
+    else{$("#Confirm").find(".confirmN").text("cancel");}
+
+    if (delay != null){
+        setTimeout(function(){
+            blurTopMost("#Confirm");            
+        },delay);
+    }else{
+        blurTopMost("#Confirm");   
+    }
+}
 
 function alertBox(str,What,Where,Fade,Offset){
-    var h = What.outerHeight(true), w = What.outerWidth(true), ele, w2;
+    var h = What.outerHeight(true), w = What.outerWidth(true), ele, w2, readonly = What.attr('readonly');
     if (Fade=="nofade"){
         ele = $('<span class="zeroWrap a"><span class="alert">'+str+'</span></span>');
     }
@@ -150,10 +351,11 @@ function alertBox(str,What,Where,Fade,Offset){
     What.css("border-color","red").attr("readonly","true");
     setTimeout(function(){
         What.css("border-color",BC);
-        What.removeAttr("readonly");
-        What.focus();
-        if (What.is(".answer") && What.find("input").length>0){What.find("input").focus();}
-        if (What.is(".answer") && What.find("textarea").length>0){What.find("textarea").focus();}
+        if (readonly != undefined){
+            What.attr('readonly',readonly);
+        }else{
+            What.removeAttr("readonly");
+        }
     },Fade)
 
     setTimeout(function(){
@@ -238,6 +440,7 @@ $(document).on("click",".toggle",function(){
         }
     })
 
+
 function setSessionVar(KeysValuesObj){
     $.ajax({
         url:"/setvar",
@@ -245,9 +448,6 @@ function setSessionVar(KeysValuesObj){
         data:KeysValuesObj,
         success:function(data){
             // console.log(data);
-        },
-        error:function(e){
-            console.log(e);
         }
     })
 }
@@ -290,7 +490,7 @@ function slideFadeIn(elem,time,callback){
     if (callback!=undefined){
         setTimeout(callback,time+101);
     }
-}  
+}
 
 function modalLinkClk(){
     var target = $(this).data("window"), link = $(this).data("link");
@@ -301,9 +501,11 @@ function modalLinkClk(){
     else {blurModal($(target),link);}
 }
 function modalOrBody(ele){
-    var B = ele.closest(".blur");
+    var B = ele.closest(".blur"), MF = ele.closest(".modalForm");
     if (B.length > 0){
         return B.children().first();
+    }else if (MF.length > 0){
+        return MF;
     }else{
         return $("body");
     }
@@ -327,16 +529,25 @@ function containedBySubModal(ele){
 
 $(document).keyup(function(e){
     if (e.keyCode === 27 && $('.blur').length > 0){
-        var b = $(".blur").last(), p = parentModalOrBody(b);
-        unblurElement(p);
+        var b = $(".blur").last(), cancelBtn = b.find(".cancel"), p = parentModalOrBody(b);
+        if (cancelBtn.length > 0){
+            cancelBtn.click();
+        }else{
+            unblurElement(p);
+        }
     }
 })
-
+function clearModalHome(){
+    $("#ModalHome").children().not(systemModals).removeAttr('id').remove();
+}
+function saveSystemModals(){
+    systemModals.appendTo("#ModalHome");
+}
 function blurElement(elem,modal,time,callback){
     time = (time != undefined) ? time : "400";
     var position = $(elem).css("position"),
         home = ($("#ModalHome").length > 0) ? $("#ModalHome") : $("body");
-
+    $(modal).removeClass('expanded');
     $("#loading, #checkmark").remove();
     if (modal=="#loading"){
         $("<div id='loading' class='lds-ring'><div></div><div></div><div></div><div></div></div>").appendTo("body");
@@ -352,19 +563,18 @@ function blurElement(elem,modal,time,callback){
         if (elem.is("body")){$(modal).css("box-shadow","0 0 15px 10px rgba(230,230,230,0.4)");}
         else {$(modal).css("box-shadow","0 0 15px 10px rgba(190,190,190,0.4)");} 
     }
-    if ($(modal).find(".cancel").length>0){
-        $(modal).find(".cancel").on("click",function(){
-            unblurElement($(elem));
-        });
-    }
     $("#loading").removeClass("dark");
     if (position!=("relative"||"fixed"||"absolute")){
+        // console.log('fix');
         $(elem).css({
-            position:"relative",
-            overflow:"hidden"
+            // position:"relative",
+            position:"absolute",
+            overflowY:"hidden"
         });
     }
-    if ($(elem).is(".modalForm") && modal!="#loading" && modal!="#checkmark" && modal!="#Error"){$(elem.addClass('expanded'));}
+    if ($(elem).is(".modalForm") && modal!="#loading" && modal!="#checkmark" && $.inArray($(modal).attr('id'),systemModalList) === -1){
+        $(elem.addClass('expanded'));
+    }
     $(elem).css("overflow","hidden");
     $(elem).find("input:focus, textarea:focus").blur();
     if ($(elem).children().first().hasClass("blur")){
@@ -410,36 +620,26 @@ function blurElement(elem,modal,time,callback){
         transform:"translate(-50%,-50%)",
     }
 
-    // if (!block.is("#Block")){
-    //     modalCSS['boxShadow'] = "0 0 15px 3px rgb(190,190,190)";
-    // }
-
     if (modal!=undefined){
         $(modal).css("opacity","1");
         if (modal=="#loading"){
             $(modal).css({opacity:1,display:"inline-block"});
         }
-        if ($(modal).is("#Warn, #Error, #Confirm")){
+        if ($.inArray($(modal).attr('id'), systemModalList) > -1){
             $(modal).css("box-shadow","0 0 15px 3px rgb(245,245,245)");
         }
         if (modal==".c" || modal=='.a'){
             $(modal).css({backgroundColor:"transparent",boxShadow:""});
             $(modal).find(".confirm, .alert").css(center);
         }
-        // $(modal).appendTo("#Block").css(center);
         $(modal).appendTo(block).css(center);
-        if ($(modal).find(".formDisp").length>0){
-            $(modal).css({
-                overflowX:"auto",
-                overflowY:'auto'
-            })
-        }
+        $(modal).css({
+            overflowX:"hidden",
+            overflowY:'auto'
+        })
         if ($(modal).is(":visible")==false){
             $(modal).fadeIn(time);
         }
-        $(modal).find('.cancel').on("click",function(){
-            unblurElement(elem);
-        })
     }
     
     if (callback!=undefined){
@@ -472,6 +672,35 @@ function unblurElement(elem){
         overflowY:"auto"
     });
 }
+function blurTopMost(modal){
+    var ele = $(".blur").last().children().first();
+    if (ele.length == 0){ele = $("body");}
+    else if (ele.attr('id') == "loading"){ele = $(".blur").last().parent();}
+    if (ele.is(modal)){
+        console.log("can't blur "+ele.attr('id')+" since top most is "+modal);
+        return;
+    }
+    blurElement(ele,modal);
+}
+function unblurTopMost(){
+    var ele = $(".blur").last().parent();
+    unblurElement(ele);
+}
+function unblurAll(){
+    var clearBlurs = setInterval(function(){
+        // console.log($(".blur"));
+        unblurTopMost();
+        if ($(".blur").length == 0){
+            clearInterval(clearBlurs);
+        }
+    },100)
+}
+function delayedUnblurAll(time = 800){
+    setTimeout(function(){
+        unblurAll();
+    },time);
+}
+
 function loadBlurLight(elem){
     if ($("#loading").length==0){
         $("<div id='loading' class='lds-ring'><div></div><div></div><div></div><div></div></div>").appendTo("body");
@@ -587,12 +816,17 @@ $(document).ready(function(){
         checkOverflow(ele);
     })
     $("#Error").find(".submit").on('click',submitErrorReport);
+    $("body").on("click",".errorReport", submitErrorReport);
+    systemModals.find(".button").on('click',function(){
+        clearInterval(SystemModalBtnFlash);
+    })
 })
 
 function allowButtonFocus(){
-    $(".button").attr("tabindex","0");
-    $(".button").off("keyup",enterClick);
+    var btns = filterByData(".button","focusable",false);
+    btns.attr("tabindex","0");
     $(".button").on("keyup",enterClick);
+    btns.data('focusable',true);
 }
 function enterClick(e){
     if (e.keyCode=="13"){
@@ -674,6 +908,7 @@ function filterTableList(table){
             $(this).data('options','{"wholeWords":"false","separateWords":"true"}');
         }
     })
+    // console.log(AllRows);
     
     //AllRows.removeClass("match").addClass("hide").unmark();
     AllRows.unmark();
@@ -694,9 +929,9 @@ function filterTableList(table){
     })
         
     filterList.forEach(function(filter,f){
-        var type = filter.split(":")[0], value = filter.split(":")[1];
-        if (type=='hide'){
-            value = filter.split(":")[1] + ":" + filter.split(":")[2];
+        var filterParts = filter.split(":"), type = filterParts[0], value = filterParts[1];
+        if (filterParts.length > 2){
+            value = filterParts[1] + ":" + filterParts[2];
         }
         if (filterObj[type]==undefined){
             filterObj[type] = [value];
@@ -894,22 +1129,25 @@ $(document).on('click',".confirmY",function(){
 $(document).on('click',".confirmN",function(){
     confirmBool = false;
 })   
-function confirm(target,where,offset){
-    var str = "<span class='confirmQ'>are you sure? this cannot be undone</span> <span class='confirmY'>yes</span><span class='confirmN'>no</span>";
-    confirmBox(str,target,where,"nofade",offset);
-}
+// function confirm(target,where,offset){
+//     var str = "<span class='confirmQ'>are you sure? this cannot be undone</span> <span class='confirmY'>yes</span><span class='confirmN'>no</span>";
+//     confirmBox(str,target,where,"nofade",offset);
+// }
 function warn(target,where,offset,customText=""){
     customText = (customText != '') ? " "+customText : "";
     var str = "<span class='confirmQ'>are you sure"+customText+"? this cannot be undone</span> <span class='confirmY'>yes</span><span class='confirmN'>no</span>";
     alertBox(str,target,where,"nofade",offset);
 }
-
+function clearAllScheduleModals(){
+    var list = "#AddTimeBlock, #EditTimeBlock, #EditScheduleModal, #AddTimeOff, #EditTimeOff, #editOrDelete";
+    $(list).removeAttr('id').remove();
+}
 function optionsNavBtnClick(){
     if ($(this).hasClass("disabled")){return false;}
     var optionsNav = $(this).closest('.optionsNav'),
         model = optionsNav.data('model'),
         dest = $(this).data('destination'),
-        link = $(".tab").add($(".dropDown").find("li")).filter("#"+dest),
+        link = $(".tab").filter("#"+dest).find(".title"),
         uid = optionsNav.data("uid");
 
 
@@ -922,9 +1160,8 @@ function optionsNavBtnClick(){
             uri = uri.join("/");
             link.data('uri',uri);
         }
-        if (link.is(".tab")){link.find(".title").click();}
-        else if (link.is("li")){link.click();}
-        }
+        link.click();
+    }
     // things that aren't a menuBar item
     else if (dest=='form-preview'){
         $("<div/>",{
@@ -934,6 +1171,22 @@ function optionsNavBtnClick(){
         blurElement($('body'),"#loading");
         $("#FormPreview").load("/forms/"+uid+"/preview",function(){
             blurElement($('body'),"#FormPreview");
+        })
+    }
+    else if (dest=='schedule'){
+        clearAllScheduleModals();
+        $("<div/>",{
+            id: "EditScheduleModal",
+            class: "modalForm"
+        }).appendTo("#ModalHome");
+        blurElement($('body'),"#loading");
+        $.ajax({
+            url:"/schedule/"+model+"/"+uid,
+            method:"GET",
+            success:function(data){
+                $("#EditScheduleModal").html(data);
+                blurElement($("body"),"#EditScheduleModal");
+            }
         })
     }
     else if (dest=='delete'){
@@ -979,6 +1232,14 @@ function optionsNavBtnClick(){
         });
         $(modal).find(".submitForm").text("update");
         $(modal).data('uid',optionsNav.data('uid'));
+
+        // console.log($.inArray(model, ['Patient','User','StaffMember','Practitioner']));
+        if ($.inArray(model, ['Patient','User','StaffMember','Practitioner']) > -1){
+            var type = optionsNav.find('.name').data('usertype'),
+                isAdmin = (optionsNav.find(".name").data('isadmin') == "1") ? "yes" : "no";
+            $(modal).find("#select_user_type").find("li").filter("[data-value='"+type+"']").click();
+            $(modal).find("#grant_admin_privileges").val(isAdmin);
+        }
         fillForm(json,form);
         // console.log(json);
         blurElement($("body"),modal);
@@ -1517,7 +1778,7 @@ function resizeFooterPadding(){
 }
 var menuWidth;
 function resizeMobileMenuAndFooter(){
-    var tabs = $("#SiteMenu").find("div").not("#MobileMenu, #MenuToggle, #MenuDisplay");
+    var tabs = $("#SiteMenu, #MenuDisplay").children(".tab");
     if (!$("#SiteMenu").hasClass("mobile")){
         menuWidth = $("#SiteMenu").outerWidth();
     }
@@ -1530,6 +1791,7 @@ function resizeMobileMenuAndFooter(){
         tabs.appendTo("#SiteMenu");
         $("#SiteMenu").find(".dropDown").removeClass("active");
     }
+
     if (w < 480){$("footer").find(".logo, .icons, .contact, .hours").addClass("mobile");}
     else if (w < 750){
         $("footer").find(".logo, .icons").addClass("mobile");
@@ -1607,4 +1869,5 @@ $(document).ready(function(){
     }
     $(".booknow").addClass("link").data("target","/booknow");
     $(".link").on("click",followLink);
+    $(document).on('click','.cancel',unblurTopMost);
 })

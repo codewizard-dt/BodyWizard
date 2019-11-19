@@ -11,42 +11,14 @@
 @section('content')
 	<?php 
 	$usertype = Auth::user()->user_type; 
-	$tabs = json_encode(session('CurrentTabs'));
-	$uids = json_encode(session('uidList'));
 	?>
-	<div id="tabList"> {{ $tabs }} </div>
-	<div id="uidList"> {{ $uids }} </div>
-	@include("portal.$usertype.home")
-	<div id='ModalHome'>
-		<div id="Error" class='prompt'>
-			<div class='message'></div>
-			<div class='options'>
-				<div class='button small submit pink'>send us an error report</div>
-				<div class='button small cancel'>dismiss</div>
-			</div>
-		</div>
-		<div id="Warn" class='prompt'>
-			<div class='message'></div>
-			<div class='options'>
-				<div class='button large submit pink confirmY'>YES</div>
-				<div class='button large cancel confirmN'>cancel</div>
-			</div>
-		</div>
-		<div id="Confirm" class='prompt'>
-			<div class='message'></div>
-			<div class='options'>
-				<div class='button small submit pink confirmY'>confirm</div>
-				<div class='button small cancel confirmN'>dismiss</div>
-			</div>
-		</div>
-		<div id="Refresh" class='prompt'>
-			<div class="message">
-				<h2>Session Timeout</h2>
-				<div>It's been too long! Let's log in again. You'll be automatically redirected shortly.<br>If not redirected, click below to reload.</div>
-			</div>
-			<div class="options">
-				<div class="button pink medium">Click here to manually refresh</div>
-			</div>
-		</div>
-	</div>
+
+	@if (Auth::user()->require_new_pw)
+		@include('portal.user.password')
+	@elseif (Auth::user()->security_questions == null)
+		@include('portal.user.security-questions')
+	@else
+		@include("portal.$usertype.home")
+	@endif
+
 @endsection

@@ -8,5 +8,6 @@ use Faker\Generator as Faker;
 $factory->define(Prescription::class, function (Faker $faker) {
     return [
         //
+        "name" => $faker->firstName
     ];
 });

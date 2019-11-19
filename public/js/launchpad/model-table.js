@@ -49,6 +49,10 @@ $(document).ready(function(){
     })
     extraBtns.data('initialized',true);
 
+    $(".connectedModel").on('click','.cancel',function(){
+        $(".targetInput").removeClass("targetInput");
+    })
+
     // INITIALIZING TABLES
         var tables = $(".styledTable.clickable").filter(function(){
         	return !$(this).data('initialized');
@@ -71,11 +75,11 @@ $(document).ready(function(){
     	    var formLoadXHR = undefined;
     	    trs = $(table).find("tr").not(".head, .noMatch");
 
-            if (!modal){
+            if (!modal && $(table).hasClass('modelTable')){
                 var model = $(table).data('model');
                 trs.on('click',rowClickLoadModel);
                 $("#delete"+model).find(".delete").on("click",deleteModel);
-            }else{
+            }else if ($(table).hasClass('modelTable')){
                 var model = $(table).data('model'), modal = $(this).closest('.connectedModel'), 
                     connectedTo = modal.data('connectedto'), modalId = "#"+modal.attr("id");
 
@@ -115,12 +119,10 @@ $(document).ready(function(){
             checkHorizontalTableFit($(table));
         })
 
-        tables.data("initialized",true);
-
-    
+        tables.data("initialized",true);    
 })
 
-var formLoadXHR = undefined;
+var optionsLoadXHR = undefined;
 function rowClickLoadModel(){
     var uid = $(this).data('uid'), 
     	table = $(this).closest(".styledTable"),
@@ -129,7 +131,7 @@ function rowClickLoadModel(){
     	destinations = $(table).data('destinations').split(","),
     	btnText = $(table).data('btntext').split(",");
 
-    if ($(target).data("uid")==uid && formLoadXHR==undefined){
+    if ($(target).data("uid")==uid && optionsLoadXHR==undefined){
         alertBox("already selected",$(target).find(".name"),"below","fade");
         $(this).addClass('active');
         return false;
@@ -149,11 +151,11 @@ function rowClickLoadModel(){
     slideFadeIn($(target),1500);
     $.scrollTo($(target),1500);
     
-    if (formLoadXHR!=undefined){
-        formLoadXHR.abort();
+    if (optionsLoadXHR!=undefined){
+        optionsLoadXHR.abort();
     }
 
-    formLoadXHR = $.ajax({
+    optionsLoadXHR = $.ajax({
         url: "/optionsNav/" + model.replace(" ","") + "/" + uid,
         method: "GET",
         success: function(data){
@@ -163,7 +165,8 @@ function rowClickLoadModel(){
             resetOptionsNavBtns();
             updateUriUids();
             allowButtonFocus();
-            formLoadXHR = undefined;
+            optionsLoadXHR = undefined;
+            updateUidList();
         },
         error: function(e){
             console.log(e);
@@ -173,8 +176,8 @@ function rowClickLoadModel(){
 }
 function selectInputFromTable(){
 	var table = $(this).closest("table"), modal = $(this).closest(".connectedModel"), relationship = modal.data('relationship'),
-        number = modal.data('number'), selectBtn = modal.find('.selectData');
-    var count = table.find(".active").length;
+        number = modal.data('number'), selectBtn = modal.find('.selectData'),
+        required = $(".targetInput").data("required");
     if (number == "one"){
         if ($(this).hasClass('active')){
             $(this).removeClass('active');
@@ -187,28 +190,32 @@ function selectInputFromTable(){
     }
 
     count = table.find(".active").length;
-    if (count > 0){
-        selectBtn.removeClass('disabled');
+    if (count > 0 || !required){
+        selectBtn.removeClass('disabled pink').addClass('pinkflash');
     }else{
-        selectBtn.addClass('disabled');
+        selectBtn.addClass('disabled pinkflash').addClass('pink');
     }
 }
 function updateInputFromTable(){
     if ($(this).hasClass('disabled')){return false;}
-    var table = $(this).closest("table"), modal = $(this).closest('.connectedModel'), selection = modal.find("tr").filter(".active"),
-        uidArr = [], text = [], model = modal.data('model'), target = $(".target"), connectedTo = modal.data('connectedto');
-    
+    var modal = $(this).closest('.connectedModel'), table = modal.find("table"), selection = modal.find("tr").filter(".active"),
+        uidArr = [], text = [], model = modal.data('model'), target = $(".targetInput"), connectedTo = modal.data('connectedto');
     selection.each(function(){
         uidArr.push($(this).data('uid'));
-        text.push($(this).find('.name').text().trim().replace("...",""));
-        console.log(model);
+        if ($(this).closest("table").data('display') != ""){
+            var displayName = $(this).closest("table").data('display'), regex = /%([^%]*)%/g, attrs = displayName.match(regex), row = $(this);
+            $.each(attrs,function(a, attr){
+                var key = attr.replace(/%/g,"");
+                displayName = displayName.replace(attr,trimCellContents(row.find("."+key)));
+            })
+            text.push(displayName);
+        }else{
+            text.push(trimCellContents($(this).find('.name')));
+        }
     });
     modal.data('uidArr',uidArr);
     target.data('uidArr',uidArr);
     target.val(text.join(", "));
-    target.removeClass('target');
-    table.find(".active").removeClass('active');
-
     if (model == 'Template' && connectedTo == 'Message'){
         var id = uidArr[0], box = $("#createMessage").find(".summernote");
         blurElement(box.parent(),"#loading");
@@ -224,13 +231,37 @@ function updateInputFromTable(){
                 $("#Error").find(".message").text("Error loading template");
 
                 blurElement(box.parent(),"#Error");
-                // console.log(e);
+            }
+        })
+    }else if (model == 'Patient' && connectedTo == 'Appointment'){
+        var uid = $("#PatientList").find(".active").data('uid');
+        $.ajax({
+            url:"/setvar",
+            method:"POST",
+            data:{
+                setUID: {"Patient":uid}
+            },
+            success: function(){
+                updateUidList();
             }
         })
     }
 
-    var p = modalOrBody($(this)), m = parentModalOrBody($(this));
-    unblurElement(m);
+    var p = modalOrBody(target);
+    unblurElement(p);
+
+    $(".targetInput").removeClass('targetInput');
+    table.find(".active").removeClass('active');
+}
+function updateInputByUID(input,uids){
+    // console.log(input.data());
+    var modal = $(input.data('modal')), table = modal.find('table'), selectBtn = modal.find(".selectData");
+    input.addClass('targetInput');
+    selectRowsById(uids,table);
+    selectBtn.click();
+}
+function trimCellContents(td){
+    return td.find(".tdSizeControl").text().trim().replace("...","");
 }
 function attachConnectedModelInputs(form){
     var connectedModels = $(".connectedModel");
@@ -272,9 +303,6 @@ function activateInput(input,modalId,uidArr){
     }).each(function(){
         filterArr.push($(this));
     })
-    // console.log(input);
-    // console.log(modalId);
-    // console.log(uidArr);
 
     input.attr('readonly',true);
     input.data('modal',modalId);
@@ -284,11 +312,13 @@ function activateInput(input,modalId,uidArr){
 }
 function openConnectedModelModal(){
     var p = modalOrBody($(this)), modalId = $(this).data('modal'), table = $(modalId).find("table"), currentVals = $(this).val(),
-        cModelIds = $(modalId).data('uidArr'), defaultFilters = $(this).data('defaultFilters');
+        cModelIds = $(modalId).data('uidArr'), defaultFilters = $(this).data('defaultFilters'), 
+        required = ($(this).closest(".item, .itemFU").data('required') === 1) ? true : false,
+        selectBtn = $(modalId).find('.selectData');
     blurElement(p,modalId);
-    console.log($(this).data());
+    // console.log($(this).closest('.item, .itemFU').data());
 
-    $(this).addClass('target');
+    $(this).addClass('targetInput').data('required',required);
     table.find("tr.active").removeClass('active');
     if (currentVals != ""){
         selectRowsById(cModelIds,table);
@@ -301,25 +331,35 @@ function openConnectedModelModal(){
             filter.find("input").click();
         }
     })
+    count = table.find(".active").length;
+    if (count > 0 || !required){
+        selectBtn.removeClass('disabled pink').addClass('pinkflash');
+    }else{
+        selectBtn.addClass('disabled pinkflash').addClass('pink');
+    }
+
     checkHorizontalTableFit(table);
 }
-function selectRowsById(idArr, table){
-    // console.log(idArr);
+function selectRowsById(ids, table){
     table.find('tr').removeClass('active');
-    $.each(idArr,function(i,id){
+    if ($.isArray(ids)){
+        $.each(ids,function(i,id){
+            table.find('tr').filter(function(){
+                return $(this).data('uid') == id;
+            }).click();
+        })        
+    }else{
         table.find('tr').filter(function(){
-            return $(this).data('uid') == id;
-        }).addClass('active');
-    })
+            return $(this).data('uid') == ids;
+        }).click();
+    }
 }
 function selectRowsByName(string,table){
     var arr = string.split(", ");
     $.each(arr,function(i,a){
         table.find("tr").filter(function(){
-            console.log($(this).find(".name"));
             return $(this).find(".name").text().includes(a);
         }).click();
-        // console.log(a);
     })
 }
 function alternateRowColor(table){
@@ -334,4 +374,11 @@ function alternateRowColor(table){
         $(tr).addClass(c);
         prevID = id;
     })
+}
+function getColumnById(model, ids, columnName = 'name'){
+    var arr = [], table = $("#"+model+"List");
+    $.each(ids, function(i,id){
+        arr.push(trimCellContents(table.find('tr').filter('[data-uid="'+id+'"]').find("."+columnName)));
+    })
+    return arr;
 }

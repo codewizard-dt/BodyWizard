@@ -12,4 +12,4 @@
 <div id="serviceTarget" class='loadTarget'>
 </div>
 
-<script type="text/javascript" src="{{ asset('/js/menu-portal.js') }}"></script>
+<script type="text/javascript" src="{{ asset('/js/menus.js') }}"></script>

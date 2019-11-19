@@ -6,9 +6,15 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Form;
 use App\Message;
+use App\Template;
 use App\Attachment;
 use App\Image;
+use App\Practice;
+use App\User;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use App\Events\OutgoingMessage;
@@ -21,7 +27,7 @@ class ScriptController extends Controller
         $this->middleware('auth');
     }
 
-    // RANDO FUNCTIONS
+    // SESSION FUNCTIONS
         public function GetVar(Request $request){
             $key = $request->getVar;
             if (is_array(session($key))) {
@@ -33,25 +39,28 @@ class ScriptController extends Controller
         public function SetVar(Request $request){	
         	$variables = $request->all();
     		foreach($variables as $key => $val){
-    		     $request->session()->put($key, $val);
+                if ($key == 'setUID'){
+                    $uidList = session('uidList');
+                    foreach ($val as $model => $uid){
+                        $uidList[$model] = $uid;
+                        session([$model => $uid]);
+                    }
+                    session(['uidList' => $uidList]);
+                }else{
+                    $request->session()->put($key, $val);
+                }
     		    if ($val == "unset"){
     				$request->session()->forget($key);
     		    }
     		}
         	// return true;
         }
-
-        public function CalFeed(){
-        	$usertype = Auth::user()->user_type;
-        	$id = Auth::user()->id;
-        	if ($usertype == 'practitioner')
-        	{
-        		return "<div id='calfeed' data-events='".file_get_contents(storage_path('app/calendar/'.$usertype."-feed.php"))."'></div>";
-        	}
-        	else if ($usertype == 'patient')
-        	{
-
-        	}
+        public function sessionCheck(Request $request){
+            if (Auth::check()){
+                return "checkmark";
+            }else{
+                return "fail";
+            }
         }
 
     // TABLE AND NAV VIEWS
@@ -139,12 +148,11 @@ class ScriptController extends Controller
         }
         public function saveNewModel($model, Request $request){
             include_once app_path("php/functions.php");
+            // $model = (in_array($model,['Patient','Practitioner','StaffMember'])) ? "User" : $model;
             $class = "App\\$model";
-            // Log::info($newModel);
-            // Log::info($request);
 
-            $recipient_ids = json_decode($request->recipient_ids);
             if ($model == "Message"){
+                $recipient_ids = json_decode($request->recipient_ids);
                 $connectedArr = $request->connectedModels;
                 // Log::info($connectedArr);
                 $request->message_id = uuid();
@@ -158,6 +166,18 @@ class ScriptController extends Controller
                         break;
                     }
                 }
+            }elseif ($model == "Appointment"){
+                $newModel = new $class;
+                $newModel->uuid = uuidNoDash();
+                $newModel->status = [
+                    'scheduled_at' => Carbon::now()->toDateTimeString(),
+                    'rescheduled_at' => false,
+                    'canceled' => false,
+                    'completed' => false,
+                    'invoiced' => false,
+                    'paid' => false
+                ];
+                $result = $this->saveModel($model, $newModel, $request);
             }else{
                 $newModel = new $class;
                 $result = $this->saveModel($model, $newModel, $request);
@@ -175,7 +195,7 @@ class ScriptController extends Controller
             $existingInstance = $class::find($uid);
 
             $result = $this->saveModel($model, $existingInstance, $request);
-            // Log::info($result);
+
             if ($result === true){
                 return "checkmark";
             }else{
@@ -183,11 +203,19 @@ class ScriptController extends Controller
             }
         }
         public function saveModel($model, $instance, Request $request){
+            include_once app_path("php/functions.php");
             $models = strtolower(plural($model));
             $columns = isset($request->columnObj) ? json_decode($request->columnObj,true) : [];
+            $trackChanges = usesTrait($instance,"TrackChanges");
+
+            if ($trackChanges && $request->isMethod('patch')){
+                $includeFullJson = isset($instance->auditOptions['includeFullJson']) ? $instance->auditOptions['includeFullJson'] : false;
+                $changes = $instance->checkForChanges($instance,$request,$includeFullJson);
+                if (!$changes){return "no changes";}
+            }
 
             // SPECIAL STEP FOR USER / MESSAGE
-                if ($model == "User"){
+                if ($model == "User" && $request->isMethod('post')){
                     $validator = Validator::make($columns, [
                         'email' => ['required', 'string', 'email', 'max:255'],
                         'username' => ['unique:users','min:5','max:255']
@@ -195,11 +223,9 @@ class ScriptController extends Controller
                     if ($validator->fails()){
                         return ["errors"=>$validator->errors()];
                     }
-                    if (isset($instance->password)){
-                        return "YES PW";
-                    }else{
-                        $randomPw = Str::random(12);
-                        return $randomPw;
+                    if (!isset($instance->password)){
+                        $randomPw = Str::random(10);
+                        $instance->password = Hash::make($randomPw);
                     }
                 }elseif ($model == 'Message'){
                     $instance->sender_id = Auth::user()->id;
@@ -208,19 +234,22 @@ class ScriptController extends Controller
                 }
 
             // TAKES EACH COLUMN FROM THE REQUEST AND ASSIGNS VALUES TO THE OBJECT
-            foreach($columns as $key => $value){
-                if (($model == 'Message' && $key == 'message') || ($model == 'Template' && $key == 'markup')){
-                    // RETURNS ARRAY OR FALSE IF NO IMGS ARE EMBEDDED OR IF IMGS ARE ALREADY SAVED
-                    // ALSO SETS ATTR MATCHING $KEY
-                    $embeddedImgs = extractEmbeddedImages($columns[$key],$instance,$key);
-                }else{
-                    $instance->$key = $value;
+                $datesArr = dateFieldsArray();
+                foreach($columns as $key => $value){
+                    if (($model == 'Message' && $key == 'message') || ($model == 'Template' && $key == 'markup')){
+                        // RETURNS ARRAY OR FALSE IF NO IMGS ARE EMBEDDED OR IF IMGS ARE ALREADY SAVED
+                        // ALSO SETS ATTR MATCHING $KEY
+                        $embeddedImgs = extractEmbeddedImages($columns[$key],$instance,$key);
+                    }elseif(in_array($key,$datesArr)){
+                        $instance->$key = Carbon::parse($value)->toDateString();
+                    }else{
+                        $instance->$key = $value;
+                    }
                 }
-            }
 
-            if (isset($request->full_json)){
-                $instance->full_json = $request->full_json;
-            }
+                if (isset($request->full_json)){
+                    $instance->full_json = $request->full_json;
+                }
 
             try{
 
@@ -233,6 +262,61 @@ class ScriptController extends Controller
                     'uidList' => $uidList,
                     $model => $newId
                 ]);
+
+                $connectedModels = isset($request->connectedModels) ? json_decode($request->connectedModels,true) : null;
+                if (isset($connectedModels)){
+                    $result = $this->updateRelationships($instance,$connectedModels);
+                    if ($result !== true){
+                        return $result;
+                    }
+                }
+                
+                if ($model == 'User' && $request->isMethod('post')){
+                    $usertype = isset($columns['user_type']) ? $columns['user_type'] : "patient";
+                    $usertype = ucfirst(removespaces(camel($usertype)));
+                    $userClass = "App\\$usertype";
+                    $user = new $userClass;
+                    $user->user_id = $newId;
+                    $user->save();
+                }
+
+                if ($trackChanges && $request->isMethod('patch')){
+                    $instance->saveTrackingInfo($instance, $changes, $request->getClientIp());
+                }
+
+                if ($model == 'Appointment'){
+                    $method = $request->method();
+                    $result = $instance->saveToGoogleCal($method);
+                    if ($result !== true){return $result;}
+                    $result = $instance->updateEventFeed();
+                    // Practice::updateEntireEventFeed();
+                }
+                // IF THE PRACTITIONER HAS A SCHEDULE, UPDATE SCHEDULES
+                if ($model == 'Practitioner' && isset($columns['schedule'])){
+                    Practice::savePractitionerSchedules();
+                }
+
+                // SENDS PASSWORD IF RANDOMLY GENERATED
+                if (isset($randomPw)){
+                    $msg = new Message;
+                    $template = Template::find("3");
+                    $body = $template->markup;
+                    $body = str_replace("%%PASSWORD%%",$randomPw,$body);
+                    $msg->sender_id = Auth::user()->id;
+                    $msg->recipient_id = $instance->id;
+                    $msg->message_id = uuid();
+                    $msg->status = newEmailStatus();
+                    $msg->type = 'Email';
+                    $msg->subject = "New User Login Information";
+                    $msg->message = $body;
+                    try{
+                        $msg->save();
+                        event(new OutgoingMessage($msg));
+                    }
+                    catch(\Exception $e){
+                        return $e;
+                    }
+                }
                 
                 // SAVES EMBEDDED IMAGES SYNC INSTANCE
                 if (isset($embeddedImgs) && $embeddedImgs != false){
@@ -244,26 +328,23 @@ class ScriptController extends Controller
                 return $e;
             }
 
-            // // return $instance;
-            // if ($model == 'Message'){
-            //     event(new OutgoingMessage($instance));
-            // }
-
-            $connectedModels = isset($request->connectedModels) ? json_decode($request->connectedModels,true) : null;
-            if (isset($connectedModels)){
-                $result = $this->updateRelationships($instance,$connectedModels);
-                if ($result !== true){
-                    return $result;
-                }
-            }
-            // $this->currentInstance = $instance;
             return true;
-
         }
         public function deleteModel($model, $uid, Request $request){
             include_once app_path("php/functions.php");
             $class = "App\\$model";
             try{
+                if (isUser($model) && $model != "User"){
+                    $userId = $class::find($uid)->user_id;
+                    // App\User::destroy($userId);
+                    // Log::info($userId);
+                    User::destroy($userId);
+                }elseif ($model == "User"){
+                    $type = ucfirst(camel(User::find($uid)->user_type));
+                    $typeClass = "App\\$type";
+                    $typeClass::where('user_id',$uid)->delete();
+                    Log::info($type);
+                }
                 $class::destroy($uid);
                 $uidList = session('uidList');
                 unset($uidList[$model]);
@@ -276,39 +357,7 @@ class ScriptController extends Controller
             }
         }
 
-        // public function extractEmbeddedImages($string,$instance,$attr){
-        //     $embeddedImgs = [];
-        //     $newImgs = preg_match_all('/src="data:([^;.]*);([^".]*)" data-filename="([^"]*)"/', $string, $newImgMatches, PREG_PATTERN_ORDER);
-        //     $oldImgs = preg_match_all('/src="data:([^;.]*);([^".]*)" data-uuid="([^"]*)" data-filename="([^"]*)"/', $string, $oldImgMatches, PREG_PATTERN_ORDER);
-        //     if ($newImgs!==false && $newImgs > 0){
-        //         for ($x = 0; $x < count($newImgMatches[1]); $x++){
-        //             $uuid = uuid();
-        //             $fullMatch = $newImgMatches[0][$x];
-        //             $mimeType = $newImgMatches[1][$x];
-        //             $dataStr = $newImgMatches[2][$x];
-        //             $fileName = $newImgMatches[3][$x];
-        //             $embedStr = 'src="%%EMBEDDED:'.$uuid.'%%"';
-        //             array_push($embeddedImgs,[$uuid,$mimeType,$fileName,$dataStr]);
-        //             // Log::info($uuid.$mimeType.$fileName.$embedStr);
-        //             $string = str_replace($fullMatch,$embedStr,$string);
-        //         }
-        //     }
-        //     if ($oldImgs!==false && $oldImgs > 0){
-        //         for ($x = 0; $x < count($oldImgMatches[1]); $x++){
-        //             $fullMatch = $oldImgMatches[0][$x];
-        //             $uuid = $oldImgMatches[3][$x];
-        //             $embedStr = 'src="%%EMBEDDED:'.$uuid.'%%"';
-        //             // array_push($embeddedImgs,[$uuid,$mimeType,$fileName,$dataStr]);
-        //             // Log::info($uuid.$mimeType.$fileName.$embedStr);
-        //             $string = str_replace($fullMatch,$embedStr,$string);
-        //         }
-        //     }
-        //     $instance->$attr = $string;
-        //     $returnVal = ($embeddedImgs == []) ? false : $embeddedImgs;
-        //     return $returnVal;
-        // }
-
-    // EDIT / SAVE SETTINGS
+    // EDIT / SAVE SETTINGS / SCHEDULE
         public function EditSettings($model, $uid){
             return view('models.settings-modal',[
                 'model' => $model,
@@ -369,7 +418,6 @@ class ScriptController extends Controller
             $uids = isset($connectedModel['uidArr']) ? $connectedModel['uidArr'] : null;
             if ($connectedModelName == 'User' && $connectedTo == 'Message'){$skip = true;}
             else {$skip = false;}
-
             if ($uids && !$skip){
                 try{
                     if ($rel == 'belongsTo'){
@@ -382,6 +430,9 @@ class ScriptController extends Controller
                     }elseif ($rel == 'morphToMany'){
                         $method = checkAliases($instance, strtolower(plural($connectedModelName)));
                         $instance->$method()->sync($uids);
+                    }elseif ($rel == 'morphedByMany'){
+                        $method = checkAliases($instance, strtolower(plural($connectedModelName)));
+                        $instance->$method()->sync($uids);
                     }
                 }
                 catch(\Exception $e){
@@ -391,5 +442,4 @@ class ScriptController extends Controller
         }
         return true;
     }
-
 }

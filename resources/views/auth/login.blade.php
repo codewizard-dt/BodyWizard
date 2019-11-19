@@ -31,12 +31,20 @@
     </div>
 </div>
 <div id="ModalHome">
-    <div id='Error'></div>
+    <div id="Error" class='prompt'>
+        <div class='message'></div>
+        <div class='options'>
+            <div class='button small submit pink'>send us an error report</div>
+            <div class='button small cancel'>dismiss</div>
+        </div>
+    </div>
     <div id='NewUser' class='modalForm'>
     </div>
 </div>
 <input hidden id='recaptchaResponseLogin'>
 <input hidden id='recaptchaResponseNewUser'>
+
+
 
 @endsection
 

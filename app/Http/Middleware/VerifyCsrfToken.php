@@ -20,6 +20,9 @@ class VerifyCsrfToken extends Middleware
      */
     protected $except = [
         //
-        'sendgrid/events'
+        'sendgrid/push',
+        'google/calendar/push',
+        'portal',
+        'push/*'
     ];
 }

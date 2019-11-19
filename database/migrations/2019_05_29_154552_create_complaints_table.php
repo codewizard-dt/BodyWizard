@@ -18,7 +18,7 @@ class CreateComplaintsTable extends Migration
             $table->string('name');
             $table->string('complaint_type');
             $table->json('full_json');
-            $table->json('settings');
+            $table->json('settings')->nullable()->default(null);
             $table->timestamps();
         });
     }

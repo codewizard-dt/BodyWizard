@@ -1,12 +1,5 @@
 <?php
-
-app()->singleton('GoogleClient',function(){
-    $key = config('google')['key_file_location'];
-    $client = new Google_Client();
-    $client->setApplicationName("BodyWizard");
-    $client->setAuthConfig($key);
-    return $client;
-});
+use Illuminate\Support\Facades\Log;
 
 /*
 |--------------------------------------------------------------------------
@@ -18,6 +11,14 @@ app()->singleton('GoogleClient',function(){
 | contains the "web" middleware group. Now create something great!
 |
 */
+// PUSH NOTIFICATIONS
+Route::any('/sendgrid/push', 'PushController@incomingSendGrid');
+Route::any('/google/calendar/push', 'PushController@incomingGoogle');
+Route::any('push/twilio/sms', 'PushController@incomingTwilioSms');
+Route::any('push/twilio/error', 'PushController@twilioError');
+Route::domain('bodywizard.ngrok.io')->group(function(){
+	Route::any('/', 'PushController@googlePushVerification');
+});
 
 Route::domain('headspaceacupuncture.com')->group(function(){
 	Route::any('/changes', 'PagesController@headspace');
@@ -26,7 +27,7 @@ Route::domain('headspaceacupuncture.com')->group(function(){
 	});
 });
 
-Route::any('/sendgrid/events', 'SendGridController@incomingEvent');
+Route::any('/session-check', 'ScriptController@sessionCheck');
 
 Route::get('/', 'PagesController@home');
 Route::get('/about', 'PagesController@about');
@@ -41,12 +42,18 @@ Route::get("/booknow", 'PagesController@booknow');
 Route::get("/loadDxForm/{type}", 'DiagnosisController@loadDxForm');
 Route::post("/narrativeImgData", 'FormController@checkNarrativeImgs');
 
+Route::get('/schedule/Practice', 'ScheduleController@EditPracticeSchedule');
+Route::post('/schedule/Practice/save', 'ScheduleController@SavePracticeSchedule');
+Route::get('/schedule/appointments', 'ScheduleController@appointmentEventFeed');
+Route::get('/schedule/non-ehr', 'ScheduleController@nonEhrEventFeed');
+
 // ROUTES USING DYNAMIC {model} URI
 	Route::get('/optionsNav/{model}/{uid}', 'ScriptController@OptionsNav');
 	Route::get('/display/table/{model}', 'ScriptController@ResourceTable');
 	Route::get('/{model}/index', 'ScriptController@ListWithNav');
 	Route::get('/{model}/modal', 'ScriptController@ListAsModal');
 	Route::get('/settings/{model}/{uid}', 'ScriptController@EditSettings');
+	Route::get('/schedule/{model}/{uid}', 'ScheduleController@EditUserSchedule');
 	Route::get('/create/{model}', 'ScriptController@CreateNewModel');
 	Route::get('/edit/{model}/{uid}', 'ScriptController@EditModel');
 	Route::delete('/delete/{model}/{uid}', 'ScriptController@DeleteModel');
@@ -54,6 +61,7 @@ Route::post("/narrativeImgData", 'FormController@checkNarrativeImgs');
 	Route::patch('/save/{model}/{uid}', 'ScriptController@UpdateModel');
 	Route::post('/save/{model}', 'ScriptController@SaveNewModel');
 	Route::get('/retrieve/{model}/{uid}', 'ScriptController@fetchModel');
+
 
 Route::get('/home/appointments', 'AppointmentController@home');
 Route::resource('appointments', 'AppointmentController');
@@ -78,10 +86,21 @@ Route::get('/home/users', 'UserController@home');
 
 Route::post('/setvar', 'ScriptController@SetVar');
 Route::post('/getvar', 'ScriptController@GetVar');
-Route::get('/calfeed', 'ScriptController@CalFeed');
+Route::get('/schedule/feed', 'ScheduleController@scheduleFeed');
 
 Route::get('/portal', 'Auth\LoginController@showLoginForm')->name('portal') ;
 Route::get('/portal/launchpad', 'PagesController@launchpad')->middleware('auth');
+Route::get('/portal/settings', 'PagesController@portalsettings')->middleware('auth');
+Route::get('/portal/practices', 'PagesController@practicesettings')->middleware('auth');
+
+Route::get('/portal/user/settings', 'SettingsController@userSettings');
+Route::get('/user/info', 'SettingsController@userInfo');
+Route::get('/user/password', 'SettingsController@password');
+Route::get('/user/security-questions', 'SettingsController@securityQuestions');
+Route::get('/security-questions/confirmed', 'SettingsController@changeSecQuestions');
+Route::post('/security-questions/update', 'SettingsController@updateSecQ');
+Route::post('/password/update', 'SettingsController@changePw');
+Route::post('/password/check', 'SettingsController@checkPw');
 
 Auth::routes(['verify' => true]);
 

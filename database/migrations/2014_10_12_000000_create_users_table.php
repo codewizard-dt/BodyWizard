@@ -20,14 +20,16 @@ class CreateUsersTable extends Migration
             $table->string('last_name');
             $table->string('preferred_name')->nullable()->default(null);
             $table->string('user_type')->default('patient');
-            $table->boolean('super_user')->default(false);
+            $table->boolean('is_admin')->default(false);
             $table->string('username')->unique();
             $table->date('date_of_birth');
             $table->string('email');
             $table->string('phone');
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->json('full_json');
+            $table->boolean('require_new_pw')->default(true);
+            $table->json('security_questions')->nullable()->default(null);
+            $table->json('full_json')->nullable();
             $table->rememberToken();
             $table->timestamps();
         });

@@ -18,6 +18,8 @@
     $where = isset($request->where) ? array_merge($where,$request->where) : $where;
     $where = $where != [] ? $where : null;
 
+    $with = isset($tableOptions['with']) ? $tableOptions['with'] : null;
+
     // SPECIAL STEPS TO SELECT A SUBSET OF COLLECTION
         if ($model=='Diagnosis'){
             if (!isset($request->type)){
@@ -49,8 +51,15 @@
             session()->forget('subCollection');
         }
 
+    if ($with){
+        $collection = $class::with($with);
+    }
     if ($where){
-        $collection = $class::where($where);
+        if (!isset($collection)){
+            $collection = $class::where($where);
+        }else{
+            $collection->where($where);
+        }
     }
     if ($orderBy){
         foreach ($orderBy as $method){

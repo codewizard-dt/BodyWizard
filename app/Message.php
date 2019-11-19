@@ -3,9 +3,12 @@
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
 
 class Message extends Model
 {
+    use SoftDeletes;
     public $tableValues;
     public $optionsNavValues;
     public $connectedModels;
@@ -35,7 +38,7 @@ class Message extends Model
                             "attribute" => 'type'
                         ),
                         array(
-                            "label" => 'Sent At',
+                            "label" => 'Sent',
                             "className" => 'sent',
                             "attribute" => 'created_at'
                         ),
@@ -64,10 +67,10 @@ class Message extends Model
         $this->optionsNavValues = array(
             'model' => "Message",
             'destinations' => array(
-                'expand','reply'
+                'display','reply'
             ),
             'btnText' => array(
-                'expand','reply'
+                'display in full','reply'
             )
         );
         $this->nameAttr = "subject!!%type%: %subject%!!%type%: %message%";

@@ -13,6 +13,7 @@ if (isset($form)){
 }
 
 $ctrl = new Form; 
+$requiredOptions = ['required','optional','ID*requiredbool'];
 
 ?>
 
@@ -87,6 +88,13 @@ $ctrl = new Form;
                         <option value='signature'>signature</option>
                     </select>
                 </h4>
+                <h4 class="black paddedXSmall">
+                    <span>Required:</span>
+                    <select id='Required'>
+                        <option value='true'>yes</option>
+                        <option value='false'>no, optional</option>
+                    </select>
+                </h4>
             </div>
 
             <div id='Options' class='itemOptionList'>
@@ -99,19 +107,19 @@ $ctrl = new Form;
                 </div>
             </div>
             <div id='TextOptions' class='itemOptionList'>
-                <?php $option = new Form(); 
+                <?php 
                 $optionsText = ['name'=>'textPlaceholder','placeholder'=>'(optional) disappears when you type'];
                 $optionsTextBox = ['name'=>'textAreaPlaceholder','placeholder'=>'(optional) disappears when you type'];
                 ?>
                 <span class="settingsLabel">Settings:</span>
                 <div class="optionsList">                    
-                    <span>Placeholder text:</span>{{ $option->answerDisp('text',$optionsText) }}
+                    <span>Placeholder text:</span>{{ $ctrl->answerDisp('text',$optionsText) }}
                 </div>
             </div>
             <div id='TextBoxOptions' class='itemOptionList'>
                 <span class="settingsLabel">Settings:</span>
                 <div class="optionsList">
-                    <span>Placeholder text:</span>{{ $option->answerDisp('text box',$optionsTextBox) }}                
+                    <span>Placeholder text:</span>{{ $ctrl->answerDisp('text box',$optionsTextBox) }}                
                 </div>
             </div>
             <div id='NumberOptions' class='itemOptionList'>
@@ -124,11 +132,11 @@ $ctrl = new Form;
                     $optionsStep = ["min"=>"-9999", "max"=>"9999", "initial"=>"0", "step"=>"0.1", "units"=>"","name"=>"step"];
                     $optionsUnits = ['name'=>'units','placeholder'=>'eg days, weeks, times/day, meals, etc'];
                     ?>
-                    <div><span>Minimum: </span> {{ $option->answerDisp('number',$optionsMin) }}</div>
-                    <div><span>Maximum: </span> {{ $option->answerDisp('number',$optionsMax) }}</div>
-                    <div><span>Initial: </span> {{ $option->answerDisp('number',$optionsInitial) }}</div>
-                    <div><span>Increment size: </span> {{ $option->answerDisp('number',$optionsStep) }}</div>
-                    <div><span>Units: </span> {{ $option->answerDisp('text',$optionsUnits) }}</div>
+                    <div><span>Minimum: </span> {{ $ctrl->answerDisp('number',$optionsMin) }}</div>
+                    <div><span>Maximum: </span> {{ $ctrl->answerDisp('number',$optionsMax) }}</div>
+                    <div><span>Initial: </span> {{ $ctrl->answerDisp('number',$optionsInitial) }}</div>
+                    <div><span>Increment size: </span> {{ $ctrl->answerDisp('number',$optionsStep) }}</div>
+                    <div><span>Units: </span> {{ $ctrl->answerDisp('text',$optionsUnits) }}</div>
                 </div>
             </div>
             <div id='DateOptions' class='itemOptionList'>
@@ -143,18 +151,18 @@ $ctrl = new Form;
                     unset($options);
                     $optionsBegin = ['min'=>'1920','max'=>$D,'initial'=>$v,'step'=>'1','units'=>'','name'=>'begin'];
                     $optionsEnd = ['min'=>'1920','max'=>$D,'initial'=>$d,'step'=>'1','units'=>'','name'=>'end'];
-                    $optionsMinNum = ['min'=>'1','max'=>'100','initial'=>'1','step'=>'1','units'=>'','name'=>'minNum'];
+                    $optionsMinNum = ['min'=>'0','max'=>'100','initial'=>'1','step'=>'1','units'=>'','name'=>'minNum'];
                     $optionsMinType = ['days','weeks','months','years','ID*minType'];
-                    $optionsMaxNum = ['min'=>'1','max'=>'100','initial'=>'1','step'=>'1','units'=>'','name'=>'maxNum'];
+                    $optionsMaxNum = ['min'=>'0','max'=>'100','initial'=>'1','step'=>'1','units'=>'','name'=>'maxNum'];
                     $optionsMaxType = ['days','weeks','months','years','ID*maxType'];
                     ?>
                     <div>
                         <div data-settings='yearRange'>
                             <h5>Which Years should be Available?<br><span>(always opens on current month)<span></h5>
-                            <div><span>beginning with</span> {{ $option->answerDisp('number',$optionsBegin) }} 
+                            <div><span>beginning with</span> {{ $ctrl->answerDisp('number',$optionsBegin) }} 
                                 <label><input type='checkbox' id='currentYearBegin'>always use current year</label>
                             </div>
-                            <div><span>ending with</span> {{ $option->answerDisp('number',$optionsEnd) }} 
+                            <div><span>ending with</span> {{ $ctrl->answerDisp('number',$optionsEnd) }} 
                                 <div>
                                     <label><input type='checkbox' id='currentYearEnd'>always use current year</label><br>
                                     <label><input type='checkbox' id='nextYearEnd'>always use next year</label>
@@ -166,13 +174,13 @@ $ctrl = new Form;
                             <label><input id='NoRestriction' type='checkbox'>no restrictions</label><br>
                             <div class='blockable'>
                                 <div style='transform:unset;'>
-                                    {{ $option->answerDisp("number",$optionsMinNum) }}
-                                    {{ $option->answerDisp("dropdown",$optionsMinType) }}
+                                    {{ $ctrl->answerDisp("number",$optionsMinNum) }}
+                                    {{ $ctrl->answerDisp("dropdown",$optionsMinType) }}
                                     <span>before current date</span>
                                 </div>
                                 <div style='transform:unset;'>
-                                    {{ $option->answerDisp("number",$optionsMaxNum) }}
-                                    {{ $option->answerDisp("dropdown",$optionsMaxType) }}
+                                    {{ $ctrl->answerDisp("number",$optionsMaxNum) }}
+                                    {{ $ctrl->answerDisp("dropdown",$optionsMaxType) }}
                                     <span>after current date</span>
                                 </div>
                             </div>
@@ -248,7 +256,7 @@ $ctrl = new Form;
         </div>
     </div>
     <div id='AddText' class='prompt'>
-        <div>
+        <div class='message'>
             <div id='NarrativeOptions' class='itemOptionList'>
                 <h2 class='purple'>Text and Image Display</h2>
                 <div class='central'>You can display any explanatory, descriptive, or instructive information you like. It will be displayed exactly as you see here, including images, links, and formatting.</div>

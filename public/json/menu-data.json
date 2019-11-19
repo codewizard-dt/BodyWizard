@@ -129,15 +129,50 @@
         "dropdown":false,
         "uri":"/forms/UID/settings"},
 
-        {"name":"new",
-        "dropdown":true,
-          "options":[
-              {"text":"Patient","uri":"/create/User","id":"patient-create"},
-              {"text":"Appointment","uri":"/appointments/create","id":"createAppt"},
+        {
+            "name":"new",
+            "dropdown":true,
+            "options":
+            [
+              {"text":"Patient/User","uri":"/create/User","id":"patient-create"},
+              {"text":"Appointment","uri":"/create/Appointment","id":"createAppt"},
               {"text":"Prescription","uri":"/prescription/create","id":"createRx"}
-          ]},
-
-
+          ]
+        },
+        {
+            "name":"indices",
+            "dropdown":true,
+            "options":
+            [
+                {
+                    "text":"Users",
+                    "dropdown":true,
+                    "id":"user-list",
+                    "options":
+                    [
+                        {"text":"All Users","uri":"/User/index","id":"user-index"},
+                        {"text":"Patients","uri":"/Patient/index","id":"patient-index"},
+                        {"text":"Practitioners","uri":"/Practitioner/index","id":"practitioner-index"},
+                        {"text":"Staff","uri":"/StaffMember/index","id":"staff-member-index"}
+                    ]
+                },
+                {"text":"Patients","uri":"/Patient/index","id":"patient-index"},
+                {"text":"Practitioners","uri":"/Practitioner/index","id":"practitioner-index"},
+                {"text":"Staff","uri":"/StaffMember/index","id":"staff-member-index"},
+                {"text":"Complaints","uri":"/Complaint/index","id":"complaint-index"},
+                {
+                    "text":"Diagnoses",
+                    "dropdown":true,
+                    "id":"diagnosis-list",
+                    "options":
+                    [
+                        {"text":"All","uri":"/Diagnosis/index","id":"diagnosis-index"},
+                        {"text":"Western","uri":"/Diagnosis/index?type=Western","id":"western-diagnosis-index"},
+                        {"text":"Chinese","uri":"/Diagnosis/index?type=Chinese","id":"chinese-diagnosis-index"}
+                    ]
+                }
+            ]
+        },
 
         {"name":"messages-home",
         "dropdown":false,
@@ -154,7 +189,7 @@
         "uri":"/home/patients"},
         {"name":"patients-index",
         "dropdown":false,
-        "uri":"/User/index?type=patient"},
+        "uri":"/Patient/index"},
         {"name":"patients-create",
         "dropdown":false,
         "uri":"/create/User"},

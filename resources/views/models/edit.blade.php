@@ -10,15 +10,18 @@
 	$ctrl = new $class;
 	$connectedModels = isset($ctrl->connectedModels) ? $ctrl->connectedModels : [];
 	$includeConnectedModals = isset($includeConnectedModals) ? $includeConnectedModals : false;
+
+	$noPW = (in_array($model,['User','Patient','Practitioner','StaffMember']) && Auth::check()) ? "noPW" : "";
+	$admin = (Auth::user()->is_admin) ? "admin" : "";
 ?>
 
 @if ($modal)
-<div id='edit{{ $model }}' class='central large editExisting modalForm' data-model='{{ $model }}'>
+<div id='edit{{ $model }}' class='central large editExisting modalForm {{ $noPW }} {{ $admin }}' data-model='{{ $model }}'>
 	<h1 class='purple paddedSmall'>{{ $CreateNew->form_name }}</h1>
 	{{ $CreateNew->formDisplay(true) }}
 </div>
 @else
-<div id='edit{{ $model }}' class='central large editExisting' data-model='{{ $model }}'>
+<div id='edit{{ $model }}' class='central large editExisting {{ $noPW }} {{ $admin }}' data-model='{{ $model }}'>
 	<h1 class='purple paddedSmall'>{{ $CreateNew->form_name }}</h1>
 	{{ $CreateNew->formDisplay(false) }}
 </div>

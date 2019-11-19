@@ -9,9 +9,16 @@ class Complaint extends Model
     public $tableValues;
     public $optionsNavValues;
     public $connectedModels;
+    public $complaintTypeArr;
 
-    public function __construct(){
-	    $this->tableValues = array(
+    public function __construct($attributes = []){
+        parent::__construct($attributes);
+
+        $this->complaintTypeArr = [
+            "headaches and migraines","chronic pain (including flare ups)","acute pain (30 days or less)","musculoskeletal, non-pain-related","neurological","sleep disorders","energy and metabolism disorders","skin conditions","reproductive, sexual, and fertility disorders","vision and hearing disorders","respiratory, non-infectious","infections"
+        ];
+
+        $this->tableValues = array(
 	    	'tableId' => 'ComplaintList',
 	    	'index' => 'id',
             'model' => "Complaint",
@@ -24,15 +31,10 @@ class Complaint extends Model
                         array(
                             "label" => 'Category',
                             "className" => 'category',
-                            "attribute" => 'category'
-                        ),
-                        array(
-                            "label" => 'Can Affect',
-                            "className" => 'affects',
-                            "attribute" => 'affects'
+                            "attribute" => 'complaint_type'
                         )
                     ),
-	    	'hideOrder' => "category,affects",
+	    	'hideOrder' => "category",
 	    	'filtersColumn' => array(),
 	    	'filtersOther' => array(),
             'destinations' => array(
@@ -42,6 +44,7 @@ class Complaint extends Model
                 'edit','settings', 'delete'
             ),
             'orderBy' => [
+                ['complaint_type','asc'],
                 ['name','asc']
             ]
 	    );
