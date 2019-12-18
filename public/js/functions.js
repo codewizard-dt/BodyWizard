@@ -3,8 +3,9 @@ $(".jump").on("click",function(){
     $.scrollTo(target);
 });
 
-var systemModalList = ['Confirm','Warn','Error','Feedback','Refresh'],
-    systemModals = $('#Confirm, #Warn, #Error, #Feedback, #Refresh');
+var systemModalList = ['Confirm','Warn','Error','Feedback','Refresh','Notification'],
+    systemModals = $('#Confirm, #Warn, #Error, #Feedback, #Refresh, #Notification');
+
 (function($) {
     $.sanitize = function(input) {
         var output = input.replace(/<script[^>]*?>.*?<\/script>/gi, '').
@@ -14,6 +15,12 @@ var systemModalList = ['Confirm','Warn','Error','Feedback','Refresh'],
         return output;
     };
 })(jQuery);
+
+// Assign data-order to elements
+jQuery.fn.sortEle = function sortEle(eleStr = "div") {
+    $("> "+eleStr, this[0]).sort(dec_sort).appendTo(this[0]);
+    function dec_sort(a, b){ return ($(b).data("order")) < ($(a).data("order")) ? 1 : -1; }
+}
 
 function commaSeparated (arr, quotes = false) {
     if (quotes){
@@ -68,6 +75,19 @@ function chkStrForArrayElement(yourstring,substrings){
 function randomArrayElement(array){
     return array[Math.floor(Math.random() * array.length)];
 }
+function randomArrayElements(array,number){
+    var count = array.length, newArray = [], newEle = null;
+    if (number > count){
+        alert('cannot select '+number+" elements from an array of "+count+" items");
+        return false;
+    }
+    do {
+        newEle = randomArrayElement(array);
+        if ($.inArray(newEle, array) === -1){
+            newArray.push(newEle);
+        }
+    } while (newArray.length < number);
+}
 
 $.ajaxSetup({
         headers: {
@@ -89,6 +109,7 @@ $(document).ajaxSuccess(function(ev,xhr,settings){
 $(document).ajaxError(function(ev,xhr,settings,error){
     if (error !== 'abort'){
         console.log(error);
+        console.log(xhr);
         var status = xhr.status,
             message = (xhr.responseJSON != undefined) ? xhr.responseJSON.message : error,
             modal = "#Error";
@@ -103,13 +124,28 @@ $(document).ajaxError(function(ev,xhr,settings,error){
             $(modal).find('.message').html("<h2>Not Found</h2><div>The content you asked for is not available</div>");
             $(modal).find(".submit").data('error',xhr);
             blurTopMost(modal);
-            // blurElement($("body"),modal);
+        }else if (status == 422){
+            if ($("#Feedback").length == 0){
+                $("<div/>",{
+                    id: "Feedback",
+                    class:'prompt',
+                    html: "<div class='message'></div><div class='options'><div class='button small cancel'>dismiss</div></div>"
+                }).appendTo("#ModalHome");                
+            }
+            var msg = $("#Feedback").find(".message");
+            errorJson = xhr.responseJSON;
+            msg.html("");
+            $("<h2>Login Error</h2><div class='split3366KeyValues'></div>").appendTo(msg);
+            $.each(errorJson.errors, function(key,value){
+                $("<div class='label'>"+key+"</div><div class='value'>"+value+"</div>").appendTo(msg.find(".split3366KeyValues"));
+            });
+            blurElement($("body"),"#Feedback");
         }else{
             $(modal).find(".submit").data('error',xhr);
             $(modal).find(".message").html("<h2>Error</h2><div>"+message+"</div>");
             blurTopMost(modal);
-            // blurElement($("body"),modal);
         }
+        // blurTopMost(modal);
         var btn = $(modal).find(".submit");
         SystemModalBtnFlash = setInterval(function(){
             btn.toggleClass("pink70 pink");
@@ -132,6 +168,28 @@ function updateUidList(){
             $("#uidList").text(data);
         }
     })
+}
+function setUid(model, uid){
+    var obj = {};
+    obj[model] = uid;
+    console.log(obj);
+    $.ajax({
+        url:"/setvar",
+        method:"POST",
+        data:{
+            setUID: obj
+        },
+        success: function(){
+            updateUidList();
+        }
+    });
+}
+function getUids(model = null){
+    var uidList = JSON.parse($("#uidList").text());
+    if (uidList == null){return null;}
+    else if (model == null){return uidList;}
+    else if (uidList[model] == undefined){return null;}
+    else{return uidList[model];}
 }
 
 $(document).on("mousedown",".button",function(e){
@@ -293,7 +351,7 @@ function feedback(header, message, delay = null){
     }
 }
 function confirm(header, message, yesText = null, noText = null, delay = null){
-    $("#Confirm").find('.message').html("<h2>"+header+"</h2><div>"+message+"</div>");
+    $("#Confirm").find('.message').html("<h2 class='purple'>"+header+"</h2><div>"+message+"</div>");
     if (yesText){$("#Confirm").find(".confirmY").text(yesText);}
     else{$("#Confirm").find(".confirmY").text("confirm");}
     if (noText){$("#Confirm").find(".confirmN").text(noText);}
@@ -346,17 +404,26 @@ function alertBox(str,What,Where,Fade,Offset){
         $(".alert").css("transform","translate("+Offset+")");
     }
     if ($.isNumeric(Fade)===false){Fade=1500;}
-    var BC = What.css("border-color");
     
-    What.css("border-color","red").attr("readonly","true");
-    setTimeout(function(){
-        What.css("border-color",BC);
-        if (readonly != undefined){
-            What.attr('readonly',readonly);
-        }else{
-            What.removeAttr("readonly");
-        }
-    },Fade)
+    if (What.is('ul')){
+        var bgColor = What.css('background-color');
+        What.css('background-color','red');
+        setTimeout(function(){
+            What.css("background-color",bgColor);
+        },Fade)
+    }else{
+        var BC = What.css("border-color");
+        What.css("border-color","red").attr("readonly","true");
+        setTimeout(function(){
+            What.css("border-color",BC);
+            if (readonly != undefined){
+                What.attr('readonly',readonly);
+            }else{
+                What.removeAttr("readonly");
+            }
+        },Fade)
+
+    }
 
     setTimeout(function(){
         $(".zeroWrap.a.f, .alert.f").fadeOut(600,function(){$(this).remove();})        
@@ -640,19 +707,37 @@ function blurElement(elem,modal,time,callback){
         if ($(modal).is(":visible")==false){
             $(modal).fadeIn(time);
         }
+
+        var eH = elem.innerHeight(), mH = $(modal)[0].scrollHeight, em = Number($("body").css('font-size').replace("px","")),
+            eW = elem.innerWidth(), mW = $(modal)[0].scrollWidth;
+            // console.log(eH);
+            // console.log(mH);
+        if (!elem.is('body')){
+            if ((mH/eH) > 0.95){
+                var newH = mH + 2*em;
+                console.log('height change');
+                elem.css('height',newH);
+                elem.data('resetHeight',true);
+            }
+            if ((mW/eW) > 0.95){
+                var newW = mW + 2*em;
+                console.log('width change');
+                elem.css('width',newW);            
+                elem.data('resetWidth',true);
+                elem.data('originalWidth',eW);
+            }            
+        }
     }
-    
     if (callback!=undefined){
         setTimeout(callback,time+101);
     }
 }
-function unblurElement(elem){
+function unblurElement(elem, callback = null){
     var n = $(".blur").length,
         block = (n == 1) ? $("#Block") : $("#Block"+n);
-        // console.log(block);
-        // console.log(elem.children(".blur"));
     if ($(elem).is(".modalForm")){$(elem.removeClass('expanded'));}
-
+    $(elem).css('height','auto');
+    if ($(elem).data('resetWidth')){$(elem).css('width',$(elem).data('originalWidth'));}
     block = elem.children(".blur");
     block.fadeOut(400,function(){
         if ($("#ModalHome").length==0){
@@ -660,13 +745,9 @@ function unblurElement(elem){
         }else{
             block.children().hide().appendTo($("#ModalHome"));
         }
+        if (callback){callback();}
         block.remove();
     });
-    // console.log(elem);    console.log(block.parent());
-    // $(elem).css({
-    //     overflowX:"hidden",
-    //     overflowY:"auto"
-    // });
     block.parent().css({
         overflowX:"hidden",
         overflowY:"auto"
@@ -1129,15 +1210,11 @@ $(document).on('click',".confirmY",function(){
 $(document).on('click',".confirmN",function(){
     confirmBool = false;
 })   
-// function confirm(target,where,offset){
-//     var str = "<span class='confirmQ'>are you sure? this cannot be undone</span> <span class='confirmY'>yes</span><span class='confirmN'>no</span>";
-//     confirmBox(str,target,where,"nofade",offset);
+// function warn(target,where,offset,customText=""){
+//     customText = (customText != '') ? " "+customText : "";
+//     var str = "<span class='confirmQ'>are you sure"+customText+"? this cannot be undone</span> <span class='confirmY'>yes</span><span class='confirmN'>no</span>";
+//     alertBox(str,target,where,"nofade",offset);
 // }
-function warn(target,where,offset,customText=""){
-    customText = (customText != '') ? " "+customText : "";
-    var str = "<span class='confirmQ'>are you sure"+customText+"? this cannot be undone</span> <span class='confirmY'>yes</span><span class='confirmN'>no</span>";
-    alertBox(str,target,where,"nofade",offset);
-}
 function clearAllScheduleModals(){
     var list = "#AddTimeBlock, #EditTimeBlock, #EditScheduleModal, #AddTimeOff, #EditTimeOff, #editOrDelete";
     $(list).removeAttr('id').remove();
@@ -1204,32 +1281,29 @@ function optionsNavBtnClick(){
         var modal = '#edit'+model,
             json = optionsNav.find(".name").data('json'),
             form = $(modal).find(".formDisp"),
-            name = optionsNav.find(".name").text(),
-            dispModel = (model == 'Diagnosis') ? optionsNav.data("dxtype") + " " + model : model;
+            name = optionsNav.find(".name").text().trim(),
+            dispModel = null;
+            // dispModel = (model == 'Diagnosis') ? optionsNav.data("dxtype") + " " + model : model;
 
-        if ($.inArray(model,['Diagnosis',"User"])){
-            if (model == 'Diagnosis'){
-                dispModel = optionsNav.data("dxtype") + " " + model;
-            }else if (model == 'User'){
-                var h1 = "<h1 class='purple'>Edit Basic Patient Info</h1>", h2 = "<h1 class='yellow'>"+name+"</h1>";
-                $(modal).find("h1").remove();
-                $(modal).prepend(h1,h2);
-            }else if (model == 'Template'){
-                var m = optionsNav.find(".name").data('markup');
-                $("#editTemplate").find(".summernote").summernote('code',m);
-            }
+
+        if (model == 'Diagnosis'){
+            dispModel = optionsNav.data("dxtype") + " " + model;
+        }else if (model == 'User'){
+            var h1 = "<h1 class='purple'>Edit Basic Patient Info</h1>", h2 = "<h1 class='yellow'>"+name+"</h1>";
+            $(modal).find("h1").remove();
+            $(modal).prepend(h1,h2);
+        }else if (model == 'Template'){
+            var m = optionsNav.find(".name").data('markup');
+            // console.log(optionsNav.find(".name").data());
+            $("#editTemplate").find(".summernote").summernote('code',m);
         }
 
-        dispModel = dispModel != undefined ? dispModel : model;
+        dispModel = !dispModel ? model : dispModel;
 
         removePasswordInputs();
 
-        $(modal).find("h1, h2, .q").filter(function(){return !$(this).data('updated');}).each(function(){
-            var t = $(this).text();
-            t = t.replace("Add ","Edit ").replace("New","This").replace("This " + dispModel, "'" + name + "'").replace("This " + model, "'" + name + "'");
-            $(this).text(t);
-            $(this).data('updated',true);
-        });
+        // console.log(dispModel);
+        updateEditForm(modal, dispModel, name);
         $(modal).find(".submitForm").text("update");
         $(modal).data('uid',optionsNav.data('uid'));
 
@@ -1241,7 +1315,6 @@ function optionsNavBtnClick(){
             $(modal).find("#grant_admin_privileges").val(isAdmin);
         }
         fillForm(json,form);
-        // console.log(json);
         blurElement($("body"),modal);
     }
     else if (dest=="settings"){
@@ -1281,436 +1354,57 @@ function optionsNavBtnClick(){
 
         })
     }
-    // old ones
-    // else if (dest=="deleteForm"){
-    //     var UID = $("#formStats").data('uniqueid');
-    //     if (UID==undefined){
-    //         return false;
-    //     }
-    //     confirm($(this),"below","");
-    //     $(".confirmQ").html("delete <span style='font-size:1.3em'>\""+$("#CurrentForm").find(".name").text()+"\"?</span> this cannot be undone");
-    //     blurElement($("#CurrentForm"),".c");
-    //     var check = setInterval(function(){
-    //         if (confirmBool!=undefined){
-    //             if (confirmBool){
-    //                 blurElement($("#CurrentForm"),"#loading");
-    //                 confirmBool=undefined;
-    //                 clearInterval(check);
-    //                 $(".c").remove();
-    //                 $.ajax({
-    //                     url:"/php/launchpad/practitioner/delete-form.php",
-    //                     method:"POST",
-    //                     data:{
-    //                         UID:UID,
-    //                         why:"because"
-    //                     },
-    //                     success:function(data){
-    //                         if (data=="true"){
-    //                             blurElement($("#CurrentForm"),"#checkmark");
-    //                             setTimeout(function(){
-    //                                 location.reload(true);
-    //                             },1000)
-    //                         }else{
-    //                             $("#CurrentForm").html("Error deleting form"+data);
-    //                         }
-    //                     }
-    //                 })
-    //             }else{
-    //                 unblurElement($("#CurrentForm"));
-    //                 confirmBool=undefined;
-    //                 clearInterval(check);
-    //                 $(".c").remove();
-    //             }
-    //         }
-    //     },50);
-    // }
-    // else if (dest=='formPreview'){
-    //     var PreviewForm = window.open('/portal/medicalforms/preview-form', 'PreviewForm', 'menubar=no,titlebar=no');
-    // }
-    // // else if (dest=="serviceEdit"){
-    // //     blurElement($("body"),"#EditService");
-    // //     $("#EditService").find("h2").text("Edit \""+$("#CurrentService").find(".name").text()+"\" Service Details");
-    // //     var service = $("#CurrentService").find(".name").data("json");
-    // //     var form = $("#EditServiceForm");
-    // //     $.each(service,function(question,answer){
-    // //         if (!$.isArray(answer)){
-    // //             var item = form.find(".item").filter(function(){
-    // //                 return $(this).children('.question').find(".q").text() == question;
-    // //             });
-    // //             var type = item.data('type');
-    // //             if ($.inArray(type,['text','text box'])>-1){
-    // //                 item.find("input, textarea").val(answer);
-    // //             }
-    // //             else if ($.inArray(type,['checkboxes','radio'])>-1){
-    // //                 answer = answer.split("***");
-    // //                 item.find("li").filter(function(){
-    // //                     return $.inArray($(this).data('value'),answer)>-1;;
-    // //                 }).click();
-    // //             }
-    // //             else if (type=="number"){
-    // //                 answer = answer.split(" ")[0];
-    // //                 item.find("input").val(answer);
-    // //             }
-    // //         }
-    // //         if (question=="combine"){
-    // //             $.each(answer,function(qFU,aFU){
-    // //                 var i = form.find(".itemFU").filter(function(){
-    // //                   return $(this).find(".q").text() == qFU;  
-    // //                 }), type = i.data("type");
-    // //                 if ($.inArray(type,['checkboxes','radio'])>-1){
-    // //                     aFU = aFU.split("***");
-    // //                     i.find("li").filter(function(){
-    // //                         return $.inArray($(this).data('value'),aFU)>-1;;
-    // //                     }).click();
-    // //                 }
-    // //                 else if (type=="number"){
-    // //                     aFU = aFU.split(" ")[0];
-    // //                     i.find("input").val(aFU);
-    // //                 }
-    // //                 /*aFU = aFU.split(" ")[0];
-    // //                 i.find("input").val(aFU);*/
-    // //             })
-    // //         }
-    // //     });
-    // //     var name = $("#CurrentService").find(".name").text();
-    // //     var q = $("#EditService").find(".itemFU").filter(function(){
-    // //         return $(this).find(".q").text() == "Which services can this combine with?";
-    // //     });
-    // //     q.find("li").filter(function(){return $(this).data('value') == name;}).hide();
-    // //     q.find("li").filter(function(){return $(this).data('value') !== name;}).show();
-    // // }
-    // else if (dest=="serviceDelete"){
-    //     var UID = $("#CurrentService").find(".name").data('serviceid');
-    //     if (UID==undefined){
-    //         return false;
-    //     }
-    //     confirm($(this),"below","");
-    //     $(".confirmQ").html("delete <span style='font-size:1.3em'>\""+$("#CurrentService").find(".name").text()+"\"?</span> this cannot be undone");
-    //     blurElement($("#CurrentService"),".c");
-    //     var check = setInterval(function(){
-    //         if (confirmBool!=undefined){
-    //             if (confirmBool){
-    //                 blurElement($("#CurrentService"),"#loading");
-    //                 confirmBool=undefined;
-    //                 clearInterval(check);
-    //                 $(".c").remove();
-    //                 $.ajax({
-    //                     url:"/php/launchpad/practitioner/delete-service.php",
-    //                     method:"POST",
-    //                     data:{
-    //                         ServiceID:UID,
-    //                         why:"because"
-    //                     },
-    //                     success:function(data){
-    //                         if (data=="true"){
-    //                             blurElement($("#CurrentService"),"#checkmark");
-    //                             setTimeout(function(){
-    //                                 location.reload(true);
-    //                             },1000)
-    //                         }else{
-    //                             $("#CurrentService").html("Error deleting code"+data);
-    //                         }
-    //                     }
-    //                 })
-    //             }else{
-    //                 unblurElement($("#CurrentService"));
-    //                 confirmBool=undefined;
-    //                 clearInterval(check);
-    //                 $(".c").remove();
-    //             }
-    //         }
-    //     },50)
-    // }
-    // else if (dest=="newService"){
-    //     $("#NewServiceBtn").click();
-    // }
-    // else if (dest=="codeEdit"){
-    //     blurElement($("body"),"#EditCode");
-    //     $("#EditCode").find("h2").text("Edit \""+$("#CurrentCode").find(".name").text()+"\" Code Details");
-    //     var code = $("#CodeList").find("tr").not(".head").filter(function(){
-    //         return $(this).data("codeid") == $("#CurrentCode").find('.name').data("codeid");
-    //     }), num = code.find('.code').text(), type = code.find(".type").text(), desc = code.find(".description").text();
-    //     var form = $("#EditCodeForm");
-    //     form.find(".item").filter(function(){return $(this).find(".q").text().includes("Code Type")}).find("li").filter("[data-value='"+type+"']").click();
-    //     form.find(".item").filter(function(){return $(this).find(".q").text().includes("Enter Code")}).find("input").val(num);
-    //     form.find(".item").filter(function(){return $(this).find(".q").text().includes("Code Description")}).find("textarea").val(desc);
-    // }
-    // else if (dest=="codeDelete"){
-    //     var UID = $("#CurrentCode").find(".name").data('codeid');
-    //     if (UID==undefined){
-    //         return false;
-    //     }
-    //     confirm($(this),"below","");
-    //     $(".confirmQ").html("delete <span style='font-size:1.3em'>\""+$("#CurrentCode").find(".name").text()+"\"?</span> this cannot be undone");
-    //     blurElement($("#CurrentCode"),".c");
-    //     var check = setInterval(function(){
-    //         if (confirmBool!=undefined){
-    //             if (confirmBool){
-    //                 blurElement($("#CurrentCode"),"#loading");
-    //                 confirmBool=undefined;
-    //                 clearInterval(check);
-    //                 $(".c").remove();
-    //                 $.ajax({
-    //                     url:"/php/launchpad/practitioner/delete-code.php",
-    //                     method:"POST",
-    //                     data:{
-    //                         CodeID:UID,
-    //                         why:"because"
-    //                     },
-    //                     success:function(data){
-    //                         if (data=="true"){
-    //                             blurElement($("#CurrentCode"),"#checkmark");
-    //                             setTimeout(function(){
-    //                                 location.reload(true);
-    //                             },1000)
-    //                         }else{
-    //                             $("#CurrentCode").html("Error deleting code"+data);
-    //                         }
-    //                     }
-    //                 })
-    //             }else{
-    //                 unblurElement($("#CurrentCode"));
-    //                 confirmBool=undefined;
-    //                 clearInterval(check);
-    //                 $(".c").remove();
-    //             }
-    //         }
-    //     },50)
-    // }
-    // else if (dest=="codeNew"){
-    //     $("#NewCodeBtn").click();
-    // }
-    // else if (dest=='codesView'){
-    //     var codes = $(this).closest(".optionsNav").find(".name").data("codes").split(", ").join(" "), name = $(this).closest(".optionsNav").find(".name").text();
-    //     if ($("#CodeListModal").length===0){
-    //         blurElement($(this.closest(".optionsNav"),"#loading"));
-    //         var btn = $(this);
-    //         //setTimeout(function(){
-    //           //  btn.click();
-    //         //},100)
-    //         return false;
-    //     }
-    //     blurElement($("body"),"#CodeListModal");
-    //     $("#CodeListCLM").removeClass("active");
-    //     $("#CodeListModal").find(".tableSearch").val(codes);
-    //     $("#CodeListModal").find("h4, .filterType, .button").hide();
-    //     var h4 = $("<h4>Listed Codes for "+name+"</h4>");
-    //     h4.insertBefore($("#CodeListModal").find("h4"));
-    //     $("#CodeListModal").find(".cancel").show().on('click',function(){
-    //         setTimeout(function(){$("#CodeListModal").find("h4, .filterType, .button").show();},500)
-    //         h4.remove();
-    //     })
-    //     filterTableList($("#CodeListCLM"));
-    // }
-    // else if (dest=="diagnosisEdit"){
-    //     blurElement($("body"),"#EditDiagnosis");
-    //     var diagnosis = $("#CurrentDiagnosis").find(".name").data("json");
-    //     var form = $("#EditDiagnosisForm");
-    //     $.each(diagnosis,function(question,answer){
-    //         if (question!=="options"){
-    //             var i = form.find(".item, .itemFU").filter(function(){
-    //                 return $(this).children(".question").find(".q").text() == question;
-    //             })
-    //             fillAnswer(i,answer);
-    //         }
-    //         else{
-    //             $.each(answer,function(q,a){
-    //                 var i = form.find(".item, .itemFU").filter(function(){
-    //                     return $(this).children(".question").find(".q").text() == q;
-    //                 })
-    //                 fillAnswer(i,a);
-    //             })
-    //         }
-    //     })
-    // }
-    // else if (dest=="diagnosisDelete"){
-    //     var UID = $("#CurrentDiagnosis").find(".name").data('diagnosisid');
-    //     if (UID==undefined){
-    //         return false;
-    //     }
-    //     confirm($(this),"below","");
-    //     $(".confirmQ").html("delete <span style='font-size:1.3em'>\""+$("#CurrentDiagnosis").find(".name").text()+"\"?</span> this cannot be undone");
-    //     blurElement($("#CurrentDiagnosis"),".c");
-    //     var check = setInterval(function(){
-    //         if (confirmBool!=undefined){
-    //             if (confirmBool){
-    //                 blurElement($("#CurrentDiagnosis"),"#loading");
-    //                 confirmBool=undefined;
-    //                 clearInterval(check);
-    //                 $(".c").remove();
-    //                 $.ajax({
-    //                     url:"/php/launchpad/practitioner/delete-diagnosis.php",
-    //                     method:"POST",
-    //                     data:{
-    //                         DiagnosisID:UID,
-    //                         why:"because"
-    //                     },
-    //                     success:function(data){
-    //                         if (data=="true"){
-    //                             console.log(data);
-    //                             blurElement($("#CurrentDiagnosis"),"#checkmark");
-    //                             setTimeout(function(){
-    //                                 //location.reload(true);
-    //                             },1000)
-    //                         }else{
-    //                             $("#CurrentDiagnosis").html("Error deleting code"+data);
-    //                         }
-    //                     }
-    //                 })
-    //             }else{
-    //                 unblurElement($("#CurrentDiagnosis"));
-    //                 confirmBool=undefined;
-    //                 clearInterval(check);
-    //                 $(".c").remove();
-    //             }
-    //         }
-    //     },50)
-    // }
-    // else if (dest=='diagnosisNew'){
-    //     $("#NewDiagnosisBtn").click();
-    // }
-    // else if (dest=='complaintEdit'){
-    //     blurElement($("body"),"#EditComplaint");
-    //     var complaint = $("#CurrentComplaint").find(".name").data("json");
-    //     var form = $("#EditChiefComplaint");
-    //     $.each(complaint,function(question,answer){
-    //         if (question!=="options"){
-    //             var i = form.find(".item, .itemFU").filter(function(){
-    //                 return $(this).children(".question").find(".q").text() == question;
-    //             })
-    //             fillAnswer(i,answer);
-    //         }
-    //         else{
-    //             $.each(answer,function(q,a){
-    //                 var i = form.find(".item, .itemFU").filter(function(){
-    //                     return $(this).children(".question").find(".q").text() == q;
-    //                 })
-    //                 fillAnswer(i,a);
-    //             })
-    //         }
-    //     })
-    // }
-    // else if (dest=='complaintDelete'){
-    //     var UID = $("#CurrentComplaint").find(".name").data('complaintid');
-    //     if (UID==undefined){
-    //         return false;
-    //     }
-    //     confirm($(this),"below","");
-    //     $(".confirmQ").html("delete <span style='font-size:1.3em'>\""+$("#CurrentComplaint").find(".name").text()+"\"?</span> this cannot be undone");
-    //     blurElement($("#CurrentComplaint"),".c");
-    //     var check = setInterval(function(){
-    //         if (confirmBool!=undefined){
-    //             if (confirmBool){
-    //                 blurElement($("#CurrentComplaint"),"#loading");
-    //                 confirmBool=undefined;
-    //                 clearInterval(check);
-    //                 $(".c").remove();
-    //                 $.ajax({
-    //                     url:"/php/launchpad/practitioner/delete-complaint.php",
-    //                     method:"POST",
-    //                     data:{
-    //                         ComplaintID:UID,
-    //                         why:"because"
-    //                     },
-    //                     success:function(data){
-    //                         if (data=="true"){
-    //                             blurElement($("#CurrentComplaint"),"#checkmark");
-    //                             setTimeout(function(){
-    //                                 location.reload(true);
-    //                             },1000)
-    //                         }else{
-    //                             $("#CurrentComplaint").html("Error deleting code"+data);
-    //                         }
-    //                     }
-    //                 })
-    //             }else{
-    //                 unblurElement($("#CurrentComplaint"));
-    //                 confirmBool=undefined;
-    //                 clearInterval(check);
-    //                 $(".c").remove();
-    //             }
-    //         }
-    //     },50)
-    // }
-    // else if (dest=='complaintNew'){
-    //     $("#NewComplaintBtn").click();
-    // }
-    // else if (dest=='patientNew'){}
-    // else if (dest=='patientEdit'){
-    //     blurElement($("body"),"#EditPatient");
-    //     var complaint = $("#CurrentPatient").find(".name").data("json");
-    //     var form = $("#EditPatientForm");
-    //     $.each(complaint,function(question,answer){
-    //         if (question!=="options"){
-    //             var i = form.find(".item, .itemFU").filter(function(){
-    //                 return $(this).children(".question").find(".q").text() == question;
-    //             })
-    //             fillAnswer(i,answer);
-    //         }
-    //         else{
-    //             $.each(answer,function(q,a){
-    //                 var i = form.find(".item, .itemFU").filter(function(){
-    //                     return $(this).children(".question").find(".q").text() == q;
-    //                 })
-    //                 fillAnswer(i,a);
-    //             })
-    //         }
-    //     })
-    // }
-    // else if (dest=='patientDelete'){
-    //     var UID = $("#CurrentPatient").find(".name").data('patientid');
-    //     if (UID==undefined){
-    //         return false;
-    //     }
-    //     confirm($(this),"below","");
-    //     $(".confirmQ").html("delete <span style='font-size:1.3em'>\""+$("#CurrentPatient").find(".name").text()+"\"?</span> this cannot be undone");
-    //     blurElement($("#CurrentPatient"),".c");
-    //     var check = setInterval(function(){
-    //         if (confirmBool!=undefined){
-    //             if (confirmBool){
-    //                 blurElement($("#CurrentPatient"),"#loading");
-    //                 confirmBool=undefined;
-    //                 clearInterval(check);
-    //                 $(".c").remove();
-    //                 $.ajax({
-    //                     url:"/php/launchpad/practitioner/delete-patient.php",
-    //                     method:"POST",
-    //                     data:{
-    //                         PatientID:UID,
-    //                         why:"because"
-    //                     },
-    //                     success:function(data){
-    //                         if (data=="true"){
-    //                             //$("#CurrentPatient").html("Patient deleted! Select another patient to proceed.");
-    //                             blurElement($("#CurrentPatient"),"#checkmark");
-    //                             setTimeout(function(){
-    //                                 location.reload(true);
-    //                             },1000)
-    //                         }else{
-    //                             $("#CurrentPatient").html("Error deleting patient"+data);
-    //                         }
-    //                     }
-    //                 })
-    //             }else{
-    //                 unblurElement($("#CurrentPatient"));
-    //                 confirmBool=undefined;
-    //                 clearInterval(check);
-    //                 $(".c").remove();
-    //             }
-    //         }
-    //     },50)
-    // }
-    // else if (dest=='usernameChange'){
-    //     blurElement($("body"),"#ChangeUsername");
-    // }
-    // else if (dest=='resetPW'){
-    //     blurElement($("body"),"#PasswordReset");
-    //     $("#PasswordReset").find(".username").text($("#CurrentPatient").find(".name").text());
-    // }
-    // else if (dest=='resetSecQ'){
-    //     blurElement($("body"),"#SecurityQuestionReset");
-    //     $("#SecurityQuestionReset").find(".username").text($("#CurrentPatient").find(".name").text());
-    // }
+    else if (dest=='loadForm'){
+        var status = trimCellContents($("#FormList").find('tr').filter(function(){return $(this).data('uid') == uid;}).find(".status"));
+        if (status == 'required'){
+            blurTopMost("#loading");
+            $.ajax({
+                url: "/retrieve/Form/"+uid,
+                success: function(data){
+                    $("<div/>",{
+                        id: "LoadedForm",
+                        class: "modalForm"
+                    }).appendTo("#ModalHome");
+                    $("#LoadedForm").load("/retrieve/Form/"+uid,function(){
+                        blurTopMost("#LoadedForm");
+                    })
+                }
+            })            
+        }else{
+            confirm('Form Already Completed',"You've already completed this form and you don't have to complete it again right now. Would you like to view your completed form?","yes, go to submissions",'no thanks');
+            var wait = setInterval(function(){
+                if (confirmBool != undefined){
+                    if (confirmBool){
+                        setUid('Submission',optionsNav.find(".name").data('lastsubmission'));
+                        blurElement($("body"),"#loading");
+                        $("#submissions-index").find(".title").click();
+                        delayedUnblurAll();
+                    }
+                    clearInterval(wait);
+                    confirmBool = undefined;
+                }
+            },100)
+        }
+    }else if (dest=='loadSubmission'){
+        blurTopMost("#loading");
+        $.ajax({
+            url: "/retrieve/Submission/"+uid,
+            success: function(data){
+                $("<div/>",{
+                    id: "LoadedSubmission",
+                    class: "modalForm"
+                }).appendTo("#ModalHome");
+                $("#LoadedSubmission").load("/retrieve/Submission/"+uid,function(){
+                    var json = $("#responses").data('json');
+                    setTimeout(function(){
+                        fillForm(json,$("#LoadedSubmission"));
+                        disableForm($("#LoadedSubmission"));
+                    },500)
+                    blurTopMost("#LoadedSubmission");
+                })
+            }
+        })        
+    }
 }
 function optionsNavOverflowCheck(){
     $(".optionsNav").each(function(){
@@ -1776,20 +1470,34 @@ function resizeFooterPadding(){
     var h = $("footer").outerHeight();
     $("body").css("padding-bottom",h);
 }
+function getEm(){
+    return Number($("body").css('font-size').split("px")[0]);
+}
 var menuWidth;
 function resizeMobileMenuAndFooter(){
-    var tabs = $("#SiteMenu, #MenuDisplay").children(".tab");
-    if (!$("#SiteMenu").hasClass("mobile")){
-        menuWidth = $("#SiteMenu").outerWidth();
+    var siteMenu = $(".siteMenu").first();
+    var tabs = siteMenu.add("#MenuDisplay").children(".tab");
+    if (!siteMenu.hasClass("mobile")){
+        menuWidth = siteMenu.outerWidth();
     }
-    var w = $("body").width(),  p = menuWidth / w;
-    if (p > 0.6){
-        $("#SiteMenu").addClass("mobile");
+    var logo = $("#NavBar").find('.logo'), logoW = logo[0].scrollWidth, menuW = siteMenu[0].scrollWidth, em;
+    em = getEm();
+    var w = $("body").width();
+    var tooWide = ((logoW + menuW + 6*em) > w), wideEnough = null;
+    if (siteMenu.data('width') != undefined){
+        wideEnough = ((logoW + siteMenu.data('width') + 6*em) < w);
+    }
+    // if (p > 0.6){
+    if (tooWide){
+        siteMenu.data('width',menuW);
+        siteMenu.addClass("mobile");
         tabs.appendTo("#MenuDisplay");
-    }else{
-        $("#SiteMenu").removeClass("mobile");
-        tabs.appendTo("#SiteMenu");
-        $("#SiteMenu").find(".dropDown").removeClass("active");
+    }else if (wideEnough){
+    // }else{
+        siteMenu.removeClass("mobile");
+        tabs.appendTo(siteMenu);
+        siteMenu.find(".dropDown").removeClass("active");
+        siteMenu.removeData('width');
     }
 
     if (w < 480){$("footer").find(".logo, .icons, .contact, .hours").addClass("mobile");}
@@ -1808,7 +1516,7 @@ $("#MenuToggle").on("click",function(){
         $("#MenuDisplay").removeClass("active");
         setTimeout(function(){
             $("#MobileMenu").removeClass("active");
-            $("#SiteMenu").find(".dropDown, .underline").removeClass("active");
+            $(".siteMenu").find(".dropDown, .underline").removeClass("active");
             $(window).off("mousedown scroll",listenMobileMenuExit);            
         },500)
     }
@@ -1834,7 +1542,7 @@ var timer;
 function resizeElements(){
     clearTimeout(timer);
     timer = setTimeout(function(){
-        resizeFont();
+        // resizeFont();
         resizeSplits();
         resizeQuotes();
         resizeMobileMenuAndFooter();

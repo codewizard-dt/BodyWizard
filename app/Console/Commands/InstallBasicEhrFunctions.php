@@ -38,7 +38,7 @@ class InstallBasicEhrFunctions extends Command
      */
     public function handle()
     {
-        include_once app_path("/php/functions.php");
+        // include_once app_path("/php/functions.php");
         $practiceId = $this->argument('practiceId');
         $practice = config('practices')[$practiceId];
         $db = $practice['app']['database'];

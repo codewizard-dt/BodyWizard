@@ -18,7 +18,7 @@ if ($model == 'Practice'){
 	$nospaces = removespaces($model);
 	$class = "App\\$nospaces";
 	$scheduledUser = $class::find($uid);
-	$schedule = isset($scheduledUser->schedule) ? $scheduledUser->schedule : [];
+	$schedule = isset($scheduledUser->schedule) ? revertJsonBool($scheduledUser->schedule) : [];
 	$exceptions = isset($scheduledUser->schedule_exceptions) ? $scheduledUser->schedule_exceptions : [];
 }
 

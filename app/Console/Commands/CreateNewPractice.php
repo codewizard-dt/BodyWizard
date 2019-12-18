@@ -39,7 +39,7 @@ class CreateNewPractice extends Command
      */
     public function handle()
     {
-        include_once app_path("/php/functions.php");
+        // include_once app_path("/php/functions.php");
         Log::info("CREATING NEW PRACTICE AT ".now());
         $name = cleaninput($this->argument('practiceName'));
         $email = cleaninput($this->argument('email'));
@@ -63,7 +63,6 @@ class CreateNewPractice extends Command
             return;
         }else{
             $this->info("Calendar web hook created (id = $watch)");
-            // Log::info(var_dump($watch));
         }        
 
         $database = Practice::createDatabase($dbname);
@@ -102,10 +101,12 @@ class CreateNewPractice extends Command
                 ],
                 'app' => 
                 [
+                    'status' => 'active',
                     'admin' => $email,
                     'database' => $database,
                     'calendarId' => $calendarId,
-                    'cryptoKey' => $cryptoKey
+                    'cryptoKey' => $cryptoKey,
+                    'webhooks' => ['calendar' => $watch]
                 ]
             ];
         addToConfig('practices', $practiceId, $practiceData);
@@ -123,7 +124,7 @@ class CreateNewPractice extends Command
         $this->info("Config files saved.");
 
         $calUpdate = Practice::updateEntireEventFeed($practiceId);
-        if (!$cryptoKey){
+        if (!$calUpdate){
             $this->error("Error connecting to calendar.");
             $this->error("Practice setup incomplete.");
             return;

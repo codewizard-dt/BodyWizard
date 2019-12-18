@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <?php 
-    include_once app_path("/php/functions.php");
+    // include_once app_path("/php/functions.php");
     $menuData = "SiteMenu";
     // $siteMenu = $menuJson[$menuData];
     if (Auth::guest()){

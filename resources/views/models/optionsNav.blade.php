@@ -1,39 +1,31 @@
 <?php    	
-include_once app_path("/php/functions.php");
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
-
-
 
 $nospaces = removespaces($model);
 $class = "App\\$nospaces";
 $count = $class::all()->count();
-$navId = "Current".$nospaces;
-// $tabStr = replacespaces(strtolower(plural($model)));
-$tabStr = Str::snake($model);
-$hideClass = $uid ? "" : "hide";
+$extraClasses = [];
+$extraData = [];
+$jsonStr = "";
+$markupStr = "";
+if (!$uid){$extraClasses[] = 'hide';}
 
-$type = (session('diagnosisType')!==null) ? session('diagnosisType') : "";
-$dxTypeStr = ($type=="") ? "" : "data-dxtype='$type'";
+if (session("diagnosisType") !== null){
+	$extraData['dxtype'] = session("diagnosisType");
+}
 if ($model == 'Diagnosis' && $uid != null){
 	$instanceType = $class::find($uid)->medicine_type;
 	$uid = ($instanceType != $type) ? null : $uid;
 }
 
-echo "<div id='$navId' class='optionsNav wrapMe $hideClass' data-model='$model' data-tabanchor='$tabStr' data-uid='$uid' $dxTypeStr>";
 if ($uid===null and $count > 0){
 	//instance not selected and no instances
-	echo "<div class='navHead'>";
-    echo "<span class='name'>No ".strtolower($model)." selected</span><br>";
-    optionButtons($destinations, $btnText);
-    echo "</div>";
+    $nameText = "No ".strtolower($model)." selected";
 }
 elseif ($count === 0){
 	//instance not selected, many instances
-	echo "<div class='navHead'>";
-    echo "<span class='name'>No ".strtolower(plural($model))." available</span><br>";
-    optionButtons($destinations, $btnText);
-    echo "</div>";
+    $nameText = "No ".strtolower(plural($model))." available";
 }
 elseif ($uid != null){
 	// select instance and set session uid
@@ -54,27 +46,39 @@ elseif ($uid != null){
 	// get Display name of instance
 	if (isset($instance->nameAttr)){
 		$name = $instance->nameAttr;
-		if (is_array($name)){$name = complexAttr($name[0],$instance,$name[1]);}
-		else{$name = complexAttr($name,$instance);}
+		if (is_array($name)){$nameText = complexAttr($name[0],$instance,$name[1]);}
+		else{$nameText= complexAttr($name,$instance);}
+	}elseif (isset($instance->name)){
+		$nameText = $instance->name;
 	}else{
-		$name = $instance->name;
+		$nameText = "NO NAME";
 	}
-	// $name = (isset($instance->nameAttr)) ? complexAttr($instance->nameAttr,$instance) : $instance->name;
-	// include submission data if available
-	if (in_array($model,['Patient','Practitioner','StaffMember'])){
+	if (isUser($model)){
 		$jsonStr = str_replace("'","\u0027",$instance->userInfo->full_json);
-		$userType = "data-usertype='".$instance->userInfo->user_type."'";
-		$isAdmin = "data-isadmin='".$instance->userInfo->is_admin."'";
-		$userId = "data-userid='".$instance->user_id."'";
+		$userType = $instance->userInfo->user_type;
+		$isAdmin = $instance->userInfo->is_admin;
+		$userId = $instance->user_id;
 	}else{
-		$userType = isset($instance->user_type) ? "data-usertype='".$instance->user_type."'" : null;
-		$jsonStr = isset($instance->full_json) ?  str_replace("'","\u0027",$instance->full_json) : null;
-		$isAdmin = isset($instance->is_admin) ? "data-isadmin='".$instance->is_admin."'" : null;
-		$userId = isset($instance->user_id) ? "data-userid='".$instance->userInfo->user_id."'" : null;
+		$jsonStr = isset($instance->full_json) ?  str_replace("'","\u0027",$instance->full_json) : "";
+		$userType = isset($instance->user_type) ? $instance->user_type : null;
+		$isAdmin = isset($instance->is_admin) ? $instance->is_admin : null;
+		$userId = isset($instance->user_id) ? $instance->userInfo->user_id : null;
+	}
+	if ($model == "Form" && Auth::user()->user_type == "patient"){
+		$submission = $instance->submissions()->get()->last();
+		if ($submission){
+			$extraData['lastsubmission'] = $submission->id;
+		}
 	}
 	// include summernote data if available
-	$markupStr = isset($instance->markup) ?  e($instance->markup) : null;
+	$markupStr = isset($instance->markup) ?  $instance->markup : "";
 
+	// if ($jsonStr){$extraData['json'] = $jsonStr;}
+	if ($userType){$extraData['usertype'] = $userType;}
+	if ($isAdmin){$extraData['isadmin'] = $isAdmin;}
+	if ($userId){$extraData['userid'] = $userId;}
+
+	$modelArr = null;
 	if (isset($instance->connectedModels)){
 		$connectedModels = $instance->connectedModels;
 		$modelArr = [];
@@ -107,18 +111,38 @@ elseif ($uid != null){
 				dd($e);
 			}
 		}
-	}else{unset($modelArr);}
-	$connectedModelStr = (isset($modelArr)) ? json_encode($modelArr) : "";
+	}
 
-	echo "<div class='navHead'>";
-    echo "<span class='optionsBar'><span class='name' data-json='$jsonStr' $userType $userId $isAdmin data-markup='$markupStr' data-uid='$uid' data-connectedmodels='$connectedModelStr'>$name</span><br>";
-    optionButtons($destinations,$btnText);
-    echo "</span>";
-	echo "</div>";
-	echo "<div class='navDetails'>";
-	$instance->optionsNav($uid);
-	echo "</div><div class='toggleDetails down'>".strtolower(proper($model))." details<div class='arrow'></div></div>";
+	if ($modelArr){$extraData['connectedmodels'] = json_encode($modelArr);}
+
 }
 
-echo "</div>";
+$dataStr = "";
+foreach ($extraData as $key => $value){
+	$dataStr .= "data-$key='$value' ";
+}
 ?>
+
+<h2 class="optionsNavHeader purple paddedSmall">
+	Currently Selected {{$model}}<br>
+	<span class='hide'>hide</span>
+</h2>
+<div id="Current{{$nospaces}}" class="optionsNav wrapMe {{implode(' ', $extraClasses)}}" data-model="{{$model}}" data-uid="{{$uid}}">
+	<div class="navHead">
+		<span class="optionsBar">
+			<span class="name" data-uid="{{$uid}}" data-json='{{$jsonStr}}' data-markup='{{$markupStr}}' {{$dataStr}}>
+				{{$nameText}}
+			</span><br>
+			{{optionButtons($destinations,$btnText)}}
+		</span>
+	</div>
+	<div class="navDetails">
+		@if (isset($instance))
+		{{$instance->moreOptions()}}
+		@endif
+	</div>
+	<div class="toggleDetails down">
+		<span class="label">more {{strtolower(proper($model))}} details</span>
+		<div class="arrow"></div>
+	</div>
+</div>

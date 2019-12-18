@@ -1,9 +1,9 @@
-var calendar, defaultPatientInfo, serviceConfirmBtn, dateTimeConfirmBtn, allowOverride = false, usertype = 'patient', serviceOverride = false;
+var calendar, serviceConfirmBtn, dateTimeConfirmBtn, allowOverride = false, usertype = 'patient', serviceOverride = false;
 $(document).ready(function(){
     $("#ScheduleFeedTarget").load("/schedule/feed",function(){
         $("#PatientCalendar").html("");
      	loadCal($("#PatientCalendar"));
-        console.log($("#AnonFeed").data('schedule'));
+        // console.log($("#AnonFeed").data('schedule'));
     });
     $("#createAppointment").on('click','.cancel',function(){
         $("#booknow").find('.active').removeClass('active');
@@ -13,12 +13,11 @@ $(document).ready(function(){
     $("#booknow").data('target','#createAppointment');
     $("#EditApptBtn").data('target','#editAppointment');
     $("#booknow, #EditApptBtn").on('click',openAppointmentDetails);
+    $('#FormInfo').on('click','.link',checkFormStatus);
 
     defaultPatientInfo = $("#PatientCalendar").data('patient');
 
     activateServiceSelection();
-
-    $("#WhichFirst").on('click','li',whichFirst);
 
     serviceConfirmBtn = $("#SelectServices").find('.closeBtn');
     dateTimeConfirmBtn = $("#SelectDateTime").find('.closeBtn');
@@ -55,55 +54,38 @@ function loadCal(target){
         },
         height: "auto",
         dateClick: function(info){
+            resetEntireAppt();
             // console.log(info);
-            $("#createAppointment").find("#date").val(formatDate(info.date));
-            $("#createAppointment").find("#time").val(formatTime(info.date));
-            $("#createAppointment").find("#select_services").val("");
-            $("#ServiceListModal").removeData('uidArr');
-            moveServiceSelect("#createAppointment");
-            resetProgressBar($("#SelectServices"));
-            updatePatientData();
-            updateDuration();
-            updateAvailableServices();
-            var clickedDateTime = moment(info.date), date = clickedDateTime.format("YYYY-MM-DD"), earliest = moment(date + " " + $("#BizHours").data('earliest')), latest = moment(date + " " + $("#BizHours").data('latest'));
-            $("#createAppointment").data('dateTime',clickedDateTime);
-            if (checkSchedule(clickedDateTime, $("#BizHours").data('schedule'))===true){
-                blurElement($("body"),"#createAppointment");
-            }else{
-                $("#Warn").find(".message").html("<h2>Outside Business Hours</h2><div>"+clickedDateTime.format("dddd, MMMM Do YYYY, h:mm a")+" is outside of business hours. Continue anyway?");
-                blurElement($("body"),"#Warn");
-                var wait = setInterval(function(){
-                    if (confirmBool != undefined){
-                        if (confirmBool){
-                            blurElement($("body"),"#createAppointment");
-                        }
-                        clearInterval(wait);
-                        confirmBool = undefined;
-                    }
-                },100)
-            }
+            var date = moment(info.date).format("M/D/YYYY");
+            updateAppointment({date:date});
+            $("#booknow").click();
         },
         eventClick: function(info){
-            var ev = info.event, details = ev.extendedProps, patients = details.patients, practitioner = details.practitioner, services = details.services, patientIds = details.patientIds, practitionerId = details.practitionerId, serviceIds = details.serviceIds, dateTime = moment(ev.start), uid = details.bodywizardUid, type = details.type, ele = $(info.el), title = ev.title;
+            var ev = info.event, details = ev.extendedProps, patients = details.patients, practitioner = details.practitioner, services = details.services, patientIds = details.patientIds, practitionerId = details.practitionerId, serviceIds = details.serviceIds, forms = details.forms, dateTime = moment(ev.start), uid = details.bodywizardUid, type = details.type, ele = $(info.el), title = ev.title;
             console.log(ev);
-            // console.log(ele);
+            resetEntireAppt();
             if (ele.hasClass('appointment')){
-                $("#ApptInfo").data({
-                    'patientIds': patientIds
+                // $("#ApptInfo").data({
+                //     'patientIds': patientIds,
+                //     'apptId': ev.id
+                // });
+                updateAppointment({
+                    patient:patientIds[0],
+                    practitioner:practitionerId,
+                    services:serviceIds,
+                    datetime:dateTime
                 });
                 $("#editAppointment").data('uid',uid);
+                setUid("Appointment",uid);
                 $("#PatientName").text(patients);
                 $("#PractitionerName").text(practitioner);
-                $("#ApptDateTime").text(dateTime.format("h:mm a \on dddd, MMMM Do YYYY"));
+                $("#ApptDateTime").text(dateTime.format("h:mm a [on] dddd, MMMM Do YYYY"));
+                $("#ApptDateTime").data('dateTime',dateTime);
                 $("#ServiceInfo").text(services);
+                updateFormInfo(forms);
                 moveServiceSelect("#editAppointment");
                 loadApptInfo(patientIds,practitionerId,serviceIds,dateTime,$("#editAppointment"));
                 blurElement($("body"),"#ApptInfo");                
-            }else if (ele.hasClass('break')){
-
-            }else if (ele.hasClass('nonEHR')){
-                $("#NonEhrInfo").find("h1").text(title);
-                blurTopMost("#NonEhrInfo");
             }
         },
         defaultView:"listMonth",
@@ -111,7 +93,6 @@ function loadCal(target){
         minTime:$("#BizHours").data("earliest"),
         maxTime:$("#BizHours").data("latest"),
         noEventsMessage: "No appointments scheduled this month",
-        // events: $("#ApptFeed").data("events")
         eventSources: 
         [
             {
@@ -146,13 +127,14 @@ function whichFirst(){
 }
 function openAppointmentDetails(){
     var modalId = $(this).data('target');
+    console.log(modalId);
     moveServiceSelect(modalId, false);
     movePracTimeSelect(modalId, false);
-    // moveWhichFirst(modalId);
     moveDetails(modalId);
     if (modalId == '#createAppointment'){
+        resetEntireAppt();
+        resetConnectedModels();
         $(modalId).find('input, textarea').val("");
-        $(".connectedModel").removeData('uidArr');
         $(modalId).find('.active').removeClass('active');
         $(modalId).removeData('dateTime');
     }else{
@@ -164,13 +146,13 @@ function openAppointmentDetails(){
     $(".progressiveSelection").hide();
     $(".progressiveSelection").find(".step").hide();
     $(".progressiveSelection").find(".open").show();
-    resetConnectedModels();
     checkCount($("#SelectServices"));
     resetProgressBar($("#SelectServices"));
-    updatePatientData();
-    updatePractitionerData();
-    updateDuration();
-    updateAvailableServices();
+    // updatePatientData();
+    // updatePractitionerData();
+    // updateDuration();
+    // updateAvailableServices();
+    // updateAvailableTimes();
     blurElement($("body"),modalId);
 }
 function addDetail(type,value){
@@ -207,20 +189,22 @@ function openDetail(){
     target.fadeIn();
     if (openBtn.length > 0){openBtn.click();}
 }
-var waitForDate;
+// var waitForDate;
 function checkDate(){
+    console.log('checkDate');
     var date, form = $(this).closest('.formDisp');
     setTimeout(function(){
         date = $("#DateSelector").val();
         if (date != ""){
-            updateAvailabileTimes(form);
+            updateAvailableTimes(form);
             addDetail('date',date);
             form.find("#date").val(date);
             $("#SelectDate").find(".next").removeClass('disabled').click();
         }
     },200)
 }
-function updateAvailabileTimes(){
+function updateAvailableTimes(){
+    console.log('updateAvailableTimes');
     var form = $("#createAppointment, #editAppointment").filter(":visible"), bizHours = $("#BizHours").data('schedule'), practitioners = $("#Practitioners").data('schedule'), services = $("#ServiceListModal").data('uidArr'), duration = Number(form.find('#duration').val()), date = moment($("#DateSelector").val(),"MM/DD/YYYY"), slots = $("#TimeSelector").find("li"),
         practitioner = ($("#PractitionerListModal").data('uidArr') != undefined) ? $("#PractitionerListModal").data('uidArr') : null;
     if (practitioner && practitioner.length == 0){practitioner = null;}
@@ -230,28 +214,32 @@ function updateAvailabileTimes(){
             return p.practitioner_id === id
         })
     }
+    // console.log(practitioner);
     slots.addClass('disabled');
+    var anonEvents = ($("#AnonFeed").data('schedule') == "") ? null : $("#AnonFeed").data('schedule');
+    // console.log(anonEvents);
     slots.each(function(){
-        var slot = $(this), time = slot.data('value').split(":"), hour = Number(time[0]), min = Number(time[1]), anonEvents = $("#AnonFeed").data('schedule'), pracMatch;
+        var slot = $(this), time = slot.data('value').split(":"), hour = Number(time[0]), min = Number(time[1]), practitionerEvents;
         date.hour(hour).minute(min);
         bizHourCheck = checkSchedule(date, bizHours, services, duration);
         if (bizHourCheck === true){
             slot.removeClass('disabled');
         }
         if (practitioner){
-            pracMatch = anonEvents.filter(event => event.practitionerId == practitioner.practitioner_id);
+            practitionerEvents = anonEvents ? anonEvents.filter(event => event.practitionerId == practitioner.practitioner_id) : null;
             if (checkSchedule(date, practitioner.schedule, services, duration) === true
-                && noEventConflict(date, duration, pracMatch)){
+                && noEventConflict(date, duration, practitionerEvents)){
                 slot.removeClass('disabled');
+                // console.log(date);
             }else{
                 slot.addClass('disabled');
             }
         }else{
             $.each(practitioners,function(p,practitioner){
-                pracMatch = anonEvents.filter(event => event.practitionerId == practitioner.practitioner_id);
+                practitionerEvents = anonEvents ? anonEvents.filter(event => event.practitionerId == practitioner.practitioner_id) : null;
                 if (checkSchedule(date, practitioner.schedule, services, duration) === true
-                    && noEventConflict(date, duration, pracMatch)){
-                    console.log(date.format("H:mm ")+practitioner.name);
+                    && noEventConflict(date, duration, practitionerEvents)){
+                    // console.log(date.format("H:mm ")+practitioner.name);
                     slot.removeClass('disabled');
                 }
             })
@@ -262,8 +250,9 @@ function updatePractitioner(){
     var name = $(this).text(), list = $("#PractitionerSelector").data('details'), id = list[name], practitionerBtn = $(this),
         form = $("#createAppointment, #editAppointment").filter(":visible");
 
+    // console.log($(this));
     if ($(this).hasClass('disabled')){
-        confirm(name + ' Unavailable', "Would you like to select a new date and time to match "+ name + "'s schedule?",'yes','no');
+        confirm(name + ' Unavailable', "Would you like to select a new time to match "+ name + "'s schedule?",'yes, select new time','no');
         var wait = setInterval(function(){
             if (confirmBool != undefined){
                 if (confirmBool){
@@ -280,7 +269,7 @@ function updatePractitioner(){
         $("#PractitionerSelector").find(".closeBtn").removeClass('disabled');
         addDetail('practitioner',name);
         if (form.find("#date").val() != ''){
-            updateAvailabileTimes();
+            updateAvailableTimes();
         }
     }
 }
@@ -291,6 +280,7 @@ function randomPractitioner(){
     addDetail('practitioner',p.name);
 }
 function updateTime(){
+    console.log('updateTime');
     if ($(this).hasClass('disabled')){return;}
     var form = $("#createAppointment, #editAppointment").filter(":visible"), time = $(this).text().replace(" ",""), date = form.find("#date").val(), services = $("#ServiceListModal").data('uidArr');
     form.find("#time").val(time);
@@ -299,6 +289,10 @@ function updateTime(){
     form.data('dateTime',dateTime);
     addDetail('time',time);
     var p = availablePractitioners(dateTime,form.find("#duration").val(), services);
+    // console.log(dateTime);
+    // console.log(form.find("#duration").val());
+    // console.log(services);
+    // console.log(p);
     $("#PractitionerSelector").find("li").addClass('disabled');
     $.each(p,function(x,practitioner){
         $("#PractitionerSelector").find("li").filter(function(){return $(this).text() == practitioner.name}).removeClass('disabled');

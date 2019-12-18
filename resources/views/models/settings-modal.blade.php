@@ -7,7 +7,19 @@ $settingsForm = App\Form::where([
 ])->orderBy('version_id','desc')->first();
 
 $settings = str_replace("'","\u0027",$instance->settings);
-$nameAttr = isset($instance->nameAttr) ? $instance->nameAttr : "name";
+// $nameAttr = isset($instance->nameAttr) ? $instance->nameAttr : "name";
+if (isset($instance->nameAttr)){
+	$nameAttr = $instance->nameAttr;
+	if (is_array($nameAttr)){
+		$hasThrough = $nameAttr[1];
+		$nameAttr = $nameAttr[0];
+		$name = complexAttr($nameAttr,$instance,$hasThrough);
+	}else{
+		$name = complexAttr($nameAttr,$instance);
+	}
+}else{
+	$name = $instance->name;
+}
 $connectedModels = isset($instance->connectedModels) ? $instance->connectedModels : [];
 $admin = (Auth::user()->is_admin) ? "admin" : "";
 $settingsJson = isset($instance->settings_json) ? str_replace("'","\u0027",$instance->settings_json) : "";
@@ -48,7 +60,7 @@ if ($model == 'Form'){
 ?>
 
 @if ($model == 'Form')
-	<div id='{{ $model }}SettingsForm' class='central large settingsForm modalForm {{ $admin }}' data-target='{{ removespaces($instance->$nameAttr) }}' data-model='{{ $model }}' data-uid='{{ $uid }}' data-settings='{{ $settings }}'>
+	<div id='{{ $model }}SettingsForm' class='central large settingsForm modalForm {{ $admin }}' data-target='{{ removespaces($instance->$nameAttr) }}' data-model='{{ $model }}' data-uid='{{ $uid }}' data-settings='{{ json_encode($settings) }}'>
 		<h1 class='purple paddedSmall'>'{{ $instance->$nameAttr }}' Settings</h1>
 		<div id="ModelSettings" data-settingsJson='{{ $settingsJson }}'>
 			{{ $settingsForm->formDisplay(false) }}
@@ -65,8 +77,8 @@ if ($model == 'Form'){
 		</div>
 	</div>
 @else
-	<div id='{{ $model }}SettingsForm' class='central large settingsForm modalForm {{ $admin }}' data-model='{{ $model }}' data-uid='{{ $uid }}' data-settings='{{ $settings }}' data-settingsjson='{{ $settingsJson }}'>
-		<h1 class='purple paddedSmall'>'{{ $instance->$nameAttr }}' Settings</h1>
+	<div id='{{ $model }}SettingsForm' class='central large settingsForm modalForm {{ $admin }}' data-model='{{ $model }}' data-uid='{{ $uid }}' data-settings='{{ json_encode($settings) }}' data-settingsjson='{{ $settingsJson }}'>
+		<h1 class='purple paddedSmall'>Settings for '{{ $name }}'</h1>
 		<div id="ModelSettings">
 			{{ $settingsForm->formDisplay(true) }}
 		</div>

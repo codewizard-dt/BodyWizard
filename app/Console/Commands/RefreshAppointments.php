@@ -39,18 +39,18 @@ class RefreshAppointments extends Command
      *
      * @return mixed
      */
-    public function handle(RefreshTables $refresh)
+    public function handle()
     {
         $service = app('GoogleCalendar');
         $practiceId = $this->argument('practiceId');
         $apptCount = $this->option('factory');
-        $calendarId = config('practices')[$practiceId]['app']['calendarId'];
-        $database = config('practices')[$practiceId]['app']['database'];
-        $appt = new Appointment;
+        $calendarId = practiceConfig('practices')[$practiceId]['app']['calendarId'];
+        $database = practiceConfig('practices')[$practiceId]['app']['database'];
+        // $appt = new Appointment;
         config(['database.connections.mysql.database' => $database]);
 
 
-        $result = $appt->clearCalendar($calendarId);
+        $result = Practice::clearCalendar($calendarId);
         if ($result){
             $this->info('Google calendar cleared.');
         }else{
@@ -60,12 +60,13 @@ class RefreshAppointments extends Command
             return;
         }
 
-        $refresh->clearApptTables();
+        RefreshTables::clearApptTables();
         $this->info('Appointment tables cleared and feed updated.');
-        
         $this->info('Adding '.$apptCount.' appointments to EHR......');
-        $refresh->seedApptTables($calendarId, $apptCount);
+        RefreshTables::seedApptTables($calendarId, $apptCount);
         $this->info('Appointments added to EHR database.');    
+        RefreshTables::clearSubmissionTables();
+        $this->info('Submission table cleared.');
 
         $this->info('Adding appointments to '.$calendarId);
         try{

@@ -208,8 +208,6 @@ $(document).ready(function(){
             if ($(this).hasClass("edit")){
                 var proxy = $("#AddItemProxy"), addNode = (type == 'narrative') ? "#AddText" : "#AddItem";
 
-                // P = $(addNode).parent();
-                // console.log(item);
                 if (item.is(".itemFU")){
                     addNode = (item.find(".question").data('type') == 'narrative') ? "#AddText" : "#AddItem";
 
@@ -230,12 +228,14 @@ $(document).ready(function(){
                     $("#Type").val(type);
                     $("#Type").change();
                     $("#Required").val(required);          
-                    console.log("uhoh");
+                    if (options.placeholder != undefined){
+                        $("#textPlaceholder, #textAreaPlaceholder").val(options.placeholder);
+                    }
                 }else{
-                    console.log("uhhuh");
+                    // console.log("uhhuh");
                     slideFadeIn($("#NarrativeOptions"));
                     // o = target.is(".item") ? o : target.find(".question").data('options');
-                    console.log(options);
+                    // console.log(options);
                     var markup = options.markupStr;
                     $("#NarrativeOptions").find(".note-placeholder").hide();
                     $("#NarrativeOptions").find(".note-editable").html(markup);
@@ -492,18 +492,19 @@ $(document).ready(function(){
         
     $("#AddItem, #AddText").on("click",".save",saveItem);
     $("#AddItem").on("click",".cancel",function(){
-        slideFadeOut($("#AddItem"));
         var p = $("#AddItem").parent();
         if (p.hasClass("item") || p.hasClass("itemFU")){
             p.children(".question").find(".toggle").filter(".cancel").click();
         }
-        setTimeout(function(){
-            resetAddItem();
-        },500)
+        if (modalOrBody($(this)).is("#AddItem")){
+            setTimeout(function(){
+                resetAddItem();
+            },500)            
+        }
     })
 
     $("#AddText").on("click",".cancel",function(){
-        slideFadeOut($("#AddText"));
+        // slideFadeOut($("#AddText"));
         var p = $("#AddText").parent();
         if (p.hasClass("item") || p.hasClass("itemFU")){
             p.children(".question").find(".toggle").filter(".cancel").click();
@@ -635,32 +636,32 @@ $(document).ready(function(){
         var item = i.closest(".item");
                 
         var obj = createItemObj(), saved = false;
-            if (obj == false){return false;}
-            if (p.is(".section")){
-                saved = saveItemObj(obj,section,"save");
-            }else if (p.is(".item")){
-                var k = p.find(".question").data("key");
-                saved = saveItemObj(obj,section,"update",k);
-            }else if (p.is(".newFollowUp")){
-                var k = item.children(".question").data("key");
-                saved = saveItemObj(obj,item,"save",k);
-            }else if (p.is(".itemFU")){
-                var k = item.children(".question").data("key");
-                var fk = p.find(".question").data("key");
-                // saved = saveItemObj(obj,section,"update",k,fk);
-                saved = saveItemObj(obj,item,"update",k,fk);
-            }else if (p.is(".insertProxy")){
-                var type = p.parent().data('contains'), kP;
-                k = p.data('key');
-                if (type == 'item'){
-                    saved = saveItemObj(obj,section,'insert',k);
-                }else if (type == 'itemFU'){
-                    kP = p.closest(".item").find(".question").data('key');
-                    saved = saveItemObj(obj,item,'insert',kP,k);
-                }
-            }else{
-                console.log('fail');
+        if (obj == false){return false;}
+        if (p.is(".section")){
+            saved = saveItemObj(obj,section,"save");
+        }else if (p.is(".item")){
+            var k = p.find(".question").data("key");
+            saved = saveItemObj(obj,section,"update",k);
+        }else if (p.is(".newFollowUp")){
+            var k = item.children(".question").data("key");
+            saved = saveItemObj(obj,item,"save",k);
+        }else if (p.is(".itemFU")){
+            var k = item.children(".question").data("key");
+            var fk = p.find(".question").data("key");
+            // saved = saveItemObj(obj,section,"update",k,fk);
+            saved = saveItemObj(obj,item,"update",k,fk);
+        }else if (p.is(".insertProxy")){
+            var type = p.parent().data('contains'), kP;
+            k = p.data('key');
+            if (type == 'item'){
+                saved = saveItemObj(obj,section,'insert',k);
+            }else if (type == 'itemFU'){
+                kP = p.closest(".item").find(".question").data('key');
+                saved = saveItemObj(obj,item,'insert',kP,k);
             }
+        }else{
+            console.log('fail');
+        }
         if (saved){
             setTimeout(function(){
                 resetAddItem();
@@ -685,7 +686,7 @@ $(document).ready(function(){
             form_id: formId,
             form_uid: uid,
             form_name: form["formName"],
-            questions: JSON.stringify(form['sections']),
+            // questions: JSON.stringify(form['sections']),
             full_json: jsonStr
         };
         $.ajax({
@@ -1292,24 +1293,29 @@ $(document).ready(function(){
             big = ".ItemsFU";
             little = ".itemFU";
         }
-        var items = $(section).find(big).find(little).find(".question");
+        var items = $(section).find(big).find(little).children(".question");
         var qArr = [];
                 
         items.each(function(i,item){
             var t = $(item).data("question");
-            qArr.push(t);
+            qArr.push(t.toLowerCase());
         })
         
         if ($("#AddItemProxy").parent().is(little)){
             var itemKey = $("#AddItemProxy").parent().find(".question").data("key");
         }
-                
         if ($.inArray(q.toLowerCase(),qArr)>-1){
             if ($("#AddItemProxy").parent().is(little) && itemKey == $.inArray(q.toLowerCase(),qArr)){
                 return true;
             }
-            var t = $("#AddItem").find("#Text");
-            alertBox("question already exists",$(t),"after","2500");
+            var t = $("#AddItem").find("#Text"), m;
+            if (big == '.Items'){
+                m = '<div>All questions within each section must be unique.</div><div class="pink">A question with text "'+q+'" already exists in "'+section.find('h2').contents().first().text().trim()+'".</div>';
+            }else{
+                m = '<div>All followup questions connected to the same main question must be unique.</div><div class="pink">A question with text "'+q+'" already exists as pertains to "'+section.children('.question').contents().first().text()+'".</div>';
+            }
+            feedback('Duplicate Question',m);
+            // alertBox("question already exists",$(t),"after","2500");
             return false;
         }else{
             return true;

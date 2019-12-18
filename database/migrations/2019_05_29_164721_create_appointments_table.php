@@ -22,8 +22,10 @@ class CreateAppointmentsTable extends Migration
             $table->text('staff_member_note')->nullable();
             $table->text('practitioner_note')->nullable();
             $table->json('status');
+            $table->string('appt_link')->nullable();
             $table->json('full_json')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

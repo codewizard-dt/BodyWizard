@@ -9,7 +9,7 @@
         <tr class='head'>
             <th class='days'>Scheduled Days</th>
             <th class='hours'>Hours</th>
-        	@if ($model != "StaffMember")
+        	@if ($model == "Practitioner")
             <th class='services'>Services Offered</th>
             @endif
         </tr>
@@ -22,7 +22,7 @@
             <tr class='timeBlock {{ $isBreak }}' data-block='{{ $loop->index }}'>
 	            <td class='days'><div class='tdSizeControl'>{{ displayDays($timeBlock['days']) }}<div class='indicator'>...</div></div></td>
 	            <td class='hours'><div class='tdSizeControl'>{{ $timeBlock['start_time'] }} to {{ $timeBlock['end_time'] }}<div class='indicator'>...</div></div></td>
-	            @if ($model != 'StaffMember')
+	            @if ($model == 'Practitioner')
 		            <td class='services'><div class='tdSizeControl'>
 		            	@if (isset($timeBlock['services']))
 		            		<?php 

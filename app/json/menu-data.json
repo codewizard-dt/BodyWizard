@@ -155,134 +155,6 @@
             "uri":"portal/logout"
         }
     },
-
-    "UserSettings":
-    {
-        "general-info":
-        {
-            "id": "general-info",
-            "text":"General Info",
-            "dropdown":false,
-            "uri":"/user/info"
-        },
-        "security":
-        {
-            "id": "security",
-            "text":"Security",
-            "dropdown":
-            {
-                "password":
-                {
-                    "id": "password",
-                    "text":"Change Password",
-                    "dropdown":false,
-                    "uri":"/user/password"
-                },
-                "security-questions":
-                {
-                    "id": "security-questions",
-                    "text":"Security Questions",
-                    "dropdown":false,
-                    "uri":"/user/security-questions"
-                }
-            }
-        }
-    },
-
-    "TreatmentMenu": 
-    {
-        "acu":
-        {
-            "id": "acu",
-            "text":"Acupuncture",
-            "dropdown":false,
-            "uri":"#AcuListing"
-        },
-        "botanical":
-        {
-            "id": "botanical",
-            "text":"Botanical Medicine",
-            "dropdown":false,
-            "uri":"#BotanicalListing"
-        },
-        "fascial":
-        {
-            "id": "fascial",
-            "text":"Fascial Release",
-            "dropdown":false,
-            "uri":"#FascialListing"
-        },
-        "meditation":
-        {
-            "id": "meditation",
-            "text":"Guided Breathing + Meditation",
-            "dropdown":false,
-            "uri":"#MeditationListing"
-        }
-    },
-    "ConditionMenu": 
-    {
-        "internal":
-        {
-            "id": "internal",
-            "Text":"Internal Medicine",
-            "dropdown":false,
-            "uri":"#InternalMedicineListing"
-        },
-        "pain":
-        {
-            "id": "pain",
-            "text":"Muscle + Joint Pain",
-            "dropdown":false,
-            "uri":"#MuscleJointPainListing"
-        },
-        "psychosocial":
-        {
-            "id": "psychosocial",
-            "text":"Psychosocial Conditions",
-            "dropdown":false,
-            "uri":"#PsychoSocialListing"
-        }
-    },
-    "RateMenu":
-    {
-        "eval":
-        {
-            "id": "eval",
-            "text":"Evaluation + Diagnosis",
-            "dropdown":false,
-            "uri":"#EvaluationRates"
-        },
-        "acu":
-        {
-            "id": "acu",
-            "text":"Acupuncture",
-            "dropdown":false,
-            "uri":"#AcuRates"
-        },
-        "botanical":
-        {
-            "id": "botanical",
-            "text":"Botanical Medicine",
-            "dropdown":false,
-            "uri":"#BotanicalRates"
-        },
-        "fascial":
-        {
-            "id": "fascial",
-            "text":"Fascial Release",
-            "dropdown":false,
-            "uri":"#FascialRates"
-        },
-        "meditation":
-        {
-            "id": "meditation",
-            "text":"Guided Breathing and Meditation",
-            "dropdown":false,
-            "uri":"#MeditationRates"
-        }
-    },
-    
     "PortalMenuList":
     {
         "appointments-home":
@@ -295,7 +167,7 @@
         "appointments-index":
         {
             "id":"appointments-index",
-            "text":"Calendar",
+            "text":"Appointments",
             "dropdown":false,
             "uri":"/appointments"
         },
@@ -394,7 +266,64 @@
             "dropdown":false,
             "uri":"/create/Diagnosis"
         },
-
+        "settings-panel":
+        {
+            "id":"settings-panel",
+            "text":"Settings Panel",
+            "dropdown":false,
+            "uri":"/portal/settings/panel"
+        },
+        "display-settings":
+        {
+            "id":"display-settings",
+            "text":"Display Settings",
+            "dropdown":
+            {
+                "display-settings-services":
+                {
+                    "id":"display-settings-services",
+                    "text":"Services",
+                    "dropdown":false,
+                    "uri":"/portal/settings/display/Service"
+                },
+                "display-settings-forms":
+                {
+                    "id":"display-settings-forms",
+                    "text":"Forms",
+                    "dropdown":false,
+                    "uri":"/portal/settings/display/Form"
+                },
+                "display-settings-appointments":
+                {
+                    "id":"display-settings-appointments",
+                    "text":"Appointments",
+                    "dropdown":false,
+                    "uri":"/portal/settings/display/Appointment"
+                }
+            }
+        },
+        "forms+submissions":
+        {
+            "id":"forms+submissions",
+            "text":"Forms",
+            "dropdown":
+            {
+                "forms":
+                {
+                    "id":"forms-home",
+                    "text":"Forms to Fill Out",
+                    "dropdown":false,
+                    "uri":"/home/forms"
+                },
+                "submissions":
+                {
+                    "id":"submissions-index",
+                    "text":"Submitted Forms",
+                    "dropdown":false,
+                    "uri":"/Submission/index"
+                }
+            }
+        },
         "forms-home":
         {
             "id":"forms-home",
@@ -552,12 +481,26 @@
                     "dropdown":false,
                     "uri":"/Code/index"
                 },
-                "form-index":
-                {
-                    "id":"form-index",
+                "form-type-list":{
+                    "id":"form-type-list",
                     "text":"Forms",
-                    "dropdown":false,
-                    "uri":"/home/forms"
+                    "dropdown":
+                    {
+                        "form-index":
+                        {
+                            "id":"form-index",
+                            "text":"Available Forms",
+                            "dropdown":false,
+                            "uri":"/home/forms"
+                        },
+                        "submission-index":
+                        {
+                            "id":"submission-index",
+                            "text":"Submissions",
+                            "dropdown":false,
+                            "uri":"/Submission/index"
+                        }
+                    }
                 },
                 "message-list":
                 {
@@ -584,6 +527,21 @@
                             "text":"Templates",
                             "dropdown":false,
                             "uri":"/Template/index"
+                        }
+                    }
+                },
+                "system-list":
+                {
+                    "id":"system-list",
+                    "text":"System",
+                    "dropdown":
+                    {
+                        "bug-index":
+                        {
+                            "id":"bug-index",
+                            "uri":"/Bug/index",
+                            "dropdown":false,
+                            "text":"Bugs"
                         }
                     }
                 }
@@ -652,7 +610,7 @@
         {
             "id":"practice-legal",
             "text":"Tax + Insurance Info",
-            "uri":"",
+            "uri":"/practice/legal-info",
             "dropdown":false
         },
 
@@ -719,6 +677,133 @@
             "text":"New User",
             "dropdown":false,
             "uri":"/users/create"
+        }
+    },
+
+    "UserSettings":
+    {
+        "general-info":
+        {
+            "id": "general-info",
+            "text":"General Info",
+            "dropdown":false,
+            "uri":"/user/info"
+        },
+        "security":
+        {
+            "id": "security",
+            "text":"Security",
+            "dropdown":
+            {
+                "password":
+                {
+                    "id": "password",
+                    "text":"Change Password",
+                    "dropdown":false,
+                    "uri":"/user/password"
+                },
+                "security-questions":
+                {
+                    "id": "security-questions",
+                    "text":"Security Questions",
+                    "dropdown":false,
+                    "uri":"/user/security-questions"
+                }
+            }
+        }
+    },
+
+    "TreatmentMenu": 
+    {
+        "acu":
+        {
+            "id": "acu",
+            "text":"Acupuncture",
+            "dropdown":false,
+            "uri":"#AcuListing"
+        },
+        "botanical":
+        {
+            "id": "botanical",
+            "text":"Botanical Medicine",
+            "dropdown":false,
+            "uri":"#BotanicalListing"
+        },
+        "fascial":
+        {
+            "id": "fascial",
+            "text":"Fascial Release",
+            "dropdown":false,
+            "uri":"#FascialListing"
+        },
+        "meditation":
+        {
+            "id": "meditation",
+            "text":"Guided Breathing + Meditation",
+            "dropdown":false,
+            "uri":"#MeditationListing"
+        }
+    },
+    "ConditionMenu": 
+    {
+        "internal":
+        {
+            "id": "internal",
+            "Text":"Internal Medicine",
+            "dropdown":false,
+            "uri":"#InternalMedicineListing"
+        },
+        "pain":
+        {
+            "id": "pain",
+            "text":"Muscle + Joint Pain",
+            "dropdown":false,
+            "uri":"#MuscleJointPainListing"
+        },
+        "psychosocial":
+        {
+            "id": "psychosocial",
+            "text":"Psychosocial Conditions",
+            "dropdown":false,
+            "uri":"#PsychoSocialListing"
+        }
+    },
+    "RateMenu":
+    {
+        "eval":
+        {
+            "id": "eval",
+            "text":"Evaluation + Diagnosis",
+            "dropdown":false,
+            "uri":"#EvaluationRates"
+        },
+        "acu":
+        {
+            "id": "acu",
+            "text":"Acupuncture",
+            "dropdown":false,
+            "uri":"#AcuRates"
+        },
+        "botanical":
+        {
+            "id": "botanical",
+            "text":"Botanical Medicine",
+            "dropdown":false,
+            "uri":"#BotanicalRates"
+        },
+        "fascial":
+        {
+            "id": "fascial",
+            "text":"Fascial Release",
+            "dropdown":false,
+            "uri":"#FascialRates"
+        },
+        "meditation":
+        {
+            "id": "meditation",
+            "text":"Guided Breathing and Meditation",
+            "dropdown":false,
+            "uri":"#MeditationRates"
         }
     }
 }

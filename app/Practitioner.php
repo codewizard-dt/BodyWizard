@@ -28,23 +28,21 @@ class Practitioner extends Model
             'audit_table' => 'practitioners_audit',
             'includeFullJson' => false
         ];
-        $this->nameAttr = ['preferred_name!!%preferred_name% %last_name%!!%first_name% %last_name%','userInfo'];
+        // $this->nameAttr = ['preferred_name!!%preferred_name% %last_name%!!%first_name% %last_name%','userInfo'];
 	    $this->tableValues = array(
 	    	'tableId' => 'PractitionerList',
 	    	'index' => 'id',
             'model' => "Practitioner",
 	    	'columns' => array(
                         array(
-                            "label" => 'Preferred Name',
+                            "label" => 'Name',
                             "className" => 'name',
-                            "attribute" => 'preferred_name!!preferred_name!!first_name',
-                            "hasThrough" => 'userInfo'
+                            "attribute" => 'name',
                         ),
                         array(
-                            "label" => 'Last Name',
-                            "className" => 'lastName',
-                            "attribute" => 'last_name',
-                            "hasThrough" => 'userInfo'
+                            "label" => 'Phone',
+                            "className" => 'phone',
+                            "attribute" => 'phone',
                         )
                     ),
             'displayName' => "%name% %lastName%",
@@ -83,12 +81,20 @@ class Practitioner extends Model
     public function userInfo(){
         return $this->belongsTo('App\User','user_id');
     }
+        public function getNameAttribute(){
+            return $user = $this->userInfo->name;
+        }
+        public function getPhoneAttribute(){
+            return $user = $this->userInfo->phone;
+        }
+        public function getEmailAttribute(){
+            return $user = $this->userInfo->email;
+        }
+        public function getDateOfBirthAttribute(){
+            return $user = $this->userInfo->date_of_birth;
+        }
 
-    public function name(){
-        // return complexAttr()
-    }
-
-    public function optionsNav(){
+    public function moreOptions(){
 
     }
 }

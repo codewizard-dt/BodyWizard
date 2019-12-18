@@ -19,7 +19,7 @@ class ScheduleController extends Controller
     }
 
     public function scheduleFeed(){
-        include_once app_path("/php/functions.php");
+        // include_once app_path("/php/functions.php");
 
     	$usertype = Auth::user()->user_type;
     	$id = Auth::user()->id;
@@ -95,7 +95,7 @@ class ScheduleController extends Controller
                 $array[] = $event;
             }
             $result = json_encode($array);
-            Log::info($array);
+            // Log::info($array);
         }else{
             $result = '';
         }
@@ -134,7 +134,7 @@ class ScheduleController extends Controller
             ]);
         }
         public function SavePracticeSchedule(Request $request){
-            include_once app_path("/php/functions.php");
+            // include_once app_path("/php/functions.php");
             $practiceId = session('practiceId');
             $schedule = revertJsonBool($request->schedule);
             $bizHours = scheduleToFullCalBizHours($schedule);

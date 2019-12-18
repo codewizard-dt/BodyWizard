@@ -49,6 +49,12 @@ textarea[data-followup]{
 .split50KeyValues, .split3366KeyValues {
     font-size: 1.2em;
 }
+.value.little{
+    font-size: 0.7em;
+}
+.split50KeyValues .label, .split3366KeyValues .label {
+    text-transform: capitalize;
+}
 .split50KeyValues .label{
     display: inline-block;
     width: calc(50% - 1em);
@@ -78,7 +84,8 @@ textarea[data-followup]{
 .miniCal {
     margin:auto auto 2em auto;
     font-size: 0.5em !important;
-    max-width:800px;
+    width:800px;
+    max-width: 95%;
 }
 #miniSchedule .fc-today{
     background-color: unset;
@@ -158,6 +165,16 @@ td.fc-today{background-color: var(--purple10) !important;}
     background-color: var(--purple70);
     border-color: var(--purple70);
 }
+.fc-list-item-marker{
+    position:relative;
+    height:1.25em;
+}
+.fc-event-dot{
+    position: relative;
+    top:50%;
+    transform:translateY(-50%);
+}
+
 .scale.small {
     font-size: 1em;
 }
@@ -240,7 +257,7 @@ td.fc-today{background-color: var(--purple10) !important;}
     vertical-align: top;
 }
 
-.PrimaryConcern {
+/*.PrimaryConcern {
     display: inline-block;
     font-size: 1.1em;
     font-weight:bold;
@@ -254,7 +271,7 @@ td.fc-today{background-color: var(--purple10) !important;}
 .ConcernScale {
     color:rgb(189, 48, 40);
 }
-
+*/
 #formdata{
     color:green;
 }
@@ -293,68 +310,14 @@ td.fc-today{background-color: var(--purple10) !important;}
     font-size: 0.9em;
 }
 */
-.CCItem {
+/*.CCItem {
     display: block;
     border-style: solid;
     border-width: 0 0 1px 0;
     border-color: rgb(170,170,170);
     background-color: rgb(220,220,220);
 }
-
-
-.showScale {
-    display: inline-block;
-    padding:0.5em 1em;
-    margin-bottom: 0.5em;
-    border-radius: 5px;
-    background-color: rgb(170,170,170);
-    opacity: 0.7;
-    transition: opacity 0.5s, border-color 0.5s;
-    border-style: solid;
-    border-width: 2px;
-    border-color: rgba(0,0,0,0);
-}
-
-.showScale.active {
-    opacity: 1;
-    background-color: rgb(210,210,210);
-    border-color: rgb(120,120,120);
-}
-
-.RemoveCC {
-    background-color: rgb(189, 48, 40);
-    color: white;
-    font-size: 0.8em;
-    opacity: 0.7;
-    padding:0.5em;
-    border-radius: 0 5px 5px 0;
-    transition: opacity 0.5s, border-color 0.5s;
-    border-style: solid;
-    border-width: 1px;
-    border-color: rgba(0,0,0,0);
-}
-
-.RemoveCC.active{
-    opacity:1;
-    border-color: white;
-}
-
-.RemoveNotice {
-    display: none;
-    position:absolute;
-    width: 8em;
-    top:-11px;
-    left: 103%;
-    padding: 0.5em;
-    text-align: center;
-    background-color: rgba(230,230,230,0.9);
-    font-size: 0.8em;
-    color: rgb(189, 48, 40);
-    border-style: solid;
-    border-radius: 5px;
-    border-color: rgb(189, 48, 40);
-    border-width: 1px;
-}
+*/
 
 .scaleoption {
     display: inline-block;
@@ -543,11 +506,29 @@ form, .indent, .report, .w95 {
     font-size: 0.7em;
     text-decoration: underline;
 }
+#ChangeTitleWrap{
+    position: relative;
+    display: inline-block;
+    border-radius: 5px;
+    border: 1px solid var(--purple10);
+    height: 2.25em;
+    float: right;
+    width:auto;
+    margin: -1em 0 0.5em 0;
+    z-index: 5;
+}
+#ChangeTitleWrap span{
+    font-size: 0.9em;
+    margin-left: 5px;
+    color: var(--purple);
+}
 #ChangeTitle{
     background-color: var(--purple10);
+    margin:0;
+    border-radius: 3px;
 }
 #ChangeTitle li{
-    margin: 0;
+    margin: 3px;
     background-color: transparent;
     color: var(--purple);
 }
@@ -555,9 +536,9 @@ form, .indent, .report, .w95 {
     border-color: var(--purple10);
 }
 #ChangeTitle li.active{
-    background-color: var(--purple);
+    background-color: var(--purple70);
     color: white;
-    border-color: var(--purple) !important;
+    border-color: transparent !important;
 }
 
 .errorreport {
@@ -709,139 +690,6 @@ form, .indent, .report, .w95 {
 input[type=number]{
     width: 35px;
 } 
-
-.formReport {
-    display: block;
-    margin: auto;
-    width:74%;
-    position: relative;
-}
-
-.formReport p.hideTarget{
-    padding:10px;
-    font-size: 1.5em;
-}
-
-.dateReport {
-    background-color: rgb(240,240,240);
-    border-radius: 5px;
-    border-style: solid;
-    border-width: 1px;
-    border-color: rgb(170,170,170);    
-    padding: 15px;
-    margin-bottom: 20px;
-}
-
-.dateReport p {
-    margin: 0;
-}
-
-.dateReport h2 {padding:3px;}
-
-.dateReport .item {
-    margin: 0;
-}
-
-.dateReport .section {
-    padding:0.5em 1em;
-}
-
-#FormLinks h3, #ReportLinks h3{
-    text-align: left;
-}
-
-.FormLink, .ReportLink {
-    margin: 0.25em 0.5em;
-    padding:4px 14px;
-    display: inline-block;
-    background-color: rgb(170,170,170);
-    border-style: solid;
-    border-radius: 3px;
-    border-width: 2px;
-    border-color: rgba(170,170,170,0);
-    cursor: pointer;
-    opacity: 1;
-}
-
-.FormLink:hover, .FormLink.active, .ReportLink:hover, .ReportLink.active{
-    background-color: rgb(210,210,210);
-}
-
-.FormLink.active, .ReportLink.active{
-    border-color: rgb(150,150,150);
-}
-
-.FormLink.inactive, .ReportLink.inactive{
-    cursor: not-allowed;
-    opacity: 0.5;
-}
-
-.PrevDateList {width:70%;text-align: center;margin:auto;}
-.PrevDateList#PrevFocusList {width:90%;margin:auto;}
-
-.PrevDateList > span {
-    display: inline-block;
-    text-align: center;
-    padding:0.25em;
-    margin:0.25em;
-    opacity:0.5;
-    transition:opacity 1s,padding 0.5s;
-    border-radius: 5px;
-    border-style: none;
-    border-width: 0px;
-}
-
-.PrevDateList > span > span {
-    font-size: 0.75em;
-}
-
-.PrevDateList span.dark {
-    background-color: rgb(150,150,150);
-}
-
-.PrevDateList span.light {
-    background-color: rgb(200,200,200);
-}
-
-.PrevDateList > span:hover{
-    opacity:1;
-    padding:0.4em;
-    border-style: solid;
-    border-width: 2px;
-    border-color: rgb(100,100,100);
-}
-
-.PrevDateList span.opaque {
-    opacity:1;
-    padding:0.4em;
-    border-style: solid;
-    border-width: 2px;
-    border-color: rgb(100,100,100);
-}
-
-#Letters {margin-top:10px;}
-
-#Letters li {
-    display: inline-block;
-    width:18px;
-    padding: 0;
-    font-size: 1.1em;
-    text-align: center;
-/*    background-color: rgb(210,210,210);*/
-    margin:1.5px 2px;
-}
-
-/*#Letters span {
-    background-color: black;
-    color: white;
-    padding:5px;
-    display: inline-block;
-    float: left;
-    width:6em;
-    height: 100%;
-    margin: 0 5px 0 0;
-    text-align: center;
-}*/
 
 #Letters ul {
     display: inline-block;
@@ -1002,6 +850,17 @@ li[data-response='no response']{
     border-color: var(--yellow30);
     color: var(--yellow);
 }
+.answer.disabled li{
+    cursor: default;
+}
+.answer.disabled li:not(.active){
+    background-color: var(--yellow) !important;
+    color: white !important;
+}
+
+.answer:focus, .signature:focus{
+    outline: -webkit-focus-ring-color auto 5px;
+}
 
 .answer li.active{
     background-color: white;
@@ -1056,7 +915,7 @@ li[data-response='no response']{
     max-width: calc(50% - 2em);
 }
 .item.inline input{
-    max-width: 250px;
+    max-width: 110%;
 }
 .item input:not(.slider, .datePick, .timePick){
     width: calc(100% - 0.4em);
@@ -1178,9 +1037,9 @@ li[data-response='no response']{
 }
 
 .plzselect {
-    margin: 5px 1.3em 0 1.3em;
+    margin: 0 0 -.25em 0;
     font-size: 0.8em;
-    color: rgb(130,130,130);
+    color: var(--purple);
 }
 
 .answer.scale {
@@ -1596,6 +1455,10 @@ input#PatientName {
     white-space: nowrap;
 }
 
+.optionsNav .navHead{
+    padding: 1em;
+}
+
 .number {
     /*padding: 0.4em 0.5em;*/
     /*margin: 0.2em 0;*/
@@ -1745,16 +1608,13 @@ input#PatientName {
     max-width: 95%;
     overflow: hidden;
     text-align: center;
-    background-color: rgb(240,240,240);
+    background-color: transparent;
     border-radius: 5px;
     border-style: solid;
     border-width: 2px;
-    border-color: rgb(190,190,190);
+    border-color: var(--purple);
     transition: height 1200ms;
     vertical-align: middle;
-}
-.optionsNav > div {
-    padding:1em;
 }
 .prompt{
     padding:0 !important;
@@ -1770,6 +1630,10 @@ input#PatientName {
     border: 1px solid rgb(190,190,190);
     transition: height 1200ms;
     vertical-align: middle;
+}
+.prompt.large {
+    min-width: 70%;
+    max-width: 90%;
 }
 .prompt > div {
     padding: 1.5em;
@@ -1787,14 +1651,21 @@ input#PatientName {
     height: 0;
     opacity: 0;
 }
+.optionsNav .navDetails{
+    max-width: 500px;
+    padding: 1em 0;
+    border: 1px solid var(--purple);
+    border-width: 1px 0 0 0;
+}
 .optionsNav .toggleDetails{
     padding: 0.4em;
     cursor: pointer;
     font-size: 0.8em;
-    background-color: rgb(230,230,230);
+    background-color: var(--purple10);
     border-width: 1px 0 0 0;
     border-style: solid;
-    border-color: rgb(190,190,190);
+    border-color: var(--purple);
+    color: var(--purple);
     transition: background-color 400ms;
 }
 .optionsNav .toggleDetails .arrow{
@@ -1810,7 +1681,7 @@ input#PatientName {
     background-image: url(/images/icons/arrow-up.png);
 }
 .optionsNav .toggleDetails:hover{
-    background-color: rgb(210,210,210);
+    background-color: var(--purple15);
 }
 .navDetails{
     display: none;
@@ -1821,12 +1692,22 @@ input#PatientName {
     padding: 0.5em;
     margin: 0 10px 10px 10px;
     font-weight: 700;
-    background-color: var(--yellow);
+    background-color: var(--purple);
     color: white;
     border-radius: 5px;
     border-style: solid;
     border-width: 1px;
-    border-color: rgb(120,120,120);
+    border-color: var(--purple);
+}
+.optionsNavHeader{
+    display: none;
+    margin-bottom: -1em;
+}
+.optionsNavHeader .hide{
+    display: inline-block;
+    text-decoration: underline;
+    cursor: pointer;
+    font-size: 0.5em;
 }
 
 .optionsNav .detail {
@@ -1911,39 +1792,43 @@ input#PatientName {
     width:16em;
 }
 
-#SectionOptions {
+.displayOrder {
     border-radius: 5px;
     border-width: 1px;
     border-style: solid;
     border-color: rgb(120,120,120);
-    background-color: rgb(240,240,240);
+    background-color: white;
     display: inline-block;
 }
-#SectionOptions span{
+.displayOrder span{
     position: relative;
 }
-#SectionOptions li {
+.displayOrder li {
     padding: 0 10px;
     cursor: pointer;
     border-width: 0 !important;
     position: relative;
     display: flex;
     align-items: center;
+    transition: width 400ms;
+}
+.displayOrder li span {
+    transition: width 400ms;
 }
 
-#SectionOptions .name{
+.displayOrder .name{
     display: inline-block;
     text-align: right;
 }
-#SectionOptions .UpDown{
+.displayOrder .UpDown{
     font-size: 0.8em;
     margin: 0.2em -0.6em 0.2em 0.2em;
 }
-#SectionOptions .up, #SectionOptions .down{
+.displayOrder .up, .displayOrder .down{
     background-color: transparent;    
 }
 
-#SectionOptions ul{
+.displayOrder ul{
     display: inline-block;
     width: auto;
     list-style: none;
@@ -1951,7 +1836,7 @@ input#PatientName {
     border: 1px solid rgb(190,190,190);
     background-color: rgb(255,255,255) !important;
 }
-#SectionOptions .details{
+.displayOrder .details{
     display: inline-block;
     text-align: left;
     font-size: 0.9em;
@@ -1999,7 +1884,8 @@ input#PatientName {
     height: 4em;
     position:fixed;
     top:0;
-    width:100%;
+    left:0;
+    width:100vw;
     display:none;
     opacity: 0;
     z-index: 9999;
@@ -2134,12 +2020,8 @@ input#PatientName {
     display:none;
     padding: 0.1em 0.8em;
     margin: 0.5em;
-    border-left: 2px dotted var(--yellow30);
-/*    border-width: 0 0 0 3px;
-    border-style: solid;
-    border-color: rgb(190,190,190);
-    border-radius: 15px 0 0 15px;
-*/}
+    border-left: 3px dotted var(--yellow30);
+}
 .section.display .itemFU{
     display: none;
 }
@@ -2583,7 +2465,7 @@ input#PatientName {
     overflow: hidden;
     padding-right: 1em;
 }
-.indicator {
+table .indicator {
     display: none;
     position: absolute;
     right: 0.25em;
@@ -2606,19 +2488,22 @@ input#PatientName {
     max-width: 400px;
 }
 
-.tableWrapper, #SectionOptions ul {
+.tableWrapper, .displayOrder ul {
     display: inline-block;
     border-radius: 5px;
     border-width: 2px;
     border-style: solid;
     border-color: var(--purple);
     overflow: auto;
-    max-height: 20em;
+    /*max-height: 20em;*/
     box-sizing: border-box;
     background-color: var(--purple);
 }
-#SectionOptions ul{
+.displayOrder ul{
     border-width: 1px;
+}
+.displayOrder .column{
+    display: inline-block;
 }
 
 .styledTable th{
@@ -2688,7 +2573,7 @@ input#PatientName {
     background-size: contain;
     background-repeat: no-repeat;
 }
-.styledTable tr, #SectionOptions li {
+.styledTable tr, .displayOrder li {
     border-style: solid;
     border-width: 1px 0px;
     border-color: var(--purple30);
@@ -2721,20 +2606,25 @@ input#PatientName {
 .styledTable tr.a {
     background-color: rgb(255,255,255);
 }
-.styledTable tr.b, #SectionOptions li:nth-child(even){
+.styledTable tr.b, .displayOrder li:nth-child(even){
     background-color: var(--purple10);
 }
-.styledTable tr.a.hover, #SectionOptions li:nth-child(odd):hover {
-    background-color: var(--yellow30);
-    border-color: var(--yellow50);
+.styledTable tr.a.hover, .displayOrder li:nth-child(odd):hover {
+    background-color: var(--yellow10);
+    border-color: var(--yellow30);
 }
-.styledTable tr.b.hover, #SectionOptions li:nth-child(even):hover {
-    background-color: var(--yellow30);
-    border-color: var(--yellow50);
+.styledTable tr.b.hover, .displayOrder li:nth-child(even):hover {
+    background-color: var(--yellow10);
+    border-color: var(--yellow30);
 }
 
 .styledTable.clickable tr{
     cursor: pointer;
+}
+
+.styledTable tr.required{
+    background-color: var(--yellow10);
+    color: var(--pink);
 }
 
 .styledTable td {
@@ -2743,17 +2633,16 @@ input#PatientName {
 }
 
 .filterType {
-    border-radius: 5px;
     padding: 0.2em 0.5em;
     margin:0.1em 1em;
-    border-width: 1px;
+    border-width: 0 3px;
     border-color: transparent;
     box-sizing: border-box;
 }
 .filterType.active {
-    background-color: rgb(220,220,220);
+    background-color: var(--yellow10);
     border-style: solid;
-    border-color: rgb(190,190,190);
+    border-color: var(--yellow);
 }
 .filterType .switch{
     font-size: 0.8em;
@@ -2777,12 +2666,17 @@ input#PatientName {
     font-size: 0.9em;
 }
 
-.styledTable.clickable tr.active {
+.styledTable.clickable tr.active{
     border-color: var(--yellow) !important;
-    background-color: var(--yellow);
+    background-color: var(--yellow50) !important;
     z-index: 4;
-    color:white;
 }
+.displayOrder li.active{
+    border-color: var(--yellow) !important;
+    background-color: var(--yellow30) !important;
+    z-index: 4;
+}
+
 
 #NewPatient .submit {
     margin: 1em 0 0 0;
@@ -2803,7 +2697,7 @@ input#PatientName {
     max-width: 96%;
     box-sizing: border-box;
     overflow-y: auto;
-    transition: width 1000ms;
+    transition: width 1000ms, height 1000ms;
 }
 .modalForm.expanded{
     width:96%;
@@ -2821,6 +2715,6 @@ input#PatientName {
     display: none;
 }
 
-/*#CodeList, #ServiceList {
-    max-width: 700px;
-}*/
+.sf-dump{
+    text-align: left;
+}

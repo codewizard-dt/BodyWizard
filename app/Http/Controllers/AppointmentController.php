@@ -8,13 +8,6 @@ use Illuminate\Support\Facades\Auth;
 
 date_default_timezone_set(env('DEFAULT_TIMEZONE'));
 
-// app()->singleton('GoogleCalendar',function(){
-//     $client = app('GoogleClient');
-//     $client->addScope("https://www.googleapis.com/auth/calendar");
-//     $calendar = new \Google_Service_Calendar($client);
-//     return $calendar;
-// });
-
 class AppointmentController extends Controller
 {
     public function __construct(){

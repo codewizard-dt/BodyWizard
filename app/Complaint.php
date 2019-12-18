@@ -69,7 +69,7 @@ class Complaint extends Model
         );
     }
 
-    public function optionsNav(){
+    public function moreOptions(){
 
     }
 

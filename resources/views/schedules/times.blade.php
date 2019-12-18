@@ -3,7 +3,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Carbon;
 use App\Form;
 
-include_once app_path("/php/functions.php");
+// include_once app_path("/php/functions.php");
 $ctrl = new Form;
 $practiceId = session('practiceId');
 $calSettings = Storage::disk('local')->exists("/calendar/$practiceId/settings.json") ? Storage::disk('local')->get("/calendar/$practiceId/settings.json") : Storage::disk('local')->get("/basicEhr/calendar-settings.json");

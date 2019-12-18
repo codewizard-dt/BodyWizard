@@ -1,6 +1,6 @@
 <?php 
-    // include_once app_path("/php/functions.php");
-    if (!$menuJson){$menuJson = json_decode(file_get_contents(app_path("/json/menu-data.json")),true);}
+    // // include_once app_path("/php/functions.php");
+    $menuJson = json_decode(file_get_contents(app_path("/json/menu-data.json")),true);
 
     $allTabs = $menuJson[$menu_data];
     $scroll = "";

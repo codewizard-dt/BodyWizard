@@ -34,7 +34,7 @@ $requiredOptions = ['required','optional','ID*requiredbool'];
             <div class='toggle cancel'>(cancel)</div>
         </h2>
         <div id="Sections">
-            <div id='SectionOptions' class='prompt'>
+            <div id='SectionOptions' class='prompt displayOrder'>
                 <div class="message whiteBG">
                     @if (isset($form))
                         <h3>Loading Sections</h3>

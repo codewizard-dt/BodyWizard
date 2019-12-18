@@ -19,7 +19,7 @@ class DiagnosisController extends Controller
     }
 
     public function loadDxForm($type){
-        include_once app_path("/php/functions.php");
+        // include_once app_path("/php/functions.php");
         $id = ($type=='Western') ? '5' : "11";
         $form = $CreateNew = Form::where('form_id', $id)->orderBy('version_id','desc')->first();
         // return $form->form_uid;

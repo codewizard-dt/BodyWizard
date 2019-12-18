@@ -15,6 +15,7 @@ $(document).ready(function(){
 			addBlockToScheduleAndSave(timeBlock);
 		}
 	})
+	$("#AddTimeBlock, #AddBreak, #EditTimeBlock, #EditBreak").find('.submitForm').data('submission',false);
 	$("#EditTimeBlock, #EditBreak").on("click",'.submitForm',function(){
 		var timeBlock = createTimeBlockObj($(this).closest('.modalForm')), blockNum = $(this).data('block');
 		if (timeBlock){
@@ -32,10 +33,11 @@ $(document).ready(function(){
 
 	var schedule = $("#CurrentSchedule").data('schedulearray'), scheduleTables = filterByData(".scheduleTable","activated",'undefined'), timeBlockRows = scheduleTables.find("tr").not('.head');
 	
-	timeBlockRows.on("click",function(){
-		console.log($(this));
-	})
+	// timeBlockRows.on("click",function(){
+	// 	console.log($(this));
+	// })
 	    
+	    console.log(schedule);
 
     var miniCal = new FullCalendar.Calendar($("#miniSchedule")[0], {
  		plugins: ['dayGrid','list', 'timeGrid', 'interaction','moment'],
@@ -59,9 +61,6 @@ $(document).ready(function(){
 			console.log('Clicked on: ' + info.dateStr);
 			console.log('Coordinates: ' + info.jsEvent.pageX + ',' + info.jsEvent.pageY);
 			console.log('Current view: ' + info.view.type);
-            // blurElement($("body"),"#NewAppointment");
-			// change the day's background color just for fun
-			// info.dayEl.style.backgroundColor = 'red';
         },
         defaultView:"timeGridWeek",
         minTime:($("#miniSchedule").data('earliest') != "23:00:00") ? $("#miniSchedule").data('earliest') : "8:00:00",
@@ -160,6 +159,7 @@ function addBlockToScheduleAndSave(blockObj){
 				if (data == 'checkmark'){
 					reloadTab();
 				}else{
+					feedback('some feedback',data);
 					console.log(data);
 				}
 			},
@@ -174,7 +174,7 @@ function addBlockToScheduleAndSave(blockObj){
 			url:"/save/"+model+"/"+uid,
 			method:"PATCH",
 			data:{
-				columnObj : JSON.stringify(columnObj)
+				columnObj : columnObj
 			},
 			success:function(data){
 				if (data=='checkmark'){
@@ -236,7 +236,7 @@ function editBlockAndSave(blockObj,blockNum){
 			url:"/save/"+model+"/"+uid,
 			method:"PATCH",
 			data:{
-				columnObj : JSON.stringify(columnObj)
+				columnObj : columnObj
 			},
 			success:function(data){
 				saveSystemModals();
@@ -324,7 +324,7 @@ function deleteBlockAndSave(blockNum){
 			url:"/save/"+model+"/"+uid,
 			method:"PATCH",
 			data:{
-				columnObj : JSON.stringify(columnObj)
+				columnObj : columnObj
 			},
 			success:function(data){
 				if (data=='checkmark'){

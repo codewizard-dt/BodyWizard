@@ -12,10 +12,10 @@ use Illuminate\Support\Facades\Log;
 |
 */
 // PUSH NOTIFICATIONS
-Route::any('/sendgrid/push', 'PushController@incomingSendGrid');
-Route::any('/google/calendar/push', 'PushController@incomingGoogle');
-Route::any('push/twilio/sms', 'PushController@incomingTwilioSms');
-Route::any('push/twilio/error', 'PushController@twilioError');
+Route::any('/push/sendgrid', 'PushController@incomingSendGrid');
+Route::any('/push/google/calendar', 'PushController@incomingGoogle');
+Route::any('/push/twilio/sms', 'PushController@incomingTwilioSms');
+Route::any('/push/twilio/error', 'PushController@twilioError');
 Route::domain('bodywizard.ngrok.io')->group(function(){
 	Route::any('/', 'PushController@googlePushVerification');
 });
@@ -27,7 +27,8 @@ Route::domain('headspaceacupuncture.com')->group(function(){
 	});
 });
 
-Route::any('/session-check', 'ScriptController@sessionCheck');
+Route::any('/notification-check', 'NotificationController@notificationCheck');
+Route::post('/notification-update', 'NotificationController@notificationUpdate');
 
 Route::get('/', 'PagesController@home');
 Route::get('/about', 'PagesController@about');
@@ -51,6 +52,7 @@ Route::get('/schedule/non-ehr', 'ScheduleController@nonEhrEventFeed');
 	Route::get('/optionsNav/{model}/{uid}', 'ScriptController@OptionsNav');
 	Route::get('/display/table/{model}', 'ScriptController@ResourceTable');
 	Route::get('/{model}/index', 'ScriptController@ListWithNav');
+	Route::get('/{model}/index/{uid}', 'ScriptController@ListWithNav');
 	Route::get('/{model}/modal', 'ScriptController@ListAsModal');
 	Route::get('/settings/{model}/{uid}', 'ScriptController@EditSettings');
 	Route::get('/schedule/{model}/{uid}', 'ScheduleController@EditUserSchedule');
@@ -70,6 +72,7 @@ Route::get('/home/codes', 'CodeController@home');
 Route::get('/home/complaints', 'ComplaintController@home');
 Route::get('/home/diagnoses', 'DiagnosisController@home');
 
+Route::post('/form/{uid}/submit','FormController@submit');
 Route::get('/home/forms', 'FormController@home');
 Route::get('/forms/{uid}/preview', 'FormController@preview');
 Route::get('/forms/{uid}/settings', 'FormController@settings');
@@ -92,6 +95,12 @@ Route::get('/portal', 'Auth\LoginController@showLoginForm')->name('portal') ;
 Route::get('/portal/launchpad', 'PagesController@launchpad')->middleware('auth');
 Route::get('/portal/settings', 'PagesController@portalsettings')->middleware('auth');
 Route::get('/portal/practices', 'PagesController@practicesettings')->middleware('auth');
+Route::get('/portal/settings/display/{model}', 'SettingsController@displaySettings')->middleware('auth');
+Route::get('/portal/settings/panel', 'SettingsController@panel')->middleware('auth');
+Route::post('/portal/settings/display-order', 'SettingsController@displayOrderUpdate')->middleware('auth');
+
+Route::get('/practice/contact-info','PracticeController@contactInfo')->middleware('auth');
+Route::get('/practice/legal-info','PracticeController@legalInfo')->middleware('auth');
 
 Route::get('/portal/user/settings', 'SettingsController@userSettings');
 Route::get('/user/info', 'SettingsController@userInfo');

@@ -1,7 +1,10 @@
 <!DOCTYPE html>
 <?php 
-    include_once app_path("/php/functions.php");
-    $usertype = Auth::user()->user_type;
+    use Illuminate\Support\Facades\Log;
+
+    $user = Auth::user();
+    $notifications = $user->unreadNotifications;
+    $usertype = $user->user_type;
     if ($usertype == 'practitioner'){
         $menuData = "PortalPractitioner";
         $menuName = "PortalPractitioner";
@@ -71,21 +74,52 @@
                     <div class="button pink medium">Click here to manually refresh</div>
                 </div>
             </div>
+            <div id="Notification" class='prompt large'>
+                <div class="message"></div>
+                <div class="options">
+                    <div class="button small pink markAsUnread">mark as unread</div>
+                    <div class="button small pink delete">delete</div>
+                    <div class="button small yellow viewModel">go to there</div>
+                    <div class="button small yellow clickTab">go to there</div>
+                    <div class="button small cancel">go back</div>
+                </div>
+            </div>
         </div>
+
+        <div id="Notifications">
+            <div class="open">notifications<span id='UnreadCount' style='display:none;' class="indicator">{{$user->unreadNotifications->count()}}</span></div>
+            <div class="list">
+                <div class="message">
+                    @include('portal.user.notifications')
+                </div>
+                <div class="options">
+                    <div class='pink10BG multiBtns'>
+                        <div class="button pink xsmall markMultiAsUnread">mark unread</div>
+                        <div class="button pink xsmall markMultiAsRead">mark read</div>
+                        <div class="button pink xsmall deleteMulti">delete</div>
+                    </div>
+                    <div class="button yellow xsmall selectMultiple">select multiple</div>
+                    <div class="button minimize cancel xsmall">minimize</div>
+                </div>                
+            </div>
+
+        </div>
+
 
         @include('layouts.footer-simple')
 
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-color/2.1.2/jquery.color.min.js" integrity="sha256-H28SdxWrZ387Ldn0qogCzFiUDDxfPiNIyJX7BECQkDE=" crossorigin="anonymous"></script>
-        <script type="text/javascript" src="{{ asset('/js/functions.js') }}"></script>
-        <script type="text/javascript" src="{{ asset('/js/launchpad/launchpad.js') }}"></script>
-        <script type="text/javascript" src="{{ asset('/js/scrollTo.js') }}"></script>
-        <script type="text/javascript" src="{{ asset('/js/menus.js') }}"></script>
-        <!-- <script type="text/javascript" src="{{ asset('/js/menus.js') }}"></script> -->
-        <script type="text/javascript" src="{{ asset('/js/jonthornton-jquery-timepicker-99bc9e3/jquery.timepicker.min.js') }}"></script>
-        <script type="text/javascript" src="{{ asset('/js/jquery.plugin.min.js') }}"></script>
-        <script type="text/javascript" src="{{ asset('/js/jquery.datepick.min.js') }}"></script>
-        <script type="text/javascript" src="{{ asset('/js/mark/jquery.mark.js') }}"></script>
-        <script type='text/javascript' src="{{ asset('/js/summernote-lite.min.js') }}"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-color/2.1.2/jquery.color.min.js" integrity="sha256-H28SdxWrZ387Ldn0qogCzFiUDDxfPiNIyJX7BECQkDE=" crossorigin="anonymous"></script>
+            <script type="text/javascript" src="{{ asset('/js/functions.js') }}"></script>
+            <script type="text/javascript" src="{{ asset('/js/launchpad/launchpad.js') }}"></script>
+            <script type="text/javascript" src="{{ asset('/js/scrollTo.js') }}"></script>
+            <script type="text/javascript" src="{{ asset('/js/menus.js') }}"></script>
+            <!-- <script type="text/javascript" src="{{ asset('/js/menus.js') }}"></script> -->
+            <script type="text/javascript" src="{{ asset('/js/jonthornton-jquery-timepicker-99bc9e3/jquery.timepicker.min.js') }}"></script>
+            <script type="text/javascript" src="{{ asset('/js/jquery.plugin.min.js') }}"></script>
+            <script type='text/javascript' src="{{ asset('/js/moment.js') }}"></script>
+            <script type="text/javascript" src="{{ asset('/js/jquery.datepick.min.js') }}"></script>
+            <script type="text/javascript" src="{{ asset('/js/mark/jquery.mark.js') }}"></script>
+            <script type='text/javascript' src="{{ asset('/js/summernote-lite.min.js') }}"></script>
 
 
         @yield('scripts')

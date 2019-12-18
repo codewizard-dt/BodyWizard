@@ -134,10 +134,6 @@ button.ui-datepicker-cmd {
     padding:2px;
 }
 
-.datepick-cmd{
-    padding: 0 5px;
-}
-
 input.datepicker{
     /*margin:0.35em 1em;*/
 }
@@ -148,8 +144,4 @@ input.datepicker{
 
 .datepick-today{
     color: rgb(20,20,20) !important;
-}
-
-.datepick a {
-    color: rgb(130,130,130);
 }

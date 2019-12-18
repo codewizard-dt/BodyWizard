@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Log;
 class RefreshTables extends Model
 {
     //
-    public function clearUserTables(){
+    public static function clearUserTables(){
     	try{
 			Artisan::call("migrate:refresh --path database/migrations/2014_10_12_000000_create_users_table.php");
 			Artisan::call("migrate:refresh --path database/migrations/2019_08_15_103817_create_users_audit_table.php");
@@ -29,7 +29,7 @@ class RefreshTables extends Model
     		return $e;
     	}
     }
-    public function clearApptTables(){
+    public static function clearApptTables(){
         try{
             Artisan::call("migrate:refresh --path database/migrations/2019_05_29_164721_create_appointments_table.php");
             Artisan::call("migrate:refresh --path database/migrations/2019_09_16_163133_create_appointments_audit_table.php");
@@ -39,7 +39,31 @@ class RefreshTables extends Model
             return $e;
         }
     }
-    public function createDefaultUser(){
+    public static function clearSubmissionTables(){
+        try{
+            Artisan::call("migrate:refresh --path database/migrations/2019_05_29_154608_create_submissions_table.php");
+            return true;
+        }catch(\Exception $e){
+            return $e;
+        }        
+    }
+    public static function clearNotificationTables(){
+        try{
+            Artisan::call("migrate:refresh --path database/migrations/2019_12_13_151342_create_notifications_table.php");
+            return true;
+        }catch(\Exception $e){
+            return $e;
+        }        
+    }
+    public static function clearBugTables(){
+        try{
+            Artisan::call("migrate:refresh --path database/migrations/2019_12_13_122629_create_bugs_table.php");
+            return true;
+        }catch(\Exception $e){
+            return $e;
+        }        
+    }
+    public static function createDefaultUser(){
     	try{
 		    $admin = new User;
 		    $admin->first_name = "Bryan";
@@ -65,7 +89,7 @@ class RefreshTables extends Model
     		return $e;
     	}
     }
-    public function seedUserTables(){
+    public static function seedUserTables(){
         $patients = factory(Patient::class,15)
                     ->create()
                     ->each(function($patient){
@@ -88,7 +112,7 @@ class RefreshTables extends Model
                         )->save();
                     });
     }
-    public function seedApptTables($calendarId, $apptCount){
+    public static function seedApptTables($calendarId, $apptCount){
         $apptCount = (int)$apptCount;
         try{
             $appts = factory(Appointment::class, $apptCount)
@@ -98,6 +122,5 @@ class RefreshTables extends Model
             Log::info($e);
             return false;
         }
-
     }
 }

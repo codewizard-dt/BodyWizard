@@ -72,7 +72,7 @@ class Attachment extends Model
         ];
     }
 
-    public function optionsNav(){
+    public function moreOptions(){
 
     }
     public function templates(){

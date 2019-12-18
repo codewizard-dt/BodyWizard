@@ -23,10 +23,11 @@ class StandardEmail extends Mailable
      *
      * @return void
      */
-    public function __construct(Message $message)
+    public function __construct(Message $message, $practiceId)
     {
         $this->data = $message;
         $this->attachments = $message->attachments;
+        $this->practiceId = $practiceId;
     }
 
     /**
@@ -36,12 +37,14 @@ class StandardEmail extends Mailable
      */
     public function build()
     {
-        include_once app_path("php/functions.php");
+        // include_once app_path("php/functions.php");
 
         $messageId = $this->data->id;
+        $practiceId = $this->practiceId;
         $header = [
             'unique_args' => [
-                'bw_message_id' => $messageId
+                'bw_message_id' => $messageId,
+                'practice_id' => $practiceId
             ]
         ];
         $this->withSwiftMessage(function($message) use ($header){

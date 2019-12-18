@@ -1,10 +1,12 @@
-var action = undefined;
+var action = undefined, appointmentDetails = {services:null,date:null,time:null,datetime:null,patient:null,practitioner:null}, 
+	defaultPatientInfo = undefined, defaultPractitionerInfo = undefined;
 $(document).ready(function(){
 	$("#createAppointment, #editAppointment").find('.submitForm').text("save appointment");
 	$("#EditApptBtn").on('click',function(){
 		blurElement($("body"),"#editAppointment");
 	})
 	$("#editAppointment").find("h1").first().text("Edit Appointment");
+	$("#DeleteApptBtn").on('click',confirmApptDelete);
 })
 function activateServiceSelection(){
 	var categories = $("#CategoryDetails").data('details'), services = $("#ServiceDetails").data("details"),
@@ -74,8 +76,8 @@ function activateServiceSelection(){
 	})
 	checkCount($("#SelectServices"));
     
-    updatePatientData();
-    updatePractitionerData();
+    // updatePatientData();
+    // updatePractitionerData();
 	$("#PatientListModal").find(".selectData").on('click',updatePatientData);
 	$("#PractitionerListModal").find(".selectData").on('click',updatePractitionerData);
 
@@ -99,17 +101,20 @@ function activateServiceSelection(){
 	$(".progressiveSelection").on('click','.forward',nextStep);
 }
 function loadApptInfo(patientIds,practitionerId,serviceIds,dateTime,form){
+	console.log("LOAD APPOINTMENT INFO");
 	form.find("#date").val(dateTime.format("MM/DD/YYYY"));
-	form.find("#time").val(dateTime.format("hh:mma"));
+	form.find("#time").val(dateTime.format("h:mma"));
+	$("input").show();
 	updateInputByUID(form.find("#select_patient"),patientIds);
 	updateInputByUID(form.find("#select_practitioner"),practitionerId);
 	updateInputByUID(form.find("#select_services"),serviceIds);
-	updatePatientData();
-	// return;
-	updateDuration();
-	resetProgressBar($("#SelectServices"));
-	updateAvailableServices();
-	hideAlreadySelected($("#SelectServices"));
+	// updatePatientData();
+	// updatePractitionerData();
+	// updateDuration();
+	// resetProgressBar($("#SelectServices"));
+	// updateAvailableServices();
+	// if (usertype == 'patient'){updateAvailableTimes();}
+	// hideAlreadySelected($("#SelectServices"));
 }
 function moveServiceSelect(id, display = true){
 	$(id).find(".section").last().append($("#SelectServices"));
@@ -120,10 +125,6 @@ function movePracTimeSelect(id, display = true){
 	$("#SelectPractitioner").find('li').removeClass('disabled');
 	if (display){$("#SelectPractitioner, #SelectDateTime").fadeIn();}
 }
-// function moveWhichFirst(id, display = true){
-// 	$(id).find(".section").last().append($("#WhichFirst"));
-// 	if (display){$("#WhichFirst").fadeIn();}
-// }
 function moveDetails(id, display = true){
 	var timeEdit = $("#Details").find('.time').find('.edit');
 	$("#Details").insertAfter($(id).find("h2").first());
@@ -133,69 +134,72 @@ function moveDetails(id, display = true){
 	if (display){$("#Details").fadeIn();}
 	$(id).find(".submitForm").addClass('disabled');
 }
-function updatePatientData(){
-	var patient = checkCondition($("#SelectServices")), row, patientId, patientInfo = {}, isNewPatient, uidList = JSON.parse($("#uidList").text());
-	// console.log(uidList);
-    if (patient == null && (uidList == null || uidList.Patient == undefined)){
-    	// console.log("patient 1");
-        $("#SelectServices").find(".openBtn").addClass("disabled");
-    }else if (defaultPatientInfo != undefined){
-    	// console.log('patient 2');
-        $("#SelectServices").find(".openBtn").removeClass("disabled");
-        $("#SelectServices").data('patientInfo',defaultPatientInfo);
-        $("#SelectServices").closest('.modalForm').find("#select_patient").val(defaultPatientInfo.name);
-    }
-    else{
-    	// console.log("patient 3");
-    	patientId = ($("#PatientListModal").data('uidArr') == undefined) ? $("#ApptInfo").data('patientIds')[0] : $("#PatientListModal").data('uidArr')[0];
-        $("#SelectServices").find(".openBtn").removeClass("disabled");
-        row = $("#PatientList").find("tr").filter(function(){return $(this).data('uid') == patientId;});
-        $.each(row.find(".patientInfo").text().split(','),function(i,info){
-        	var key = info.split(":")[0], val = info.split(":")[1];
-        	if (val == "true"){val = true;}
-        	if (val == "false"){val = false;}
-        	patientInfo[key] = val;
-        })
-        // console.log(patientInfo);
-        $("#SelectServices").data('patientInfo',patientInfo);
-    }
-    updateAvailableServices($("#SelectServices"));
+
+function resetEntireAppt(){
+	appointmentDetails = 
+	{
+		services:null,
+		date:null,
+		time:null,
+		datetime:null,
+		patient: (defaultPatientInfo !== undefined) ? defaultPatientInfo.id : null,
+		practitioner:null
+	};
 }
-function updatePractitionerData(){
-	var practitioner = ($("#PractitionerListModal").data('uidArr') == undefined) ? null : $("#PractitionerListModal").data('uidArr')[0], practitionerInfo;
-	if (practitioner){
-		$.each($("#Practitioners").data('schedule'),function(p,pract){
-			if (pract.practitioner_id == practitioner){practitionerInfo = pract;}
+function appointment(attr){
+	return appointmentDetails[attr];
+}
+function updateAppointment(attrArr = null){
+	if (attrArr){
+		$.each(attrArr,function(attr,val){
+			appointmentDetails[attr] = val;
 		})
-		var form = $("#SelectServices").closest('.modalForm');
-		if (form.is(":visible")){
-			var services = ($("#ServiceListModal").data('uidArr') == undefined) ? null : $("#ServiceListModal").data('uidArr'),
-				duration = ($.inArray(form.find("#duration").val(),['','0']) > -1) ? null : Number(form.find("#duration").val()), 
-				time = form.find("#time").val(), date = form.find("#date").val(), dateTime = moment(date + " " + time, "MM-DD-YYYY hh:mma");
-			dateTime = (form.data('dateTime') != undefined) ? form.data('dateTime') : null;
-			if (services){
-				updateDuration();
-			}else if (dateTime){
-				var check = checkSchedule(dateTime, practitionerInfo.schedule, null, duration);
-				if (check !== true){
-					var endTime = (duration) ? moment(dateTime).add(duration,'m') : null;
-					setTimeout(function(){
-						handleCheck(check,'practitioner','practitioner',dateTime, endTime);
-					},500)
-				}			
-			}
+		if (appointmentDetails.date && appointmentDetails.time){
+			appointmentDetails.datetime = moment(appointmentDetails.date + " " + appointmentDetails.time);
 		}
-	}else{
-		practitionerInfo = null;
-		$("#PractitionerListModal").removeData('uidArr');
+		if (appointmentDetails.datetime){
+			appointmentDetails.date = datetime.format("M/D/YYYY");
+			appointmentDetails.time = datetime.format("h:ma");
+		}
 	}
-	$("#SelectServices").data('practitionerInfo',practitionerInfo);
+	var appt = appointmentDetails;	
+	console.log(appt);
+
+	var form = $("#createAppointment, #editAppointment").filter(":visible"), updateForm = (form.length != 0);
+	if (updateForm){
+		updateInputByUID(form.find("#select_patient"),appt.patient);
+		updateInputByUID(form.find("#select_practitioner"),appt.practitioner);
+		updateInputByUID(form.find("#select_services"),appt.services);
+		if (datetime){
+
+		}else{
+
+		}
+	}
+
+	if (appt.patient){updatePatientData();}
+
+	var requires = [];
+	if (appt.patient === null){requires.push(appt.patient)};
+	if (appt.practitioner === null){requires.push(appt.practitioner)};
+	if (appt.services === null){requires.push(appt.services)};
+	if (appt.datetime === null){requires.push(appt.datetime)};
+	
+	if (requires.length == 0){
+		$("#editAppointment, #createAppointment").find('.submitForm').removeClass('disabled');
+		return true;
+	}else{
+		$("#editAppointment, #createAppointment").find('.submitForm').addClass('disabled');
+		return requires;
+	}
+	// return (requires.length == 0) ? true : requires;
 }
 function resetConnectedModels(){
 	// $("#ServiceListModal").removeData('uidArr');
 	// $("#PractitionerListModal").removeData('uidArr');
 	$(".connectedModel").removeData('uidArr');
-	// console.log("reset");
+	$(".connectedModelItem").val("");
+	console.log("resetConnectedModels");
 }
 function checkCondition(progressiveSelector){
 	var conditionEle = (progressiveSelector.data('condition') !== undefined) ? progressiveSelector.data('condition') : null, parent = progressiveSelector.data('parent'), conditionVal;
@@ -214,7 +218,26 @@ function checkCondition(progressiveSelector){
 	// console.log(conditionVal);
 	return conditionVal;
 }
+function checkFormStatus(){
+	var formInfo = $(this).closest('.checkFormStatus');
+	if (formInfo.data('completed')){
+		confirm('Form Completed',"You've already completed this form!",'see all forms','go back');
+	}else{
+		confirm('Required Form Status','You haven\'t completed this form yet. Would you like to go to the forms page now?','go to forms','not right now');
+		setUid('Form',formInfo.data('form_id'));
+	}
+
+	var wait = setInterval(function(){
+		if (confirmBool){
+			unblurAll();
+			$("#forms-home").find(".title").click();
+			confirmBool = undefined;
+			clearInterval(wait);
+		}
+	},100)	
+}
 function addService(){
+	console.log('addService');
 	var name = $("#ServiceDescription").find("h3").text(), details = $("#ServiceDetails").find('li').filter(function(){
 		return $(this).data('name') == name;
 	}).data(), form = $(this).closest('.modalForm'), serviceItem = form.find('.item').filter(function(){
@@ -227,7 +250,6 @@ function addService(){
 	if (currentVal != ""){selectRowsByName(currentVal, $("#ServiceList"));}
 	row.click();
 	selectBtn.click();
-
 		if (usertype == 'patient'){
 			addDetail('services', serviceItem.find("textarea").val());
 		}
@@ -238,6 +260,7 @@ function addService(){
 	hideAlreadySelected($("#SelectServices"));
 }
 function updateDuration(){
+	console.log('updateDuration');
 	var form = $("#SelectServices").closest('.modalForm'), services = form.find('#select_services').val().split(", "), durationInput = form.find(".number").find('input'), duration = 0, endDateTime, matches = $("#ServiceDetails").find('li').filter(function(){return $.inArray($(this).text(), services) > -1;}), dateTime = form.data('dateTime'), practitioner = $("#SelectServices").data('practitionerInfo'), serviceIds = $("#ServiceListModal").data('uidArr') == undefined ? null : $("#ServiceListModal").data('uidArr'), practitionerCheck, formVisible = form.is(":visible"), h2 = [], div = [];
 	matches.each(function(m,match){
 		duration = duration + Number($(this).data('duration'));
@@ -255,18 +278,8 @@ function updateDuration(){
 	if (matches.length == 0){duration = "0"}
 	durationInput.val(duration);
 }
-function serviceFitsSched(momentObj, duration, scheduleBlocks){
-}
-function durationFitsSched(momentObj, duration, scheduleBlocks, services = null){
-	duration = Number(duration);
-	var endTime = moment(momentObj).add(duration, 'm');
-	if (services){
-		return checkSchedule(endTime, scheduleBlocks, services);
-	}else{
-		return checkSchedule(endTime, scheduleBlocks);
-	}
-}
 function noEventConflict(start, duration, anonEvents){
+	if (anonEvents===null){return true;}
 	var sameDayEvents = anonEvents.filter(event => moment(event.start).format("MM-DD-YYYY") == start.format("MM-DD-YYYY")), pass = true,
 		end = moment(start).add(Number(duration),'m');
 	$.each(sameDayEvents,function(x,event){
@@ -299,95 +312,206 @@ function resetProgressBar(progressiveSelector){
 		back.html("");
 		checkCount(progressiveSelector);
 	})
+	progressiveSelector.find(".active").removeClass('active');
 }
 function checkCount(progressiveSelector){
 	var targetStr = progressiveSelector.data('target'), target = modalOrBody(progressiveSelector).find(targetStr), count = (target.val() == "") ? 0 : target.val().split(", ").length, toggleTextBtns = progressiveSelector.find(".button").filter("[data-toggletext]");
-	if (count > 0){
-		progressiveSelector.find(".openBtn").removeClass("pinkflash").addClass("pink70");
-	}else{
-		progressiveSelector.find(".openBtn").removeClass("pink70").addClass("pinkflash");
+	if (count > 0){progressiveSelector.find(".openBtn").removeClass("pinkflash").addClass("pink70");
+	}else{progressiveSelector.find(".openBtn").removeClass("pink70").addClass("pinkflash");
 	}
-	if (count == 0){
-		progressiveSelector.find(".clearBtn, .clearLastBtn, .closeBtn").hide();
-	}else{
-		progressiveSelector.find('.clearLastBtn, .closeBtn').show();
+	if (count == 0){progressiveSelector.find(".clearBtn, .clearLastBtn, .closeBtn").hide();
+	}else{progressiveSelector.find('.clearLastBtn, .closeBtn').show();
 	}
 	toggleTextBtns.each(function(){
 		var toggleText = $(this).data('toggletext'), originalText = $(this).data('originaltext'), togglecount = Number($(this).data('togglecount'));
-		if (count >= togglecount){
-			$(this).text(toggleText);
-		}else{
-			$(this).text(originalText);
+		if (count >= togglecount){$(this).text(toggleText);
+		}else{$(this).text(originalText);
 		}
 	})
 	progressiveSelector.data('count',count);
 	return count;
 }
-function updateAvailableServices(){
-	var services = $("#ServiceDetails").find("li"), patientInfo = $("#SelectServices").data('patientInfo'), isNewPatient, newPatientsOk, newPatientsOnly, addonOk, addonOnly, practitioner = ($("#PractitionerListModal").data('uidArr') == undefined) ? null : $("#PractitionerListModal").data('uidArr')[0];
-	if (patientInfo == undefined){return false;}
-	isNewPatient = patientInfo.isNewPatient;
-	if (serviceOverride){
-		services.data('show',true);
-	}else if (isNewPatient){
-		if (usertype == 'patient'){
-			text = "New Patients: choose an evaluation appointment";
-		}else if (allowOverride){
-			text = "showing New Patient options only <span class='override'>show all</span>";
-		}else{
-			text = "showing New Patient options only";
-		}
-		$("#SelectServices").find(".conditionalLabel").html(text);
-		services.each(function(){
-			newPatientsOk = $(this).data('new_patients_ok');
-			$(this).data('show',newPatientsOk);
-		})
-	}else if (!isNewPatient){
-		$("#SelectServices").find(".conditionalLabel").text('');
-		services.each(function(){
-			newPatientsOnly = $(this).data('new_patients_only');
-			$(this).data('show',newPatientsOnly);
-		})
+
+// UPDATE FORM INFO
+	function updatePatientData(){
+		console.log('updatePatientData');
+		var patient = checkCondition($("#SelectServices")), row, patientId, patientInfo = {}, isNewPatient, uidList = JSON.parse($("#uidList").text());
+	    if (defaultPatientInfo != undefined){
+	    	console.log(defaultPatientInfo);
+	    	// defaultPatientInfo != undefined when Patient is logged in.
+	        $("#SelectServices").find(".openBtn").removeClass("disabled");
+	        $("#SelectServices").closest('.modalForm').find("#select_patient").val(defaultPatientInfo.name);
+	        $("#SelectServices").data('patientInfo',defaultPatientInfo);
+	    }else if (patient == null && (uidList == null || uidList.Patient == undefined)){
+	    	// practitioner logged in, no patient selected;
+	        $("#SelectServices").find(".openBtn").addClass("disabled");
+	    }else{
+	    	// practitioner logged in, patient selected
+	    	patientId = ($("#PatientListModal").data('uidArr') == undefined) ? $("#ApptInfo").data('patientIds')[0] : $("#PatientListModal").data('uidArr')[0];
+	        $("#SelectServices").find(".openBtn").removeClass("disabled");
+	        row = $("#PatientList").find("tr").filter(function(){return $(this).data('uid') == patientId;});
+	        $.each(row.find(".patientInfo").text().split(','),function(i,info){
+	        	var key = info.split(":")[0], val = info.split(":")[1];
+	        	if (val == "true"){val = true;}
+	        	if (val == "false"){val = false;}
+	        	patientInfo[key] = val;
+	        })
+	        $("#SelectServices").data('patientInfo',patientInfo);
+	    }
+	    updateAvailableServices($("#SelectServices"));
 	}
-	var count = checkCount($("#SelectServices")), text = $("#SelectServices").find(".conditionalLabel").text();
-	if (count > 0){
-		if (usertype == 'patient'){
-			text = "Limited selection until Initial Evaluation";
-		}else if (allowOverride){
-			text = isNewPatient ? "Showing New Patient Add-On services only <span class='override'>show all</span>" : "Showing Add-On services only";
-		}else{
-			text = isNewPatient ? "Showing New Patient Add-On services only" : "Showing Add-On services only";
-		}
-		$("#SelectServices").find(".conditionalLabel").html(text);
-		services.each(function(){
-			addonOk = $(this).data('is_addon');
-			if (!addonOk){
-				$(this).data('show', false);
+	function updatePractitionerData(){
+		console.log('updatePractitionerData');
+		var practitioner = ($("#PractitionerListModal").data('uidArr') == undefined) ? null : $("#PractitionerListModal").data('uidArr')[0], practitionerInfo;
+		// console.log("update practitioner data "+practitioner);
+		if (practitioner){
+			$.each($("#Practitioners").data('schedule'),function(p,pract){
+				if (pract.practitioner_id == practitioner){practitionerInfo = pract;}
+			})
+			var form = $("#SelectServices").closest('.modalForm');
+			if (form.is(":visible")){
+				var services = ($("#ServiceListModal").data('uidArr') == undefined) ? null : $("#ServiceListModal").data('uidArr'),
+					duration = ($.inArray(form.find("#duration").val(),['','0']) > -1) ? null : Number(form.find("#duration").val()), 
+					time = form.find("#time").val(), date = form.find("#date").val(), dateTime = moment(date + " " + time, "MM-DD-YYYY hh:mma");
+				dateTime = (form.data('dateTime') != undefined) ? form.data('dateTime') : null;
+				if (services){
+					updateDuration();
+				}else if (dateTime){
+					var check = checkSchedule(dateTime, practitionerInfo.schedule, null, duration);
+					if (check !== true){
+						var endTime = (duration) ? moment(dateTime).add(duration,'m') : null;
+						setTimeout(function(){
+							handleCheck(check,'practitioner','practitioner',dateTime, endTime);
+						},500)
+					}			
+				}
 			}
-		})
+		}else{
+			practitionerInfo = null;
+			$("#PractitionerListModal").removeData('uidArr');
+		}
+		// console.log(practitionerInfo);
+		$("#SelectServices").data('practitionerInfo',practitionerInfo);
+	}
+	function updateAvailableServices(){
+		console.log('updateAvailableServices');
+		var services = $("#ServiceDetails").find("li"), patientInfo = $("#SelectServices").data('patientInfo'), isNewPatient, newPatientsOk, newPatientsOnly, addonOk, addonOnly, practitioner = ($("#PractitionerListModal").data('uidArr') == undefined) ? null : $("#PractitionerListModal").data('uidArr')[0];
+		if (patientInfo == undefined){return false;}
+		isNewPatient = patientInfo.isNewPatient;
+		if (serviceOverride){
+			services.data('show',true);
+		}else if (isNewPatient){
+			if (usertype == 'patient'){
+				text = "New Patients: choose an evaluation appointment";
+			}else if (allowOverride){
+				text = "showing New Patient options only <span class='override'>show all</span>";
+			}else{
+				text = "showing New Patient options only";
+			}
+			$("#SelectServices").find(".conditionalLabel").html(text);
+			services.each(function(){
+				newPatientsOk = $(this).data('new_patients_ok');
+				$(this).data('show',newPatientsOk);
+			})
+		}else if (!isNewPatient){
+			$("#SelectServices").find(".conditionalLabel").text('');
+			services.each(function(){
+				newPatientsOnly = $(this).data('new_patients_only');
+				$(this).data('show',newPatientsOnly);
+			})
+		}
+		var count = checkCount($("#SelectServices")), text = $("#SelectServices").find(".conditionalLabel").text();
+		if (count > 0){
+			if (usertype == 'patient'){
+				text = "Limited selection until Initial Evaluation";
+			}else if (allowOverride){
+				text = isNewPatient ? "Showing New Patient Add-On services only <span class='override'>show all</span>" : "Showing Add-On services only";
+			}else{
+				text = isNewPatient ? "Showing New Patient Add-On services only" : "Showing Add-On services only";
+			}
+			$("#SelectServices").find(".conditionalLabel").html(text);
+			services.each(function(){
+				addonOk = $(this).data('is_addon');
+				if (!addonOk){
+					$(this).data('show', false);
+				}
+			})
+		}else{
+			services.each(function(){
+				addonOnly = $(this).data('add_on_only');
+				if (addonOnly){
+					$(this).data('show',false);
+				}
+			})
+		}
+		var showMe = services.filter(function(){return $(this).data('show');}), hideMe = services.not(showMe);
+		showMe.show();
+		hideMe.hide();
+		updateAvailableCategories();
+	}
+	function updateAvailableCategories(){
+		console.log('updateAvailableCategories');
+		var categories = $("#CategoryDetails").find("li"), services = $("#ServiceDetails").find("li"), categoryId, hasMatchingServices;
+		categories.each(function(){
+			categoryId = $(this).data('id');
+			hasMatchingServices = (services.filter(function(){return $(this).data('show') && $(this).data('service_category_id') == categoryId}).length > 0);
+			$(this).data('show',hasMatchingServices);
+		});
+		var showMe = categories.filter(function(){return $(this).data('show');}), hideMe = categories.not(showMe);
+		showMe.show();
+		hideMe.hide();
+	}
+	function updateFormInfo(forms){
+	    $("#FormInfo").html("");
+	    $.each(forms,function(f, form){
+	        $("<div/>",{
+	            class: 'checkFormStatus',
+	            data: form,
+	            html: "<span class='link'>"+form.name+"</span>",
+	            css: {position:'relative'}
+	        }).appendTo($("#FormInfo"));
+	        if (form.completed){
+	            $("#FormInfo").find("div").last().append("<span class='checkmark'>✓</span>");
+	        }
+	    });
+	}
+
+function confirmApptDelete(){
+	var text, apptTime = $("#ApptDateTime").data('dateTime'), feeIncursion = moment().add(25, 'h').isAfter(apptTime), dateStr = apptTime.format("ddd MMM Do [at] h:mm a");
+	if (usertype != 'patient'){
+		var name = $("#PatientName").text();
+		text = "You are about to cancel "+name+"'s appointment on "+dateStr+"<br><label><input id='DoNotSendEmail' type='checkbox'>do not send cancellation email</label>";
+		if (feeIncursion){text+="<br><label><input id='AutoChargeCancelFee' type='checkbox'>auto-charge cancellation fee</label>";}
 	}else{
-		services.each(function(){
-			addonOnly = $(this).data('add_on_only');
-			if (addonOnly){
-				$(this).data('show',false);
-			}
-		})
+		text = "<div>You are about to cancel your appointment on "+dateStr+".</div>";
+		if (feeIncursion){text += "<div class='paddedSmall'>Cancelling now will incur a cancellation fee because it is within 24hrs of your appointment.</div>";}
+		text += "<label><input id='DoNotSendEmail' type='checkbox'>do not send cancellation email</label>";
 	}
-	var showMe = services.filter(function(){return $(this).data('show');}), hideMe = services.not(showMe);
-	showMe.show();
-	hideMe.hide();
-	updateAvailableCategories();
+	confirm('Cancelling Appointment',text+'<h3 class="pink">Are you sure?</h3>','yes, cancel it','no, do not cancel');
+	var wait = setInterval(function(){
+		if (confirmBool != undefined){
+			if (confirmBool){
+				deleteAppt();
+			}
+			confirmBool = undefined;
+			clearInterval(wait);
+		}
+	},100)
 }
-function updateAvailableCategories(){
-	var categories = $("#CategoryDetails").find("li"), services = $("#ServiceDetails").find("li"), categoryId, hasMatchingServices;
-	categories.each(function(){
-		categoryId = $(this).data('id');
-		hasMatchingServices = (services.filter(function(){return $(this).data('show') && $(this).data('service_category_id') == categoryId}).length > 0);
-		$(this).data('show',hasMatchingServices);
-	});
-	var showMe = categories.filter(function(){return $(this).data('show');}), hideMe = categories.not(showMe);
-	showMe.show();
-	hideMe.hide();
+function deleteAppt(){
+	blurTopMost("#loading");
+
+	$.ajax({
+		url:"/delete/Appointment/"+$("#ApptInfo").data('apptId'),
+		method:"DELETE",
+		success:function(data){
+			if (data == 'checkmark'){
+				blurTopMost("#checkmark");
+				delayedUnblurAll();
+				calendar.refetchEvents();
+			}
+		}
+	})
 }
 function clearAll(){
 	var currentModel = $(this).closest('.modalForm').data('model'), modelToClear = $(this).data('model'), progressiveSelector = $(this).closest(".progressiveSelection"), targetStr = progressiveSelector.data('target'), target = modalOrBody($(this)).find(targetStr), modal = $(".connectedModel").filter(function(){
@@ -562,6 +686,7 @@ function createCheckObj(dateInfo, serviceInfo){
 		}
 	}
 	timeCheck = checkTime(dateInfo.momentObj, dateInfo.start, dateInfo.end, dateInfo.duration);
+	// console.log(dateInfo);
 	if (timeCheck !== true){
 		returnObj['timeCheck'] = timeCheck;
 		returnObj['schedule'] = {'start':dateInfo.start,'end':dateInfo.end};
@@ -569,10 +694,11 @@ function createCheckObj(dateInfo, serviceInfo){
 	return returnObj;
 }
 function availablePractitioners(momentObj, duration, services){
-	var practitioners = $("#Practitioners").data('schedule'), schedule, availablePractitioners = [];
+	var practitioners = $("#Practitioners").data('schedule'), availablePractitioners = [];
 	$.each(practitioners,function(p,practitioner){
-		schedule = practitioner.schedule;
-		if (checkSchedule(momentObj, schedule, services, duration) === true){
+		var schedule = practitioner.schedule, anonEvents = ($("#AnonFeed").data('schedule') == "") ? null : $("#AnonFeed").data('schedule'), pracMatch = anonEvents ? anonEvents.filter(event => event.practitionerId == practitioner.practitioner_id) : null;
+		if (checkSchedule(momentObj, schedule, services, duration) === true
+                && noEventConflict(momentObj, duration, pracMatch)){
 			availablePractitioners.push(practitioner);
 		}
 	})
@@ -583,7 +709,6 @@ function applyEventClasses(details,element){
 	$(element).addClass(types);
 }
 function handleCheck(check, type, action, start, end = null){
-	// console.log(check);
 	var h2 = [], div = [], str = '';
 	if (check.schedule != undefined){hours = "are set to " + check.schedule.start.format("h:mma") + "-" + check.schedule.end.format('h:mma') + ".";
 	}else{hours = "are not set.";}
@@ -621,7 +746,8 @@ function handleCheck(check, type, action, start, end = null){
 			var i = check.notOffered.length - 1, serviceId = check.notOffered[i], serviceName = services[i], offered;
 			offered = commaSeparated(getColumnById("Service",check.offered),true);
 			h2.push('Unscheduled Service');
-			div.push("'"+ serviceName + "' is not offered by " + practitioner.name + " at this time. On "+dateTime.format('dddd')+"'s from "+check.schedule.start.format("h:mm a")+" to "+check.schedule.end.format("h:mm a")+" they offer only "+offered+".");
+			console.log(services);
+			div.push("'"+ serviceName + "' is not offered by " + practitioner.name + " at this time. On "+start.format('dddd')+"'s from "+check.schedule.start.format("h:mm a")+" to "+check.schedule.end.format("h:mm a")+" they offer only "+offered+".");
 		}
 	};
 
@@ -642,7 +768,11 @@ function handleCheck(check, type, action, start, end = null){
 	    var wait = setInterval(function(){
 	        if (confirmBool != undefined){
 	            if (confirmBool){
-	            	unblurTopMost();
+	            	if (action == 'new'){
+	            		blurElement($("body"),"#createAppointment");
+	            	}else{
+		            	unblurTopMost();
+	            	}
 	            }else{
 	            	handleAction(action);
 	            }

@@ -120,10 +120,7 @@ function submitLogin(){
             },1000)
         },
         error:function(data){
-            unblurElement($("#LoginForm"));
-            console.log(data);
-            var errorText = data.statusText;
-            $("#LoginStatus").text("Error logging in: "+errorText);
+            unblurElement(login)
         }
     })
 }

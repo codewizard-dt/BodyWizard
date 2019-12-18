@@ -2,7 +2,7 @@ $(document).ready(function(){
 	var saveModelBtns = $(".createNew, .editExisting").find(".submitForm").filter(function(){
 		return $(this).data('updated') != true;
 	});
-	saveModelBtns.off("click",submitForm);
+	saveModelBtns.data('submission',false);
 	saveModelBtns.on("click",saveModel);
 	saveModelBtns.data('updated',true);
 
@@ -18,6 +18,7 @@ $(document).ready(function(){
 	modalBtns.data('initialized',true);
 
 	removePasswordInputs();
+
 })
 function initializeTemplateForm(){
 	var forms = $("#createTemplate, #editTemplate");
@@ -40,7 +41,30 @@ function initializeTemplateForm(){
 	          ['insert', ['link', 'picture']],
 	          ['view', ['fullscreen', 'codeview', 'undo', 'redo', 'help']],
 	        ]
-		})		
+		});
+		// var box = $("#createTemplate").find('.summernote');
+        $.ajax({
+            url: '/retrieve/Template/default',
+            success: function(data){
+                if (data == 'not found'){
+                	confirm('Default Template','Create a template named "Default" to make your life easier! It will automatically load each time you send a message. Would you like to create a default template now?','yes take me there','no not right now');
+                	var wait = setInterval(function(){
+                		if (confirmBool !== undefined){
+                			if (confirmBool){
+                				unblurTopMost();
+                				$("#template-index").find('.title').click();
+                			}
+                			confirmBool = undefined;
+                			clearInterval(wait);
+                		}
+                	},100)
+                }else{
+	                var m = data.markup, s = data.subject;
+	                $("#createTemplate").find('.summernote').summernote('code',m);
+	                $("#createTemplate").find("#default_subject_line").val(s);                	
+                }
+            }
+        })
 	},500);
 	forms.data('initialized',true);
 }
@@ -78,6 +102,23 @@ function openModal(){
 			return $(this).data('value') == lowerCaseModel;
 		}).click();
 	}
+}
+function updateEditForm(modal, dispModel, name){
+	var ot = null, t, otsplice;
+    $(modal).find("h1, h2, .q").each(function(){
+    	if ($(this).data('originaltext') != undefined){
+    		ot = $(this).data('originaltext');
+    		$(this).text(ot);
+    	}else{
+    		$(this).data('originaltext',$(this).text());
+    		otsplice = $(this).text().replace("Add","Edit").replace("New","This").replace("This " + dispModel, "");
+    		$(this).data('originalsplice',otsplice);
+    	}
+        // $(this).data('originaltext',t);
+        t = $(this).text();
+        t = t.replace("Add","Edit").replace("New","This").replace("This " + dispModel, "'" + name + "'");
+        $(this).text(t);
+    });
 }
 function removePasswordInputs(){
 	$(".noPW").find(".item").filter(function(){
@@ -136,6 +177,7 @@ function reloadTableModal(element,model){
 	})
 }
 function saveModel(includeInvisible = false){
+	if ($(this).hasClass('disabled')){return;}
 	// CONSTRUCT DATA OBJECT
 		var form = $(this).closest('.formDisp'), modal = $(this).closest('.createNew, .editExisting');
 		if (modal.data('model') == 'Appointment'){includeInvisible = true;}
@@ -165,7 +207,8 @@ function saveModel(includeInvisible = false){
 		
 		dataObj = {
 			connectedModels: JSON.stringify(connectedModelArr),
-			columnObj: JSON.stringify(columnObj)
+			// columnObj: JSON.stringify(columnObj)
+			columnObj: columnObj
 		}
 		if ($.inArray(model,noFullJson) == -1){
 			dataObj['full_json'] = JSON.stringify(obj);
@@ -209,12 +252,13 @@ function saveModel(includeInvisible = false){
 						str.push(message);
 					})
 					$("#Error").find(".message").html(str.join("<br>"));
-				}else{
-					$("#Error").find(".message").html(data);
-					$("#Error").find(".submit").data('error',data);
-					console.log(data);
+					blurTopMost("#Error");
 				}
-				blurTopMost("#Error");
+				// else{
+				// 	$("#Error").find(".message").html(data);
+				// 	$("#Error").find(".submit").data('error',data);
+				// 	console.log(data);
+				// }
 			}
 		}
 	})
@@ -231,6 +275,7 @@ function deleteModel(){
             url: "/delete/" + model + "/" + uid,
             method: "DELETE",
             success:function(data){
+            	console.log(data);
                 if (data=='checkmark'){
                     blurElement(deleteModal,"#checkmark");
                     setTimeout(function(){
@@ -338,20 +383,28 @@ function constructColumnObj(model){
 		if ($("#grant_admin_privileges").is(":visible")){obj['is_admin'] = turnToBoolean(justResponse($("#grant_admin_privileges")));}
 	}
 	else if (model == 'Message'){
-		var d = Date.now().toString(), l = d.length;
-		d = Number(d.slice(0, l - 3));
-		var s = {
-			'pending':[d],'processed':null,'dropped':null,'delivered':null,'deferred':null,
-			'bounce':null,'open':null,'click':null,'spamreport':null,'unsubscribe':null,'group_unsubscribe':null,'group_resubscribe':null
-		};
-		obj = {
-			type: justResponse($("#message_type")),
-			message: $("#createMessage").find(".summernote").summernote('code'),
-			status: JSON.stringify(s)
-		};
-		if ($("#subject").is(":visible")){
-			obj['subject'] = justResponse($("#subject"));
+		// var d = Date.now().toString(), l = d.length;
+		// d = Number(d.slice(0, l - 3));
+		// var s = {
+		// 	'pending':[d],'processed':null,'dropped':null,'delivered':null,'deferred':null,
+		// 	'bounce':null,'open':null,'click':null,'spamreport':null,'unsubscribe':null,'group_unsubscribe':null,'group_resubscribe':null
+		// };
+		var type = justResponse($("#message_type"));
+		if (type == 'Email' || type == 'Secure Portal Message'){
+			obj = {
+				type: type,
+				message: $("#createMessage").find(".summernote").summernote('code'),
+				subject: justResponse($("#subject"))
+			};
+		}else if (type == 'SMS'){
+			obj = {
+				type: type,
+				message: justResponse($("#plain_text_message"))
+			};
 		}
+		// if ($("#subject").is(":visible")){
+		// 	obj['subject'] = justResponse($("#subject"));
+		// }
 	}
 	else if (model == 'Template'){
 		var m = $('.summernote').filter(function(){
@@ -375,7 +428,7 @@ function constructColumnObj(model){
 	else if (model == "Appointment"){
 		var form = $("#createAppointment").is(":visible") ? $("#createAppointment") : $("#editAppointment"),
 			dateTime = moment(form.find("#date").val() + " " + form.find("#time").val(), "MM/DD/YYYY hh:mmA");
-		dateTime = dateTime.format("YYYY-MM-DD\Tkk:mm:ss");
+		dateTime = dateTime.format("YYYY-MM-DD kk:mm:ss");
 		obj = {
 			date_time: dateTime,
 			duration: form.find("#duration").val()

@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Form;
 use App\Image;
+use App\Submission;
+use App\Appointment;
+use App\Patient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -30,11 +33,71 @@ class FormController extends Controller
         return view("portal.$usertype.forms.settings",['uid'=>$uid]);
     }
 
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
+    public function submit($uid, Request $request){
+        $usertype = Auth::user()->user_type;
+        $patientId = ($usertype == 'patient') ? Auth::user()->patientInfo->id : session('uidList')['Patient'];
+        $patient = Patient::find($patientId);
+        $userId = Auth::user()->id;
+        $submission = new Submission;
+        $form = Form::find($uid);
+        $apptId = (session('uidList') !== null && isset(session('uidList')['Appointment'])) ? session('uidList')['Appointment'] : null;
+        if ($apptId){
+            if (!Appointment::find($apptId)->requiresForm($form->form_id, $usertype)){
+                $apptId = null;
+            }
+        }
+        if (!$apptId){
+            $appt = Appointment::firstThatNeedsForm($form->form_id, $patientId);
+            if ($appt){
+                $apptId = $appt->id;
+            }
+        }
+        
+        $submission->patient_id = $patientId;
+        $submission->submitted_by_user_id = $userId;
+        $submission->self_submitted = ($patient->userInfo->id == $userId);
+        $submission->submitted_by = $usertype;
+        $submission->appointment_id = $apptId;
+        $submission->form_uid = $uid;
+        $submission->form_id = $form->form_id;
+        $submission->form_name = $form->form_name;
+        $submission->responses = $request->jsonObj;
+        try{
+            $submission->save();
+            $form->has_submissions = true;
+            $form->save();
+            if ($apptId){
+                $appt = Appointment::find($apptId)->saveToFullCal();
+            }
+            if (isset($request->columnObj)){
+                $model = $request->model;
+                $modelUid = $request->uid;
+                $columns = $request->columnObj;
+                $this->storeColumns($model, $modelUid, $columns, $request);
+            }
+            return "checkmark";
+        }catch(\Exception $e){
+            return $e;
+        }
+    }
+    public function storeColumns($model, $uid, $columnObj, Request $request){
+        $class = "App\\$model";
+        $instance = $class::find($uid);
+        $trackChanges = usesTrait($instance,"TrackChanges");
+
+        if ($trackChanges){
+            $includeFullJson = isset($instance->auditOptions['includeFullJson']) ? $instance->auditOptions['includeFullJson'] : false;
+            $changes = $instance->checkForChanges($instance,$request,$includeFullJson);
+        }
+        foreach ($columnObj as $column => $value){
+            $instance->$column = $value;
+        }
+        $instance->save();
+        if ($trackChanges && $changes){
+            $instance->saveTrackingInfo($instance, $changes, $request->getClientIp());
+        }
+    }
+
     public function index()
     {
         //
@@ -45,11 +108,6 @@ class FormController extends Controller
         ]);        
     }
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
     public function create()
     {
         //
@@ -58,12 +116,6 @@ class FormController extends Controller
         return view("portal.$usertype.forms.create");        
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
     public function store(Request $request)
     {
         include_once app_path("php/functions.php");
@@ -81,6 +133,14 @@ class FormController extends Controller
         }
         if ($saveAsNewVersion){
             $form = new Form;
+            if (isset($current)){
+                $form->settings = $current->settings;
+                $form->settings_json = $current->settings_json;
+                $current->current = false;
+                $current->save();
+            }else{
+                $form->settings = Form::defaultSettings();
+            }
         }else{
             $form = $current;
         }
@@ -88,10 +148,6 @@ class FormController extends Controller
         $form->form_id = $formId;
         $form->version_id = $versionId;
         $form->form_name = $request->form_name;
-        // $form->questions = $request->questions;
-        $dummy = ["yes"=>5];
-        $form->questions = json_encode($dummy);
-        // $imgs = extractEmbeddedImages($request->full_json,$form,"full_json");
         $form->full_json = $this->extractImgsFromJson($request->full_json, $form);
 
         if ($form->save()){
@@ -112,7 +168,6 @@ class FormController extends Controller
                 $item = $items[$i];
                 if ($item['type'] == 'narrative'){
                     $markup = $item['options']['markupStr'];
-                    Log::info($markup);
                     $newImgs = preg_match_all('/src="data:([^;.]*);([^".]*)" data-filename="([^"]*)"/', $markup, $newImgMatches, PREG_PATTERN_ORDER);
                     $oldImgs = preg_match_all('/src="data:([^;.]*);([^".]*)" data-uuid="([^"]*)" data-filename="([^"]*)"/', $markup, $oldImgMatches, PREG_PATTERN_ORDER);
 

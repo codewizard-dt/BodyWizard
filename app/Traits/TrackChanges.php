@@ -13,18 +13,26 @@ trait TrackChanges
     //
     public function checkForChanges($instance, Request $request, $includeFullJson = false){
     	// $auditTable = $instance->auditTable;
-        $columns = isset($request->columnObj) ? json_decode($request->columnObj,true) : [];
+        // $columns = (isset($request->columnObj) && $request->columnObj !== 'null') ? json_decode($request->columnObj,true) : [];
+        if (isset($request->columnObj) && $request->columnObj !== 'null'){
+            $columns = is_array($request->columnObj) ? $request->columnObj : json_decode($request->columnObj,true);
+        }else{
+            $columns = [];
+        }
+        $settings = (isset($request->settings)) ? json_decode($request->settings,true) : null;
         $changes = [];
         $datesArr = dateFieldsArray();
         $dateTimesArr = dateTimeFieldsArray();
+        // Log::info($settings);
+        // Log::info($request->all());
         foreach ($columns as $key => $value){
-            $value = in_array($key, $datesArr) ? Carbon::parse($value)->toDateString() : $value;
-            $value = in_array($key, $dateTimesArr) ? Carbon::parse($value)->toDateTimeString() : $value;
+            // $value = in_array($key, $datesArr) ? Carbon::parse($value)->toDateString() : $value;
+            // $value = in_array($key, $dateTimesArr) ? Carbon::parse($value)->toDateTimeString() : $value;
             // $old = $instance->$key;
             if (in_array($key,$datesArr)){
                 $value = Carbon::parse($value)->format("Y-m-d");
                 $old = $instance->$key->format("Y-m-d");
-            }elseif(in_array($key,$datesArr)){
+            }elseif(in_array($key,$dateTimesArr)){
                 $value = Carbon::parse($value)->format("Y-m-d H:i:s");
                 $old = $instance->$key->format("Y-m-d H:i:s");
             }else{
@@ -34,6 +42,14 @@ trait TrackChanges
         		$change = [$key => ["old" => $old, "new" => $value]];
                 $changes[] = $change;
         	}
+        }
+        if ($settings){
+            $existingSettings = isset($instance->settings) ? $instance->settings : [];
+            if (!is_array($existingSettings)){$existingSettings = json_decode($existingSettings,true);}
+            if (!$this->recursiveArrayMatch($settings,$existingSettings)){
+                $change = ['settings' => ["old" => $existingSettings, "new" => $settings]];
+                $changes[] = $change;
+            }                    
         }
         if ($includeFullJson){
 	        $fullJson = isset($request->full_json) ? $request->full_json : null;
@@ -51,7 +67,7 @@ trait TrackChanges
             if ($rel == 'belongsTo'){
                 $method = checkAliases($instance, strtolower($model));
                 $connectedInstance = $instance->$method()->get();
-                Log::info($connectedInstance);
+                // Log::info($connectedInstance);
                 $oldId = $connectedInstance ? $connectedInstance->modelKeys()[0] : null;
                 $newId = $uids ? $uids[0] : null;
                 if ($oldId != $newId){
@@ -81,5 +97,37 @@ trait TrackChanges
         $userId = Auth::id();
         $table = $instance->auditOptions['audit_table'];
         DB::insert('insert into '.$table.' (user_id, affected_record, ip_address, changes, changed_at) values (?, ?, ?, ?, ?)', [$userId, $affectedRecord, $ip, json_encode($changes), Carbon::now()]);
+    }
+    public function recursiveArrayMatch($arr1, $arr2){
+        $pass = true;
+        foreach($arr1 as $key => $value1){
+            if (isset($arr2[$key])){
+                $value2 = $arr2[$key];
+                if (is_array($value1) && is_array($value2)){
+                    if (!$this->recursiveArrayMatch($value1, $value2)){$pass = false;}
+                }elseif(!is_array($value1) && !is_array($value2)){
+                    if ($value1 !== $value2){$pass = false;}
+                }else{
+                    $pass = false;
+                }
+            }else{
+                $pass = false;
+            }
+        }
+        foreach($arr2 as $key => $value1){
+            if (isset($arr1[$key])){
+                $value2 = $arr1[$key];
+                if (is_array($value1) && is_array($value2)){
+                    if (!$this->recursiveArrayMatch($value1, $value2)){$pass = false;}
+                }elseif(!is_array($value1) && !is_array($value2)){
+                    if ($value1 !== $value2){$pass = false;}
+                }else{
+                    $pass = false;
+                }
+            }else{
+                $pass = false;
+            }
+        }
+        return $pass;
     }
 }

@@ -91,7 +91,7 @@ class Code extends Model
     public function diagnoses(){
         return $this->morphedByMany('App\Diagnosis','codeable');
     }
-    public function optionsNav(){
+    public function moreOptions(){
 
     }
 }

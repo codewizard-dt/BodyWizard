@@ -84,7 +84,7 @@ class StaffMember extends Model
             // ['Service','many','morphToMany']
         ];
     }
-    public function optionsNav(){
+    public function moreOptions(){
         
     }
     public function userInfo(){

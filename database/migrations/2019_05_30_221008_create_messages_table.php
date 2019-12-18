@@ -17,7 +17,7 @@ class CreateMessagesTable extends Migration
             $table->bigIncrements('id');
             $table->string('sendgrid_id')->nullable()->default(null);
             $table->string('message_id');
-            $table->unsignedInteger('sender_id');
+            $table->unsignedInteger('sender_id')->nullable()->default(null);
             $table->unsignedInteger('recipient_id');
             $table->string('type');
             $table->longText('message');

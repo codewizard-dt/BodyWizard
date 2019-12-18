@@ -11,6 +11,7 @@ class Template extends Model
     public $connectedModels;
     public $connectedModelAliases;
     public $nameAttr;
+    protected $hidden = ['full_json'];
 
     public function __construct(){
 	    $this->tableValues = array(
@@ -35,6 +36,9 @@ class Template extends Model
             ),
             'extraBtns' => [
                 ['back to messages',"/Message/index"]
+            ],
+            'orderBy' => [
+                ['name','asc']
             ]
 	    );
         $this->optionsNavValues = array(
@@ -46,7 +50,7 @@ class Template extends Model
                 'edit','preview','delete'
             )
         );
-        $this->nameAttr = "name";
+        // $this->nameAttr = "name";
 
         // This will load a resource table for each connected model
         // into the create.blade view for THIS model, creating modals that
@@ -64,7 +68,7 @@ class Template extends Model
         ];
     }
 
-    public function optionsNav(){
+    public function moreOptions(){
 
     }
     public function attachments(){

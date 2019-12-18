@@ -17,6 +17,13 @@ class Patient extends Model
     public $nameAttr;
     public $auditOptions;
 
+    protected $casts = [
+        'settings' => 'array'
+    ];
+    protected $hidden = [
+        'settings_json'
+    ];
+
     public function __construct($attributes = []){
         parent::__construct($attributes);
         $this->auditOptions = [
@@ -30,18 +37,11 @@ class Patient extends Model
             'model' => "Patient",
             'with' => 'appointments',
 	    	'columns' => array(
-                        array(
-                            "label" => 'Preferred Name',
-                            "className" => 'name',
-                            "attribute" => 'preferred_name!!preferred_name!!first_name',
-                            "hasThrough" => 'userInfo'
-                        ),
-                        array(
-                            "label" => 'Last Name',
-                            "className" => 'LName',
-                            "attribute" => 'last_name',
-                            "hasThrough" => 'userInfo'
-                        ),
+                        [
+                            'label' => "Name",
+                            'className' => 'name',
+                            'attribute' => 'name'
+                        ],
                         [
                             'label' => 'Email',
                             'className' => 'email',
@@ -108,10 +108,10 @@ class Patient extends Model
         $this->optionsNavValues = array(
             'model' => "Patient",
             'destinations' => array(
-                'edit','delete'
+                'edit','settings','delete'
             ),
             'btnText' => array(
-                'edit','delete'
+                'edit','settings','delete'
             )
         );
 
@@ -136,6 +136,22 @@ class Patient extends Model
     public function userInfo(){
         return $this->belongsTo('App\User','user_id');
     }
+        public function getNameAttribute(){
+            return $user = $this->userInfo->name;
+        }
+        public function getPhoneAttribute(){
+            return $user = $this->userInfo->phone;
+        }
+        public function getEmailAttribute(){
+            return $user = $this->userInfo->email;
+        }
+        public function getDateOfBirthAttribute(){
+            return $user = $this->userInfo->date_of_birth;
+        }
+        public function getPreferredNameAttribute(){
+            return $user = $this->userInfo->preferred_name;
+        }
+
     public function isNewPatient(){
         $appts = $this->appointments()->where("status->completed",true)->get();
         return (count($appts) == 0) ? "true" : "false";
@@ -166,9 +182,14 @@ class Patient extends Model
         $lastAppt = $this->appointments()->where("status->completed")->orderBy("date_time","desc")->get();
         return $lastAppt;
     }
-    public function optionsNav(){
+    public function moreOptions(){
     }
+
+
     public function appointments(){
         return $this->morphToMany('App\Appointment','appointmentable');
+    }
+    public function submissions(){
+        return $this->hasMany("App\Submission");
     }
 }

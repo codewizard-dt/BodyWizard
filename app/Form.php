@@ -3,9 +3,13 @@
 namespace App;
 
 use App\Image;
+use App\Appointment;
+use App\Submission;
+use App\Patient;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
-
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Carbon;
 
 class Form extends Model
 {
@@ -19,6 +23,10 @@ class Form extends Model
     public $optionsNavValues;
     public $nameAttr;
     public $connectedModels;
+
+    protected $casts = [
+        'settings' => 'array',
+    ];
 
     public function __construct(){
         $this->nameAttr = 'form_name';
@@ -86,74 +94,282 @@ class Form extends Model
                 ['version_id',"desc"]
             ]
 	    );
-        $this->optionsNavValues = array(
-            'destinations' => array("settings","form-preview","forms-edit","delete","forms-create"),
-            'btnText' => array("settings","preview","edit","delete","create new form")
-        );
+        // $this->optionsNavValues = array(
+        //     'destinations' => array("settings","form-preview","forms-edit","delete","forms-create"),
+        //     'btnText' => array("settings","preview","edit","delete","create new form")
+        // );
         $this->connectedModels = [
             ['Service','many','morphToMany']
         ];
     }
+    static function tableValues(){
+        $usertype = Auth::user()->user_type;
+        $commonArr = [
+            'tableId' => 'FormList',
+            'index' => 'form_id'
+        ];
+        if ($usertype == 'practitioner'){
+            $arr = [
+                        'columns' => 
+                        [
+                            ["label" => 'Form Name',
+                            "className" => 'name',
+                            "attribute" => 'form_name'],
+                            ["label" => 'Version',
+                            "className" => 'version',
+                            "attribute" => 'version_id'],
+                            ["label" => 'Created On',
+                            "className" => 'created',
+                            "attribute" => 'created_at'],
+                            ["label" => 'Updated On',
+                            "className" => 'updated',
+                            "attribute" => 'updated_at']
+                        ],
+                        'hideOrder' => "created,updated,version",
+                        'filtersColumn' => [],
+                        'filtersOther' => [
+                            [
+                                "label" => 'Form Type',
+                                "filterName" => 'type',
+                                "attribute" => 'form_type',
+                                "markOptions" => null,
+                                "filterOptions" => [
+                                    ["label" => 'practitioner',"value" => 'practitioner'],
+                                    ["label" => 'patient',"value" => 'patient'],
+                                    ["label" => 'admin',"value" => 'admin'],
+                                    ["label" => 'system',"value" => 'system']
+                                ]
+                            ],
+                            [
+                                "label" => 'Hide',
+                                "filterName" => 'hide',
+                                'attribute' => null,
+                                'reverseFilter' => true,
+                                "markOptions" => null,
+                                "filterOptions" => [
+                                    [
+                                        "label" => 'previous versions',
+                                        "value" => 'current:0',
+                                        'attribute'=>'current'
+                                    ],
+                                    ["label" => 'system forms',"value" => 'form_type:system','attribute'=>'form_type'],
+                                    ["label" => 'locked forms',"value" => 'locked:1','attribute'=>'locked']
+                                ]
+                            ]
+                        ],
+                        'optionsNavValues' => [
+                            'destinations' => ["settings","form-preview","forms-edit","delete","forms-create"],
+                            'btnText' => ["settings","preview","edit","delete","create new form"]
+                        ],
+                        'orderBy' => [
+                            ['form_name',"asc"],
+                            ['version_id',"desc"]
+                        ]
+            ];
+        }elseif ($usertype == 'patient'){
+            $arr = 
+            [
+                'columns' => 
+                [
+                    ["label" => 'Form Name',
+                    "className" => 'name',
+                    "attribute" => 'form_name'],
+                    ["label" => 'Submitted',
+                    "className" => 'submitted',
+                    "attribute" => 'last_submitted'],
+                    ["label" => 'Status',
+                    "className" => 'status',
+                    "attribute" => 'status']
+                ],
+                'hideOrder' => "",
+                'filtersColumn' => [],
+                'filtersOther' => [
+                ],
+                'optionsNavValues' => [
+                    'destinations' => ['loadForm'],
+                    'btnText' => ['open form']
+                ],
+                'orderBy' => [
+                    ['form_name',"asc"]
+                ]
+            ];
 
+        }
+        return array_merge($commonArr,$arr);
+    }
+    public static function alwaysAvailable(){
+        return Form::where([['settings->portal_listing','yes, for all patients'],['current','1'],['hidden','0']])->orderBy('display_order')->get();
+    }
+    public static function neededByAnyAppointment($patientId = null){
+        if (Auth::user()->user_type == 'patient'){
+            $patient = Auth::user()->patientInfo;
+            $formIds = [];
+            $forms = Form::all()->filter(function($form, $f) use ($patient){
+                $appts = $patient->appointments->filter(function($appt, $a) use ($patient, $form){
+                    $timeCheck = $appt->date_time->isAfter(Carbon::now()->subMonths(1));
+                    if (!$timeCheck){return false;} // don't bother if appt over a month ago;
+                    foreach($appt->services as $service){
+                        if ($service->forms->count() > 0){
+                            foreach($service->forms as $reqForm){
+                                if ($reqForm->form_id == $form->form_id){
+                                    $submission = Submission::where([['patient_id',$patient->id],['form_id',$form->form_id],['appointment_id',$appt->id]])->get();
+                                    if ($submission->count() == 0){return true;}
+                                }
+                            }
+                        }
+                        return false;
+                    }
+                });
+                // Log::info($appts);
+                return ($appts->count() != 0);
+            });
+            return $forms;
+        }elseif (session('uidList') != null && session('uidList')['Patient'] != null){
+            Log::info("2");
+            // $patientId = session('uidList')['Patient'];
+            // $patient = Patient::with(['appointments.services.forms' => function ($query){
+            //     $query->where('date_time','>',Carbon::now()->subMonths(1));
+            // }])->where('id',$patientId);
+            // Log::info(\App\Appointment::where(where('date_time','>',Carbon::now()->subMonths(1))));
+            // Log::info($patient->appointments);
+        }elseif (!$patientId){
+            Log::info('1');
+        }
+    }
+    public static function hasSubmissions($patientId = null){
+        if (Auth::user()->user_type == 'patient'){
+            $patient = Auth::user()->patientInfo;
+            // $patientId = $patient->id;
+            $formIds = [];
+            $forms = Form::all()->filter(function($form, $f) use ($patient){
+                $submissions = $patient->submissions->where('form_id',$form->form_id);
+                return ($submissions->count() != 0);
+            });
+            return $forms;
+        }elseif (session('uidList') != null && session('uidList')['Patient'] != null){
+            Log::info("2");
+            // $patientId = session('uidList')['Patient'];
+            // $patient = Patient::with(['appointments.services.forms' => function ($query){
+            //     $query->where('date_time','>',Carbon::now()->subMonths(1));
+            // }])->where('id',$patientId);
+            // Log::info(\App\Appointment::where(where('date_time','>',Carbon::now()->subMonths(1))));
+            // Log::info($patient->appointments);
+        }elseif (!$patientId){
+            Log::info('1');
+        }
+    }
+    public static function defaultSettings(){
+        return ["form_type" => "any user type", "admin_only" => "yes, admins only", "portal_listing" => "never"];
+    }
+    public static function checkApptFormStatus(Appointment $appt, Patient $patient){
+        Log::info("Check Appt Form Status");
+        $submission = Submission::where([["appointment_id",$appt->id],['patient_id',$patient->id]])->get();
+        return ($submission->count() > 0);
+    }
+
+    public function getNameAttribute(){
+        return $this->form_name;
+    }
+    public function getLastSubmittedAttribute(){
+        $submissions = $this->submissions();
+
+        if (Auth::user()->user_type == "patient"){
+            $id = Auth::user()->patientInfo->id;
+            $submission = $submissions->get()->filter(function($sub,$s) use($id){
+                return $sub->patient_id == $id;
+            })->last();
+        }elseif(session('uidList') !== null && isset(session('uidList')['Patient'])){
+            $id = session('uidList')['Patient'];
+            $submission = $submissions->get()->filter(function($sub,$s) use($id){
+                return $sub->patient_id == $id;
+            })->last();
+        }else{
+            $submission = $submissions->last();
+        }
+
+        if ($submission){
+            return $submission->created_at;
+        }else{
+            return 'never';
+        }
+    }
+    public function getStatusAttribute(){
+        $requiredByAppointment = $this->neededByAnyAppointment()->map(function($form,$f){
+            return $form->form_id;
+        })->toArray();
+        $formCheck = in_array($this->form_id, $requiredByAppointment);
+
+        $timeperiod = isset($this->settings['required']) ? $this->settings['required'] : false;
+
+        if ($timeperiod){
+            if ($timeperiod == 'never'){
+                if (!$formCheck){
+                    Log::info('1 '.$this->name);
+                    return ($this->last_submitted == 'never') ? 'incomplete' : 'completed';
+                }else{
+                    $requiredByTime = false;
+                }
+            }elseif(contains($timeperiod,'registration')){
+                if (!$formCheck){
+                    Log::info('2 '.$this->name);
+                    return ($this->last_submitted == 'never') ? 'required' : 'completed';                    
+                }else{
+                    $requiredByTime = false;
+                }
+            }else{
+                if (contains($timeperiod,'12 months')){$months = 12;}
+                elseif (contains($timeperiod,'6 months')){$months = 6;}
+                elseif (contains($timeperiod,'3 months')){$months = 3;}
+                elseif (contains($timeperiod,'2 months')){$months = 2;}
+                elseif (contains($timeperiod,'every month')){$months = 1;}
+                if ($this->last_submitted == 'never'){
+                    $requiredByTime = true;
+                }else{
+                    $requiredByTime = ($this->last_submitted->isBefore(Carbon::now()->subMonths($months)));
+                }                
+            }
+        }else{
+            $requiredByTime = false;
+        }
+
+        Log::info('3 '.$this->name." time:$requiredByTime appt:$formCheck");
+        Log::info($requiredByAppointment);
+
+        return ($requiredByTime || $formCheck) ? "required" : "completed";
+    }
+
+    public function lastSubmittedBy(Patient $patient){
+        $submissions = $this->submissions();
+
+        $id = $patient->id;
+        $submission = $submissions->get()->filter(function($sub,$s) use($id){
+            return $sub->patient_id == $id;
+        })->last();
+
+        if ($submission){
+            return dateOrTimeIfToday($submission->created_at->timestamp);
+        }else{
+            return 'never';
+        }
+    }
     public function services(){
         return $this->morphedByMany('App\Service', 'formable', null, 'form_id');
     }
-
     public function images(){
         return $this->morphToMany('App\Image', 'imageable');
     }
-
-    public function optionsNav($uid){
-        $formJSON = json_decode($this->full_json,true);
-        $settingsJSON = json_decode($this->settings,true);
-        // dd($settingsJSON);
-        $formID = $this->form_id;
-        $name = $this->form_name;
-        
-        $numbers = $formJSON['numbers'];
-        $numSecs = $numbers['sections'];
-        $numQs = $numbers['items'];
-        $numFUs = $numbers['followups'];
-
-        // $questions = json_decode($this->questions,true);
-        $questions = $formJSON['sections'];
-
-        $secStr = ($numSecs == 0 or $numSecs>1) ? $numSecs." sections" : $numSecs." section";
-        $QStr = ($numQs == 0 or $numQs>1) ? $numQs." questions total" : $numQs." question total";
-        $FUStr = ($numFUs == 0 or $numFUs>1) ? $numFUs." as followups" : $numFUs." as followup";
-        
-        $secNames = "";
-        for ($x=0;$x<count($questions);$x++){
-            $secNames .= $questions[$x]['sectionName'];
-            if ($x!=count($questions)-1){
-                $secNames .= ", ";
-            }
-        }
-        $version = $this->version_id;
-        $formid = $this->form_id;
-        // dd($destinations,$btnText);
-        $settings = ($settingsJSON !== null) ? $this->displaySettings($settingsJSON) : "no saved settings";
-        $locked = $this->locked;
-        $dataStr = str_replace("'","\u0027",$this->full_json);
-        $settingsStr = str_replace("'","\u0027",$this->settings);
-
-        echo "<div id='formStats' class='detail' 
-        data-locked='$locked' 
-        data-uniqueid='$uid'
-        data-formdata='$dataStr'
-        data-settings='$settingsStr'>
-        <span>Version:</span>$version<br>
-        <span>Sections:</span>$secNames<br>
-        <span>Total Questions:</span>$QStr, $FUStr<br><br>
-        <span>Settings:</span><div class='settings'>$settings</div>
-        </div>";
-        //form selected
-        // optionButtons($destinations,$btnText);
+    public function submissions(){
+        return $this->hasMany('App\Submission', "form_id", 'form_id');
     }
+
+    public function moreOptions(){
+    }
+
+
 
    
     //form functionality
-        public function formDisplay($modal = false){
+        public function formDisplay($modal = false, $allowSubmit = true){
             $form = json_decode($this->full_json,true);
             // $sections = json_decode($this->questions,true);
             $sections = $form['sections'];            
@@ -161,7 +377,7 @@ class Form extends Model
             $formID = $this->form_id;
             $formName = $this->form_name;
             $formNameAbbr = str_replace(" ", "", $formName);
-            $settings = json_decode($this->settings,true);
+            $settings = $this->settings;
             // var_dump($settings);
             echo '<form id="'.$formNameAbbr.'" data-formname="'.$formNameAbbr.'" data-formid="'.$formID.'" data-uid="'.$uid.'" class="formDisp">';
             for ($x=0;$x<count($sections);$x++){
@@ -179,7 +395,7 @@ class Form extends Model
                 $nums = ($nums == 'true') ? "" : "noNums"; 
 
                 $secSettings = isset($section['settings']) ? $section['settings'] : "";
-                if ($secSettings != "" && $secSettings['dynamic'][0] == 'only display to admins'){
+                if ($secSettings != "" && isset($secSettings['dynamic']) && $secSettings['dynamic'][0] == 'only display to admins'){
                     if (!Auth::check()){
                         $show = false;
                     }elseif(Auth::user()->is_admin){
@@ -222,7 +438,7 @@ class Form extends Model
                             $n++;
                             echo "<div class='question'><p><span class='n'>$n.</span><span class='q'>$question</span><span class='requireSign'>$requireStar</span></p></div><br>";
                         }
-                        include_once app_path("/php/functions.php");
+                        // include_once app_path("/php/functions.php");
                         $name = removepunctuation(replacespaces(strtolower(cleaninput($question))));
                         if (in_array($type, ['radio','checkboxes','dropdown'])){
                             array_push($options,"ID*".$name);
@@ -275,7 +491,9 @@ class Form extends Model
 
             }
             echo "<div class='wrapper'>";
-                echo "<div class='button small submitForm pink' data-formName='$formNameAbbr'>submit</div>";
+                if ($allowSubmit){
+                    echo "<div class='button small submitForm pink' data-formName='$formNameAbbr' data-submission='true'>submit</div>";
+                }
                 if ($modal){
                     echo "<div class='button small cancel'>dismiss</div>";
                 } 

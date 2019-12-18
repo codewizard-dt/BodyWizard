@@ -3,25 +3,26 @@
 namespace App\Jobs;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Queue\SerializesModels;
-use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 
-class UpdateCalendar implements ShouldQueue
+
+class CheckCalWebhooks implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    protected $practiceId;
     /**
      * Create a new job instance.
      *
      * @return void
      */
-    public function __construct($practiceId)
+    public function __construct()
     {
         //
-        $this->practiceId = $practiceId;
     }
 
     /**
@@ -31,6 +32,9 @@ class UpdateCalendar implements ShouldQueue
      */
     public function handle()
     {
-        //
+        $practices = config('practices');
+        foreach($practices as $practiceId => $practice){
+            
+        }
     }
 }

@@ -10,7 +10,7 @@
     use Illuminate\Support\Facades\Log;
     use Illuminate\Support\Facades\Request;
 
-    include_once app_path("/php/functions.php");
+    // include_once app_path("/php/functions.php");
 
     $ctrl = new Form;
 
@@ -28,7 +28,7 @@
     $whichFirstOptions = ['Select Service','Select Practitioner','ID*WhichFirstBtn']
 ?>  
 
-<h2 class="purple paddedSmall">Appointment Calendar</h2>
+<h2 class="purple paddedSmall">Your Appointments</h2>
 <div id="PatientCalendar" class='calendar patient' data-patient='{{json_encode($patientInfo)}}'>
     <div class='lds-ring dark'><div></div><div></div><div></div><div></div></div>
 </div>
@@ -48,6 +48,10 @@
             <div>
                 <span class="label">Services:</span>
                 <span class='value' id="ServiceInfo"></span>
+            </div>
+            <div>
+                <span class="label">Required Forms:</span>
+                <span class='value' id="FormInfo"></span>
             </div>
         </div>
     </div>

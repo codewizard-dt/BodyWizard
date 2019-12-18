@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+
 
 class Practice extends Model
 {
@@ -24,11 +26,11 @@ class Practice extends Model
     public $database;
     public $practitioners;
 
-    public function __construct($practiceId){
-    	$this->practiceId = $practiceId;
-    	$this->calendarId = config('practices')['app']['calendarId'];
-    	$this->database = config('practices')['app']['database'];
-    	// $this->practitioners = 
+    public function __construct(){
+    	// $this->practiceId = $practiceId;
+    	// $this->calendarId = config('practices')['app']['calendarId'];
+    	// $this->database = config('practices')['app']['database'];
+    	// // $this->practitioners = 
     }
 	public static function createCalendar($name,$email){
 	    $service = app('GoogleCalendar');
@@ -67,22 +69,37 @@ class Practice extends Model
 	    }
 	    return isset($calendarId) ? $calendarId : false;
 	}
-	public static function watchCalendar($practiceId, $calendarId){
+	public static function watchCalendar($practiceId, $calendarId, $updateConfig = false){
+        // include_once app_path("/php/functions.php");
 	    $client = app('GoogleClient');
 	    $service = app('GoogleCalendar');
 	    $channel = new \Google_Service_Calendar_Channel();
-	    $channel->setId($practiceId);
-	    $channel->setAddress('https://bodywizard.ngrok.io/google/calendar/push');
+	    $channel->setId(uuid());
+	    $channel->setAddress('https://bodywizard.ngrok.io/push/google/calendar');
 	    $channel->setType('web_hook');
-	    // Log::info($channel->getAddress());
-	    // return;
 	    try{
 	      $watch = $service->events->watch($calendarId, $channel);
+          $newConfig = ["id" => $watch->getId(), "expires" => $watch->getExpiration()];
+          addToConfig('webhooks',$watch->getId(),$practiceId);
+          if ($updateConfig){
+            addToConfig("practices.$practiceId.app.webhooks",'calendar',$newConfig);
+          }
 	    }catch (\Exception $e){
 	      Log::info($e);
 	    }
-	    return isset($e) ? false : $watch->getId();
+	    return isset($e) ? false : $newConfig;
 	}
+    public static function checkCalWebHook($practiceId){
+        $client = app('GoogleClient');
+        $service = app('GoogleCalendar');
+        $webhook = config("practices.$practiceId.app.webhooks.calendar");
+        $expires = Carbon::createFromTimestampMs($webhook['expires']);
+        $cutoff = Carbon::now()->addHours(26);
+        $needNew = $expires->isBefore($cutoff);
+        // Log::info($expires);
+        // Log::info($cutoff);
+        return $needNew;
+    }
 	public static function createDatabase($dbname){
 	    $client = app('GoogleClient');
 	    $client->addScope("https://www.googleapis.com/auth/sqlservice.admin");
@@ -139,11 +156,28 @@ class Practice extends Model
 	    return isset($e) ? false : true;
 	}
 	public static function refreshUsers($dbname = null){
-	    if ($dbname){config(['database.connections.mysql.database' => $dbname]);}
+	    if ($dbname){
+            config(['database.connections.mysql.database' => $dbname]);
+            DB::reconnect();
+        }
 	    Artisan::call("refresh:users");
 	}
+    public static function clearCalendar($calendarId){
+        $service = app('GoogleCalendar');
+        try{
+            $events = $service->events->listEvents($calendarId);
+            foreach($events->getItems() as $event){
+                $eventId = $event->getId();
+                $service->events->delete($calendarId,$eventId);
+            }
+            return true;
+        }catch(\Exception $e){
+            Log::info($e);
+            return false;
+        }
+    }
     public static function updateEntireEventFeed($practiceId = null){
-        include_once app_path("/php/functions.php");
+        // include_once app_path("/php/functions.php");
 		if (!$practiceId){
 			if (session()->has('practiceId')){
 				$practiceId = session('practiceId');
@@ -325,7 +359,6 @@ class Practice extends Model
                     ];
             }
             $result = json_encode($array);
-            Log::info($array);
         }else{
             $result = '';
         }

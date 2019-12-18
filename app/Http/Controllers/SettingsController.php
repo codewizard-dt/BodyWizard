@@ -21,6 +21,32 @@ class SettingsController extends Controller
     public function userInfo(){
     	return view('portal.user.info');
     }
+    public function settingsHome(){
+        return view('portal.'.Auth::user()->user_type.'.settings');
+    }
+    public function panel(){
+        return view('portal.'.Auth::user()->user_type.'.settings.panel');
+    }
+    public function displaySettings($model, Request $request){
+        $models = plural(camel($model));
+        return view('portal.'.Auth::user()->user_type.'.settings.display.'.$models);
+    }
+    public function displayOrderUpdate(Request $request){
+        try{
+            foreach ($request->all() as $model => $instances){
+                $class = "App\\$model";
+                foreach ($instances as $uid => $order){
+                    $instance = $class::find($uid);
+                    $instance->display_order = $order;
+                    $instance->save();
+                }
+            }
+        }catch(\Exception $e){
+            Log::$e;
+        }
+
+        return isset($e) ? $e : "checkmark";
+    }
     public function password(){
     	return view('portal.user.password');
     }

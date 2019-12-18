@@ -1,5 +1,5 @@
 <?php 
-    include_once app_path("/php/functions.php");
+    // include_once app_path("/php/functions.php");
 ?>
 
 @include('layouts.menus.menu-bar',[

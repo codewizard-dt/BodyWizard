@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
 use Illuminate\Http\Request;
 
+use App\Bug;
 use App\Image;
 use App\Form;
 use App\Practitioner;
@@ -21,7 +22,7 @@ $menuJson = json_decode(file_get_contents(app_path("/json/menu-data.json")),true
   function snake($str){return Str::snake($str);}
   function camel($str){return Str::camel($str);}
   function title($str){return Str::title($str);}
-  function contains($str){return Str::contains($str);}
+  function contains($str,$search){return Str::contains($str,$search);}
   function uuid(){return Str::orderedUuid()->toString();}
   function uuidNoDash(){return str_replace("-","",Str::orderedUuid()->toString());}
   function proper($str){return Str::title(str_replace("_"," ",snake($str)));}
@@ -108,23 +109,18 @@ $menuJson = json_decode(file_get_contents(app_path("/json/menu-data.json")),true
       $data = str_replace(" ","",$data);
       return $data;
   }
-  function removenull($data){
-      $key = array_search('-',$data);
-      if ($key>0){
-          unset($data[$key]);
-      }
-      return $data;
-  }
-  function formatDate($date){
-      $formatDate = date_create($date);
-      $formatDate = date_format($formatDate,"M j, Y");
-      return $formatDate;
-  }
-  function painbox($xP,$yP,$bodypart){
-      $xP=$xP-3 ;
-      $yP=$yP-1;
-      echo '<div class="painbox" style="left:'.$xP.'px;top:'.$yP.'px;" data-bodypart="'.$bodypart.'"><div class="paincircle show"></div></div>';
-  }
+  // function removenull($data){
+  //     $key = array_search('-',$data);
+  //     if ($key>0){
+  //         unset($data[$key]);
+  //     }
+  //     return $data;
+  // }
+  // function formatDate($date){
+  //     $formatDate = date_create($date);
+  //     $formatDate = date_format($formatDate,"M j, Y");
+  //     return $formatDate;
+  // }
 
 // Array related functions
 
@@ -134,6 +130,8 @@ $menuJson = json_decode(file_get_contents(app_path("/json/menu-data.json")),true
 
 // Date / Schedule related functions
   function dateOrTimeIfToday($timestamp){
+    if (!$timestamp){return "never";}
+    if ($timestamp == 'never'){return "never";}
     $timestamp = Carbon::createFromTimestamp($timestamp);
     if ($timestamp->isToday()){
       $timestamp = $timestamp->format("g:i A");
@@ -185,6 +183,7 @@ $menuJson = json_decode(file_get_contents(app_path("/json/menu-data.json")),true
     return $dayNumerical;
   }
   function scheduleToEvents($schedule, $exceptions){
+    // Log::info($schedule);
     $today = Carbon::now();
     if ($today->isSunday()){$todayNumerical = 0;}
     elseif ($today->isMonday()){$todayNumerical = 1;}
@@ -412,14 +411,31 @@ $menuJson = json_decode(file_get_contents(app_path("/json/menu-data.json")),true
     $trait = 'App\Traits\\'.$trait;
     return ($allTraits!=false && isset($allTraits[$trait]));
   }
+  function unsetUid($model){
+    $uidList = session('uidList');
+    unset($uidList[$model]);
+    session(['uidList' => $uidList]);
+    // Log::info(session('uidList'));
+  }
+  function setUid($model, $uid){
+    $uidList = (session('uidList') !== null) ? session('uidList') : [];
+    $uidList[$model]  = $uid;
+    session(['uidList' => $uidList]);
+    Log::info(session("uidList"));
+  }
+  function getSessionUid($model){
+    if (session('uidList')===null){return null;}
+    elseif (!isset(session('uidList')[$model])){return null;}
+    else{return session('uidList')[$model];}
+  }
   function dateFieldsArray(){return ['date_of_birth'];}
   function dateTimeFieldsArray(){return ['date_time'];}
   function isUser($model){
-    return in_array($model,['Patient','Practitioner','StaffMember','User']);
+    return in_array($model,['Patient','Practitioner','StaffMember']);
   }
   function optionButtons($destinations,$btnText){
     for ($x=0;$x<count($destinations);$x++){
-      echo "<div class='button xsmall' data-destination='$destinations[$x]'>$btnText[$x]</div>";
+      echo "<div class='button xsmall purple70' data-destination='$destinations[$x]'>$btnText[$x]</div>";
     }
   }
   function isCollection($var){
@@ -466,6 +482,8 @@ $menuJson = json_decode(file_get_contents(app_path("/json/menu-data.json")),true
     elseif ($model == 'Complaint'){$id = '17';}
     elseif ($model == 'Diagnosis'){
       $id = (session('diagnosisType')=='Western') ? '5' : "11";
+    }else{
+      $id = null;
     }
     return $id;
   }
@@ -627,6 +645,18 @@ $menuJson = json_decode(file_get_contents(app_path("/json/menu-data.json")),true
     return $attr;
   }
 
+// Bug functions
+  function reportBug($description, $details = null, $category = null, $location = null, User $user = null){
+    $bug = new Bug;
+    $bug->description = title($description);
+    $bug->details = $details;
+    $bug->location = $location;
+    $bug->category = title($category);
+    $bug->user_id = $user ? $user->id : null;
+    $bug->status = ['opened' => Carbon::now()->timestamp];
+    $bug->save();
+  }
+
 // Email functions 
     function asJSON($data){
         $json = json_encode($data);
@@ -636,45 +666,109 @@ $menuJson = json_decode(file_get_contents(app_path("/json/menu-data.json")),true
     }
     function asString($data){
         $json = asJSON($data);
-        
         return wordwrap($json, 76, "\n   ");
     }
     function newEmailStatus(){
       $d = time();
       return json_encode(['pending'=>[$d],'processed'=>null,'dropped'=>null,'delivered'=>null,'deferred'=>null,'bounce'=>null,'open'=>null,'click'=>null,'spamreport'=>null,'unsubscribe'=>null,'group_unsubscribe'=>null,'group_resubscribe'=>null]);
     }
+    function newTextStatus(){
+      $d = time();
+      return json_encode(['sent' => $d, 'event' => []]);
+    }
     function decodeStatus($string){
-      $status = json_decode($string,true);
-      if ($status['open']){
-        $returnVal = ['Last opened at ',lastInArray($status['open'])];
-      }elseif ($status['delivered']){
-        $returnVal = ['Delivered at ',lastInArray($status['delivered'])];
-      }elseif ($status['processed']){
-        $returnVal = ['Processed at ',lastInArray($status['processed'])];
-      }elseif ($status['bounce']){
-        $returnVal = ['Undeliverable at ',lastInArray($status['bounce'])];
-      }elseif ($status['dropped']){
-        $returnVal = ['Dropped at ',lastInArray($status['dropped'])];
-      }elseif ($status['pending']){
-        $returnVal = ['Sent at ',lastInArray($status['pending'])];
-      }
-      $returnVal[1] = date("g:ia n/j/y",$returnVal[1]);
-      return implode("", $returnVal);
+      // $status = json_decode($string,true);
+      // if ($status['open']){
+      //   $returnVal = ['Last opened at ',lastInArray($status['open'])];
+      // }elseif ($status['delivered']){
+      //   $returnVal = ['Delivered at ',lastInArray($status['delivered'])];
+      // }elseif ($status['processed']){
+      //   $returnVal = ['Processed at ',lastInArray($status['processed'])];
+      // }elseif ($status['bounce']){
+      //   $returnVal = ['Undeliverable at ',lastInArray($status['bounce'])];
+      // }elseif ($status['dropped']){
+      //   $returnVal = ['Dropped at ',lastInArray($status['dropped'])];
+      // }elseif ($status['pending']){
+      //   $returnVal = ['Sent at ',lastInArray($status['pending'])];
+      // }
+      // $returnVal[1] = date("g:ia n/j/y",$returnVal[1]);
+      // return implode("", $returnVal);
     }
     function lastInArray($array){
       $count = count($array);
-      return $array[$count - 1];
+      return $count > 0 ? $array[$count - 1] : null;
     }
 
 // Practice functions
+  function practiceConfig($path){
+    $structure = explode(".",$path);
+    $basePath = $structure[0];
+    $qualified = "/practiceConfig/$basePath.php";
+    $exists = Storage::disk('local')->exists($qualified);
+    if ($exists){
+      require storage_path("/app/$qualified");
+      if ($basePath === $path){
+        return $content;
+      }else{
+        unset($structure[0]);
+        array_keys($structure);
+        $dotpath = implode(".",$structure);
+        if (Arr::has($content, $dotpath)){
+          return Arr::get($content, $dotpath);
+        }else{
+          return [];
+        }
+      }
+    }else{
+      return [];
+    }
+    // return $contents; 
+  }
   function addToConfig($configName,$key,$value){
-    $current = config($configName);
-    $current[$key] = $value;
-    writeConfig($current, $configName.".php");
+    // ALLOWS USE OF '.' ARRAY CONFIGURATION, OR NOT
+    // $current = config($configName);
+    $current = practiceConfig($configName);
+
+    $structure = explode(".",$configName);
+    $baseName = $structure[0];
+    if ($baseName != $configName){
+      unset($structure[0]);
+      array_keys($structure);
+      $structure[] = $key;
+      // $topConfig = config($baseName);
+      $topConfig = practiceConfig($baseName);
+      Arr::set($topConfig, implode(".",$structure), $value);
+      writeConfig($topConfig, $baseName.".php");
+    }else{
+      $current[$key] = $value;
+      writeConfig($current, $baseName.".php");
+    }
+  }
+  function removeFromConfig($configName,$key){
+    // $current = config($configName);
+    $current = practiceConfig($configName);
+
+    $structure = explode(".",$configName);
+    $baseName = $structure[0];
+    if ($baseName != $configName){
+      unset($structure[0]);
+      array_keys($structure);
+      $structure[] = $key;
+      // $topConfig = config($baseName);
+      $topConfig = practiceConfig($baseName);
+      Arr::forget($topConfig, implode(".",$structure));
+      writeConfig($topConfig, $baseName.".php");
+    }else{
+      // Log::info($current);
+      unset($current[$key]);
+      // Log::info($current);
+      writeConfig($current, $baseName.".php");
+    }
   }
   function writeConfig($newData,$fileName){
-    $configFile = fopen(base_path().'/config/'.$fileName,'w');
-    fwrite($configFile, '<?php return '.var_export($newData,true).";");
+    $fileName = (strpos($fileName,".php") === false) ? $fileName.".php" : $fileName;
+    $configFile = fopen(storage_path().'/app/practiceConfig/'.$fileName,'w');
+    fwrite($configFile, '<?php $content = '.var_export($newData,true).";");
     fclose($configFile);
   }
 

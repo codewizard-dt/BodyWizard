@@ -37,7 +37,7 @@ class CreateCryptoKey extends Command
      */
     public function handle()
     {
-        include_once app_path("/php/functions.php");
+        // include_once app_path("/php/functions.php");
 
         $practiceId = $this->argument('practiceId');
         try{

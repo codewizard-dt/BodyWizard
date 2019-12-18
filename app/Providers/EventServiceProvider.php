@@ -26,6 +26,15 @@ class EventServiceProvider extends ServiceProvider
         'Illuminate\Mail\Events\MessageSent' => [
             'App\Listeners\LogSentMessage'
         ],
+        'App\Events\AppointmentSaved' => [
+            'App\Listeners\SendApptConfirmation'
+        ],
+        'App\Events\AppointmentCancelled' => [
+            'App\Listeners\SendApptCancellation'
+        ],
+        'App\Events\BugReported' => [
+            'App\Listeners\SendBugReport'
+        ],
     ];
 
     /**

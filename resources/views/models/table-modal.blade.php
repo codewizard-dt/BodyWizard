@@ -4,7 +4,7 @@
     // called by http GET /{model}/display/modal
     // called by include('models.modal', ['model' => 'Example'])
 
-    include_once app_path("/php/functions.php");
+    // include_once app_path("/php/functions.php");
 
     // dd($model);
     unset($collection);

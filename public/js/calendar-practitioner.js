@@ -1,4 +1,4 @@
-var calendar, defaultPatientInfo, allowOverride = true, usertype = 'practitioner', serviceOverride = false;
+var calendar, defaultPatientInfo = undefined, allowOverride = true, usertype = 'practitioner', serviceOverride = false;
 $(document).ready(function(){
      $("#ScheduleFeedTarget").load("/schedule/feed",function(){
         $("#PractitionerCalendar").html("");
@@ -27,7 +27,7 @@ function loadCal(target){
             $("#createAppointment").find("#time").val(formatTime(info.date));
             $("#createAppointment").find("#select_services").val("");
             $("#ServiceListModal").removeData('uidArr');
-            $("#PractitionerListModal").removeData('uidArr');
+            // $("#PractitionerListModal").removeData('uidArr');
             serviceOverride = false;
             moveServiceSelect("#createAppointment");
             resetProgressBar($("#SelectServices"));
@@ -45,20 +45,33 @@ function loadCal(target){
             }
         },
         eventClick: function(info){
-            var ev = info.event, details = ev.extendedProps, patients = details.patients, practitioner = details.practitioner, services = details.services, patientIds = details.patientIds, practitionerId = details.practitionerId, serviceIds = details.serviceIds, dateTime = moment(ev.start), uid = details.bodywizardUid, type = details.type, ele = $(info.el), title = ev.title;
+            var ev = info.event, details = ev.extendedProps, patients = details.patients, practitioner = details.practitioner, services = details.services, patientIds = details.patientIds, practitionerId = details.practitionerId, serviceIds = details.serviceIds, forms = details.forms, dateTime = moment(ev.start), uid = details.bodywizardUid, type = details.type, ele = $(info.el), title = ev.title;
             console.log(ev);
             // console.log(ele);
             if (ele.hasClass('appointment')){
                 $("#ApptInfo").data({
-                    'patientIds': patientIds
+                    'patientIds': patientIds,
+                    'apptId': ev.id
                 });
                 $("#editAppointment").data('uid',uid);
+                $.ajax({
+                    url:"/setvar",
+                    method:"POST",
+                    data:{
+                        setUID: {"Appointment":uid}
+                    },
+                    success: function(){
+                        updateUidList();
+                    }
+                });
                 $("#PatientName").text(patients);
                 $("#PractitionerName").text(practitioner);
                 $("#ApptDateTime").text(dateTime.format("h:mm a \on dddd, MMMM Do YYYY"));
+                $("#ApptDateTime").data('dateTime',dateTime);
                 $("#ServiceInfo").text(services);
                 moveServiceSelect("#editAppointment");
                 $("#SelectServices").hide();
+                updateFormInfo(forms);
                 loadApptInfo(patientIds,practitionerId,serviceIds,dateTime,$("#editAppointment"));
                 blurElement($("body"),"#ApptInfo");                
             }else if (ele.hasClass('break')){
@@ -84,7 +97,7 @@ function loadCal(target){
                 url: "/schedule/non-ehr",
                 type: "GET",
                 id: "nonEHR"
-            }            
+            }    
         ],
         businessHours: $("#BizHours").data('fullcal'),
         eventRender: function(info){
@@ -106,6 +119,28 @@ function loadCal(target){
 
     calendar.render();
     activateServiceSelection();
+    var tb = $("#PractitionerCalendar").find(".fc-toolbar");
+    $("#ChangeTitleWrap").insertAfter(tb).css('display','inline-block');
+    $("#ChangeTitleWrap").on('click','li',changeTitles);
+}
+function changeTitles(){
+    var attr = $(this).data('value'), events = calendar.getEvents();
+    console.log(events);
+    if (attr == 'names'){
+        $.each(events,function(e,event){
+            event.setProp('title', event.extendedProps.patients);
+        })
+    }else if (attr == 'service'){
+        $.each(events,function(e,event){
+            event.setProp('title', event.extendedProps.services.split(", ")[0]);
+        })
+    }else if (attr == 'no label'){
+        $.each(events,function(e,event){
+            event.setProp('title', "");
+        })
+    }
+    calendar.rerenderEvents();
+
 }
 function overrideService(){
     serviceOverride = true;

@@ -1,7 +1,7 @@
 <?php
 	Use App\Form;
 
-    include_once app_path("/php/functions.php");
+    // include_once app_path("/php/functions.php");
 
 	// Display a form that can create new Models
 	// REQUIRES $model such that App\$model resolves

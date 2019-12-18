@@ -45,7 +45,7 @@ class RefreshUserTables extends Command
      *
      * @return mixed
      */
-    public function handle(RefreshTables $refresh)
+    public function handle()
     {
         $practiceId = $this->argument('practiceId');
         $populate = $this->option('factory');
@@ -53,12 +53,12 @@ class RefreshUserTables extends Command
         $database = config('practices')[$practiceId]['app']['database'];
         config(['database.connections.mysql.database' => $database]);
         DB::reconnect();
-        $refresh->clearUserTables();
+        RefreshTables::clearUserTables();
         $this->info("User tables cleared");
-        $refresh->createDefaultUser();
+        RefreshTables::createDefaultUser();
         $this->info("Default Practitioner created");
         if ($populate){
-            $refresh->seedUserTables();
+            RefreshTables::seedUserTables();
             $this->info("Users tables populated");
         }else{
             $this->info("User table population skipped");
@@ -71,7 +71,7 @@ class RefreshUserTables extends Command
             }else{
                 $this->error('Error clearing Google calendar.');
             }
-            $refresh->clearApptTables();
+            RefreshTables::clearApptTables();
             Practice::updateEntireEventFeed($practiceId);
             $this->info("Appointments cleared from database and feed updated.");
         }

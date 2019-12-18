@@ -1,5 +1,7 @@
 <?php 
-    include_once app_path("/php/functions.php");
+	if (Auth::user()->user_type == 'patient'){
+		setUid('Patient', Auth::user()->patientInfo->id);
+	}
 	$tabs = json_encode(session('CurrentTabs'));
 	$uids = json_encode(session('uidList'));
 ?>

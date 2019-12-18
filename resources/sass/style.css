@@ -2,6 +2,7 @@
     --main-color:#06c;
     --purple:rgb(105,12,104);
     --purple5:rgba(105,12,104,0.05);
+    --purple15:rgba(105,12,104,0.15);
     --purple90:rgba(105,12,104,0.90);
     --yellow:rgb(240,154,53);
     --yellow10:rgba(240,154,53,0.1);
@@ -10,15 +11,19 @@
     --yellow40:rgba(240,154,53,0.4);
     --yellow70:rgba(240,154,53,0.7);
     --pink:rgb(234,78,80);
+    --pink10:rgba(234,78,80,0.1);
     --pink30:rgba(234,78,80,0.3);
     --pink50:rgba(234,78,80,0.5);
     --pink70:rgba(234,78,80,0.7);
     --pink80:rgba(234,78,80,0.80);
     --pink85:rgba(234,78,80,0.85);
+    --pink90:rgba(234,78,80,0.90);
     --white10:rgba(255,255,255,0.1);
     --white30:rgba(255,255,255,0.3);
     --white50:rgba(255,255,255,0.5);
     --white70:rgba(255,255,255,0.7);
+    --white93:rgba(255,255,255,0.93);
+    --white97:rgba(255,255,255,0.97);
     --black10:rgba(0,0,0,0.1);
     --black30:rgba(0,0,0,0.3);
     --black50:rgba(0,0,0,0.5);
@@ -74,10 +79,21 @@
     font-style: normal;
 }
 
+@media (max-width: 500px) and (min-width:0px){
+    body {
+        font-size: 12px !important;
+    }
+}
+@media (min-width: 501px){
+    body {
+        font-size: 14px !important;
+    }
+}
+
 body {
     background-color: transparent;
     font-family: Roboto, sans-serif;
-    font-size: 16px;
+    font-size: 11px;
     font-weight: normal;
     line-height: 1.5;
     text-align: center;
@@ -203,6 +219,7 @@ h5 span {font-size: 0.9em;}
 .shadow{text-shadow: 0 0 8px white;}
 .whiteBG{background-color: white;}
 .pinkBG{background-color: var(--pink);}
+.pink10BG{background-color: var(--pink10);}
 .purpleBG{background-color: var(--purple);}
 .yellowBG{background-color: var(--yellow);}
 .yellow10BG{background-color: var(--yellow10);}
@@ -257,6 +274,13 @@ em {
     font-weight: 700;
 }
 
+.vertCent {
+    display: inline-block;
+    position: relative;
+    top:50%;
+    transform: translateY(-50%);
+}
+
 p {margin-bottom:1em;}
 
 div.indent p {text-indent: 1em;}
@@ -282,7 +306,7 @@ a:hover {color:var(--pink);}
     right:3em;
     top:50%;
     transform: translateY(-50%);
-    margin-left:13em;
+    /*margin-left:13em;*/
     white-space: nowrap;
 }
 #MobileMenu{
@@ -498,13 +522,20 @@ a:hover {color:var(--pink);}
     background-color: var(--pink70);
     border-color: var(--pink70);
 }
-.button.yellow70 {
-    background-color: var(--yellow70);
-    border-color: var(--yellow70);
-}
 .button.pink70:hover{
     background-color: var(--pink);
     color: white;
+}.button.purple70 {
+    background-color: var(--purple70);
+    border-color: var(--purple70);
+}
+.button.purple70:hover{
+    background-color: var(--purple);
+    color: white;
+}
+.button.yellow70 {
+    background-color: var(--yellow70);
+    border-color: var(--yellow70);
 }
 .button.yellow70:hover{
     background-color: var(--yellow);
@@ -604,6 +635,16 @@ a:hover {color:var(--pink);}
     text-align: left;
     font-weight: normal;
 }
+
+.link{
+    text-decoration: underline;
+    cursor: pointer;
+    transition: color 500ms;
+}
+.link:hover{
+    color: var(--pink);
+}
+
 
 .shaded30 {
     background-color: var(--white30);
@@ -1083,6 +1124,14 @@ a:hover {color:var(--pink);}
     text-transform: uppercase;
 }
 
+#Confirm label{
+    border-radius: 3px;
+    padding: 3px 5px;
+    margin: 1px 0;
+    background-color: var(--pink70);
+    color:white;
+}
+
 #checkmark {color:green;font-size: 1.7em}
 
 .checkmark {
@@ -1143,6 +1192,94 @@ a:hover {color:var(--pink);}
     border-radius: 5px;
     box-shadow: 0 0 15px 3px rgba(245,245,245);
 }
+
+#Notification .details{
+    border: 1px solid rgba(190,190,190,0.97);
+    border-width: 1px 0 0 0;
+    margin: 0 -1.3em  -1.3em -1.3em;
+}
+#Notifications {
+    display: inline-block;
+    position: fixed;
+    top: 4em;
+    right: 3em;
+    text-align: center;
+    z-index: 51;
+    transition: width 800ms;
+}
+#Notifications .open{
+    position:relative;
+    display: inline-block;
+    padding: 0.5em 1em;
+    cursor: pointer;
+    background-color: var(--white70);
+    border-radius: 0 0 5px 5px;
+    border: 1px solid rgb(230,230,230);
+    border-top-style: dotted;
+}
+#Notifications .indicator {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    transform: translate(50%,50%);
+    background-color: var(--pink90);
+    padding: 0.1em 0.5em;
+    color: white;
+    box-shadow: 0 0 3px 3px var(--white30);
+    border-radius: 1em;
+    font-size: 0.8em;
+    font-weight: bold;
+}
+#Notifications .multiBtns .button{
+    margin: 1em 0.5em;
+}
+#Notifications .multiBtns {
+    /*margin-top: 1em;*/
+}
+#Notifications ul {
+    list-style: none;
+}
+#Notifications li {
+    border: 4px solid transparent;
+    border-width: 0 4px;
+    margin: 0 -4px;
+    position: relative;
+    cursor: pointer;
+    transition: border-color 400ms, background-color 400ms;
+    padding: 0 1em;
+}
+#Notifications li:hover{
+    border-color: var(--yellow30);
+    background-color: var(--yellow10);
+}
+#Notifications li.active{
+    color: var(--yellow);
+    background-color: var(--yellow10);
+}
+#Notifications li .indicator{
+    top:50%;
+    width:10px;
+    height:10px;
+    padding: 0;
+    border-radius: 10px;
+    transform: translate(-50%,-50%);
+    background-color: transparent;
+    /*box-shadow: 0 0 3px 3px var(--pink30);*/
+}
+#Notifications li .indicator.unread {
+    background-color: var(--pink70);
+    box-shadow: 0 0 3px 3px var(--pink30);
+}
+
+#Notifications .list{
+    display: none;
+    min-width: 15em;
+    background-color: var(--white97);
+    border-radius: 0 0 5px 5px;
+    border: 4px solid rgba(240,240,240,0.97);
+    border-top-style: dotted;
+}
+#Notifications .button{font-size: 0.7em;}
 
 #LoginForm a{
     color:rgb(170,170,170);
@@ -1345,7 +1482,6 @@ a:hover {color:var(--pink);}
     text-align: center;
     white-space: nowrap;
     border-radius: 0 0 5px 5px;
-    /*border-top: 1px solid black;*/
     transition: transform 400ms;
     box-sizing: border-box;
 }

@@ -12,7 +12,7 @@ class PushController extends Controller
 {
     //
     public function incomingSendGrid(Request $request){
-    	// Log::info($request);
+    	Log::info($request);
     	$events = $request->all();
     	foreach ($events as $event){
     		$id = isset($event['bw_message_id']) ? $event['bw_message_id'] : false;
@@ -23,30 +23,44 @@ class PushController extends Controller
     }
 
     public function updateMsgStatus($id,$data){
-    	$messageUpdate = Message::find($id);
-    	$status = json_decode($messageUpdate->status,true);
-    	Log::info($status);
-    	$event = $data['event'];
-    	$timestamp = $data['timestamp'];
-    	if ($status[$event] === null){
-    		$status[$event] = [$timestamp];
-    	}else{
-    		array_push($status[$event], $timestamp);
-    	}
-    	$messageUpdate->status = json_encode($status);
-    	$messageUpdate->save();
+        try{
+            $messageUpdate = Message::find($id);
+            $status = $messageUpdate->status;
+            // Log::info($status);
+            $event = $data['event'];
+            $timestamp = $data['timestamp'];
+            $url = ($event == 'click') ? $data['url'] : null;
+            if ($url){
+                if (!isset($status[$event]) || $status[$event] === null){
+                    $status[$event] = [[$timestamp => $url]];
+                }else{
+                    array_push($status[$event], [$timestamp => $url]);
+                }                
+            }else{
+                if (!isset($status[$event]) || $status[$event] === null){
+                    $status[$event] = [$timestamp];
+                }else{
+                    array_push($status[$event], $timestamp);
+                }                
+            }
+            $messageUpdate->status = $status;
+            $messageUpdate->save();
+        }catch(\Exception $e){
+            Log::info($e);
+        }
     }
     public function googlePushVerification(Request $request){
         return view('confirmations.googlepush');
     }
     public function incomingGoogle(Request $request){
-        // $headers = $request->
-        // Log::info();
         $channel = getallheaders()['X-Goog-Channel-ID'];
-        Log::info("Calendar change for practice id:".$channel);
+        Log::info("Calendar change on channel:".$channel);
+        // Log::info(getallheaders());
     }
     public function incomingTwilioSms(Request $request){
-        Log::info($request);
+        // Log::info($request);
+        $phone = $request->From;
+        $msg = $request->Body;
     }
     public function twilioError(Request $request){
 

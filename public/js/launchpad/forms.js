@@ -35,11 +35,11 @@ $(document).ready(function () {
         checkboxes.each(function(){
             plzSelectNode.clone().insertBefore($(this));
         })
-        checkboxes.on("click","li",checkbox);
+        checkboxes.attr('tabindex','0').on("click","li",checkbox);
         checkboxes.data("initialized",true);
         
         var radios = filterUninitialized(".radio");
-        radios.on("click","li",radio);
+        radios.attr('tabindex','0').on("click","li",radio);
         radios.data("initialized",true);
 
         var dropdowns = filterUninitialized(".dropdown");
@@ -79,6 +79,7 @@ $(document).ready(function () {
                 $(this).parent().jSignature("reset");
             })
         })
+        signatures.attr('tabindex','0');
         signatures.data("initialized",true);
 
         var times = filterUninitialized(".time");
@@ -341,29 +342,34 @@ function loadDxForm(){
 }
 
 function radio() {
-    var disabled = $(this).hasClass("disabled");
-    if ($(this).hasClass("active")===false && !disabled) {
-        $(this).closest(".radio").find("li").removeClass("active");
-        $(this).addClass("active");
-    } 
-    var item = $(this).closest(".item, .itemFU, .itemFUList");
-    if (item.is(".item") && !disabled){
-        showFollowUps($(this).data("value"),item);
+    var disabled = ($(this).hasClass("disabled") || $(this).parent().hasClass('disabled'));
+    if (!disabled){
+        if ($(this).hasClass("active")===false) {
+            $(this).closest(".radio").find("li").removeClass("active");
+            $(this).addClass("active");
+        } 
+        var item = $(this).closest(".item, .itemFU, .itemFUList");
+        if (item.is(".item")){
+            showFollowUps($(this).data("value"),item);
+        }
+        
     }
 }
 function checkbox() {
-    if ($(this).hasClass('disabled')){return false;}
-    $(this).toggleClass("active");
-    var item = $(this).closest(".item, .itemFU, .itemFUList");
-    if (item.is(".item") && item.find(".itemFU").length>0){
-        var responses = $(this).closest(".answer").find(".active");
-        var respArr=[];
-        responses.each(function(){
-            respArr.push($(this).data("value"));
-        })
-        responses = respArr.join("***");
-        console.log(responses);
-        showFollowUps(responses,$(this).closest(".item"));
+    var disabled = ($(this).hasClass("disabled") || $(this).parent().hasClass('disabled'));
+    if (!disabled){
+        $(this).toggleClass("active");
+        var item = $(this).closest(".item, .itemFU, .itemFUList");
+        if (item.is(".item") && item.find(".itemFU").length>0){
+            var responses = $(this).closest(".answer").find(".active");
+            var respArr=[];
+            responses.each(function(){
+                respArr.push($(this).data("value"));
+            })
+            responses = respArr.join("***");
+            // console.log(responses);
+            showFollowUps(responses,$(this).closest(".item"));
+        }
     }
 }  
 function masterCheckbox(){
@@ -453,12 +459,56 @@ function checkForm(form, includeInvisible = false){
     }
 }
 function submitForm(){
-    var formID = $(this).data("formname");
-    if (createSubmitObject($("#"+formID))){
-        return true;
-    }else{
+    if (!$(this).data('submission') || $(this).hasClass('disabled')){
+        return;
+    }
+    alert("SUBMTTING");
+    var formName = $(this).data("formname"), form = $("#"+formName), uid = form.data('uid'), formId = Number(form.data('formid'));
+    var obj = checkForm(form);
+    if (!obj){
         return false;
     }
+    var dataObj = {
+        jsonObj: obj
+    };
+    if ($.inArray(formId, [26]) > -1){
+        dataObj = createSubmissionColumnObj(formId,form,dataObj);
+    }
+    // return false;
+    blurTopMost("#loading");
+    $.ajax({
+        url: "/form/"+uid+"/submit",
+        method: "POST",
+        data: dataObj,
+        success:function(data){
+            if (data=='checkmark'){
+                updateUidList();
+                blurTopMost("#checkmark");
+                delayedReloadTab(2000);
+            }else{
+                console.log(data);    
+            }
+            // console.log(data);
+        }
+    })
+}
+function createSubmissionColumnObj(formId, form, dataObj){
+    if (formId == 26){
+        var gender = (justResponse(form.find("#gender")) == 'other') ? justResponse(form.find("#gender").closest('.item').find("#other")) : justResponse(form.find("#gender")),
+            sex = (justResponse(form.find("#biological_sex")) == 'other') ? justResponse(form.find("#biological_sex").closest('.item').find("#other")) : justResponse(form.find("#biological_sex")),
+            pronouns = (justResponse(form.find("#preferred_pronouns")) == 'other') ? justResponse(form.find("#preferred_pronouns").closest('.item').find("#other")) : justResponse(form.find("#preferred_pronouns"));
+
+        dataObj['model'] = "Patient";
+        dataObj['uid'] = JSON.parse($("#uidList").text())['Patient'];
+        dataObj['columnObj'] = 
+        {
+            gender: gender,
+            sex: sex,
+            pronouns: pronouns,
+            mailing_address: justResponse(form.find("#mailing_address"))
+        }
+    }
+    return dataObj;
 }
 function createSubmitObject(form, includeInvisible = false){
     var SubmitObj = {};
@@ -468,7 +518,7 @@ function createSubmitObject(form, includeInvisible = false){
     SubmitObj['FormName'] = form.data('formname');
     var sections = includeInvisible ? form.find(".section") : form.find(".section").filter(":visible"), uid = form.data("uid"), check = false;
     sections.each(function(s, section){
-        section = $(section), secName = section.find("h2").text();
+        section = $(section), secName = section.find("h2").first().text();
         var ItemsArr = [], items = includeInvisible ? section.find(".item") : section.find(".item").filter(":visible");
         items.each(function(i, item){
             item = $(item);
@@ -478,6 +528,7 @@ function createSubmitObject(form, includeInvisible = false){
             }
             else {
                 check = false;
+                // console.log(item);
                 return false;
             }
         })
@@ -499,7 +550,7 @@ function scrollToInvalidItem(target){
         dif = Math.abs(p.outerHeight(true) - p[0].scrollHeight);
 
     console.log(dif);
-    // console.log(p[0].scrollHeight);
+    console.log(target);
 
     if (!p.is("body") && (Math.abs(p.outerHeight(true) - p[0].scrollHeight) > 10)){
         p.scrollTo(target);
@@ -510,11 +561,10 @@ function scrollToInvalidItem(target){
 }
 function validateItem(item){
         var t = item.data("type"), pass = true;
-        // if (!item.children(".question").find(".q").text().toLowerCase().includes("optional")){
+
         if (item.data('required')){
             if ($.inArray(t,['text','date','time','number']) > -1 && item.find("input").val().length==0){
                     alertBox("required",item.find("input"),"after","fade");
-                    // $.scrollTo(item.find(".answer"));
                     scrollToInvalidItem(item.find('input'));
                     return false;
             }
@@ -534,18 +584,17 @@ function validateItem(item){
                     return false;
             }
             else if (t==="radio" && item.find(".active").length==0){
-                    alertBox("required",item.find("ul"),"below","fade");
+                    alertBox("required",item.find("ul"),"after","fade");
                     scrollToInvalidItem(item.find('ul'));
                     return false;
             }
             else if (t==="checkboxes" && item.find(".active").length==0){
-                    alertBox("required",item.find("ul"),"below","fade");
+                    alertBox("required",item.find("ul"),"after","fade");
                     scrollToInvalidItem(item.find('ul'));
                     return false;
             }
-            // else if (t==="dropdown" && (item.find("option").filter(":selected").length>0 || item.find("option").filter(":selected").val()=="")){
             else if (t=='dropdown' && item.find("option:selected").val() == ""){
-                    console.log(item.find("option:selected").val());
+                    // console.log(item.find("option:selected").val());
                     alertBox("required",item.find("select"),"after","fade");
                     scrollToInvalidItem(item.find('select'));
                     return false;
@@ -557,12 +606,14 @@ function validateItem(item){
                 var sig = item.find(".signature"), sigData = sig.jSignature("getData","base30"), printedName = item.find(".printed").find("input") ;
                 
                 if (printedName.length>0 && printedName.val().length==0){
-                    $.scrollTo(printedName);
+                    // $.scrollTo(printedName);
+                    scrollToInvalidItem(printedName);
                     alertBox("required",printedName,"after","fade","600%,-150%");
                     return false;
                 }
                 if (sigData[1]==""){
-                    $.scrollTo(sig);
+                    // $.scrollTo(sig);
+                    scrollToInvalidItem(sig);
                     alertBox("required",sig,"ontop","fade","20%,-50%");
                     return false;
                 }
@@ -635,15 +686,16 @@ function getResponse(item){
     }
     return ResponseObj;
 }
-function justResponse(input){
-    var r = getResponse(input.closest(".item, .itemFU"))['response']; 
+function justResponse(input, asArray = false){
+    if (!input.is(":visible")){return null;}
+    var r = getResponse(input.closest(".item, .itemFU"))['response'];
     if (r.length == 0){
         return null;
     }
     else if (r.length > 1){
-        return JSON.stringify(r);
+        return asArray ? r : JSON.stringify(r);
     }else{
-        return r[0];
+        return asArray ? r : r[0];
     }
 }
 function matchingLI(answer,response){
@@ -651,6 +703,7 @@ function matchingLI(answer,response){
     var match = answer.find("li").filter(function(){
         return $(this).data('value').replace("'","") == response;
     });
+    console.log(match);
     return match;
 }
 function fillAnswer(item,response){
@@ -689,8 +742,10 @@ function fillAnswer(item,response){
         answer.find('select').val(response);
     }
     else if (t == 'signature'){
+        // console.log(response);
         if ($.isArray(response)){
-            answer.find(".signature").jSignature("setData",response[0]);
+            // console.log(response[0]);
+            answer.find(".signature").jSignature("setData", "data:"+response[0].join(","));
             answer.find(".printed").find("input").val(response[1]);
         }else{
             answer.find(".signature").jSignature("setData",response);
@@ -700,7 +755,15 @@ function fillAnswer(item,response){
         answer.find("input").val(response);
     }
 }
-
+function disableForm(form){
+    form.find('input, textarea').attr('readonly',true);
+    form.find('.signature').each(function(){
+        $(this).jSignature('disable');
+    });
+    form.find('.signature').find('.clear').remove();
+    form.find('.radio, .checkboxes').addClass('disabled');
+    form.find('.button.cancel').text("close");
+}
 function unlockForm(){
     if ($("#UnlockForm").length==0){
         $("<div id='UnlockForm'><h4>Enter Unlock Phrase</h4><input><br><br><div class='button xsmall submit'>unlock</div><div class='button xsmall cancel'>cancel</div></div>").appendTo($("body"));
@@ -747,24 +810,30 @@ function checkPhrase(){
 
 
 function fillForm(json,form){
-    var sections = json['Sections'], itemObj = {};
-    $.each(sections,function(s,section){
-        $.each(section['Items'],function(i,item){
-            if (item.type !== 'narrative'){
-                itemObj[item.question] = item.response;
+    var sections = json['Sections'];
+    $.each(sections,function(s,savedSection){
+        var sectionOnForm = form.find(".section").filter(function(){
+            
+            var t = $(this).find("h2").first().text(), ot = t, otsplice = t;
+            if ($(this).find("h2").first().data('originaltext') != undefined){
+                ot = $(this).find("h2").first().data('originaltext');
+                otsplice = $(this).find("h2").first().data('originalsplice')
             }
-            if (item.followups != undefined){
-                $.each(item.followups,function(f,FU){
-                    itemObj[FU.question] = FU.response;
-                })
+            return ((t == savedSection.Name) || (ot == savedSection.Name) || savedSection.Name.includes(otsplice)) ; 
+        });
+        $.each(savedSection['Items'],function(i,savedItem){
+            // if (savedItem.type !== 'narrative' && savedItem.type !== 'signature'){
+            if (savedItem.type !== 'narrative'){
+                var itemOnForm = sectionOnForm.find(".item").filter(function(){return $(this).children(".question").find(".q").text().trim() == savedItem.question.trim();});
+                fillAnswer(itemOnForm,savedItem.response);
+                if (savedItem.followups != undefined){
+                    $.each(savedItem.followups,function(f,savedFU){
+                        var fuOnForm = itemOnForm.find(".itemFU").filter(function(){return $(this).children(".question").find(".q").text().trim() == savedFU.question.trim();});
+                        fillAnswer(fuOnForm,savedFU.response);
+                    })
+                }
             }
         })
-    })
-    $.each(itemObj,function(question,answer){
-        var i = form.find(".item, .itemFU").filter(function(){
-            return $(this).children(".question").find(".q").text() == question;
-        })
-        fillAnswer(i,answer);
     })
 }
 function resetForm(form){

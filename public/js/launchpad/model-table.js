@@ -119,9 +119,42 @@ $(document).ready(function(){
             checkHorizontalTableFit($(table));
         })
 
-        tables.data("initialized",true);    
-})
+        tables.find('tr').filter(function(){
+            return trimCellContents($(this).find('.status')) == 'required'
+        }).addClass('required');
 
+        tables.data("initialized",true);    
+    if (!$(".optionsNav").first().hasClass("hide")){$(".optionsNavHeader").show();}
+    var newHead = filterUninitialized(".optionsNavHeader");
+    newHead.on('click','.hide',hideOptionsNav);
+    newHead.data('initialized',true);
+    var newNav = filterUninitialized(".optionsNav");
+    newNav.on('click','.toggleDetails',toggleDetails);
+    newNav.data('initialized',true);
+
+})
+function hideOptionsNav(){
+    if ($(this).text() == 'hide'){
+        slideFadeOut($(".optionsNav"));
+        $(this).text($(".optionsNav").find(".name").text());
+    }else{
+        slideFadeIn($(".optionsNav"));
+        $(this).text('hide');        
+    }
+}
+function toggleDetails(){
+    var showNow = $(this).hasClass('down'), label = $(this).find('.label'), text = label.text();
+    if (showNow){
+        slideFadeIn($(".navDetails"));
+        $(this).find(".arrow").prependTo($(this));
+        label.text(text.replace("more","less"));
+    }else{
+        slideFadeOut($(".navDetails"));
+        $(this).find(".arrow").appendTo($(this));
+        label.text(text.replace("less","more"));
+    }
+    $(this).toggleClass('down up');
+}
 var optionsLoadXHR = undefined;
 function rowClickLoadModel(){
     var uid = $(this).data('uid'), 
@@ -146,15 +179,20 @@ function rowClickLoadModel(){
     if ($(target).hasClass("hide")){
     	$(target).removeClass('hide');
     	$(target).closest(".wrapper").show();
+        $(".optionsNavHeader").show();
+        $(".optionsNavHeader").find('.hide').text('hide');
     }
     
-    slideFadeIn($(target),1500);
+    slideFadeIn($(target),1500,function(){
+        $(".optionsNavHeader").find('.hide').text('hide');
+    });
     $.scrollTo($(target),1500);
     
     if (optionsLoadXHR!=undefined){
         optionsLoadXHR.abort();
     }
 
+    console.log(target);
     optionsLoadXHR = $.ajax({
         url: "/optionsNav/" + model.replace(" ","") + "/" + uid,
         method: "GET",
@@ -167,6 +205,7 @@ function rowClickLoadModel(){
             allowButtonFocus();
             optionsLoadXHR = undefined;
             updateUidList();
+            $(target).on('click','.toggleDetails',toggleDetails);
         },
         error: function(e){
             console.log(e);
@@ -229,7 +268,6 @@ function updateInputFromTable(){
             },
             error: function(e){
                 $("#Error").find(".message").text("Error loading template");
-
                 blurElement(box.parent(),"#Error");
             }
         })
@@ -256,9 +294,15 @@ function updateInputFromTable(){
 function updateInputByUID(input,uids){
     // console.log(input.data());
     var modal = $(input.data('modal')), table = modal.find('table'), selectBtn = modal.find(".selectData");
-    input.addClass('targetInput');
-    selectRowsById(uids,table);
-    selectBtn.click();
+    if (uids === null){
+        modal.removeData('uidArr');
+        input.val("");
+    }else{
+        input.addClass('targetInput');
+        selectRowsById(uids,table);
+        selectBtn.click();        
+    }
+    console.log(input, uids);
 }
 function trimCellContents(td){
     return td.find(".tdSizeControl").text().trim().replace("...","");
@@ -369,7 +413,10 @@ function alternateRowColor(table){
     trs.each(function(i, tr){
         var id = $(tr).data(index), c;
         if (i == 0){c = "a"}
-        else if (id == prevID){c = ($(trs[i-1]).hasClass("a")) ? "a" : "b";}
+        else if (id == prevID){
+            c = ($(trs[i-1]).hasClass("a")) ? "a" : "b";
+            $(tr).css('border-color-top','transparent');
+        }
         else if (id != prevID){c = ($(trs[i-1]).hasClass("a")) ? "b" : "a";}
         $(tr).addClass(c);
         prevID = id;

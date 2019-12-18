@@ -1,5 +1,10 @@
 <?php 
 use Illuminate\Support\Facades\Auth;
+
+if (!isset($destinations)){
+	$destinations = $optionsNavValues['destinations'];
+	$btnText = $optionsNavValues['btnText'];
+}
 ?>
 
 <div class='wrapMe marginBig bottomOnly' style='display:inline-block'>
@@ -75,11 +80,16 @@ use Illuminate\Support\Facades\Auth;
 				<?php 
 					$attr = $column['attribute'];
 
-					$val = ($attr == "created_at" or $attr == "updated_at") ? date("n/j/Y",strtotime($instance->$attr)) : $instance->$attr;
-					if ($attr ==  "created_at" or $attr == "updated_at"){
-						// $val = date("n/j/Y",strtotime($instance->$attr));
+					$val = $instance->$attr;
+					$expandedVal = explode("->",$attr);
+					if (count($expandedVal) == 2){
+						$rel = $expandedVal[0];
+						$relAttr = $expandedVal[1];
+						$val = $instance->$rel->$relAttr;
+					}
+					// if ($attr ==  "created_at" or $attr == "updated_at"){
+					if (in_array($attr,['created_at','updated_at','last_submitted'])){
 						$val = dateOrTimeIfToday(strtotime($instance->$attr));
-						// $val = $instance->$attr;
 					}elseif(strpos($attr,"%") > -1 or strpos($attr,"!!") > -1){
 						$val = complexAttr($attr,$instance);
 					}elseif ($attr == 'affects'){
@@ -156,7 +166,7 @@ use Illuminate\Support\Facades\Auth;
 		
 		<tr>
     	@foreach ($columns as $column)
-           	@if ($column["className"] == 'name')
+           	@if ($loop->first)
 	            <td class='{{ $column["className"] }} all'>No matches</td>
            	@else
 	            <td class='{{ $column["className"] }} all'></td>

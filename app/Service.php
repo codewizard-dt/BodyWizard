@@ -81,7 +81,7 @@ class Service extends Model
         );
     }
 
-    public function optionsNav(){
+    public function moreOptions(){
 
     }
 
@@ -94,7 +94,4 @@ class Service extends Model
     public function forms(){
         return $this->morphToMany('App\Form','formable','formables',null,'form_id');
     }
-    // public function services(){
-    //     return $this->morphToMany('App\Service','serviceable');
-    // }
 }

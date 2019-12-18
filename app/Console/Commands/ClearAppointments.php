@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Appointment;
+use App\Practice;
 use App\RefreshTables;
 
 
@@ -42,16 +43,20 @@ class ClearAppointments extends Command
     {
         //
         $practiceId = $this->argument('practiceId');
-        $calendarId = config('practices')[$practiceId]['app']['calendarId'];
-        $database = config('practices')[$practiceId]['app']['database'];
-        $ctrl = new Appointment;
+        // $calendarId = config('practices')[$practiceId]['app']['calendarId'];
+        // $database = config('practices')[$practiceId]['app']['database'];
+        $calendarId = practiceConfig("practices.$practiceId.app.calendarId");
+        $database = practiceConfig("practices.$practiceId.app.database");
+        // $ctrl = new Appointment;
         config(['database.connections.mysql.database' => $database]);
+        \DB::reconnect();
 
         $refresh->clearApptTables();
         $this->info('Appointment tables cleared');
-        $ctrl->clearCalendar($calendarId);
+        
+        Practice::clearCalendar($calendarId);
         $this->info('Google calendar cleared.');
-        $ctrl->updateEntireEventFeed($practiceId,$calendarId);
+        Practice::updateEntireEventFeed($practiceId,$calendarId);
         $this->info('Practitioner event feed updated.');
     }
 }

@@ -9,7 +9,7 @@
     use Illuminate\Support\Facades\Request;
 
 
-    include_once app_path("/php/functions.php");
+    // include_once app_path("/php/functions.php");
 
     $ctrl = new Form;
     $changeTitleOptions = ['names','service','no label','ID*ChangeTitle'];
@@ -22,7 +22,10 @@
 ?>  
 
 <h2 class="purple paddedSmall">Appointment Calendar</h2>
-{{$ctrl->answerDisp('radio',$changeTitleOptions)}}
+<div id="ChangeTitleWrap">
+    <span class='vertCent'>event display: </span>
+{{$ctrl->answerDisp('radio',$changeTitleOptions)}}    
+</div>
 <div id="PractitionerCalendar" class='calendar practitioner'>
     <div class='lds-ring dark'><div></div><div></div><div></div><div></div></div>
 </div>
@@ -46,6 +49,10 @@
             <div>
                 <span class="label">Services:</span>
                 <span class='value' id="ServiceInfo"></span>
+            </div>
+            <div>
+                <span class="label">Required Forms:</span>
+                <span class='value' id="FormInfo"></span>
             </div>
         </div>
     </div>

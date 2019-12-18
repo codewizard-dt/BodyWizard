@@ -6,7 +6,7 @@ $(document).ready(function(){
 	settingsBtns.on("click",saveSettings);
 	settingsBtns.data('updated',true);
 
-	var model = $(".settingsForm").data('model'), json = $("#ModelSettings").closest('.modalForm').data('settingsjson'), form = $("#ModelSettings");
+	var model = $(".settingsForm").data('model'), json = $("#ModelSettings").data('settingsjson'), form = $("#ModelSettings");
 
 	if (model == 'Form'){
 		var target, sections;
@@ -63,6 +63,7 @@ $(document).ready(function(){
 		console.log($("#ServiceMap").data('currentaddonservices'));
 	}
 	if (json != undefined){
+		console.log('hi');
 	    fillForm(json,form);
 	}
 
@@ -76,6 +77,7 @@ var defaultSectionOptions = {
 	"dynamic":["always display"],
 	"complaint_types":[]
 }
+
 function showOptions(){
     var p = $(this).parent(), t = $(this), 
     	sectionOptions = ($(this).closest(".section").data('settings') != undefined) ? $(this).closest(".section").data('settings') : defaultSectionOptions, 
@@ -167,7 +169,7 @@ function saveSettings(){
 					setTimeout(function(){
 						reloadTab();
 					},800)
-				}else{
+				}else if (data != 'no changes'){
 					console.log(data);
 					$("#Error").find(".message").text("Error saving settings");
 					blurElement(modal,"#Error");
@@ -222,8 +224,8 @@ function constructColumnSettingsObj(model){
 			form_type: justResponse($("#select_form_type"))
 		}
 	}
-	if (obj == {}){obj = null;}
-	console.log(obj);
+	if ($.isEmptyObject(obj)){obj = null;}
+	// console.log(obj);
 	return obj;
 }
 function constructEasyAccessList(model){
@@ -235,11 +237,48 @@ function constructEasyAccessList(model){
 	else if (model == 'ServiceCategory'){
 	}
 	else if (model == 'Form'){ 
+		var requirement = $("#how_often").is(":visible") ? justResponse($("#how_often")) : $("#require_this_form_for_all_new_patients_at_registration");
 		obj['form_type'] = justResponse($("#select_form_type"));
-		obj['admin_only'] = (justResponse($("#require_admin_privileges_to_use_this_form"))!=="") ? justResponse($("#require_admin_privileges_to_use_this_form")) : "no restriction";
+		obj['admin_only'] = (justResponse($("#require_admin_privileges_to_use_this_form"))!==null) ? justResponse($("#require_admin_privileges_to_use_this_form")) : "no restriction";
 		obj['portal_listing'] = (justResponse($("#add_this_form_to_patient_portal"))!==null) ? justResponse($("#add_this_form_to_patient_portal")) : "never";
+		obj['in_office'] = (justResponse($("#will_patients_complete_this_form_in-office_only"))!==null) ? justResponse($("#will_patients_complete_this_form_in-office_only")) : "never";
+		// obj['required_every'] = justResponse($("#require_this_form_to_be_completed_periodically").closest(".item").find("#how_often"));
+		if ($("#how_often").is(":visible")){
+			obj['required'] = justResponse($("#how_often"));
+		}else{
+			obj['required'] = justResponse($("#require_once_at_registration")) == 'yes' ? 'at registration only' : 'never';
+		}
 	}
-	if (obj == {}){obj = null;}
-	// console.log(obj);
+	else if (model == 'Patient'){
+		var appts = turnToBoolean(justResponse($("#appointment_reminders"))), 
+			confirms = justResponse($("#appointment_confirmation_+_cancellation_emails"),true),
+			forms = justResponse($("#reminder_to_complete_required_forms"),true), apptReminder, formReminder;
+		if (!appts){
+			apptReminder = false;
+		}else{
+			var type = justResponse($("#appointment_reminders").closest('.item').find("#text_or_email"),true);
+			apptReminder = {
+				'text': ($.inArray('text',type) > -1),
+				'email': ($.inArray('email',type) > -1)
+			}
+		}
+		if ($.inArray('never',forms) > -1){
+			formReminder = false;
+		}else{
+			var type = justResponse($("#reminder_to_complete_required_forms").closest('.item').find("#text_or_email"),true);
+			formReminder = {
+				'24hr': ($.inArray('24hr before',forms) > -1),
+				'48hr': ($.inArray('48hr before',forms) > -1),
+				'72hr': ($.inArray('72hr before',forms) > -1),
+				'text': ($.inArray('text',type) > -1),
+				'email': ($.inArray('email',type) > -1)
+			}
+		}
+		obj['reminders'] = {'appointments':apptReminder,'forms':formReminder};
+		obj['confirmations'] = ($.inArray('confirmations',confirms) > -1);
+		obj['cancellations'] = ($.inArray('cancellations',confirms) > -1);
+	}
+	if ($.isEmptyObject(obj)){obj = null;}
+	console.log(obj);
 	return obj;	
 }

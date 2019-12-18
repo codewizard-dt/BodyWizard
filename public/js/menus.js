@@ -1,4 +1,4 @@
-var waitForForm, autoClickBtn = undefined;
+var waitForForm, autoClickBtn = undefined, xhrWait = undefined;
 $(document).ready(function(){
     var purple = "rgb(105,12,104)", yellow = "rgb(240,154,53)", orange = "rgb(234,78,80)";
 
@@ -118,24 +118,24 @@ $(document).ready(function(){
     MenuItems.data('initialized',true);
     
     // to organize and stylize multiple menus
-    var AllMenus = $(".menuBar.portal").not(".siteMenu");
-    var l = AllMenus.length;
-    AllMenus.removeClass("topMenu subMenu1 subMenu2 subMenu3 subMenu4")
-    AllMenus.each(function(i,m){
-        var zIndex = -(i-l), orderClass;
-        if (i==0){
-            orderClass = "topMenu";
-        }else if (i==1){
-            orderClass = "subMenu1";
-        }else if (i==2){
-            orderClass = "subMenu2";
-        }else if (i==3){
-            orderClass = "subMenu3";
-        }else if (i==4){
-            orderClass = "subMenu4";
-        }
-        $(m).addClass(orderClass);
-    })
+        var AllMenus = $(".menuBar.portal").not(".siteMenu");
+        var l = AllMenus.length;
+        AllMenus.removeClass("topMenu subMenu1 subMenu2 subMenu3 subMenu4")
+        AllMenus.each(function(i,m){
+            var zIndex = -(i-l), orderClass;
+            if (i==0){
+                orderClass = "topMenu";
+            }else if (i==1){
+                orderClass = "subMenu1";
+            }else if (i==2){
+                orderClass = "subMenu2";
+            }else if (i==3){
+                orderClass = "subMenu3";
+            }else if (i==4){
+                orderClass = "subMenu4";
+            }
+            $(m).addClass(orderClass);
+        })
 
     ClickActiveTabsV2();
 })
@@ -282,7 +282,7 @@ function delayedReloadTab(time = 800){
         reloadTab();
     },time)
 }
-var loadXHR = undefined;
+var loadXHR = undefined, xhrWait = undefined;
 function LoadingContent(target,uri){
     if (target=="window"){
         alert("window");
@@ -305,7 +305,7 @@ function LoadingContent(target,uri){
             $(target).html(data);
         },
         error: function(e){
-            if (e.status = 404){
+            if (e.status == 404){
                 $(target).html("<h2 class='paddedSmall'>Content Unavailable</h2><div class='central small paddedSmall bottomOnly'>Sorry for the inconvenience. If this continues, please submit an error report. Submitting an error report is just one-click away.</div><div class='button pink xxsmall errorReport'>send error report</div>");
             }
             console.log(e);
