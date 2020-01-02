@@ -254,6 +254,11 @@ function updateInputFromTable(){
     });
     modal.data('uidArr',uidArr);
     target.data('uidArr',uidArr);
+    if (model == 'Patient' && connectedTo == 'Appointment'){
+        appointmentDetails.patient = uidArr[0];
+        updatePatientData();
+        addDetail('patient',patientInfo.name);
+    }
     target.val(text.join(", "));
     if (model == 'Template' && connectedTo == 'Message'){
         var id = uidArr[0], box = $("#createMessage").find(".summernote");
@@ -273,16 +278,7 @@ function updateInputFromTable(){
         })
     }else if (model == 'Patient' && connectedTo == 'Appointment'){
         var uid = $("#PatientList").find(".active").data('uid');
-        $.ajax({
-            url:"/setvar",
-            method:"POST",
-            data:{
-                setUID: {"Patient":uid}
-            },
-            success: function(){
-                updateUidList();
-            }
-        })
+        setUid('Patient',uid);
     }
 
     var p = modalOrBody(target);
@@ -302,7 +298,7 @@ function updateInputByUID(input,uids){
         selectRowsById(uids,table);
         selectBtn.click();        
     }
-    console.log(input, uids);
+    // console.log(input, uids);
 }
 function trimCellContents(td){
     return td.find(".tdSizeControl").text().trim().replace("...","");

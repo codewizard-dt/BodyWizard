@@ -90,27 +90,24 @@ class RefreshTables extends Model
     	}
     }
     public static function seedUserTables(){
-        $patients = factory(Patient::class,15)
-                    ->create()
-                    ->each(function($patient){
-                        $patient->userInfo()->associate(
-                        	factory(User::class)->states('patient')->create()
-                        )->save();
+        $patients = factory(User::class,10)->states('patient')->create()
+                    ->each(function($user){
+                        $user->patientInfo()->save(
+                            factory(Patient::class)->create()
+                        );
                     });
-        $practitioners = factory(Practitioner::class,3)
-                    ->create()
-                    ->each(function($practitioner){
-                        $practitioner->userInfo()->associate(
-                        	factory(User::class)->states('practitioner')->create()
-                        )->save();
-                    });
-        $staffMembers = factory(StaffMember::class,2)
-                    ->create()
-                    ->each(function($staffMember){
-                        $staffMember->userInfo()->associate(
-                        	factory(User::class)->states('staff member')->create()
-                        )->save();
-                    });
+        $practitioners = factory(User::class,2)->states('practitioner')->create()
+                            ->each(function($user){
+                                $user->practitionerInfo()->save(
+                                    factory(Practitioner::class)->create()
+                                );
+                            });
+        $staffmembers = factory(User::class,2)->states('staff member')->create()
+                        ->each(function($user){
+                            $user->staffMemberInfo()->save(
+                                factory(StaffMember::class)->create()
+                            );
+                        });
     }
     public static function seedApptTables($calendarId, $apptCount){
         $apptCount = (int)$apptCount;

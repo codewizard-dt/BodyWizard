@@ -3,7 +3,6 @@ $(document).ready(function(){
     $("#ScheduleFeedTarget").load("/schedule/feed",function(){
         $("#PatientCalendar").html("");
      	loadCal($("#PatientCalendar"));
-        // console.log($("#AnonFeed").data('schedule'));
     });
     $("#createAppointment").on('click','.cancel',function(){
         $("#booknow").find('.active').removeClass('active');
@@ -12,13 +11,10 @@ $(document).ready(function(){
     $("#createAppointment, #editAppointment").find(".item").hide();
     $("#booknow").data('target','#createAppointment');
     $("#EditApptBtn").data('target','#editAppointment');
-    $("#booknow, #EditApptBtn").on('click',openAppointmentDetails);
-    $('#FormInfo').on('click','.link',checkFormStatus);
+    $("#booknow, #EditApptBtn").on('click',showAppointmentDetails);
 
     defaultPatientInfo = $("#PatientCalendar").data('patient');
-
-    activateServiceSelection();
-
+    
     serviceConfirmBtn = $("#SelectServices").find('.closeBtn');
     dateTimeConfirmBtn = $("#SelectDateTime").find('.closeBtn');
 
@@ -33,20 +29,19 @@ $(document).ready(function(){
             $(next).show();            
         }
     });
-    $("#SelectDate, #SelectTime").find(".next").on('click',nextStep);
-    $("#DateSelector").on('focusout',checkDate);
-    $("#TimeSelector").on('click','li',updateTime);
-    $("#PractitionerSelector").on('click','li',updatePractitioner);
-    $("#SelectOrRandom").on('click','.closeBtn',randomPractitioner);
-    $("#Details").on('click','.edit',openDetail);
+    // $("#SelectDate, #SelectTime").find(".next").on('click',nextStep);
     if (autoClickBtn != undefined){
         autoClickBtn.click();
         autoClickBtn = undefined;
     }
 })
 function loadCal(target){
+    console.log(target.data('timezone'),moment.tz.guess());
+    var tz = target.data('timezone'), clientTz = moment.tz.guess(), location = target.data('location');
+    moment.tz.setDefault(tz.replace(" ","_"));
     calendar = new FullCalendar.Calendar(target[0], {
-        plugins: ['dayGrid','list', 'timeGrid', 'interaction', 'rrule'],
+        plugins: ['dayGrid','list', 'timeGrid', 'interaction', 'rrule', 'momentTimezone'],
+        timeZone: tz,
         header:{
             left:"title",
             center:"",
@@ -65,10 +60,7 @@ function loadCal(target){
             console.log(ev);
             resetEntireAppt();
             if (ele.hasClass('appointment')){
-                // $("#ApptInfo").data({
-                //     'patientIds': patientIds,
-                //     'apptId': ev.id
-                // });
+                activeForm = $("#editAppointment");
                 updateAppointment({
                     patient:patientIds[0],
                     practitioner:practitionerId,
@@ -110,6 +102,12 @@ function loadCal(target){
     })
 
     calendar.render();
+    activateServiceSelection();
+    var tb = target.find(".fc-toolbar");
+    $("#TimezoneWrap").insertAfter(tb).css('display','inline-block');
+    if (tz != clientTz){
+        $("#TimezoneWrap").html("Take note: you appear to be in a different timezone than your appointments will be held.<br><b>Appointments are displayed and scheduled in local "+location+" time.</b>");
+    }
 }
 function whichFirst(){
     var val = $(this).data('value');
@@ -125,176 +123,6 @@ function whichFirst(){
         $("#SelectPractitioner").show();
     }
 }
-function openAppointmentDetails(){
-    var modalId = $(this).data('target');
-    console.log(modalId);
-    moveServiceSelect(modalId, false);
-    movePracTimeSelect(modalId, false);
-    moveDetails(modalId);
-    if (modalId == '#createAppointment'){
-        resetEntireAppt();
-        resetConnectedModels();
-        $(modalId).find('input, textarea').val("");
-        $(modalId).find('.active').removeClass('active');
-        $(modalId).removeData('dateTime');
-    }else{
-        addDetail('services',$(modalId).find("#select_services").val());
-        addDetail('date',$(modalId).find("#date").val());
-        addDetail('time',$(modalId).find("#time").val());
-        addDetail('practitioner',$(modalId).find("#select_practitioner").val());
-    }
-    $(".progressiveSelection").hide();
-    $(".progressiveSelection").find(".step").hide();
-    $(".progressiveSelection").find(".open").show();
-    checkCount($("#SelectServices"));
-    resetProgressBar($("#SelectServices"));
-    // updatePatientData();
-    // updatePractitionerData();
-    // updateDuration();
-    // updateAvailableServices();
-    // updateAvailableTimes();
-    blurElement($("body"),modalId);
-}
-function addDetail(type,value){
-    var btn = $("#Details").closest(".modalForm").find(".submitForm");
-    $("#Details").find("."+type).find(".value").text(value);
-    $("#Details").find("."+type).find(".edit").show().text("change");
-    if (type == 'date'){$("#Details").find(".time").find(".edit").text("select");}
-    if ($("#Details").find('.value').filter(function(){return $(this).text() == 'none'}).length == 0){
-        btn.removeClass('disabled');
-    }else{
-        btn.addClass('disabled');
-    }
-}
-function removeDetail(type){
-    if ($.isArray(type)){
-        $.each(type,function(x,t){
-            removeDetail(t);
-        })
-    }else{
-        var t = (type == 'time') ? "" : "select";
-        $("#Details").find("."+type).find(".value").text("none");
-        $("#Details").find("."+type).find(".edit").text(t);        
-    }
-}
-function openDetail(){
-    var target = $($(this).data('target')), openBtn = target.find('.openBtn');
-    target.find(".active").removeClass('active');
-    $(".progressiveSelection").hide();
-    if (!target.is(".progressiveSelection")){
-        target.closest('.progressiveSelection').find('.step, .open').hide();
-        target.closest('.progressiveSelection').find('.active').removeClass('active');
-        target.closest('.progressiveSelection').fadeIn();
-    }
-    target.fadeIn();
-    if (openBtn.length > 0){openBtn.click();}
-}
-// var waitForDate;
-function checkDate(){
-    console.log('checkDate');
-    var date, form = $(this).closest('.formDisp');
-    setTimeout(function(){
-        date = $("#DateSelector").val();
-        if (date != ""){
-            updateAvailableTimes(form);
-            addDetail('date',date);
-            form.find("#date").val(date);
-            $("#SelectDate").find(".next").removeClass('disabled').click();
-        }
-    },200)
-}
-function updateAvailableTimes(){
-    console.log('updateAvailableTimes');
-    var form = $("#createAppointment, #editAppointment").filter(":visible"), bizHours = $("#BizHours").data('schedule'), practitioners = $("#Practitioners").data('schedule'), services = $("#ServiceListModal").data('uidArr'), duration = Number(form.find('#duration').val()), date = moment($("#DateSelector").val(),"MM/DD/YYYY"), slots = $("#TimeSelector").find("li"),
-        practitioner = ($("#PractitionerListModal").data('uidArr') != undefined) ? $("#PractitionerListModal").data('uidArr') : null;
-    if (practitioner && practitioner.length == 0){practitioner = null;}
-    if (practitioner){
-        var id = practitioner[0];
-        practitioner = practitioners.find(p => {
-            return p.practitioner_id === id
-        })
-    }
-    // console.log(practitioner);
-    slots.addClass('disabled');
-    var anonEvents = ($("#AnonFeed").data('schedule') == "") ? null : $("#AnonFeed").data('schedule');
-    // console.log(anonEvents);
-    slots.each(function(){
-        var slot = $(this), time = slot.data('value').split(":"), hour = Number(time[0]), min = Number(time[1]), practitionerEvents;
-        date.hour(hour).minute(min);
-        bizHourCheck = checkSchedule(date, bizHours, services, duration);
-        if (bizHourCheck === true){
-            slot.removeClass('disabled');
-        }
-        if (practitioner){
-            practitionerEvents = anonEvents ? anonEvents.filter(event => event.practitionerId == practitioner.practitioner_id) : null;
-            if (checkSchedule(date, practitioner.schedule, services, duration) === true
-                && noEventConflict(date, duration, practitionerEvents)){
-                slot.removeClass('disabled');
-                // console.log(date);
-            }else{
-                slot.addClass('disabled');
-            }
-        }else{
-            $.each(practitioners,function(p,practitioner){
-                practitionerEvents = anonEvents ? anonEvents.filter(event => event.practitionerId == practitioner.practitioner_id) : null;
-                if (checkSchedule(date, practitioner.schedule, services, duration) === true
-                    && noEventConflict(date, duration, practitionerEvents)){
-                    // console.log(date.format("H:mm ")+practitioner.name);
-                    slot.removeClass('disabled');
-                }
-            })
-        }
-    })
-}
-function updatePractitioner(){
-    var name = $(this).text(), list = $("#PractitionerSelector").data('details'), id = list[name], practitionerBtn = $(this),
-        form = $("#createAppointment, #editAppointment").filter(":visible");
 
-    // console.log($(this));
-    if ($(this).hasClass('disabled')){
-        confirm(name + ' Unavailable', "Would you like to select a new time to match "+ name + "'s schedule?",'yes, select new time','no');
-        var wait = setInterval(function(){
-            if (confirmBool != undefined){
-                if (confirmBool){
-                    form.find('#date, #DateSelector, #time, #TimeSelector').val("");
-                    removeDetail(['date','time']);
-                    practitionerBtn.removeClass('disabled').click();
-                    $("#Details").find(".date").find(".edit").click();
-                    clearInterval(wait);
-                }
-            }
-        })
-    }else{
-        updateInputByUID(form.find("#select_practitioner"),id);
-        $("#PractitionerSelector").find(".closeBtn").removeClass('disabled');
-        addDetail('practitioner',name);
-        if (form.find("#date").val() != ''){
-            updateAvailableTimes();
-        }
-    }
-}
-function randomPractitioner(){
-    var form = $("#createAppointment, #editAppointment").filter(":visible");
-    var p = randomArrayElement(availablePractitioners(form.data('dateTime'),form.find("#duration").val(),$("#ServiceListModal").data('uidArr')));
-    updateInputByUID(form.find("#select_practitioner"),p.practitioner_id);
-    addDetail('practitioner',p.name);
-}
-function updateTime(){
-    console.log('updateTime');
-    if ($(this).hasClass('disabled')){return;}
-    var form = $("#createAppointment, #editAppointment").filter(":visible"), time = $(this).text().replace(" ",""), date = form.find("#date").val(), services = $("#ServiceListModal").data('uidArr');
-    form.find("#time").val(time);
-    var dateTime = moment(date + " " + time,'MM/DD/YYYY hh:mma');
-    $("#SelectTime").find(".next").removeClass('disabled').click();
-    form.data('dateTime',dateTime);
-    addDetail('time',time);
-    var p = availablePractitioners(dateTime,form.find("#duration").val(), services);
-    // console.log(dateTime);
-    // console.log(form.find("#duration").val());
-    // console.log(services);
-    // console.log(p);
-    $("#PractitionerSelector").find("li").addClass('disabled');
-    $.each(p,function(x,practitioner){
-        $("#PractitionerSelector").find("li").filter(function(){return $(this).text() == practitioner.name}).removeClass('disabled');
-    })
-}
+
+// var waitForDate;

@@ -15,6 +15,7 @@ $(document).ready(function () {
     $("#Notification").on('click','.markAsUnread',markNotificationAsUnread);
     $("#Notification").on('click','.delete',deleteNotification);
     multiBtns = notify.find(".markMultiAsRead, .markMultiAsUnread, .deleteMulti");
+    // multiBtns = notify.find(".multiBtns");
     multiBtns.hide();
 });
 
@@ -53,9 +54,9 @@ function updateNotificationList(notifications){
 	}
 	if (allCount < 2){
 		if (selectMultiBtn.text()=='exit multi'){selectMultiBtn.click()}
-		selectMultiBtn.hide();
+		selectMultiBtn.slideFadeOut();
 	}else{
-		selectMultiBtn.show();
+		selectMultiBtn.slideFadeIn();
 	}
 }
 function updateNotifications(uids, action = 'mark-read'){
@@ -133,6 +134,10 @@ function manageChanges(changes){
 		})
 	})
 }
+function listenForToggle(ev){
+	var withinNotifications = ($(ev.target).closest("#Notifications, #Notification").length === 1);
+	if (!withinNotifications){toggleNotifications();}
+}
 function toggleNotifications(){
 	checkNotifications();
 	var openNow = notify.find(".open").is(":visible"), openBtn = notify.find('.open'), list = notify.find('.list');
@@ -140,10 +145,12 @@ function toggleNotifications(){
 		openBtn.hide();
 		slideFadeIn(list,1200);
 		list.addClass('active');
+		$(document).on('mousedown touchstart scroll',listenForToggle);
 	}else{
 		slideFadeOut(list,800,function(){
 			slideFadeIn(openBtn);
 		});
+		$(document).off('mousedown touchstart scroll',listenForToggle);
 	}
 }
 function deleteNotification(){
@@ -198,14 +205,15 @@ function toggleSelectMode(){
 		clearInterval(notificationCheck);
 	    notify.off('click','li',showFullNotification);
 	    notify.on('click','li',toggleSelect);
-	    multiBtns.show();
+	    multiBtns.slideFadeIn();
 	    $(this).text('exit multi');
 	}else{
 		console.log('start checking');
 	    notificationCheck = setInterval(checkNotifications,1000*20);
 	    notify.on('click','li',showFullNotification);
 	    notify.off('click','li',toggleSelect);
-	    multiBtns.hide();
+	    multiBtns.slideFadeOut();
+	    $("#Notifications").find("li").filter(".active").removeClass('active');
 	    $(this).text('select multiple');
 	}
 

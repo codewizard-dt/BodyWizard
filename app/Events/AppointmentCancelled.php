@@ -3,6 +3,7 @@
 namespace App\Events;
 
 use App\Appointment;
+use Illuminate\Http\Request;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
@@ -21,11 +22,12 @@ class AppointmentCancelled
      *
      * @return void
      */
-    public function __construct(Appointment $appointment, $practiceId, $cancelledBy)
+    public function __construct(Appointment $appointment, $practiceId, $cancelledBy, Request $request)
     {
         $this->appointment = $appointment;
         $this->practiceId = $practiceId;
         $this->cancelledBy = $cancelledBy;
+        $this->request = $request;
     }
 
     /**

@@ -152,6 +152,29 @@ class Patient extends Model
             return $user = $this->userInfo->preferred_name;
         }
 
+    public function getSettingsAttribute($value){
+        if ($value == null){
+            return 
+            [
+                "reminders" => 
+                [
+                    "forms" => 
+                    [
+                        "24hr" => true, "48hr" => true, "72hr" => true, "text" => true, "email" => true
+                    ], 
+                    "appointments" => 
+                    [
+                        "text" => true, "email" => true
+                    ]
+                ], 
+                "cancellations" => true, 
+                "confirmations" => true
+            ];
+        }else{
+            return $value;
+        }
+    }
+
     public function isNewPatient(){
         $appts = $this->appointments()->where("status->completed",true)->get();
         return (count($appts) == 0) ? "true" : "false";

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Message;
+use App\Events\BugReported;
 use Illuminate\Support\Facades\Log;
 use App\Jobs\UpdateCalendar;
 
@@ -25,8 +26,8 @@ class PushController extends Controller
     public function updateMsgStatus($id,$data){
         try{
             $messageUpdate = Message::find($id);
+            if (!$messageUpdate){return;}
             $status = $messageUpdate->status;
-            // Log::info($status);
             $event = $data['event'];
             $timestamp = $data['timestamp'];
             $url = ($event == 'click') ? $data['url'] : null;
@@ -46,7 +47,15 @@ class PushController extends Controller
             $messageUpdate->status = $status;
             $messageUpdate->save();
         }catch(\Exception $e){
-            Log::info($e);
+            event(new BugReported(
+                [
+                    'description' => "Updating Message Status", 
+                    'details' => $e, 
+                    'category' => 'Push Notifications', 
+                    'location' => 'PushController.php',
+                    'user' => null
+                ]
+            ));
         }
     }
     public function googlePushVerification(Request $request){

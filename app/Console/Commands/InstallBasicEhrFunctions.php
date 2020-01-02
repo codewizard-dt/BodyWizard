@@ -38,9 +38,8 @@ class InstallBasicEhrFunctions extends Command
      */
     public function handle()
     {
-        // include_once app_path("/php/functions.php");
         $practiceId = $this->argument('practiceId');
-        $practice = config('practices')[$practiceId];
+        $practice = practiceConfig('practices')[$practiceId];
         $db = $practice['app']['database'];
         if (installBasicForms($db)){
             $this->info('Basic Forms installed');

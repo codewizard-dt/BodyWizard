@@ -29,7 +29,7 @@ class SettingsController extends Controller
     }
     public function displaySettings($model, Request $request){
         $models = plural(camel($model));
-        return view('portal.'.Auth::user()->user_type.'.settings.display.'.$models);
+        return view('portal.'.camel(Auth::user()->user_type).'.settings.display.'.$models);
     }
     public function displayOrderUpdate(Request $request){
         try{

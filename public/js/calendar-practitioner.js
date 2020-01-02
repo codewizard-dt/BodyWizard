@@ -1,4 +1,4 @@
-var calendar, defaultPatientInfo = undefined, allowOverride = true, usertype = 'practitioner', serviceOverride = false;
+var calendar, allowOverride = true, usertype = 'practitioner', serviceOverride = false;
 $(document).ready(function(){
      $("#ScheduleFeedTarget").load("/schedule/feed",function(){
         $("#PractitionerCalendar").html("");
@@ -11,10 +11,14 @@ $(document).ready(function(){
         }
      });
      $("#SelectServices").on('click', '.override',overrideService);
+     $('#createAppointment, #editAppointment').find('.item').hide();
 })
 function loadCal(target){
+    var tz = target.data('timezone'), clientTz = moment.tz.guess(), location = target.data('location');
+    moment.tz.setDefault(tz.replace(" ","_"));
     calendar = new FullCalendar.Calendar(target[0], {
-        plugins: ['dayGrid','list', 'timeGrid', 'interaction', 'rrule'],
+        plugins: ['dayGrid','list', 'timeGrid', 'interaction', 'rrule', 'momentTimezone'],
+        timeZone: tz,
         header:{
             left:"title",
             center:"",
@@ -22,65 +26,45 @@ function loadCal(target){
         },
         height: "auto",
         dateClick: function(info){
-            // console.log(info);
-            $("#createAppointment").find("#date").val(formatDate(info.date));
-            $("#createAppointment").find("#time").val(formatTime(info.date));
-            $("#createAppointment").find("#select_services").val("");
-            $("#ServiceListModal").removeData('uidArr');
-            // $("#PractitionerListModal").removeData('uidArr');
+            activeForm = $("#createAppointment");
             serviceOverride = false;
-            moveServiceSelect("#createAppointment");
-            resetProgressBar($("#SelectServices"));
-            updatePatientData();
-            updatePractitionerData();
-            updateDuration();
-            updateAvailableServices();
-            var clickedDateTime = moment(info.date), date = clickedDateTime.format("YYYY-MM-DD"), earliest = moment(date + " " + $("#BizHours").data('earliest')), latest = moment(date + " " + $("#BizHours").data('latest'));
-            $("#createAppointment").data('dateTime',clickedDateTime);
-            var bizHourCheck = checkSchedule(clickedDateTime, $("#BizHours").data('schedule'));
-            if (bizHourCheck === true){
-                blurElement($("body"),"#createAppointment");
-            }else{
-                handleCheck(bizHourCheck,'biz','new',clickedDateTime);
-            }
+            resetEntireAppt();
+            moveServiceSelect("#createAppointment",false);
+            movePracTimeSelect("#createAppointment",false);
+            moveDetails('#createAppointment');
+            // console.log(info);
+            var date = moment(info.date).format("M/D/YYYY"), time = moment(info.date).format("h:mma");
+            updateAppointment({date:date,time:time});
+            blurElement($("body"),'#createAppointment');
         },
         eventClick: function(info){
             var ev = info.event, details = ev.extendedProps, patients = details.patients, practitioner = details.practitioner, services = details.services, patientIds = details.patientIds, practitionerId = details.practitionerId, serviceIds = details.serviceIds, forms = details.forms, dateTime = moment(ev.start), uid = details.bodywizardUid, type = details.type, ele = $(info.el), title = ev.title;
+            serviceOverride = false;
             console.log(ev);
-            // console.log(ele);
+            resetEntireAppt();
             if (ele.hasClass('appointment')){
-                $("#ApptInfo").data({
-                    'patientIds': patientIds,
-                    'apptId': ev.id
+                activeForm = $("#editAppointment");
+                moveServiceSelect("#editAppointment",false);
+                movePracTimeSelect("#editAppointment",false);
+                moveDetails('#editAppointment');
+                updateAppointment({
+                    patient:patientIds[0],
+                    practitioner:practitionerId,
+                    services:serviceIds,
+                    datetime:dateTime
                 });
                 $("#editAppointment").data('uid',uid);
-                $.ajax({
-                    url:"/setvar",
-                    method:"POST",
-                    data:{
-                        setUID: {"Appointment":uid}
-                    },
-                    success: function(){
-                        updateUidList();
-                    }
-                });
+                setUid("Appointment",uid);
                 $("#PatientName").text(patients);
                 $("#PractitionerName").text(practitioner);
-                $("#ApptDateTime").text(dateTime.format("h:mm a \on dddd, MMMM Do YYYY"));
+                $("#ApptDateTime").text(dateTime.format("h:mm a [on] dddd, MMMM Do YYYY"));
                 $("#ApptDateTime").data('dateTime',dateTime);
                 $("#ServiceInfo").text(services);
-                moveServiceSelect("#editAppointment");
-                $("#SelectServices").hide();
                 updateFormInfo(forms);
                 loadApptInfo(patientIds,practitionerId,serviceIds,dateTime,$("#editAppointment"));
                 blurElement($("body"),"#ApptInfo");                
-            }else if (ele.hasClass('break')){
-
-            }else if (ele.hasClass('nonEHR')){
-                $("#NonEhrInfo").find("h1").text(title);
-                blurTopMost("#NonEhrInfo");
             }
-        },
+        },        
         defaultView:"timeGridWeek",
         allDaySlot: false,
         minTime:$("#BizHours").data("earliest"),
@@ -107,21 +91,27 @@ function loadCal(target){
         nowIndicator: true
     })
 
-    var uids = JSON.parse($("#uidList").text()), patientId;
-    if (uids && uids.Patient != undefined){
-        patientId = uids.Patient;
-        $("#PatientList").find(".active").removeClass("active");
-        var row = $("#PatientList").find("tr").filter("[data-uid='"+patientId+"']"), selectBtn = $("#PatientListModal").find(".selectData");
-        $("#createAppointment").find("#select_patient").addClass('targetInput');
-        row.click();
-        selectBtn.click();
-    }
+    // var uids = JSON.parse($("#uidList").text()), patientId;
+    // if (uids && uids.Patient != undefined){
+    //     // patientId = uids.Patient;
+    //     // $("#PatientList").find(".active").removeClass("active");
+    //     // var row = $("#PatientList").find("tr").filter("[data-uid='"+patientId+"']"), selectBtn = $("#PatientListModal").find(".selectData");
+    //     // $("#createAppointment").find("#select_patient").addClass('targetInput');
+    //     // row.click();
+    //     // selectBtn.click();
+    //     updateAppointment({patient:uids.Patient});
+    // }
 
     calendar.render();
     activateServiceSelection();
-    var tb = $("#PractitionerCalendar").find(".fc-toolbar");
+    var tb = target.find(".fc-toolbar");
+    $("#TimezoneWrap").insertAfter(tb).css('display','inline-block');
+    if (tz != clientTz){
+        $("#TimezoneWrap").html("Take note: you appear to be in a different timezone than your appointments will be held.<br><b>Appointments are displayed and scheduled in local "+location+" time.</b>");
+    }
     $("#ChangeTitleWrap").insertAfter(tb).css('display','inline-block');
     $("#ChangeTitleWrap").on('click','li',changeTitles);
+
 }
 function changeTitles(){
     var attr = $(this).data('value'), events = calendar.getEvents();
@@ -140,7 +130,6 @@ function changeTitles(){
         })
     }
     calendar.rerenderEvents();
-
 }
 function overrideService(){
     serviceOverride = true;

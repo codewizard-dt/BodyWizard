@@ -7,5 +7,5 @@
 
 @include('layouts.menus.portal-menu',[
     'menuName'=>'launchpadMenu',
-    'items'=>['appointments-index','forms+submissions']
+    'items'=>['appointments-index','forms+submissions','settings-patient']
 ])

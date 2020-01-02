@@ -1,7 +1,7 @@
 {
-    "name": "laravel/laravel",
+    "name": "bodywizard/ehr",
     "type": "project",
-    "description": "The Laravel Framework.",
+    "description": "Body Wizard EHR",
     "keywords": [
         "framework",
         "laravel"
@@ -13,7 +13,7 @@
         "fideloper/proxy": "^4.0",
         "google/apiclient": "^2.0",
         "google/auth": "^1.5",
-        "google/cloud": "^0.102.0",
+        "google/cloud-kms": "^1.7",
         "laravel/cashier": "^10.5",
         "laravel/framework": "^6.0",
         "laravel/tinker": "^1.0",

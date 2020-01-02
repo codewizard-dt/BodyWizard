@@ -266,6 +266,13 @@
             "dropdown":false,
             "uri":"/create/Diagnosis"
         },
+        "settings-patient":
+        {
+            "id":"settings-patient",
+            "text":"Settings",
+            "dropdown":false,
+            "uri":"/settings/Patient/uid"
+        },
         "settings-panel":
         {
             "id":"settings-panel",

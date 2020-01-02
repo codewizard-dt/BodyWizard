@@ -6,7 +6,7 @@ $(document).ready(function(){
 	settingsBtns.on("click",saveSettings);
 	settingsBtns.data('updated',true);
 
-	var model = $(".settingsForm").data('model'), json = $("#ModelSettings").data('settingsjson'), form = $("#ModelSettings");
+	var model = $(".settingsForm").data('model'), json = $(".settingsForm").data('settingsjson'), form = $("#ModelSettings");
 
 	if (model == 'Form'){
 		var target, sections;
@@ -62,8 +62,8 @@ $(document).ready(function(){
 		})
 		console.log($("#ServiceMap").data('currentaddonservices'));
 	}
+
 	if (json != undefined){
-		console.log('hi');
 	    fillForm(json,form);
 	}
 
@@ -136,11 +136,9 @@ function hideOptions(){
     slideFadeOut(p.find(".options"),400,function(){t.text('dynamic display settings');});
     $(this).off('click',hideOptions).on('click',showOptions);
 }
-
-
 function saveSettings(){
-	var form = $("#ModelSettings"), modal = form.closest(".modalForm"), model = modal.data('model'),
-		obj = checkForm(form), connectedModelArr = checkConnectedModels(model), uid = modal.data('uid'),
+	var form = $("#ModelSettings"), formWrap = form.closest(".settingsForm"), model = formWrap.data('model'),
+		obj = checkForm(form), connectedModelArr = checkConnectedModels(model), uid = formWrap.data('uid'),
 		url = "/save/settings/" + model + "/" + uid, columnObj = constructColumnSettingsObj(model),
 		settings = constructEasyAccessList(model);
 
@@ -148,7 +146,7 @@ function saveSettings(){
 		saveSectionSettings();
 	}
 	if (obj){
-		blurElement(modal,"#loading");
+		blurTopMost("#loading");
 		var data = {
 			settings_json: JSON.stringify(obj),
 			connectedModels: JSON.stringify(connectedModelArr),
@@ -165,20 +163,20 @@ function saveSettings(){
 			success:function(data){
 				console.log(data);
 				if (data=="checkmark"){
-					blurElement(modal,"#checkmark");
+					blurTopMost("#checkmark");
 					setTimeout(function(){
 						reloadTab();
 					},800)
 				}else if (data != 'no changes'){
 					console.log(data);
 					$("#Error").find(".message").text("Error saving settings");
-					blurElement(modal,"#Error");
+					blurTopMost("#Error");
 				}
 			},
 			error:function(e){
 				console.log(e);
 				$("#Error").find(".message").text("Server Error");
-				blurElement(modal,"#Error");
+				blurTopMost("#Error");
 			}
 		})
 	}else{
@@ -251,7 +249,7 @@ function constructEasyAccessList(model){
 	}
 	else if (model == 'Patient'){
 		var appts = turnToBoolean(justResponse($("#appointment_reminders"))), 
-			confirms = justResponse($("#appointment_confirmation_+_cancellation_emails"),true),
+			confirms = justResponse($("#appointment_confirmation_cancellation_emails"),true),
 			forms = justResponse($("#reminder_to_complete_required_forms"),true), apptReminder, formReminder;
 		if (!appts){
 			apptReminder = false;
@@ -274,6 +272,7 @@ function constructEasyAccessList(model){
 				'email': ($.inArray('email',type) > -1)
 			}
 		}
+		console.log(confirms);
 		obj['reminders'] = {'appointments':apptReminder,'forms':formReminder};
 		obj['confirmations'] = ($.inArray('confirmations',confirms) > -1);
 		obj['cancellations'] = ($.inArray('cancellations',confirms) > -1);

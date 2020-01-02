@@ -288,6 +288,8 @@ class ScriptController extends Controller
                     $usertype = isset($columns['user_type']) ? $columns['user_type'] : "patient";
                     $usertype = ucfirst(removespaces(camel($usertype)));
                     $userClass = "App\\$usertype";
+                    if ($usertype == 'patient'){
+                    }
                     $user = new $userClass;
                     $user->user_id = $newId;
                     $user->save();
@@ -302,7 +304,6 @@ class ScriptController extends Controller
                     $result = $instance->saveToGoogleCal($method);
                     if ($result !== true){return $result;}
                     $result = $instance->saveToFullCal();
-                    // Log::info(session('practiceId'));
                     if ($request->isMethod('post')){
                         $changes = null;
                     }
@@ -323,15 +324,23 @@ class ScriptController extends Controller
                     $msg->sender_id = Auth::user()->id;
                     $msg->recipient_id = $instance->id;
                     $msg->message_id = uuid();
-                    $msg->status = newEmailStatus();
                     $msg->type = 'Email';
                     $msg->subject = "New User Login Information";
                     $msg->message = $body;
                     try{
                         $msg->save();
-                        event(new OutgoingMessage($msg));
+                        event(new OutgoingMessage($msg, session('practiceId')));
                     }
                     catch(\Exception $e){
+                        event(new BugReported(
+                            [
+                                'description' => "Sending New User Login Info", 
+                                'details' => $e, 
+                                'category' => 'Messages', 
+                                'location' => 'ScriptController.php',
+                                'user' => null
+                            ]
+                        ));
                         return $e;
                     }
                 }
@@ -365,7 +374,7 @@ class ScriptController extends Controller
                     $appt->removeFromGoogleCal();
                     $appt->removeFromFullCal();
                     $appt->delete();
-                    event(new AppointmentCancelled($appt, session('practiceId'), Auth::user()->user_type));
+                    event(new AppointmentCancelled($appt, session('practiceId'), Auth::user()->user_type), $request);
                 }else{
                     $class::destroy($uid);
                 }
@@ -391,9 +400,15 @@ class ScriptController extends Controller
 
     // EDIT / SAVE SETTINGS / SCHEDULE
         public function EditSettings($model, $uid){
+            if ($model == 'Patient' && Auth::user()->user_type == 'patient'){
+                $modal = false;
+            }else{
+                $modal = true;
+            }
             return view('models.settings-modal',[
                 'model' => $model,
-                "uid" => $uid
+                "uid" => $uid,
+                "modal" => $modal
             ]);
         }
         public function SaveSettings($model, $uid, Request $request){

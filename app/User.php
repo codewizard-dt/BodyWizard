@@ -123,4 +123,10 @@ class User extends Authenticatable implements MustVerifyEmail
     public function patientInfo(){
         return $this->hasOne('App\Patient');
     }
+    public function practitionerInfo(){
+        return $this->hasOne('App\Practitioner');
+    }
+    public function staffMemberInfo(){
+        return $this->hasOne('App\StaffMember');
+    }
 }

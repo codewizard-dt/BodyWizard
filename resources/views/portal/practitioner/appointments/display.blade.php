@@ -26,7 +26,9 @@
     <span class='vertCent'>event display: </span>
 {{$ctrl->answerDisp('radio',$changeTitleOptions)}}    
 </div>
-<div id="PractitionerCalendar" class='calendar practitioner'>
+<div id="TimezoneWrap"></div>
+
+<div id="PractitionerCalendar" class='calendar practitioner' data-location='Austin, TX' data-timezone='{{date_default_timezone_get()}}'>
     <div class='lds-ring dark'><div></div><div></div><div></div><div></div></div>
 </div>
 <div id='ScheduleFeedTarget'></div>
@@ -94,6 +96,46 @@
 @include ('models.edit-modal',["model" => "Appointment"])
 
 @include ('schedules.services')
+@include ('schedules.practitioners')
+@include ('schedules.times')
+
+<div id="Details">
+    <h3 class="patient">
+        <span class='type purple'>Patient:</span>
+        <span class='info'>
+            <span class='value pink'>none</span>
+            <span class='edit yellow italic' data-input='#select_patient' data-target="#PatientListModal">select</span>            
+        </span>
+    </h3>
+    <h3 class="services">
+        <span class='type purple'>Services:</span>
+        <span class='info'>
+            <span class='value pink'>none</span>
+            <span class='edit yellow italic' data-target="#SelectServices">select</span>            
+        </span>
+    </h3>
+    <h3 class="date">
+        <span class='type purple'>Date:</span>
+        <span class='info'>            
+            <span class='value pink'>none</span>
+            <span class='edit yellow italic' data-target="#SelectDateTime">select</span>
+        </span>
+    </h3>
+    <h3 class="time">
+        <span class='type purple'>Time:</span>
+        <span class='info'>
+            <span class='value pink'>none</span>
+            <span class='edit yellow italic' data-target="#SelectDateTime"></span>
+        </span>
+    </h3>
+    <h3 class="practitioner">
+        <span class='type purple'>Practitioner:</span>
+        <span class='info'>
+            <span class='value pink'>none</span>
+            <span class='edit yellow italic' data-target="#SelectPractitioner">select</span>       
+        </span>
+    </h3>
+</div>
 
 @include ('schedules.scripts')
 <script type='text/javascript' src="{{ asset('/js/calendar-practitioner.js') }}"></script>

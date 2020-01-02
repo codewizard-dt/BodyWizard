@@ -81,7 +81,7 @@ class SendApptConfirmation
                             $submitted = $form->checkApptFormStatus($appt,$patient);
                             // Log::info($form->name." ".$submitted);
                             if (!$submitted){
-                                $patient->userInfo->notify(new NewRequiredForm($appt, $form));
+                                $patient->userInfo->notify(new NewRequiredForm($form, $appt));
                             }
                         }
                     }

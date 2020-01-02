@@ -7,6 +7,7 @@ use App\Image;
 use App\Submission;
 use App\Appointment;
 use App\Patient;
+use App\Events\BugReported;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -53,16 +54,16 @@ class FormController extends Controller
             }
         }
         
-        $submission->patient_id = $patientId;
-        $submission->submitted_by_user_id = $userId;
-        $submission->self_submitted = ($patient->userInfo->id == $userId);
-        $submission->submitted_by = $usertype;
-        $submission->appointment_id = $apptId;
-        $submission->form_uid = $uid;
-        $submission->form_id = $form->form_id;
-        $submission->form_name = $form->form_name;
-        $submission->responses = $request->jsonObj;
         try{
+            $submission->patient_id = $patientId;
+            $submission->submitted_by_user_id = $userId;
+            $submission->self_submitted = ($patient->userInfo->id == $userId);
+            $submission->submitted_by = $usertype;
+            $submission->appointment_id = $apptId;
+            $submission->form_uid = $uid;
+            $submission->form_id = $form->form_id;
+            $submission->form_name = $form->form_name;
+            $submission->responses = $request->jsonObj;
             $submission->save();
             $form->has_submissions = true;
             $form->save();
@@ -77,6 +78,15 @@ class FormController extends Controller
             }
             return "checkmark";
         }catch(\Exception $e){
+            event(new BugReported(
+                [
+                    'description' => "Error Saving Submission", 
+                    'details' => $e, 
+                    'category' => 'Submissions', 
+                    'location' => 'FormController.php',
+                    'user' => null
+                ]
+            ));
             return $e;
         }
     }

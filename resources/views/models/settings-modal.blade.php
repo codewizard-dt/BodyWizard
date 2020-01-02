@@ -1,10 +1,20 @@
 <?php
-include_once app_path("php/functions.php");
+
+if ($model == "Patient" && Auth::user()->user_type == "patient"){
+	$self = true;
+	$autosave = "autosave";
+	$uid = Auth::user()->patientInfo->id;
+}else{
+	$autosave = "";
+	$self = false;
+}
+
 $class = "App\\$model";
 $instance = $class::find($uid);
 $settingsForm = App\Form::where([
     ['form_name','LIKE',"%".$model." Settings%"]        
 ])->orderBy('version_id','desc')->first();
+
 
 $settings = str_replace("'","\u0027",$instance->settings);
 // $nameAttr = isset($instance->nameAttr) ? $instance->nameAttr : "name";
@@ -23,8 +33,6 @@ if (isset($instance->nameAttr)){
 $connectedModels = isset($instance->connectedModels) ? $instance->connectedModels : [];
 $admin = (Auth::user()->is_admin) ? "admin" : "";
 $settingsJson = isset($instance->settings_json) ? str_replace("'","\u0027",$instance->settings_json) : "";
-
-
 
 if ($model == 'Form'){
 	$ctrl = new App\Complaint;
@@ -77,10 +85,18 @@ if ($model == 'Form'){
 		</div>
 	</div>
 @else
-	<div id='{{ $model }}SettingsForm' class='central large settingsForm modalForm {{ $admin }}' data-model='{{ $model }}' data-uid='{{ $uid }}' data-settings='{{ json_encode($settings) }}' data-settingsjson='{{ $settingsJson }}'>
-		<h1 class='purple paddedSmall'>Settings for '{{ $name }}'</h1>
+	@if ($modal)
+	<div id='{{$model}}SettingsForm' class='central large settingsForm modalForm {{$autosave." ".$admin}}' data-model='{{$model}}' data-uid='{{$uid}}' data-settings='{{json_encode($settings)}}' data-settingsjson='{{$settingsJson}}'>
+	@else
+	<div id='{{$model}}SettingsForm' class='central large settingsForm {{$autosave." ".$admin}}' data-model='{{$model}}' data-uid='{{$uid}}' data-settings='{{json_encode($settings)}}' data-settingsjson='{{$settingsJson}}'>
+	@endif
+		@if ($self)
+		<h1 class='purple paddedSmall'>Your Portal Settings</h1>
+		@else
+		<h1 class='purple paddedSmall'>Settings for '{{$name}}'</h1>
+		@endif
 		<div id="ModelSettings">
-			{{ $settingsForm->formDisplay(true) }}
+			{{ $settingsForm->formDisplay($modal) }}
 		</div>
 	</div>
 @endif
@@ -105,3 +121,6 @@ if ($model == 'Form'){
 
 <script type='text/javascript' src='{{ asset("js/launchpad/model-settings.js")}}'></script>
 <script type='text/javascript' src='{{ asset("js/launchpad/model-table.js")}}'></script>
+@if (!$modal)
+<script type='text/javascript' src='{{ asset("js/launchpad/save-model.js")}}'></script>
+@endif

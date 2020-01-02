@@ -27,13 +27,9 @@ $dateOptions = [
 ];
 ?>
 
-<div id="SelectDateTime" class='progressiveSelection'>
+<div id="SelectDateTime" class='progressiveSelection selector'>
 	<div class="progressBar">
 		<div class='back'></div>
-	</div>
-	<div class='open'>
-		<div class="button small pink70 disabled openBtn" data-type='practitioner'>select time</div>
-		<div class="button small pink closeBtn">confirm</div>
 	</div>
 	<div id="SelectDate" class='step' data-order='1' data-details="">
 		<h3 data-default='Select Date'>Select Date</h3>
@@ -49,9 +45,9 @@ $dateOptions = [
 		</ul>
 		<br><div class="button small pink disabled next" data-target='#TimeSelector' data-targettype='ul' data-defaulttext='%PrevVAL% at %VAL%'>next ></div>
 	</div>
-	<div id="ConfirmDateTime" class='step' data-order='3'>
+<!-- 	<div id="ConfirmDateTime" class='step' data-order='3'>
 		<h2 class='pink' style='text-align:center;font-weight:normal;'>Appointment Details</h2>
 		<div class="target"></div>
 		<div class="button submit pink xsmall closeBtn">confirm</div>
-	</div>
+	</div> -->
 </div>

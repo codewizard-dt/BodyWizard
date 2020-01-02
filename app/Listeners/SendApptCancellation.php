@@ -36,11 +36,14 @@ class SendApptCancellation
         $appt = $event->appointment;
         $practiceId = $event->practiceId;
         $cancelledBy = $event->cancelledBy;
+        $request = $event->request;
+        $sendEmail = $request->send_email;
         $template = Template::where('name','like','%Appointment Cancel%')->first();
         $changes = null;
 
         $patients = $appt->patients;
         foreach ($patients as $patient){
+            $settings = $patient->settings;
             $msg = new Message;
             $msg->recipient_id = $patient->userInfo->id;
             $msg->message_id = uuid();
@@ -64,6 +67,7 @@ class SendApptCancellation
                 $msg->save();
                 $users = ($cancelledBy == 'patient') ? $appt->practitioner->userInfo : $appt->patient_user_models;
                 Notification::send($users, new CancelledAppointment($appt));
+                
                 // event(new OutgoingMessage($msg, $practiceId));
             }
             catch(\Exception $e){

@@ -50,29 +50,30 @@ $categoryOptions[] = "ID*categories";
 $ctrl = new Form;
 $serviceCategoryLabel = (Auth::user()->user_type == 'patient') ? "Service Type" : "Service Category";
 ?>
-<div id="SelectServices" class='progressiveSelection' data-target='#select_services' data-condition='#select_patient' data-stopmsg='Select a Patient||You need to select a patient to determine which services are available' data-parent='.modalForm'>
+<div id="SelectServices" class='progressiveSelection selector' data-target='#select_services' data-condition='#select_patient' data-stopmsg='Select a Patient||You need to select a patient to determine which services are available' data-parent='.modalForm'>
 	<div class="progressBar">
-		<div class='back'></div>
+		<div class='back'><div class="left"></div><div class="message"></div></div>
 	</div>
-	<div id="AddService" class='open'>
-		<div class="button xsmall pink70 disabled openBtn" data-toggletext='add another service' data-originaltext='select service' data-togglecount='1'>select service</div>
-		<div class="button xsmall black50 clearLastBtn" data-model='Service'>remove service</div>
-		<div class="button xsmall pink closeBtn">confirm</div>
-	</div>
-	<div id="CategoryDetails" class='step' data-order='1' data-details="{{json_encode($categoryArr)}}">
+	<div id="CategoryDetails" class='step' data-name='categories' data-details="{{json_encode($categoryArr)}}">
 		<h3 data-default='{{$serviceCategoryLabel}}'>{{$serviceCategoryLabel}}</h3>
 		<div class='pink conditionalLabel'></div>
 		{{$ctrl->answerDisp('radio',$categoryOptions)}}
 	</div>
-	<div id="ServiceDetails" class='step' data-order='2' data-details="{{json_encode($serviceArr)}}">
+	<div id="ServiceDetails" class='step' data-name='services' data-details="{{json_encode($serviceArr)}}">
 		<h3 data-default='Services'>Services</h3>
 		<div class='pink conditionalLabel'></div>
 		{{$ctrl->answerDisp('radio',$serviceOptions)}}
+		<div id='ServiceDescription'><div class="message"></div><div id='SelectServiceBtn' class="button xsmall pink">confirm</div></div>
 	</div>
-	<div id="ServiceDescription" class='step' data-order='3'>
-		<h3 data-default='Services'>Services</h3>
-		<div class="target"></div>
-		<div class="button submit pinkflashConstant xsmall">add to appointment</div>
+	<div id="ServiceSummary" class='step noBack'>
+		<h3 data-default='Services'>Services Summary</h3>
+		<h3 class="summary pink"></h3>
+		<div class='options'>
+			<div class="button small pink firstStep">add-on</div>
+			<div class="button small pink removeService">remove</div>
+			<div class="button small yellow selectDate">date</div>
+			<div class="button small yellow selectPractitioner">practitioner</div>
+		</div>
 	</div>
 </div>
 

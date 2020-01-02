@@ -113,7 +113,7 @@
     @include('models.table',$tableOptions)
 </div>
 
-@if (findFormId($nospaces)))
+@if (findFormId($nospaces))
     @include('models.create-modal',['model'=>$nospaces,'request'=>$request])
     @include('models.edit-modal',['model'=>$nospaces,'request'=>$request])
     <script type='text/javascript' src='{{ asset("js/launchpad/save-model.js") }}'></script>

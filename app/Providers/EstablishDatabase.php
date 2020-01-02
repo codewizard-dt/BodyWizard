@@ -14,14 +14,15 @@ class EstablishDatabase extends ServiceProvider
     public function register()
     {
         //
+        include_once app_path("/php/functions.php");
         $domain = \Request::getHost();
         $port = \Request::getPort();
-        if ($domain != "localhost" && isset(config('domains')[$domain])){
-            $practiceId = config("domains")[$domain];
+        if ($domain != "localhost" && isset(practiceConfig('domains')[$domain])){
+            $practiceId = practiceConfig("domains")[$domain];
             if (is_array($practiceId)){
-                $practiceId = config("domains")[$domain][$port];
+                $practiceId = practiceConfig("domains")[$domain][$port];
             }
-            $dbname = config('practices')[$practiceId]['app']['database'];
+            $dbname = practiceConfig('practices')[$practiceId]['app']['database'];
             config(['database.connections.mysql.database' => $dbname]);
             \DB::reconnect();
         }

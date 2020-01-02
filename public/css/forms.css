@@ -39,7 +39,9 @@ textarea[data-followup]{
 }
 
 #uidList {display: none;}
-
+#TimezoneWrap{
+    color: var(--pink);
+}
 .calendar{
     width:90%;
     margin:auto;
@@ -505,6 +507,9 @@ form, .indent, .report, .w95 {
     margin-left: 0.5em;
     font-size: 0.7em;
     text-decoration: underline;
+}
+.conditionalLabel .button{
+    margin-bottom: -1em;
 }
 #ChangeTitleWrap{
     position: relative;
@@ -1306,7 +1311,7 @@ li.inactive{
 }
 
 .alert{
-    background-color: red !important;
+    background-color: var(--pink) !important;
     color: white !important;
     font-weight: 700 !important;
     position:absolute;
@@ -1444,6 +1449,22 @@ li.inactive{
 }
 input#PatientName {
     margin-left: 1.5em;
+}
+
+.msgEvent > div{
+    border-width: 1px 0 0 0;
+    border-color: var(--purple30);
+    border-style: solid;
+}
+.msgEvent > div:nth-child(odd){
+    background-color: var(--purple10);
+}
+.msgEvent > div:last-child{
+    border-width: 1px 0;
+    margin-bottom: 1em;
+}
+.msgEvent:last-child > div:last-child{
+    margin-bottom: 0;
 }
 
 .button.next, .button.prev, .optionsNav .button {
@@ -2518,6 +2539,7 @@ table .indicator {
     padding: 0.25em 0.5em;
 }
 #SelectServices, #SelectPractitioner, #WhichFirst, #SelectDateTime {
+    position: relative;
     display:none;
     text-align: center;
     margin: 0 -1em -1em -1em;
@@ -2525,6 +2547,12 @@ table .indicator {
     text-align: center;
     padding: 1.5em 0;
 }
+#ServiceDescription {
+    padding: 0.5em 2em;
+    display: none;
+    transition: height 400ms;
+}
+
 #SelectDateTime input {
     text-align: center;
     font-size: 1.2em;
@@ -2542,7 +2570,7 @@ table .indicator {
 .progressiveSelection li{
     padding: 0.5em 0.7em;
 }
-.progressiveSelection .step {
+/*.progressiveSelection .step {
     display: none;
     padding: 0 1em;
 }
@@ -2550,6 +2578,21 @@ table .indicator {
     position: absolute;
     right: 0.5em;
     top: 0;
+}*/
+.selector {
+    box-sizing: border-box;
+    overflow: hidden;
+}
+.step .options{
+    padding: 0.4em;
+    font-size: 0.8em;
+    background-color: rgb(245,245,245);
+    border-width: 1px 0 0 0;
+    border-style: solid;
+    border-color: rgb(190,190,190);
+    transition: background-color 400ms;
+    margin: 2em 0 -2em 0;
+    border-radius: 0 0 8px 8px;
 }
 .progressBar {
     position: relative;
@@ -2561,6 +2604,9 @@ table .indicator {
     top: -1.5em;
     cursor: pointer;
     z-index: 10;
+}
+.progressBar .message{
+    display: inline-block;
 }
 .progressBar .left{
     background-image: url(/images/icons/arrow-right.png);

@@ -36,6 +36,9 @@ $(document).ready(function () {
             plzSelectNode.clone().insertBefore($(this));
         })
         checkboxes.attr('tabindex','0').on("click","li",checkbox);
+        checkboxes.find('li').filter(function(){
+            return $.inArray($(this).data('value'),['no','none','never']) > -1;
+        }).on('click',masterCheckbox);
         checkboxes.data("initialized",true);
         
         var radios = filterUninitialized(".radio");
@@ -200,8 +203,6 @@ function UpdateCss(item){
     })
     // item.css(cssObj);
 }
-
-
 function followup() {
     var response = $(this).data('value'), item = $(this).closest(".item, .itemFU");
     if (item.is(".item")){
@@ -370,6 +371,8 @@ function checkbox() {
             // console.log(responses);
             showFollowUps(responses,$(this).closest(".item"));
         }
+    }else if ($(this).hasClass('disabled') && $(this).siblings().filter(".active").length > 0) {
+        alertBox('current selection prevents more than one answer',$(this).closest('ul'),'below');
     }
 }  
 function masterCheckbox(){
@@ -564,38 +567,38 @@ function validateItem(item){
 
         if (item.data('required')){
             if ($.inArray(t,['text','date','time','number']) > -1 && item.find("input").val().length==0){
-                    alertBox("required",item.find("input"),"after","fade");
+                    alertBox("required",item.find("input"),"after");
                     scrollToInvalidItem(item.find('input'));
                     return false;
             }
             else if (t==="text box" && item.find("textarea").val().length==0){
-                    alertBox("required",item.find("textarea"),"ontop","fade","2em,-1em");
+                    alertBox("required",item.find("textarea"),"ontop","2em,-1em");
                     scrollToInvalidItem(item.find('textarea'));
                     return false;
             }
             else if (t==="date" && item.find("input").val().length==0){
-                    alertBox("required",item.find("input"),"after","fade");
+                    alertBox("required",item.find("input"),"after");
                     scrollToInvalidItem(item.find('input'));
                     return false;
             }
             else if (t==="number" && item.find("input").val().length==0){
-                    alertBox("required",item.find("input"),"after","fade");
+                    alertBox("required",item.find("input"),"after");
                     scrollToInvalidItem(item.find('input'));
                     return false;
             }
             else if (t==="radio" && item.find(".active").length==0){
-                    alertBox("required",item.find("ul"),"after","fade");
+                    alertBox("required",item.find("ul"),"after");
                     scrollToInvalidItem(item.find('ul'));
                     return false;
             }
             else if (t==="checkboxes" && item.find(".active").length==0){
-                    alertBox("required",item.find("ul"),"after","fade");
+                    alertBox("required",item.find("ul"),"after");
                     scrollToInvalidItem(item.find('ul'));
                     return false;
             }
             else if (t=='dropdown' && item.find("option:selected").val() == ""){
                     // console.log(item.find("option:selected").val());
-                    alertBox("required",item.find("select"),"after","fade");
+                    alertBox("required",item.find("select"),"after");
                     scrollToInvalidItem(item.find('select'));
                     return false;
             }
@@ -687,9 +690,13 @@ function getResponse(item){
     return ResponseObj;
 }
 function justResponse(input, asArray = false){
-    if (!input.is(":visible")){return null;}
+    if (!input.is(":visible")){
+        console.log("invis");
+        return null;
+    }
     var r = getResponse(input.closest(".item, .itemFU"))['response'];
     if (r.length == 0){
+        console.log('none');
         return null;
     }
     else if (r.length > 1){
@@ -703,7 +710,6 @@ function matchingLI(answer,response){
     var match = answer.find("li").filter(function(){
         return $(this).data('value').replace("'","") == response;
     });
-    console.log(match);
     return match;
 }
 function fillAnswer(item,response){

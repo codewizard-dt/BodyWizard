@@ -10,8 +10,6 @@
     use Illuminate\Support\Facades\Log;
     use Illuminate\Support\Facades\Request;
 
-    // include_once app_path("/php/functions.php");
-
     $ctrl = new Form;
 
     if (isset($_POST['OptParams'])){
@@ -19,17 +17,26 @@
     }else{
     	// echo "no opt params passed";
     }
-    $patient = Patient::find(Auth::user()->patientInfo->id);
-    $patientInfo = [
-        'id' => $patient->id,
-        'isNewPatient' => ($patient->isNewPatient() == 'true'),
-        'name' => getNameFromUid('Patient',$patient->id)
-    ];
-    $whichFirstOptions = ['Select Service','Select Practitioner','ID*WhichFirstBtn']
+
+    $type = camel(Auth::user()->user_type);
+    if ($type == 'patient'){
+        $patient = Patient::find(Auth::user()->patientInfo->id);
+        $patientInfo = [
+            'id' => $patient->id,
+            'isNewPatient' => ($patient->isNewPatient() == 'true'),
+            'name' => getNameFromUid('Patient',$patient->id)
+        ];
+
+    }elseif ($type == 'practitioner'){
+        $patientInfo = [];
+    }else{
+
+    }
 ?>  
 
 <h2 class="purple paddedSmall">Your Appointments</h2>
-<div id="PatientCalendar" class='calendar patient' data-patient='{{json_encode($patientInfo)}}'>
+<div id="TimezoneWrap"></div>
+<div id="PatientCalendar" class='calendar patient' data-location='Austin, TX' data-timezone='{{date_default_timezone_get()}}' data-patient='{{json_encode($patientInfo)}}'>
     <div class='lds-ring dark'><div></div><div></div><div></div><div></div></div>
 </div>
 <div id='ScheduleFeedTarget'></div>
@@ -65,10 +72,6 @@
 @include ('models.create-modal',["model" => "Appointment"])
 @include ('models.edit-modal',["model" => "Appointment"])
 
-<div id="WhichFirst" class='progressiveSelection'>
-    {{$ctrl->answerDisp('radio',$whichFirstOptions)}}
-</div>
-
 @include ('schedules.services')
 @include ('schedules.practitioners')
 @include ('schedules.times')
@@ -85,14 +88,14 @@
         <span class='type purple'>Date:</span>
         <span class='info'>            
             <span class='value pink'>none</span>
-            <span class='edit yellow italic' data-target="#SelectDate">select</span>
+            <span class='edit yellow italic' data-target="#SelectDateTime">select</span>
         </span>
     </h3>
     <h3 class="time">
         <span class='type purple'>Time:</span>
         <span class='info'>
             <span class='value pink'>none</span>
-            <span class='edit yellow italic' data-target="#SelectTime"></span>
+            <span class='edit yellow italic' data-target="#SelectDateTime"></span>
         </span>
     </h3>
     <h3 class="practitioner">

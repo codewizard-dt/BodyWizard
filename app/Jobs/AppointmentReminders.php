@@ -38,7 +38,7 @@ class AppointmentReminders implements ShouldQueue
      */
     public function handle()
     {
-        $practices = config('practices');
+        $practices = practiceConfig('practices');
         foreach($practices as $practiceId => $info){
             if ($info['app']['status'] == 'active'){
                 // CONNECT TO APPROPRIATE DATABASE

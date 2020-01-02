@@ -109,7 +109,7 @@ class Message extends Model
                 'pending' => [Carbon::now()->timestamp],
             ];
         }elseif ($type == "SMS"){
-            return [];
+            return ['sent' => $d, 'event' => []];
         }elseif ($type == ""){
             return [];
         }
@@ -162,7 +162,24 @@ class Message extends Model
         return !preg_match("/%%.*%%/",$ignoreImgs);
     }
     public function moreOptions(){
-
+        foreach($this->status as $event => $timestamps){
+            $display = ['open'=>'Opened the Email', 'click'=>'Clicked a Link', 'bounce'=>'Email Bounced', 'dropped'=>'Email Dropped', 'pending'=>'Sent At', 'delivered'=>'Email Delivered', 'processed'=>'Email Processed'];
+            echo "<div class='msgEvent'><h4>".$display[$event]."</h4>";
+            if (count($timestamps) > 0){
+                foreach($timestamps as $timestamp){
+                    if (!is_array($timestamp)){
+                        echo "<div>".date('g:i:sa \o\n n/j/y',$timestamp)."</div>";
+                    }else{
+                        foreach($timestamp as $time => $detail){
+                            echo "<div>".date('g:i:sa \o\n n/j/y',$time)."<br>$detail</div>";                        
+                        }
+                    }
+                }
+            }else{
+                echo "<div>never</div>";
+            }
+            echo "</div>";
+        }
     }
     public function getDecodedStatusAttribute(){
         $status = $this->status;

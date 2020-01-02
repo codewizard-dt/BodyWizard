@@ -128,7 +128,10 @@ class Submission extends Model
     public function setResponsesAttribute($value){
         $kms = app("GoogleKMS");
         $practiceId = session('practiceId');
-        $cryptoKey = config("practices.$practiceId.app.cryptoKey");
+        $cryptoKey = practiceConfig("practices.$practiceId.app.cryptoKey");
+        Log::info(session()->all());
+        Log::info($practiceId);
+        Log::info($cryptoKey);
         $encryptResponse = $kms->encrypt($cryptoKey,json_encode($value));
         // Log::info($encryptResponse->getCiphertext());
     	$this->attributes['responses'] = utf8_encode($encryptResponse->getCiphertext());
@@ -136,7 +139,7 @@ class Submission extends Model
     public function getResponsesAttribute($value){
         $kms = app("GoogleKMS");
         $practiceId = session('practiceId');
-        $cryptoKey = config("practices.$practiceId.app.cryptoKey");
+        $cryptoKey = practiceConfig("practices.$practiceId.app.cryptoKey");
 		$decryptResponse = $kms->decrypt($cryptoKey,utf8_decode($value));
 		return json_decode($decryptResponse->getPlaintext(),true);
     }

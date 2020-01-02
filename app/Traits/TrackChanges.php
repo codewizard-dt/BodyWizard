@@ -23,12 +23,7 @@ trait TrackChanges
         $changes = [];
         $datesArr = dateFieldsArray();
         $dateTimesArr = dateTimeFieldsArray();
-        // Log::info($settings);
-        // Log::info($request->all());
         foreach ($columns as $key => $value){
-            // $value = in_array($key, $datesArr) ? Carbon::parse($value)->toDateString() : $value;
-            // $value = in_array($key, $dateTimesArr) ? Carbon::parse($value)->toDateTimeString() : $value;
-            // $old = $instance->$key;
             if (in_array($key,$datesArr)){
                 $value = Carbon::parse($value)->format("Y-m-d");
                 $old = $instance->$key->format("Y-m-d");
@@ -49,7 +44,11 @@ trait TrackChanges
             if (!$this->recursiveArrayMatch($settings,$existingSettings)){
                 $change = ['settings' => ["old" => $existingSettings, "new" => $settings]];
                 $changes[] = $change;
-            }                    
+            }
+            if ($instance->settings_json == null){
+                $change = ['settings' => ["old" => 'default', "new" => $settings]];
+                $changes[] = $change;                
+            }
         }
         if ($includeFullJson){
 	        $fullJson = isset($request->full_json) ? $request->full_json : null;

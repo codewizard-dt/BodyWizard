@@ -102,7 +102,11 @@ class Bug extends Model
                 echo "<div class='label'>$attr</div><div class='value little'>";
                 foreach ($val as $k => $v){
                     echo "<h4>$k</h4>";
-                    echo "<div>$v</div>";
+                    if (is_string($v)){
+                        echo "<div>$v</div>";
+                    }else{
+                        var_dump($v);
+                    }
                 }
                 echo "</div>";                
             }else{

@@ -2969,7 +2969,7 @@ a:hover {
 }
 
 .alert {
-  background-color: red !important;
+  background-color: var(--pink) !important;
   color: white !important;
   font-weight: 700 !important;
   position: absolute;
@@ -2980,7 +2980,7 @@ a:hover {
   margin: 0 !important;
   border-radius: 3px;
   border-width: 0 !important;
-  box-shadow: 0 0 3px 3px rgb(230, 230, 230);
+  box-shadow: 0 0 3px 3px var(--pink70);
   white-space: nowrap;
   font-size: 0.8em;
   text-transform: uppercase;
@@ -3017,7 +3017,8 @@ a:hover {
   font-size: 1.7em;
 }
 
-.checkmark {
+.checkmark,
+.xMark {
   color: green;
   font-size: 1.7em;
   position: absolute;
@@ -3025,6 +3026,10 @@ a:hover {
   padding: 4px;
   -webkit-transform: translateY(-50%);
           transform: translateY(-50%);
+}
+
+.xMark {
+  color: var(--pink);
 }
 
 #LoginForm,

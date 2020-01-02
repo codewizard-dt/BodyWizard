@@ -12,7 +12,7 @@ $markupStr = "";
 if (!$uid){$extraClasses[] = 'hide';}
 
 if (session("diagnosisType") !== null){
-	$extraData['dxtype'] = session("diagnosisType");
+	$extraData[] = ['dxtype',session('diagnosisType')];
 }
 if ($model == 'Diagnosis' && $uid != null){
 	$instanceType = $class::find($uid)->medicine_type;
@@ -59,24 +59,22 @@ elseif ($uid != null){
 		$isAdmin = $instance->userInfo->is_admin;
 		$userId = $instance->user_id;
 	}else{
-		$jsonStr = isset($instance->full_json) ?  str_replace("'","\u0027",$instance->full_json) : "";
+		$jsonStr = isset($instance->full_json) ?  str_replace("'","\u0027",$instance->full_json) : null;
 		$userType = isset($instance->user_type) ? $instance->user_type : null;
 		$isAdmin = isset($instance->is_admin) ? $instance->is_admin : null;
 		$userId = isset($instance->user_id) ? $instance->userInfo->user_id : null;
+		$markupStr = isset($instance->markup) ?  $instance->markup : null;
 	}
 	if ($model == "Form" && Auth::user()->user_type == "patient"){
 		$submission = $instance->submissions()->get()->last();
-		if ($submission){
-			$extraData['lastsubmission'] = $submission->id;
-		}
+		if ($submission){$extraData[] = ['lastsubmission',$submission->id];}
 	}
-	// include summernote data if available
-	$markupStr = isset($instance->markup) ?  $instance->markup : "";
 
-	// if ($jsonStr){$extraData['json'] = $jsonStr;}
-	if ($userType){$extraData['usertype'] = $userType;}
-	if ($isAdmin){$extraData['isadmin'] = $isAdmin;}
-	if ($userId){$extraData['userid'] = $userId;}
+	if ($markupStr){$extraData[] = ['markup',$markupStr];}
+	if ($jsonStr){$extraData[] = ['json',$jsonStr];}
+	if ($userType){$extraData[] = ['usertype',$userType];}
+	if ($isAdmin){$extraData[] = ['isadmin',$isAdmin];}
+	if ($userId){$extraData[] = ['userid',$userId];}
 
 	$modelArr = null;
 	if (isset($instance->connectedModels)){
@@ -112,14 +110,9 @@ elseif ($uid != null){
 			}
 		}
 	}
-
-	if ($modelArr){$extraData['connectedmodels'] = json_encode($modelArr);}
-
-}
-
-$dataStr = "";
-foreach ($extraData as $key => $value){
-	$dataStr .= "data-$key='$value' ";
+	if ($modelArr){
+		$extraData[] = ['connectedmodels',json_encode($modelArr)];
+	}
 }
 ?>
 
@@ -130,9 +123,9 @@ foreach ($extraData as $key => $value){
 <div id="Current{{$nospaces}}" class="optionsNav wrapMe {{implode(' ', $extraClasses)}}" data-model="{{$model}}" data-uid="{{$uid}}">
 	<div class="navHead">
 		<span class="optionsBar">
-			<span class="name" data-uid="{{$uid}}" data-json='{{$jsonStr}}' data-markup='{{$markupStr}}' {{$dataStr}}>
-				{{$nameText}}
-			</span><br>
+			<span class="name" data-uid="{{$uid}}" 
+			@foreach ($extraData as $data) data-{{$data[0]}}='{{$data[1]}}'@endforeach
+			>{{$nameText}}</span><br>
 			{{optionButtons($destinations,$btnText)}}
 		</span>
 	</div>

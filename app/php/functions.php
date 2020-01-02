@@ -90,6 +90,8 @@ $menuJson = json_decode(file_get_contents(app_path("/json/menu-data.json")),true
         $data = str_replace('?', '', $data);
         $data = str_replace('!', '', $data);
         $data = str_replace(':', '', $data);
+        $data = str_replace('+', '', $data);
+        $data = str_replace('  ', ' ', $data);
         return $data;
   }
   function stripquotes($data){
@@ -126,6 +128,13 @@ $menuJson = json_decode(file_get_contents(app_path("/json/menu-data.json")),true
 
   function randomElement($array){
     return Arr::random($array);
+  }
+
+  function addTo(&$addToArray,$keyValueArray){
+    foreach ($keyValueArray as $key => $value){
+      Arr::add($addToArray,$key,$value);
+    }
+    // return Arr::add($addToArray,$key,$value);
   }
 
 // Date / Schedule related functions
@@ -667,33 +676,7 @@ $menuJson = json_decode(file_get_contents(app_path("/json/menu-data.json")),true
     function asString($data){
         $json = asJSON($data);
         return wordwrap($json, 76, "\n   ");
-    }
-    function newEmailStatus(){
-      $d = time();
-      return json_encode(['pending'=>[$d],'processed'=>null,'dropped'=>null,'delivered'=>null,'deferred'=>null,'bounce'=>null,'open'=>null,'click'=>null,'spamreport'=>null,'unsubscribe'=>null,'group_unsubscribe'=>null,'group_resubscribe'=>null]);
-    }
-    function newTextStatus(){
-      $d = time();
-      return json_encode(['sent' => $d, 'event' => []]);
-    }
-    function decodeStatus($string){
-      // $status = json_decode($string,true);
-      // if ($status['open']){
-      //   $returnVal = ['Last opened at ',lastInArray($status['open'])];
-      // }elseif ($status['delivered']){
-      //   $returnVal = ['Delivered at ',lastInArray($status['delivered'])];
-      // }elseif ($status['processed']){
-      //   $returnVal = ['Processed at ',lastInArray($status['processed'])];
-      // }elseif ($status['bounce']){
-      //   $returnVal = ['Undeliverable at ',lastInArray($status['bounce'])];
-      // }elseif ($status['dropped']){
-      //   $returnVal = ['Dropped at ',lastInArray($status['dropped'])];
-      // }elseif ($status['pending']){
-      //   $returnVal = ['Sent at ',lastInArray($status['pending'])];
-      // }
-      // $returnVal[1] = date("g:ia n/j/y",$returnVal[1]);
-      // return implode("", $returnVal);
-    }
+    }    
     function lastInArray($array){
       $count = count($array);
       return $count > 0 ? $array[$count - 1] : null;
@@ -775,10 +758,10 @@ $menuJson = json_decode(file_get_contents(app_path("/json/menu-data.json")),true
   function getPracticeId(Request $request){
     $host = $request->getHost();
     $port = $request->getPort();
-    if (config('domains')[$host]){
-        $practiceId = config("domains")[$host];
+    if (practiceConfig('domains')[$host]){
+        $practiceId = practiceConfig("domains")[$host];
         if (is_array($practiceId)){
-            $practiceId = config("domains")[$host][$port];
+            $practiceId = practiceConfig("domains")[$host][$port];
         }
     }else{
         return false;

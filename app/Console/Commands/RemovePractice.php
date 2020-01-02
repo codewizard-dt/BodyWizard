@@ -67,7 +67,7 @@ class RemovePractice extends Command
             else{$this->info('Calendar deleted');}
         // REMOVE FROM CONFIG
             try{
-                $practices = config('practices');
+                $practices = practiceConfig('practices');
                 unset($practices[$practiceId]);
                 $fileName = 'practices.php';
                 writeConfig($practices,$fileName);

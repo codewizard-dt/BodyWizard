@@ -16,7 +16,21 @@ var systemModalList = ['Confirm','Warn','Error','Feedback','Refresh','Notificati
     };
 })(jQuery);
 
-// Assign data-order to elements
+$.fn.slideFadeOut = function (time = 400, callback = null) {
+    slideFadeOut(this, time, callback);
+    return this;
+};
+$.fn.slideFadeIn = function (time = 400, callback = null) {
+    slideFadeIn(this, time, callback);
+    return this;
+};
+$.fn.resetActives = function (){
+    this.find('.active').removeClass('active');
+    return this;
+}
+
+
+// Elements must have data-order attributes already set
 jQuery.fn.sortEle = function sortEle(eleStr = "div") {
     $("> "+eleStr, this[0]).sort(dec_sort).appendTo(this[0]);
     function dec_sort(a, b){ return ($(b).data("order")) < ($(a).data("order")) ? 1 : -1; }
@@ -366,120 +380,132 @@ function confirm(header, message, yesText = null, noText = null, delay = null){
     }
 }
 
-function alertBox(str,What,Where,Fade,Offset){
-    var h = What.outerHeight(true), w = What.outerWidth(true), ele, w2, readonly = What.attr('readonly');
-    if (Fade=="nofade"){
-        ele = $('<span class="zeroWrap a"><span class="alert">'+str+'</span></span>');
-    }
-    else{
-        ele = $('<span class="zeroWrap a f"><span class="alert f">'+str+'</span></span>');
-    }
-    if (Where=="after"){
-        ele.insertAfter(What).height(h);
-    }
-    else if (Where=="ontop"){
-        ele.insertBefore(What).height(h);
-    }
-    else if (Where=="before"){
-        ele.insertBefore(What).height(h);
-        w = ele.find(".alert").outerWidth();
-        ele.find(".alert").css("left","-"+w+"px");
-    }
-    else if (Where=="above"){
-        ele.insertBefore(What).height(h);
-        w2 = 0.5*w-0.5*$(ele).find(".alert").outerWidth(true);
-        //ele.find(".alert").css({"top":"-"+h+"px","left":w2+"px"});
-        var hA = $('.alert').outerHeight();
-        ele.find(".alert").css({"top":"-"+hA+"px","left":w2+"px"});
-    }    
-    else if (Where=="below"){
-        ele.insertBefore(What).height(h);
-        w2 = 0.5*w-0.5*$(ele).find(".alert").outerWidth(true);
-        ele.find(".alert").css({"top":2*h+"px","left":w2+"px"});
-    }    
-    else {
-        ele.insertAfter(What).height(h);
-    }
-    if (Offset!==null){
-        $(".alert").css("transform","translate("+Offset+")");
-    }
-    if ($.isNumeric(Fade)===false){Fade=1500;}
-    
-    if (What.is('ul')){
-        var bgColor = What.css('background-color');
-        What.css('background-color','red');
-        setTimeout(function(){
-            What.css("background-color",bgColor);
-        },Fade)
+function alertBox(message, ele, where = 'below', time = 1500, offset = null){
+    var hEle = ele.outerHeight(), wEle = ele.outerWidth(), wrap, wAlert, hAlert, readonly = ele.attr('readonly'), css;
+    if (time=="nofade"){
+        wrap = $('<span class="zeroWrap a"><span class="alert">'+message+'</span></span>');
+        time = 0;
     }else{
-        var BC = What.css("border-color");
-        What.css("border-color","red").attr("readonly","true");
+        wrap = $('<span class="zeroWrap a f"><span class="alert f">'+message+'</span></span>');
+    }
+
+    if ($.inArray(ele.css('position'), ['fixed','absolute','relative']) == -1){
+        ele.css('position','relative');
+    }
+    wrap.appendTo("body");
+    wAlert = wrap.find('.alert').outerWidth();
+    hAlert = wrap.find('.alert').outerHeight();
+    if (where=="after"){
+        // wrap.insertAfter(ele).height(hEle);
+        wrap.appendTo(ele);
+        css = {top:0.5*hEle,right:-5};
+    }else if (where=="ontop"){
+        // wrap.insertBefore(ele).height(hEle);
+        wrap.appendTo(ele);
+        css = {top:0.5*hEle,left:0.5*wEle};
+    }else if (where=="before"){
+        // wrap.insertBefore(ele).height(hEle);
+        wrap.appendTo(ele);
+        css = {top:0,left:-wAlert-5};
+        // wEle = wrap.find(".alert").outerWidth();
+        // wrap.find(".alert").css("left","-"+wEle+"px");
+    }else if (where=="above"){
+        // wrap.insertBefore(ele).height(hEle);
+        wrap.appendTo(ele);
+        css = {left:0,top:-hAlert-5};
+        // wAlert = 0.5 * wEle - 0.5 * $(wrap).find(".alert").outerWidth(true);
+        // var hA = $('.alert').outerHeight();
+        // wrap.find(".alert").css({"top":"-"+hA+"px","left":wAlert+"px"});
+    }else if (where=="below"){
+        // wrap.insertBefore(ele).height(hEle);
+        wrap.appendTo(ele);
+        css = {left:0,bottom:-hAlert};
+        // wAlert = 0.5 * wEle - 0.5 * $(wrap).find(".alert").outerWidth(true);
+        // wrap.find(".alert").css({"top":2*hEle+"px","left":wAlert+"px"});
+    }
+    wrap.css(css);
+
+    if (offset!==null){
+        $(".alert").css("transform","translate("+offset+")");
+    }
+    
+    if (ele.is('ul')){
+        var bgColor = (ele.data('bgColor') != undefined) ? ele.data('bgColor') : ele.css('background-color');
+        ele.data('bgColor',bgColor);
+        ele.css('background-color','rgb(234,78,80)');
         setTimeout(function(){
-            What.css("border-color",BC);
+            ele.css("background-color",bgColor);
+        },time)
+    }else{
+        var borderColor = (ele.data('borderColor') != undefined) ? ele.data('borderColor') : ele.css('border-color');
+        ele.data('borderColor',borderColor);
+        ele.css("border-color","rgb(234,78,80)").attr("readonly","true");
+        setTimeout(function(){
+            ele.css("border-color",borderColor);
             if (readonly != undefined){
-                What.attr('readonly',readonly);
+                ele.attr('readonly',readonly);
             }else{
-                What.removeAttr("readonly");
+                ele.removeAttr("readonly");
             }
-        },Fade)
+        },time)
 
     }
 
     setTimeout(function(){
         $(".zeroWrap.a.f, .alert.f").fadeOut(600,function(){$(this).remove();})        
-    },Fade)
+    },time)
         
 }
-function confirmBox(str,What,Where,Fade,Offset){
-    var h = What.outerHeight(true), w = What.outerWidth(true), ele, w2;
-    if (Fade=="nofade"){
-        ele = $('<span class="zeroWrap c"><span class="confirm">'+str+'</span></span>');
-    }else{
-        ele = $('<span class="zeroWrap c f"><span class="confirm f">'+str+'</span></span>');
-    }
-    if (Where=="after"){
-        ele.insertAfter(What).height(h);
-    }
-    else if (Where=="ontop"){
-        ele.insertBefore(What).height(h);
-    }
-    else if (Where=="before"){
-        ele.insertBefore(What).height(h);
-        w = ele.find(".confirm").outerWidth();
-        ele.find(".confirm").css("left","-"+w+"px");
-    }
-    else if (Where=="above"){
-        ele.insertBefore(What).height(h);
-        w2 = 0.5*w-0.5*$(ele).find(".confirm").outerWidth(true);
-        ele.find(".confirm").css({"top":"-"+h+"px","left":w2+"px"});
-    }    
-    else if (Where=="below"){
-        ele.insertBefore(What).height(h);
-        w2 = 0.5*w-0.5*$(ele).find(".confirm").outerWidth(true);
-        ele.find(".confirm").css({"top":2*h+"px","left":w2+"px"});
-    }
-    else if (Where=="append"){
-        ele.appendTo(What).height(h);
-    }
-    else {
-        ele.insertAfter(What).height(h);
-    }
-    if (Offset!==null){
-        $(".confirm").css("transform","translate("+Offset+")");
-    }
+// function confirmBox(str,What,Where,Fade,Offset){
+//     var h = What.outerHeight(true), w = What.outerWidth(true), ele, w2;
+//     if (Fade=="nofade"){
+//         ele = $('<span class="zeroWrap c"><span class="confirm">'+str+'</span></span>');
+//     }else{
+//         ele = $('<span class="zeroWrap c f"><span class="confirm f">'+str+'</span></span>');
+//     }
+//     if (Where=="after"){
+//         ele.insertAfter(What).height(h);
+//     }
+//     else if (Where=="ontop"){
+//         ele.insertBefore(What).height(h);
+//     }
+//     else if (Where=="before"){
+//         ele.insertBefore(What).height(h);
+//         w = ele.find(".confirm").outerWidth();
+//         ele.find(".confirm").css("left","-"+w+"px");
+//     }
+//     else if (Where=="above"){
+//         ele.insertBefore(What).height(h);
+//         w2 = 0.5*w-0.5*$(ele).find(".confirm").outerWidth(true);
+//         ele.find(".confirm").css({"top":"-"+h+"px","left":w2+"px"});
+//     }    
+//     else if (Where=="below"){
+//         ele.insertBefore(What).height(h);
+//         w2 = 0.5*w-0.5*$(ele).find(".confirm").outerWidth(true);
+//         ele.find(".confirm").css({"top":2*h+"px","left":w2+"px"});
+//     }
+//     else if (Where=="append"){
+//         ele.appendTo(What).height(h);
+//     }
+//     else {
+//         ele.insertAfter(What).height(h);
+//     }
+//     if (Offset!==null){
+//         $(".confirm").css("transform","translate("+Offset+")");
+//     }
 
     
-    var BC = What.css("border-color");
-    What.css("border-color","rgb(46, 107, 53)");
-    setTimeout(function(){
-        What.css("border-color",BC);
-        What.focus();
-    },1500)
+//     var BC = What.css("border-color");
+//     What.css("border-color","rgb(46, 107, 53)");
+//     setTimeout(function(){
+//         What.css("border-color",BC);
+//         What.focus();
+//     },1500)
 
-    setTimeout(function(){
-        $(".zeroWrap.c.f, .confirm.f").fadeOut(600,function(){$(this).remove();})        
-    },1500)
-}
+//     setTimeout(function(){
+//         $(".zeroWrap.c.f, .confirm.f").fadeOut(600,function(){$(this).remove();})        
+//     },1500)
+// }
 
 function CheckMark(What,Fade,Offset){
     var h = What.outerHeight(true), w = What.outerWidth(true), ele;
@@ -533,8 +559,7 @@ function getSessionVar(keyName){
     })
 }
 
-function slideFadeOut(elem,time,callback) {
-    time = (time != undefined) ? time : "400";
+function slideFadeOut(elem,time = 400,callback = null) {
     var t = "opacity "+time+"ms";
     var fade = { opacity: 0, transition: t };
     if (elem.length==1){
@@ -544,17 +569,16 @@ function slideFadeOut(elem,time,callback) {
             $(this).css(fade).delay(100).slideUp(time);
         })
     }
-    if (callback!=undefined){
+    if (callback){
         setTimeout(callback,time+101);
     }
 }
-function slideFadeIn(elem,time,callback){
-    time = (time != undefined) ? time : "400";
+function slideFadeIn(elem,time = 400,callback = null){
     var t = "opacity "+time+"ms";
     var solid = { opacity: 1, transition: t};
     elem.css("opacity","0")
     elem.slideDown(time).delay(100).css(solid);
-    if (callback!=undefined){
+    if (callback){
         setTimeout(callback,time+101);
     }
 }

@@ -18,7 +18,7 @@ class NewRequiredForm extends Notification
      *
      * @return void
      */
-    public function __construct(Appointment $appointment, Form $form)
+    public function __construct(Form $form, Appointment $appointment = null)
     {
         $this->appointment = $appointment;
         $this->form = $form;
@@ -60,9 +60,17 @@ class NewRequiredForm extends Notification
         $appt = $this->appointment;
         $form = $this->form;
         $patient = $notifiable->patientInfo;
+        if ($appt){
+            $type = "New Required Form";
+            $description = 'Required by:<br>'.$appt->service_list."<br>".$appt->long_date_time;
+        }else{
+            $type = "Required New Patient Form";
+            $description = "This form is required by all new patients";
+        }
+
         return [
-            'type' => 'New Required Form',
-            'description' => 'Required by:<br>'.$appt->service_list."<br>".$appt->long_date_time,
+            'type' => $type,
+            'description' => $description,
             'details' => [
                 'Form' => $form->name,
                 'Last Submitted' => $form->lastSubmittedBy($patient),

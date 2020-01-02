@@ -15,7 +15,7 @@
 
 	@if (Auth::user()->require_new_pw)
 		@include('portal.user.password')
-	@elseif (Auth::user()->security_questions == null)
+	@elseif (Auth::user()->security_questions == null && !Auth::user()->is_admin)
 		@include('portal.user.security-questions')
 	@else
 		@include("portal.$usertype.home")

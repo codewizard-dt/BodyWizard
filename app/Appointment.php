@@ -421,10 +421,12 @@ class Appointment extends Model
             $formArr = [];
             foreach ($appt->services as $service){
                 $forms = $service->forms->map(function($form) use($appt){
+                    $patient = $appt->patients->first();
                     return [
                         'form_id' => $form->form_id,
                         'name' => $form->form_name,
-                        'completed' => !($appt->requiresForm($form->form_id,'patient'))
+                        // 'completed' => !($appt->requiresForm($form->form_id,'patient'))
+                        'completed' => $form->checkApptFormStatus($appt,$patient)
                     ];
                 })->toArray();
                 $formArr = array_merge($formArr,$forms);

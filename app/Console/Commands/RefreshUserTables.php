@@ -49,8 +49,8 @@ class RefreshUserTables extends Command
     {
         $practiceId = $this->argument('practiceId');
         $populate = $this->option('factory');
-        $calendarId = $this->option('clearAppts') ? config('practices')[$practiceId]['app']['calendarId'] : null;
-        $database = config('practices')[$practiceId]['app']['database'];
+        $calendarId = $this->option('clearAppts') ? practiceConfig('practices')[$practiceId]['app']['calendarId'] : null;
+        $database = practiceConfig('practices')[$practiceId]['app']['database'];
         config(['database.connections.mysql.database' => $database]);
         DB::reconnect();
         RefreshTables::clearUserTables();
@@ -64,8 +64,7 @@ class RefreshUserTables extends Command
             $this->info("User table population skipped");
         }
         if ($calendarId){
-            $ctrl = new Appointment;
-            $result = $ctrl->clearCalendar($calendarId);
+            $result = Practice::clearCalendar($calendarId);
             if ($result){
                 $this->info('Google calendar cleared.');
             }else{

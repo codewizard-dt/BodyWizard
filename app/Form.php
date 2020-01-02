@@ -102,7 +102,7 @@ class Form extends Model
             ['Service','many','morphToMany']
         ];
     }
-    static function tableValues(){
+    public static function tableValues(){
         $usertype = Auth::user()->user_type;
         $commonArr = [
             'tableId' => 'FormList',
@@ -261,10 +261,10 @@ class Form extends Model
     public static function defaultSettings(){
         return ["form_type" => "any user type", "admin_only" => "yes, admins only", "portal_listing" => "never"];
     }
-    public static function checkApptFormStatus(Appointment $appt, Patient $patient){
-        Log::info("Check Appt Form Status");
-        $submission = Submission::where([["appointment_id",$appt->id],['patient_id',$patient->id]])->get();
-        return ($submission->count() > 0);
+    public function checkApptFormStatus(Appointment $appt, Patient $patient){
+        // Log::info("Check Appt Form Status");
+        $submission = Submission::where([["appointment_id",$appt->id],['patient_id',$patient->id],['form_id',$this->form_id]])->get();
+        return ($submission->count() == 0) ? false : $submission->first()->id;
     }
 
     public function getNameAttribute(){
@@ -439,7 +439,7 @@ class Form extends Model
                             echo "<div class='question'><p><span class='n'>$n.</span><span class='q'>$question</span><span class='requireSign'>$requireStar</span></p></div><br>";
                         }
                         // include_once app_path("/php/functions.php");
-                        $name = removepunctuation(replacespaces(strtolower(cleaninput($question))));
+                        $name = replacespaces(removepunctuation(strtolower(cleaninput($question))));
                         if (in_array($type, ['radio','checkboxes','dropdown'])){
                             array_push($options,"ID*".$name);
                         }else{
@@ -488,7 +488,6 @@ class Form extends Model
                     }
                     echo "</div>";
                 }
-
             }
             echo "<div class='wrapper'>";
                 if ($allowSubmit){
@@ -710,6 +709,4 @@ class Form extends Model
     	public function displaySettings($json){
             return "saved settings";
     	}
-
-
 }

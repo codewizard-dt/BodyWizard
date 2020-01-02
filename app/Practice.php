@@ -26,15 +26,8 @@ class Practice extends Model
     public $database;
     public $practitioners;
 
-    public function __construct(){
-    	// $this->practiceId = $practiceId;
-    	// $this->calendarId = config('practices')['app']['calendarId'];
-    	// $this->database = config('practices')['app']['database'];
-    	// // $this->practitioners = 
-    }
 	public static function createCalendar($name,$email){
 	    $service = app('GoogleCalendar');
-	    // $calendarId = config('google')['calendar_id'];
 	    $calendar = new \Google_Service_Calendar_Calendar();
 	    $calendar->setSummary($name." EHR");
 	    $calendar->setTimeZone('America/Chicago');
@@ -183,7 +176,7 @@ class Practice extends Model
 				$practiceId = session('practiceId');
 			}else{return false;}
 		}
-        $calendarId = config('practices')[$practiceId]['app']['calendarId'];
+        $calendarId = practiceConfig('practices')[$practiceId]['app']['calendarId'];
         $calendar = app('GoogleCalendar');
         try{
             $optParams = [
@@ -346,9 +339,9 @@ class Practice extends Model
     public static function anonApptEventFeed($practiceId = null){
         if (!$practiceId){$practiceId = session('practiceId');}
         $exists = Storage::disk('local')->exists('/calendar/'.$practiceId.'/practitioner/ehr-feed.json');
+        $array = [];
         if ($exists){
             $events = json_decode(Storage::disk('local')->get('/calendar/'.$practiceId.'/practitioner/ehr-feed.json'),true);
-            $array = [];
             foreach($events as $id => $event){
                 $array[] = 
                     [
@@ -359,9 +352,7 @@ class Practice extends Model
                     ];
             }
             $result = json_encode($array);
-        }else{
-            $result = '';
         }
-        return $result;
+        return (isset($result)) ? $result : "";
     }
 }

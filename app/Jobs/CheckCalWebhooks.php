@@ -32,7 +32,7 @@ class CheckCalWebhooks implements ShouldQueue
      */
     public function handle()
     {
-        $practices = config('practices');
+        $practices = practiceConfig('practices');
         foreach($practices as $practiceId => $practice){
             
         }

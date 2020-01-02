@@ -21,6 +21,7 @@ class CreatePatientsTable extends Migration
             $table->string("pronouns")->nullable();
             $table->string("phone_number")->nullable();
             $table->string("mailing_address")->nullable();
+            $table->boolean("is_new_patient")->default(true);
             $table->json("settings")->nullable();
             $table->json("settings_json")->nullable();
             $table->timestamps();

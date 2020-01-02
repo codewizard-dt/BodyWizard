@@ -1,5 +1,7 @@
 var action = undefined, appointmentDetails = {services:null,date:null,time:null,datetime:null,patient:null,practitioner:null}, 
-	defaultPatientInfo = undefined, defaultPractitionerInfo = undefined;
+	defaultPatientInfo = null, defaultPractitionerInfo = null, activeForm = null, category = null, practitioners, practiceTz, clientTz, patientInfo = {};
+	// practitionersAnonEvents =[], anonEvents, defaultAnonEvents;
+
 $(document).ready(function(){
 	$("#createAppointment, #editAppointment").find('.submitForm').text("save appointment");
 	$("#EditApptBtn").on('click',function(){
@@ -7,6 +9,22 @@ $(document).ready(function(){
 	})
 	$("#editAppointment").find("h1").first().text("Edit Appointment");
 	$("#DeleteApptBtn").on('click',confirmApptDelete);
+    $("#Details").on('click','.edit',openDetail);
+    $('#FormInfo').on('click','.link',checkFormStatus);
+
+    $(".selector").on('click','.next',goForward);
+    $(".selector").on('click','.firstStep',firstStep);
+    $(".selector").on('click',".selectDate",function(){
+    	$("#Details").find('.date').find(".edit").click();
+    })
+    $(".selectPractitioner").on('click',function(){
+    	$("#Details").find('.practitioner').find(".edit").click();
+    })
+    // $("#DateSelector").on('focusout',checkDate);
+    $("#TimeSelector").on('click','li',updateTime);
+    $("#PractitionerSelector").on('click','li',updatePractitioner);
+    $("#SelectOrRandom").on('click','.closeBtn',randomPractitioner);
+    $(".selector").hide();
 })
 function activateServiceSelection(){
 	var categories = $("#CategoryDetails").data('details'), services = $("#ServiceDetails").data("details"),
@@ -18,6 +36,17 @@ function activateServiceSelection(){
 		}), patientItems = $(".item").filter(function(){
         	return $(this).find(".q").text().includes("Select Patient");
    		});
+
+    anonEvents = $("#AnonFeed").data('schedule');
+    practitioners = $("#Practitioners").data('schedule');
+
+    if (practitioners.length == 1){
+    	defaultPractitionerInfo = practitioners[0];
+    	// console.log(defaultPractitionerInfo.name);
+    	addDetail('practitioner',defaultPractitionerInfo.name);
+    	$("#Details").find('.practitioner').find(".edit").hide();
+    	resetEntireAppt();
+    }
 
 	serviceItems.find("textarea").off("focus",openConnectedModelModal);
 	serviceItems.find("textarea").on("focus",function(){
@@ -35,7 +64,7 @@ function activateServiceSelection(){
     durationItems.find('input').attr('readonly',true);
     durationItems.find('.q').html("Duration <span class='little italic'>(automatically updates)</span>");
 
-    if (defaultPatientInfo != undefined){
+    if (defaultPatientInfo){
     	patientItems.find('input').val(defaultPatientInfo.name);
     	patientItems.find('input').removeClass('targetInput');
     }
@@ -63,7 +92,6 @@ function activateServiceSelection(){
     	}
     });
 
-	$("#SelectServices").find(".clearBtn").hide();
 	categoryLIs.each(function(){
 		var name = $(this).text(), category = categories[name];
 		$(this).data(category);
@@ -74,13 +102,19 @@ function activateServiceSelection(){
 		$(this).data(service);
 		$(this).data('show',true);
 	})
-	checkCount($("#SelectServices"));
-    
-    // updatePatientData();
-    // updatePractitionerData();
-	$("#PatientListModal").find(".selectData").on('click',updatePatientData);
-	$("#PractitionerListModal").find(".selectData").on('click',updatePractitionerData);
+	categoryLIs.on('click',selectCategory);
+	categoryLIs.on('click',goForward);
+	serviceLIs.on('click',showServiceDescription);
 
+	// $("#PatientListModal").find(".selectData").off('click',updateInputFromTable);
+	$("#PatientListModal").find(".selectData").on('click',function(){
+		// console.log(patientInfo);
+		// setTimeout(function(){
+		// 	console.log(patientInfo);
+		// },400)
+	});
+
+	$(".selector").on('click','.back', goBack);
 	categoryLIs.on('click',function(){
 		var id = $(this).data('id'), matches = serviceLIs.filter(function(){
 			return $(this).data('service_category_id') == id && $(this).data('show');
@@ -92,29 +126,36 @@ function activateServiceSelection(){
 		var description = $(this).data('description');
 		$("#ServiceDescription").find('.target').text(description);
 	})
-	$("#ServiceDescription").on('click','.submit',addService);
-	$("#CategoryDetails, #ServiceDetails").on('click','li',nextStep);
-	$(".progressiveSelection").on('click','.openBtn',firstStep);
-	$(".progressiveSelection").on('click','.clearBtn',clearAll);
-	$(".progressiveSelection").on('click','.clearLastBtn',clearLast);
-	$(".progressiveSelection").on('click','.back',previousStep);
-	$(".progressiveSelection").on('click','.forward',nextStep);
+	$("#SelectServiceBtn").on('click',addService);
+	$("#SelectServiceBtn").on('click',goForward);
+	
+	var dateSelect = $("#DateSelector");
+	dateSelect.datepick('destroy');
+    $("#DateSelector").datepick({
+    	yearRange: dateSelect.data('yearrange'),
+    	minDate: dateSelect.data('mindate'),
+    	maxDate: dateSelect.data('maxdate'),
+    	onSelect: function(dates){
+    		var date = moment(dates[0]).format("MM/DD/YYYY");
+    		updateDate(date);
+    	}
+    });
+    var practiceTz = $("#PatientCalendar").data('timezone');
 }
 function loadApptInfo(patientIds,practitionerId,serviceIds,dateTime,form){
 	console.log("LOAD APPOINTMENT INFO");
 	form.find("#date").val(dateTime.format("MM/DD/YYYY"));
 	form.find("#time").val(dateTime.format("h:mma"));
-	$("input").show();
+	activeForm = form;
 	updateInputByUID(form.find("#select_patient"),patientIds);
 	updateInputByUID(form.find("#select_practitioner"),practitionerId);
 	updateInputByUID(form.find("#select_services"),serviceIds);
-	// updatePatientData();
-	// updatePractitionerData();
-	// updateDuration();
-	// resetProgressBar($("#SelectServices"));
-	// updateAvailableServices();
-	// if (usertype == 'patient'){updateAvailableTimes();}
-	// hideAlreadySelected($("#SelectServices"));
+	updateAppointment({
+		patient: patientIds[0],
+		practitioner: practitionerId,
+		services: serviceIds,
+		datetime: dateTime
+	});
 }
 function moveServiceSelect(id, display = true){
 	$(id).find(".section").last().append($("#SelectServices"));
@@ -132,58 +173,240 @@ function moveDetails(id, display = true){
 	$("#Details").find(".edit").text('select');
 	timeEdit.text('');
 	if (display){$("#Details").fadeIn();}
-	$(id).find(".submitForm").addClass('disabled');
+	// $(id).find(".submitForm").addClass('disabled');
+}
+
+function goBack(){
+	var box = $(this).closest(".selector"), steps = box.children().not(".progressBar"), current = steps.filter(":visible"), prev = current.prev(".step");
+	if (prev.length != 0){
+		current.fadeOut(200,function(){
+			prev.fadeIn(400);
+			prev.find(".active").removeClass('active');
+			// reset current/prev
+			current = steps.filter(":visible"), prev = current.prev(".step");
+			if (prev.length == 0){
+				box.find('.progressBar').find(".back").fadeOut(400);
+			}
+		})
+	}else{box.find(".back").fadeOut();}
+}
+function goForward(){
+	var box = $(this).closest(".selector"), steps = box.children().not(".progressBar"), current = steps.filter(":visible"), next = current.next(".step");	if (next.length != 0){
+		current.fadeOut(200,function(){
+			next.fadeIn(400);
+			next.find(".active").removeClass('active');
+			// reset current/next
+			current = steps.filter(":visible"), next = current.next(".step");
+			if (current.hasClass("noBack")){
+				box.find('.progressBar').find(".back").fadeOut(400);
+			}
+		})
+	}
+}
+function firstStep(box = null){
+	if (typeof box == 'object'){box = $(this).closest(".selector");}
+	var steps = box.children('.step'), current = steps.filter(":visible"), first = steps.first();
+	if (first.length != 0){
+		current.fadeOut(200,function(){
+			first.fadeIn(400);
+			first.find(".active").removeClass('active');
+			// reset current/first
+			current = steps.filter(":visible"), first = steps.first();
+			if (current.hasClass("noBack")){
+				box.find('.progressBar').find(".back").fadeOut(400);
+			}
+		})
+	}	
+}
+function showAppointmentDetails(){
+    var modalId = $(this).data('target');
+    activeForm = $(modalId);
+    // console.log(activeForm);
+    moveServiceSelect(modalId, false);
+    movePracTimeSelect(modalId, false);
+    moveDetails(modalId);
+    $(modalId).find(".selector").hide();
+    if (modalId == '#createAppointment'){
+        resetEntireAppt();
+        updateAppointment();
+    }else{
+    	updateAppointment({
+    		// services: activeForm.find("#select_services").val(),
+    		// patient: activeForm.find("#select_patient").val(),
+    		// practitioner: activeForm.find("#select_practitioner").val(),
+    		date: activeForm.find("#date").val(),
+    		time: activeForm.find("#time").val()
+    	});
+    }
+    blurElement($("body"),modalId);
 }
 
 function resetEntireAppt(){
+	var patient = null;
+	resetConnectedModels();
+	if (activeForm){
+		activeForm.find('input, textarea').val("");
+		activeForm.find('.active').removeClass('active');
+		activeForm.removeData('dateTime');		
+	}
+	if (defaultPatientInfo){patient = defaultPatientInfo.id
+	}else if (getUids('Patient') != null){patient = Number(getUids('Patient'))
+	}
+
 	appointmentDetails = 
 	{
 		services:null,
 		date:null,
 		time:null,
 		datetime:null,
-		patient: (defaultPatientInfo !== undefined) ? defaultPatientInfo.id : null,
-		practitioner:null
+		patient: patient,
+		practitioner: defaultPractitionerInfo ? defaultPractitionerInfo.practitioner_id : null,
 	};
 }
 function appointment(attr){
 	return appointmentDetails[attr];
 }
+function updateDate(date){
+    updateAppointment({date:date});
+    updateAvailableTimes(activeForm);
+    addDetail('date',date);
+    activeForm.find("#date").val(date);
+    $("#SelectDate").find(".next").removeClass('disabled').click();
+}
+function updateAvailableTimes(){
+    console.log('updateAvailableTimes');
+    var bizHours = $("#BizHours").data('schedule'), services = appointmentDetails.services, duration = Number(activeForm.find('#duration').val()), date = appointmentDetails.date, slots = $("#TimeSelector").find("li"), practitioner = appointmentDetails.practitioner;
+    if (practitioner){
+        // var id = practitioner[0];
+        practitionerInfo = practitioners.find(p => {
+            return p.practitioner_id === practitioner;
+        })
+    }
+    // console.log(practitioner);
+    slots.addClass('disabled');
+    var anonEvents = $("#AnonFeed").data('schedule');
+    // console.log(practitioners);
+    slots.each(function(){
+        var slot = $(this), time = slot.data('value'), practitionerEvents, available, momentObj;
+        momentObj = moment(date+" "+time, "MM/DD/YYYY HH:mm:ss");
+        bizHourCheck = checkSchedule(momentObj, bizHours, services, duration);
+		available = availablePractitioners(momentObj, duration, services, true);
+        if (bizHourCheck === true){
+            slot.removeClass('disabled');
+        }
+        if (practitioner == null){
+        }else{
+        	if ($.inArray(practitioner, available) > -1){
+        		slot.removeClass('disabled');
+        	}else{
+        		slot.addClass("disabled");
+        	}
+        }
+    })
+    if (usertype == 'patient'){
+    	slots.filter('.disabled').hide();
+    	slots.not('.disabled').show();
+    }
+}
+function updatePractitioner(){
+	console.log("UPDATE PRACTITIONER");
+    var name = $(this).text(), list = $("#PractitionerSelector").data('details'), id = list[name];
+	updateAppointment({practitioner:id});
+	$("#SelectPractitioner").slideFadeOut(800,function(){
+		$("#SelectPractitioner").resetActives().css('opacity',1);
+		// $("#SelectPractitioner").find('.active').removeClass('active');
+	});
+}
+function randomPractitioner(){
+    var form = activeForm;
+    var p = randomArrayElement(availablePractitioners(form.data('dateTime'),form.find("#duration").val(),$("#ServiceListModal").data('uidArr')));
+    updateInputByUID(form.find("#select_practitioner"),p.practitioner_id);
+    addDetail('practitioner',p.name);
+}
+function updateTime(){
+    if ($(this).hasClass('disabled')){return;}
+    // console.log('updateTime');
+    var form = $("#createAppointment, #editAppointment").filter(":visible"), time = $(this).text().replace(" ",""), date = form.find("#date").val(), services = $("#ServiceListModal").data('uidArr');
+    form.find("#time").val(time);
+    var dateTime = moment(date + " " + time,'MM/DD/YYYY hh:mma');
+    $("#SelectTime").find(".next").removeClass('disabled').click();
+    form.data('dateTime',dateTime);
+    addDetail('time',time);
+    updateAppointment({time:time});
+    if (!defaultPractitionerInfo){
+		var p = availablePractitioners(dateTime,form.find("#duration").val(), services);
+	    $("#PractitionerSelector").find("li").addClass('disabled');
+	    $.each(p,function(x,practitioner){
+	        $("#PractitionerSelector").find("li").filter(function(){return $(this).text() == practitioner.name}).removeClass('disabled');
+	    })
+    }
+    // slideFadeOut($(this).closest('.selector'));
+    $(this).closest('.selector').slideFadeOut(800);
+}
+
 function updateAppointment(attrArr = null){
 	if (attrArr){
 		$.each(attrArr,function(attr,val){
-			appointmentDetails[attr] = val;
+			if (attr == 'services'){
+				if (val === null){appointmentDetails.services = null;}
+				else if (appointmentDetails.services == null){appointmentDetails.services = [val];}
+				else if (typeof val == 'object'){appointmentDetails.services = val;}
+				else {appointmentDetails.services.push(val);}
+			}else{
+				appointmentDetails[attr] = val;
+			}
 		})
-		if (appointmentDetails.date && appointmentDetails.time){
-			appointmentDetails.datetime = moment(appointmentDetails.date + " " + appointmentDetails.time);
+		if (appointmentDetails.date && appointmentDetails.time && !appointmentDetails.datetime){
+			appointmentDetails.datetime = moment(appointmentDetails.date + " " + appointmentDetails.time, "M/D/YYYY h:mma");
 		}
-		if (appointmentDetails.datetime){
-			appointmentDetails.date = datetime.format("M/D/YYYY");
-			appointmentDetails.time = datetime.format("h:ma");
+		if (appointmentDetails.datetime && (!appointmentDetails.date || !appointmentDetails.time)){
+			appointmentDetails.date = appointmentDetails.datetime.format("M/D/YYYY");
+			appointmentDetails.time = appointmentDetails.datetime.format("h:mma");
 		}
 	}
 	var appt = appointmentDetails;	
-	console.log(appt);
+	console.log(appt, activeForm);
 
-	var form = $("#createAppointment, #editAppointment").filter(":visible"), updateForm = (form.length != 0);
-	if (updateForm){
-		updateInputByUID(form.find("#select_patient"),appt.patient);
-		updateInputByUID(form.find("#select_practitioner"),appt.practitioner);
-		updateInputByUID(form.find("#select_services"),appt.services);
-		if (datetime){
-
-		}else{
-
+	if (activeForm){
+		if (appt.patient){
+			updateInputByUID(activeForm.find("#select_patient"),appt.patient);
+			addDetail('patient',activeForm.find("#select_patient").val());
+		}
+		if (appt.practitioner){
+			updateInputByUID(activeForm.find("#select_practitioner"),appt.practitioner);
+			addDetail('practitioner',activeForm.find("#select_practitioner").val());
+		}
+		if (appt.date){
+			activeForm.find('#date').val(appt.date);
+			addDetail('date',activeForm.find("#date").val());
+		}
+		if (appt.time){
+			activeForm.find('#time').val(appt.time);
+			addDetail('time',activeForm.find("#time").val());
+		}
+		if (appt.services){
+			updateInputByUID(activeForm.find("#select_services"),appt.services);
+			addDetail('services',activeForm.find("#select_services").val());
+			updateAvailableTimes();
 		}
 	}
+	if (appt.practitioner && appt.services){
+		$("#Details").find('.date').find('.edit').show();
+	}else{
+		$("#Details").find('.date').find('.edit').hide();			
+	}
 
-	if (appt.patient){updatePatientData();}
+	setTimeout(function(){
+		if (appt.patient){updatePatientData();}
+		if (appt.practitioner){updatePractitionerData();}
+	    updateAvailableServices();
+	},205)
 
 	var requires = [];
-	if (appt.patient === null){requires.push(appt.patient)};
-	if (appt.practitioner === null){requires.push(appt.practitioner)};
-	if (appt.services === null){requires.push(appt.services)};
-	if (appt.datetime === null){requires.push(appt.datetime)};
+	if (appt.patient === null){requires.push('patient')};
+	if (appt.practitioner === null){requires.push('practitioner')};
+	if (appt.services === null){requires.push('services')};
+	if (appt.datetime === null){requires.push('datetime')};
 	
 	if (requires.length == 0){
 		$("#editAppointment, #createAppointment").find('.submitForm').removeClass('disabled');
@@ -199,68 +422,79 @@ function resetConnectedModels(){
 	// $("#PractitionerListModal").removeData('uidArr');
 	$(".connectedModel").removeData('uidArr');
 	$(".connectedModelItem").val("");
-	console.log("resetConnectedModels");
+	// console.log("resetConnectedModels");
 }
-function checkCondition(progressiveSelector){
-	var conditionEle = (progressiveSelector.data('condition') !== undefined) ? progressiveSelector.data('condition') : null, parent = progressiveSelector.data('parent'), conditionVal;
-	if (!conditionEle){conditionVal = null;
-		// console.log("condition 1");
-	}
-	else if (progressiveSelector.closest(parent).find(conditionEle).val() == ''){conditionVal = null;
-		// console.log("condition 2");
-	}
-	else{conditionVal = progressiveSelector.closest(parent).find(conditionEle).val();
-		// console.log("condition 3");
-	}
 
-	if (!conditionVal){progressiveSelector.find('.openBtn').removeClass('pinkflash').addClass('pink70')}
-	else{progressiveSelector.find('.openBtn').removeClass('pink70').addClass('pinkflash')}
-	// console.log(conditionVal);
-	return conditionVal;
-}
+
 function checkFormStatus(){
 	var formInfo = $(this).closest('.checkFormStatus');
-	if (formInfo.data('completed')){
-		confirm('Form Completed',"You've already completed this form!",'see all forms','go back');
-	}else{
-		confirm('Required Form Status','You haven\'t completed this form yet. Would you like to go to the forms page now?','go to forms','not right now');
-		setUid('Form',formInfo.data('form_id'));
+	console.log(usertype);
+	if (usertype == 'patient'){
+		if (formInfo.data('completed')){
+			confirm('Form Completed',"You've already completed this form!",'see your submission','go back');
+			setUid('Submission',formInfo.data('completed'));
+			var callback = function(){
+				unblurAll();
+				$("#submissions-index").find(".title").click();					
+			}
+		}else{
+			confirm('Required Form Status','You haven\'t completed this form yet. Would you like to go to the forms page now?','go to forms','not right now');
+			setUid('Form',formInfo.data('form_id'));
+			var callback = function(){
+				unblurAll();
+				$("#forms-home").find(".title").click();					
+			}
+		}
+	}else if (usertype == 'practitioner'){
+		if (formInfo.data('completed')){
+			confirm('Form Completed',"Patient has already submitted this form",'view submission','go back');
+			setUid('Submission',formInfo.data('completed'));
+			var callback = function(){
+				unblurAll();
+				$("#submission-index").find(".title").click();					
+			}
+		}else{
+			confirm('Required Form Status','Patient has not completed this form.<h3 class="pink">Send reminder?</h3>','yes send reminder','not right now');
+			var callback = function(){
+				alert("SEND REMINDER");
+			}
+		}
 	}
 
 	var wait = setInterval(function(){
-		if (confirmBool){
-			unblurAll();
-			$("#forms-home").find(".title").click();
-			confirmBool = undefined;
+		// console.log(confirmBool);
+		if (confirmBool != undefined){
+			if (confirmBool){
+				unblurTopMost();
+				callback();
+			}else{
+				clearInterval(wait);
+				confirmBool = undefined;
+			}
 			clearInterval(wait);
+			setTimeout(function(){
+				confirmBool = undefined;
+			},300)
 		}
 	},100)	
 }
+function getServiceNames(){
+	var services = appointmentDetails.services, names = [];
+	$.each(services,function(s,serviceId){
+		names.push($("#ServiceDetails").find("li").filter(function(){return $(this).data('id') == serviceId}).text());
+	})
+	return (names.length == 0) ? null : names;
+}
 function addService(){
-	console.log('addService');
-	var name = $("#ServiceDescription").find("h3").text(), details = $("#ServiceDetails").find('li').filter(function(){
-		return $(this).data('name') == name;
-	}).data(), form = $(this).closest('.modalForm'), serviceItem = form.find('.item').filter(function(){
-		return $(this).find(".q").text().includes("Selected Service(s)");
-	}), row = $("#ServiceListModal").find("tr").filter(function(){
-		return $(this).data('uid') == details.id;
-	}), selectBtn = $("#ServiceListModal").find(".selectData"), currentVal = serviceItem.find("textarea").val();
-
-	serviceItem.find("input, textarea").addClass('targetInput');
-	if (currentVal != ""){selectRowsByName(currentVal, $("#ServiceList"));}
-	row.click();
-	selectBtn.click();
-		if (usertype == 'patient'){
-			addDetail('services', serviceItem.find("textarea").val());
-		}
-	updateDuration();
-	resetProgressBar($("#SelectServices"));
-	// resetOverride();
-	updateAvailableServices();
-	hideAlreadySelected($("#SelectServices"));
+	var service = $("#ServiceDetails").find(".active"), id = service.data().id, dateBtn = $("#ServiceSummary").find(".selectDate");
+	// console.log(service.data());
+	updateAppointment({services:id});
+	if (appointmentDetails.practitioner){dateBtn.show();
+	}else{dateBtn.hide();}
+	$("#ServiceSummary").find(".summary").text(getServiceNames());
 }
 function updateDuration(){
-	console.log('updateDuration');
+	// console.log('updateDuration');
 	var form = $("#SelectServices").closest('.modalForm'), services = form.find('#select_services').val().split(", "), durationInput = form.find(".number").find('input'), duration = 0, endDateTime, matches = $("#ServiceDetails").find('li').filter(function(){return $.inArray($(this).text(), services) > -1;}), dateTime = form.data('dateTime'), practitioner = $("#SelectServices").data('practitionerInfo'), serviceIds = $("#ServiceListModal").data('uidArr') == undefined ? null : $("#ServiceListModal").data('uidArr'), practitionerCheck, formVisible = form.is(":visible"), h2 = [], div = [];
 	matches.each(function(m,match){
 		duration = duration + Number($(this).data('duration'));
@@ -277,6 +511,55 @@ function updateDuration(){
 	})
 	if (matches.length == 0){duration = "0"}
 	durationInput.val(duration);
+}
+function addDetail(type,value){
+    $("#Details").find("."+type).find(".value").text(value);
+    $("#Details").find("."+type).find(".edit").show().text("change");
+    if (type == 'date'){$("#Details").find(".time").find(".edit").text("select");}
+    if (defaultPractitionerInfo){$("#Details").find('.practitioner').find(".edit").hide();}
+}
+function removeDetail(type){
+    if ($.isArray(type)){
+        $.each(type,function(x,t){
+            removeDetail(t);
+        })
+    }else{
+        var t = (type == 'time') ? "" : "select";
+        $("#Details").find("."+type).find(".value").text("none");
+        $("#Details").find("."+type).find(".edit").text(t);        
+    }
+}
+function openDetail(){
+    var targetId = $(this).data('target'), target = $(targetId), openBtn = target.find('.openBtn'), steps = target.children('div').not('.progressBar'), 
+    	allDetails = $("#SelectServices, #SelectDateTime, #SelectPractitioner"), inactive = allDetails.not(target);
+    activeForm = $("#createAppointment, #editAppointment").filter(":visible");
+    if (target.hasClass('modalForm')){
+    	if ($(this).data('input') != undefined){
+    		activeForm.find($(this).data('input')).addClass('targetInput');
+    	}
+    	blurTopMost(targetId);
+    }else{
+	    if (target.is("#SelectServices") && !appointmentDetails.patient){
+	        feedback("Select A Patient","You must select a patient to determine the services available");
+	        return;
+	    }
+	    steps.hide();
+	    steps.first().fadeIn();
+	    if (inactive.filter(":visible").length > 0){
+	    	inactive.hide();
+	    	target.fadeIn();
+	    }else{
+		    target.slideFadeIn();
+	    }
+	    if (($(this).text() == 'change' && !$(this).closest('h3').hasClass('date'))
+	    	|| ($(this).closest('h3').hasClass('.time'))){
+	    	steps.hide();
+	    	steps.last().show();
+	    }
+	    
+	    target.resetActives();
+	    target.find('.back').fadeOut();    	
+    }
 }
 function noEventConflict(start, duration, anonEvents){
 	if (anonEvents===null){return true;}
@@ -303,77 +586,195 @@ function hideAlreadySelected(progressiveSelector){
 		});
 	matches.data('show',false);
 }
-function resetProgressBar(progressiveSelector){
-	// console.log('HI');
-	var current = progressiveSelector.find(".step:visible"), open = progressiveSelector.find(".open"), back = progressiveSelector.find(".back");
-	if (current.length == 0){current = progressiveSelector.find(".step");}
-	current.fadeOut(200,function(){
-		open.fadeIn(400);
-		back.html("");
-		checkCount(progressiveSelector);
-	})
-	progressiveSelector.find(".active").removeClass('active');
-}
-function checkCount(progressiveSelector){
-	var targetStr = progressiveSelector.data('target'), target = modalOrBody(progressiveSelector).find(targetStr), count = (target.val() == "") ? 0 : target.val().split(", ").length, toggleTextBtns = progressiveSelector.find(".button").filter("[data-toggletext]");
-	if (count > 0){progressiveSelector.find(".openBtn").removeClass("pinkflash").addClass("pink70");
-	}else{progressiveSelector.find(".openBtn").removeClass("pink70").addClass("pinkflash");
-	}
-	if (count == 0){progressiveSelector.find(".clearBtn, .clearLastBtn, .closeBtn").hide();
-	}else{progressiveSelector.find('.clearLastBtn, .closeBtn').show();
-	}
-	toggleTextBtns.each(function(){
-		var toggleText = $(this).data('toggletext'), originalText = $(this).data('originaltext'), togglecount = Number($(this).data('togglecount'));
-		if (count >= togglecount){$(this).text(toggleText);
-		}else{$(this).text(originalText);
-		}
-	})
-	progressiveSelector.data('count',count);
-	return count;
-}
+// let's try getting rid of this
+	// function checkCount(progressiveSelector){
+	// 	var targetStr = progressiveSelector.data('target'), target = modalOrBody(progressiveSelector).find(targetStr), count = (target.val() == "") ? 0 : target.val().split(", ").length, toggleTextBtns = progressiveSelector.find(".button").filter("[data-toggletext]");
+	// 	if (count > 0){progressiveSelector.find(".openBtn").removeClass("pinkflash").addClass("pink70");
+	// 	}else{progressiveSelector.find(".openBtn").removeClass("pink70").addClass("pinkflash");
+	// 	}
+	// 	if (count == 0){progressiveSelector.find(".clearBtn, .clearLastBtn, .closeBtn").hide();
+	// 	}else{progressiveSelector.find('.clearLastBtn, .closeBtn').show();
+	// 	}
+	// 	toggleTextBtns.each(function(){
+	// 		var toggleText = $(this).data('toggletext'), originalText = $(this).data('originaltext'), togglecount = Number($(this).data('togglecount'));
+	// 		if (count >= togglecount){$(this).text(toggleText);
+	// 		}else{$(this).text(originalText);
+	// 		}
+	// 	})
+	// 	progressiveSelector.data('count',count);
+	// 	return count;
+	// }
+	// function resetProgressBar(progressiveSelector){
+	// 	// console.log('HI');
+	// 	var current = progressiveSelector.find(".step:visible"), open = progressiveSelector.find(".open"), back = progressiveSelector.find(".back");
+	// 	if (current.length == 0){current = progressiveSelector.find(".step");}
+	// 	current.fadeOut(200,function(){
+	// 		open.fadeIn(400);
+	// 		back.html("");
+	// 		checkCount(progressiveSelector);
+	// 	})
+	// 	progressiveSelector.find(".active").removeClass('active');
+	// }
+	// function checkCondition(progressiveSelector){
+	// 	var conditionEle = (progressiveSelector.data('condition') !== undefined) ? progressiveSelector.data('condition') : null, parent = progressiveSelector.data('parent'), conditionVal;
+	// 	if (!conditionEle){conditionVal = null;
+	// 		// console.log("condition 1");
+	// 	}
+	// 	else if (progressiveSelector.closest(parent).find(conditionEle).val() == ''){conditionVal = null;
+	// 		// console.log("condition 2");
+	// 	}
+	// 	else{conditionVal = progressiveSelector.closest(parent).find(conditionEle).val();
+	// 		// console.log("condition 3");
+	// 	}
+
+	// 	if (!conditionVal){progressiveSelector.find('.openBtn').removeClass('pinkflash').addClass('pink70')}
+	// 	else{progressiveSelector.find('.openBtn').removeClass('pink70').addClass('pinkflash')}
+	// 	// console.log(conditionVal);
+	// 	return conditionVal;
+	// }
+	// function clearAll(){
+	// 	var currentModel = $(this).closest('.modalForm').data('model'), modelToClear = $(this).data('model'), progressiveSelector = $(this).closest(".progressiveSelection"), targetStr = progressiveSelector.data('target'), target = modalOrBody($(this)).find(targetStr), modal = $(".connectedModel").filter(function(){
+	// 			return $(this).data('connectedto') == currentModel && $(this).data('model') == modelToClear;
+	// 		}), form = $(this).closest('.modalForm');
+	// 	target.val("");
+	// 	modal.removeData('uidArr');
+	// 	updateAvailableServices();
+	// 	updateDuration();
+	// }
+	// function clearLast(){
+	// 	var currentModel = $(this).closest('.modalForm').data('model'), modelToClear = $(this).data('model'), progressiveSelector = $(this).closest(".progressiveSelection"), targetStr = progressiveSelector.data('target'), target = modalOrBody($(this)).find(targetStr), modal = $(".connectedModel").filter(function(){
+	// 			return $(this).data('connectedto') == currentModel && $(this).data('model') == modelToClear;
+	// 		}), form = $(this).closest('.modalForm'), val = target.val(), uidArr = modal.data('uidArr');
+	// 	val = val.split(", ");
+	// 	val.splice(val.length - 1, 1);
+	// 	target.val(val);
+	// 	uidArr.splice(uidArr.length -1, 1);
+	// 	modal.data('uidArr', uidArr);
+	// 	if (usertype == 'patient'){
+	// 		removeDetail('services');
+	// 		if (val != ""){addDetail('services',val);}
+	// 	}
+	// 	updateAvailableServices();
+	// 	updateDuration();
+	// }
+	// function firstStep(){
+	// 	if ($(this).hasClass("disabled")){
+	// 		if ($(this).closest('.progressiveSelection').data('stopmsg') != undefined){
+	// 			var msg = $(this).closest('.progressiveSelection').data('stopmsg').split("||");
+	// 			$("#Feedback").find(".message").html("<h2>"+msg[0]+"</h2><div>"+msg[1]+"</div>");
+	// 			blurTopMost("#Feedback");			
+	// 		}
+	// 		return false;
+	// 	}
+	// 	var select = $(this).closest('.progressiveSelection'), open = select.find('.open'), first = select.find(".step").filter("[data-order='1']");
+	// 	open.fadeOut(200,function(){
+	// 		// first.find(".active").removeClass('active');
+	// 		first.fadeIn(400);
+	// 	})
+	// 	select.find(".progressBar").find(".back").html("<span class='left'></span>cancel");
+	// }
+	// function nextStep(){
+	// 	if ($(this).hasClass('disabled')){return;}
+	// 	var select = $(this).closest('.progressiveSelection'), step = select.find(".step").filter(":visible"), num = Number(step.data('order')), 
+	// 		header = step.find("h1, h2, h3").text(),
+	// 		next = select.find('.step').filter(function(){
+	// 			return Number($(this).data('order')) == num + 1;
+	// 		}), text = null;
+	// 	if ($(this).is('li')){
+	// 		text = $(this).text();
+	// 	}else if ($(this).hasClass('button') && $(this).data('target') != undefined){
+	// 		var id = $(this).data('target'), t = $(id), type = $(this).data('targettype'),
+	// 			defaultText = ($(this).data('defaulttext') != undefined);
+	// 		if (type == 'input'){
+	// 			text = t.val();
+	// 		}else if (type == 'ul'){
+	// 			text = t.find('.active').text();
+	// 		}
+	// 		$(this).data('val',text);
+
+	// 		if (defaultText){
+	// 			defaultText = $(this).data('defaulttext');
+	// 			// console.log(defaultText);
+	// 			if (defaultText.includes("%PrevVAL%")){
+	// 				console.log(step.prev('.step').find('.next'));
+	// 				var prev = step.prev('.step').find('.next').data('val'), str;
+	// 				str = defaultText.replace("%PrevVAL%",prev);
+	// 				text = str.replace("%VAL%",text);
+	// 			}else{
+	// 				text = defaultText.replace("%VAL%",text);
+	// 			}
+	// 		}
+	// 		if (moment(text,'MM/DD/YYYY [at] hh:mm a',true).isValid()){
+	// 			text = moment(text,'MM-DD-YYYY [at] hh:mm a').format("dddd, MM/DD/YYYY [at] hh:mma");
+	// 		}
+	// 	}
+	// 	select.find(".progressBar").find(".back").html("<span class='left'></span>"+header);
+	// 	next.find(".active").removeClass('active');
+	// 	next.find("input").val("");
+	// 	step.fadeOut(200,function(){
+	// 		var nextHead = next.find("h1, h2, h3");
+	// 		if (text){nextHead.text(text);}
+	// 		next.fadeIn(400);
+	// 	})
+	// }
+	// function previousStep(){
+	// 	var select = $(this).closest('.progressiveSelection'), step = select.find(".step").filter(":visible"), num = Number(step.data('order')), 
+	// 		previous = select.find('.step').filter(function(){
+	// 			return Number($(this).data('order')) == num - 1;
+	// 		}), back = select.find(".progressBar").find(".back"), backTxt = back.text(),
+	// 		twoBack = select.find('.step').filter(function(){
+	// 			return Number($(this).data('order')) == num - 2;
+	// 		}), text = null,
+	// 		header = (twoBack.length > 0) ? twoBack.find("h3").text() : null;
+	// 	if (previous.length == 0){previous = select.find(".open");}
+	// 	previous.find(".active").removeClass('active');
+	// 	if (!header){
+	// 		if (backTxt == 'cancel'){back.html("");}
+	// 		else{back.html("<span class='left'></span>cancel");}
+	// 	}else{back.html("<span class='left'></span>"+header);}
+		
+	// 	step.fadeOut(200,function(){
+	// 		var prevHead = previous.find("h3");
+	// 		if (text){prevHead.text(text);}
+	// 		previous.fadeIn(400);
+	// 	})
+	// }
 
 // UPDATE FORM INFO
 	function updatePatientData(){
 		console.log('updatePatientData');
-		var patient = checkCondition($("#SelectServices")), row, patientId, patientInfo = {}, isNewPatient, uidList = JSON.parse($("#uidList").text());
-	    if (defaultPatientInfo != undefined){
-	    	console.log(defaultPatientInfo);
-	    	// defaultPatientInfo != undefined when Patient is logged in.
-	        $("#SelectServices").find(".openBtn").removeClass("disabled");
-	        $("#SelectServices").closest('.modalForm').find("#select_patient").val(defaultPatientInfo.name);
-	        $("#SelectServices").data('patientInfo',defaultPatientInfo);
-	    }else if (patient == null && (uidList == null || uidList.Patient == undefined)){
-	    	// practitioner logged in, no patient selected;
-	        $("#SelectServices").find(".openBtn").addClass("disabled");
-	    }else{
-	    	// practitioner logged in, patient selected
-	    	patientId = ($("#PatientListModal").data('uidArr') == undefined) ? $("#ApptInfo").data('patientIds')[0] : $("#PatientListModal").data('uidArr')[0];
-	        $("#SelectServices").find(".openBtn").removeClass("disabled");
-	        row = $("#PatientList").find("tr").filter(function(){return $(this).data('uid') == patientId;});
-	        $.each(row.find(".patientInfo").text().split(','),function(i,info){
+		var patient = appointmentDetails.patient, row, patientId;
+		if (defaultPatientInfo){
+			patientInfo = defaultPatientInfo;
+			$("#Details").find('.patient').hide();
+		}else{
+			row = $("#PatientList").find("tr").filter(function(){return Number($(this).data('uid')) == patient;});
+			$.each(row.find(".patientInfo").text().split(','),function(i,info){
 	        	var key = info.split(":")[0], val = info.split(":")[1];
 	        	if (val == "true"){val = true;}
 	        	if (val == "false"){val = false;}
 	        	patientInfo[key] = val;
 	        })
-	        $("#SelectServices").data('patientInfo',patientInfo);
-	    }
-	    updateAvailableServices($("#SelectServices"));
+	        patientInfo['id'] = patient;
+	        patientInfo['name'] = trimCellContents(row.find('.name'));
+		}
+		// $("#SelectServices").data('patientInfo',patientInfo);
+		// console.log(patientInfo);
+		// addDetail('patient',patientInfo.name);
 	}
 	function updatePractitionerData(){
-		console.log('updatePractitionerData');
-		var practitioner = ($("#PractitionerListModal").data('uidArr') == undefined) ? null : $("#PractitionerListModal").data('uidArr')[0], practitionerInfo;
-		// console.log("update practitioner data "+practitioner);
+		// console.log('updatePractitionerData');
+		var practitioner = appointmentDetails.practitioner, practitionerInfo;
+
 		if (practitioner){
 			$.each($("#Practitioners").data('schedule'),function(p,pract){
 				if (pract.practitioner_id == practitioner){practitionerInfo = pract;}
 			})
-			var form = $("#SelectServices").closest('.modalForm');
-			if (form.is(":visible")){
+			if (activeForm){
 				var services = ($("#ServiceListModal").data('uidArr') == undefined) ? null : $("#ServiceListModal").data('uidArr'),
-					duration = ($.inArray(form.find("#duration").val(),['','0']) > -1) ? null : Number(form.find("#duration").val()), 
-					time = form.find("#time").val(), date = form.find("#date").val(), dateTime = moment(date + " " + time, "MM-DD-YYYY hh:mma");
-				dateTime = (form.data('dateTime') != undefined) ? form.data('dateTime') : null;
+					duration = ($.inArray(activeForm.find("#duration").val(),['','0']) > -1) ? null : Number(activeForm.find("#duration").val()), 
+					time = activeForm.find("#time").val(), date = activeForm.find("#date").val(), dateTime = moment(date + " " + time, "MM-DD-YYYY hh:mma");
+				dateTime = (activeForm.data('dateTime') != undefined) ? activeForm.data('dateTime') : null;
 				if (services){
 					updateDuration();
 				}else if (dateTime){
@@ -390,19 +791,25 @@ function checkCount(progressiveSelector){
 			practitionerInfo = null;
 			$("#PractitionerListModal").removeData('uidArr');
 		}
-		// console.log(practitionerInfo);
+		if (defaultPractitionerInfo){
+			addDetail('practitioner',defaultPractitionerInfo.name);
+			$("#SelectServices").find('.selectPractitioner').hide();
+		}
 		$("#SelectServices").data('practitionerInfo',practitionerInfo);
 	}
 	function updateAvailableServices(){
-		console.log('updateAvailableServices');
-		var services = $("#ServiceDetails").find("li"), patientInfo = $("#SelectServices").data('patientInfo'), isNewPatient, newPatientsOk, newPatientsOnly, addonOk, addonOnly, practitioner = ($("#PractitionerListModal").data('uidArr') == undefined) ? null : $("#PractitionerListModal").data('uidArr')[0];
+		// console.log('updateAvailableServices');
+		var services = $("#ServiceDetails").find("li"), isNewPatient, newPatientsOk, newPatientsOnly, addonOk, addonOnly;
+		var practitioner = appointmentDetails.practitioner;
+		// var practitioner = ($("#PractitionerListModal").data('uidArr') == undefined) ? null : $("#PractitionerListModal").data('uidArr')[0];
+		// var patientInfo = $("#SelectServices").data('patientInfo');
 		if (patientInfo == undefined){return false;}
 		isNewPatient = patientInfo.isNewPatient;
 		if (serviceOverride){
 			services.data('show',true);
 		}else if (isNewPatient){
 			if (usertype == 'patient'){
-				text = "New Patients: choose an evaluation appointment";
+				text = "New Patients are limited to Evaluation and Fascial Release appointments";
 			}else if (allowOverride){
 				text = "showing New Patient options only <span class='override'>show all</span>";
 			}else{
@@ -420,7 +827,7 @@ function checkCount(progressiveSelector){
 				$(this).data('show',newPatientsOnly);
 			})
 		}
-		var count = checkCount($("#SelectServices")), text = $("#SelectServices").find(".conditionalLabel").text();
+		var count = (appointmentDetails.services) ? appointmentDetails.services.length : 0, text = $("#SelectServices").find(".conditionalLabel").text();
 		if (count > 0){
 			if (usertype == 'patient'){
 				text = "Limited selection until Initial Evaluation";
@@ -444,13 +851,23 @@ function checkCount(progressiveSelector){
 				}
 			})
 		}
-		var showMe = services.filter(function(){return $(this).data('show');}), hideMe = services.not(showMe);
+		var alreadySelected = getServiceNames();
+		if (alreadySelected){
+			services.filter(function(){
+				return alreadySelected.includes($(this).text());
+			}).data('show',false);			
+		}
+		var showMe = services.filter(function(){
+				return $(this).data('show')
+			}), hideMe = services.not(showMe);
+		// console.log(showMe,hideMe);
 		showMe.show();
 		hideMe.hide();
 		updateAvailableCategories();
 	}
+
 	function updateAvailableCategories(){
-		console.log('updateAvailableCategories');
+		// console.log('updateAvailableCategories');
 		var categories = $("#CategoryDetails").find("li"), services = $("#ServiceDetails").find("li"), categoryId, hasMatchingServices;
 		categories.each(function(){
 			categoryId = $(this).data('id');
@@ -460,27 +877,54 @@ function checkCount(progressiveSelector){
 		var showMe = categories.filter(function(){return $(this).data('show');}), hideMe = categories.not(showMe);
 		showMe.show();
 		hideMe.hide();
+		if (showMe.length == 0){$("#CategoryDetails").find(".conditionalLabel").html("NO ADDITIONAL SERVICES AVAILABLE<br><div class='button xsmall pink removeService'>remove service</div><div class='button xsmall yellow selectDate'>select date</div>")}
 	}
 	function updateFormInfo(forms){
 	    $("#FormInfo").html("");
 	    $.each(forms,function(f, form){
+	    	// console.log(form.completed);
+	    	var c = form.completed ? "complete":"incomplete";
 	        $("<div/>",{
-	            class: 'checkFormStatus',
+	            class: 'checkFormStatus ' + c,
 	            data: form,
 	            html: "<span class='link'>"+form.name+"</span>",
 	            css: {position:'relative'}
 	        }).appendTo($("#FormInfo"));
 	        if (form.completed){
 	            $("#FormInfo").find("div").last().append("<span class='checkmark'>✓</span>");
+	        }else{
+	            $("#FormInfo").find("div").last().append("<span class='xMark'>x</span>");
 	        }
 	    });
+	    if (forms.length == 0){
+	    	$("#FormInfo").append("<div>none</div>");
+	    }
 	}
 
+//
+function selectCategory(){
+	// console.log($(this).data());
+	var back = $("#SelectServices").find(".progressBar").find(".back");
+	back.find('.message').text("category");
+	$("#CategoryDetails").fadeOut(200,function(){
+		$("#ServiceDetails").fadeIn(400);
+		$("#ServiceDetails").find(".active").removeClass('active');
+		$("#ServiceDescription").hide();
+		back.fadeIn(400);
+	});
+}
+function showServiceDescription(){
+	var data = $(this).data(), desc = data.description, price = data.price;
+	$("#ServiceDescription").find(".message").html("<h4 class='purple'>"+desc+"<div class='pink'>$"+price+"</div></h4>");
+	slideFadeIn($("#ServiceDescription"));
+}
+
 function confirmApptDelete(){
-	var text, apptTime = $("#ApptDateTime").data('dateTime'), feeIncursion = moment().add(25, 'h').isAfter(apptTime), dateStr = apptTime.format("ddd MMM Do [at] h:mm a");
+	var text, apptTime = $("#ApptDateTime").data('dateTime'), feeIncursion = moment().add(25, 'h').isAfter(apptTime), 
+		dateStr = apptTime.format("h:mma [on] dddd MMMM Do, YYYY");
 	if (usertype != 'patient'){
 		var name = $("#PatientName").text();
-		text = "You are about to cancel "+name+"'s appointment on "+dateStr+"<br><label><input id='DoNotSendEmail' type='checkbox'>do not send cancellation email</label>";
+		text = "<h3 class='purple'>"+name+"<br>"+dateStr+"</h3><label><input id='DoNotSendEmail' type='checkbox'>do not send cancellation email</label>";
 		if (feeIncursion){text+="<br><label><input id='AutoChargeCancelFee' type='checkbox'>auto-charge cancellation fee</label>";}
 	}else{
 		text = "<div>You are about to cancel your appointment on "+dateStr+".</div>";
@@ -490,20 +934,27 @@ function confirmApptDelete(){
 	confirm('Cancelling Appointment',text+'<h3 class="pink">Are you sure?</h3>','yes, cancel it','no, do not cancel');
 	var wait = setInterval(function(){
 		if (confirmBool != undefined){
+			var obj = {};
+			if ($("#DoNotSendEmail").length == 1 && $("#DoNotSendEmail").is(":checked")){obj['send_email'] = false;}
+			else {obj['send_email'] = true;}
+			if (feeIncursion && $("#AutoChargeCancelFee").length == 1){
+				obj['late_cancel'] = $("#AutoChargeCancelFee").is(":checked") ? "charge" : 'no_charge';
+			}else{obj['late_cancel'] = false;}
 			if (confirmBool){
-				deleteAppt();
+				deleteAppt(obj);
 			}
 			confirmBool = undefined;
 			clearInterval(wait);
 		}
 	},100)
 }
-function deleteAppt(){
+function deleteAppt(obj){
 	blurTopMost("#loading");
 
 	$.ajax({
 		url:"/delete/Appointment/"+$("#ApptInfo").data('apptId'),
 		method:"DELETE",
+		data:obj,
 		success:function(data){
 			if (data == 'checkmark'){
 				blurTopMost("#checkmark");
@@ -513,113 +964,7 @@ function deleteAppt(){
 		}
 	})
 }
-function clearAll(){
-	var currentModel = $(this).closest('.modalForm').data('model'), modelToClear = $(this).data('model'), progressiveSelector = $(this).closest(".progressiveSelection"), targetStr = progressiveSelector.data('target'), target = modalOrBody($(this)).find(targetStr), modal = $(".connectedModel").filter(function(){
-			return $(this).data('connectedto') == currentModel && $(this).data('model') == modelToClear;
-		}), form = $(this).closest('.modalForm');
-	target.val("");
-	modal.removeData('uidArr');
-	updateAvailableServices();
-	updateDuration();
-}
-function clearLast(){
-	var currentModel = $(this).closest('.modalForm').data('model'), modelToClear = $(this).data('model'), progressiveSelector = $(this).closest(".progressiveSelection"), targetStr = progressiveSelector.data('target'), target = modalOrBody($(this)).find(targetStr), modal = $(".connectedModel").filter(function(){
-			return $(this).data('connectedto') == currentModel && $(this).data('model') == modelToClear;
-		}), form = $(this).closest('.modalForm'), val = target.val(), uidArr = modal.data('uidArr');
-	val = val.split(", ");
-	val.splice(val.length - 1, 1);
-	target.val(val);
-	uidArr.splice(uidArr.length -1, 1);
-	modal.data('uidArr', uidArr);
-	if (usertype == 'patient'){
-		removeDetail('services');
-		if (val != ""){addDetail('services',val);}
-	}
-	updateAvailableServices();
-	updateDuration();
-}
-function firstStep(){
-	if ($(this).hasClass("disabled")){
-		if ($(this).closest('.progressiveSelection').data('stopmsg') != undefined){
-			var msg = $(this).closest('.progressiveSelection').data('stopmsg').split("||");
-			$("#Feedback").find(".message").html("<h2>"+msg[0]+"</h2><div>"+msg[1]+"</div>");
-			blurTopMost("#Feedback");			
-		}
-		return false;
-	}
-	var select = $(this).closest('.progressiveSelection'), open = select.find('.open'), first = select.find(".step").filter("[data-order='1']");
-	open.fadeOut(200,function(){
-		// first.find(".active").removeClass('active');
-		first.fadeIn(400);
-	})
-	select.find(".progressBar").find(".back").html("<span class='left'></span>cancel");
-}
-function nextStep(){
-	if ($(this).hasClass('disabled')){return;}
-	var select = $(this).closest('.progressiveSelection'), step = select.find(".step").filter(":visible"), num = Number(step.data('order')), 
-		header = step.find("h1, h2, h3").text(),
-		next = select.find('.step').filter(function(){
-			return Number($(this).data('order')) == num + 1;
-		}), text = null;
-	if ($(this).is('li')){
-		text = $(this).text();
-	}else if ($(this).hasClass('button') && $(this).data('target') != undefined){
-		var id = $(this).data('target'), t = $(id), type = $(this).data('targettype'),
-			defaultText = ($(this).data('defaulttext') != undefined);
-		if (type == 'input'){
-			text = t.val();
-		}else if (type == 'ul'){
-			text = t.find('.active').text();
-		}
-		$(this).data('val',text);
 
-		if (defaultText){
-			defaultText = $(this).data('defaulttext');
-			// console.log(defaultText);
-			if (defaultText.includes("%PrevVAL%")){
-				console.log(step.prev('.step').find('.next'));
-				var prev = step.prev('.step').find('.next').data('val'), str;
-				str = defaultText.replace("%PrevVAL%",prev);
-				text = str.replace("%VAL%",text);
-			}else{
-				text = defaultText.replace("%VAL%",text);
-			}
-		}
-		if (moment(text,'MM/DD/YYYY [at] hh:mm a',true).isValid()){
-			text = moment(text,'MM-DD-YYYY [at] hh:mm a').format("dddd, MM/DD/YYYY [at] hh:mma");
-		}
-	}
-	select.find(".progressBar").find(".back").html("<span class='left'></span>"+header);
-	next.find(".active").removeClass('active');
-	next.find("input").val("");
-	step.fadeOut(200,function(){
-		var nextHead = next.find("h1, h2, h3");
-		if (text){nextHead.text(text);}
-		next.fadeIn(400);
-	})
-}
-function previousStep(){
-	var select = $(this).closest('.progressiveSelection'), step = select.find(".step").filter(":visible"), num = Number(step.data('order')), 
-		previous = select.find('.step').filter(function(){
-			return Number($(this).data('order')) == num - 1;
-		}), back = select.find(".progressBar").find(".back"), backTxt = back.text(),
-		twoBack = select.find('.step').filter(function(){
-			return Number($(this).data('order')) == num - 2;
-		}), text = null,
-		header = (twoBack.length > 0) ? twoBack.find("h3").text() : null;
-	if (previous.length == 0){previous = select.find(".open");}
-	previous.find(".active").removeClass('active');
-	if (!header){
-		if (backTxt == 'cancel'){back.html("");}
-		else{back.html("<span class='left'></span>cancel");}
-	}else{back.html("<span class='left'></span>"+header);}
-	
-	step.fadeOut(200,function(){
-		var prevHead = previous.find("h3");
-		if (text){prevHead.text(text);}
-		previous.fadeIn(400);
-	})
-}
 function checkTime(momentObj, begin, end, duration = null){
 	var arr = [];
 
@@ -642,6 +987,7 @@ function checkTime(momentObj, begin, end, duration = null){
 function checkSchedule(momentObj, scheduleBlocks, services = null, duration = null){
 	if (momentObj == undefined){return true;}
 	var day = momentObj.day(), pass = false, notOffered = [], returnObj = {}, serviceInfo, dateInfo;
+	// console.log(scheduleBlocks);
 	$.each(scheduleBlocks,function(s,schedule){
 		var start = moment(momentObj.format("MM-DD-YYYY") + " " + schedule.start_time, "MM-DD-YYYY hh:mma"), 
 			end = moment(momentObj.format("MM-DD-YYYY") + " " + schedule.end_time, "MM-DD-YYYY hh:mma"),
@@ -657,19 +1003,26 @@ function checkSchedule(momentObj, scheduleBlocks, services = null, duration = nu
 			end: end,
 			duration: duration
 		};
+		var Sunday = (schedule.days.Sunday === true || schedule.days.Sunday === 'true'),
+			Monday = (schedule.days.Monday === true || schedule.days.Monday === 'true'),
+			Tuesday = (schedule.days.Tuesday === true || schedule.days.Tuesday === 'true'),
+			Wednesday = (schedule.days.Wednesday === true || schedule.days.Wednesday === 'true'),
+			Thursday = (schedule.days.Thursday === true || schedule.days.Thursday === 'true'),
+			Friday = (schedule.days.Friday === true || schedule.days.Friday === 'true'),
+			Saturday = (schedule.days.Saturday === true || schedule.days.Saturday === 'true'),
+			isDayAvailable = [Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday];
 		
-		var isDayAvailable = [schedule.days.Sunday, schedule.days.Monday, schedule.days.Tuesday, schedule.days.Wednesday, schedule.days.Thursday, schedule.days.Friday, schedule.days.Saturday];
-
 		if (isDayAvailable[day]){
 			returnObj = createCheckObj(dateInfo, serviceInfo);
-			pass = true;
+			if ($.isEmptyObject(returnObj)){pass = true;}
 		}
 	})
 	if (!pass && $.isEmptyObject(returnObj)){
 		returnObj['timeCheck'] = ['no hours today'];
 	}
+	// console.log(returnObj);
 	var r = ($.isEmptyObject(returnObj)) ? true : returnObj;
-	return r;
+	return pass ? true : returnObj;
 }
 function createCheckObj(dateInfo, serviceInfo){
 	var notOffered = [], timeCheck, returnObj = {};
@@ -693,16 +1046,22 @@ function createCheckObj(dateInfo, serviceInfo){
 	}
 	return returnObj;
 }
-function availablePractitioners(momentObj, duration, services){
-	var practitioners = $("#Practitioners").data('schedule'), availablePractitioners = [];
+function availablePractitioners(momentObj, duration, services, idsOnly = false){
+	var practitioners = $("#Practitioners").data('schedule'), availablePractitioners = [], availableIds = [];
 	$.each(practitioners,function(p,practitioner){
-		var schedule = practitioner.schedule, anonEvents = ($("#AnonFeed").data('schedule') == "") ? null : $("#AnonFeed").data('schedule'), pracMatch = anonEvents ? anonEvents.filter(event => event.practitionerId == practitioner.practitioner_id) : null;
-		if (checkSchedule(momentObj, schedule, services, duration) === true
-                && noEventConflict(momentObj, duration, pracMatch)){
+		var schedule = practitioner.schedule, anonEvents = $("#AnonFeed").data('schedule'), 
+			pracMatch = anonEvents.filter(event => 
+				(event.practitionerId != undefined && event.practitionerId == practitioner.practitioner_id)
+				|| (event.block != undefined && event.block == true)
+			), scheduleCheck = checkSchedule(momentObj, schedule, services, duration),
+			conflictCheck = noEventConflict(momentObj, duration, pracMatch);
+			// console.log(schedule,scheduleCheck,conflictCheck);
+		if (scheduleCheck === true && conflictCheck){
 			availablePractitioners.push(practitioner);
+			availableIds.push(practitioner.practitioner_id);
 		}
 	})
-	return availablePractitioners;
+	return idsOnly ? availableIds : availablePractitioners;
 }
 function applyEventClasses(details,element){
 	var extProps = details.extendedProps, type = extProps.type, types = type.split(":").join(" ");
@@ -746,7 +1105,7 @@ function handleCheck(check, type, action, start, end = null){
 			var i = check.notOffered.length - 1, serviceId = check.notOffered[i], serviceName = services[i], offered;
 			offered = commaSeparated(getColumnById("Service",check.offered),true);
 			h2.push('Unscheduled Service');
-			console.log(services);
+			// console.log(services);
 			div.push("'"+ serviceName + "' is not offered by " + practitioner.name + " at this time. On "+start.format('dddd')+"'s from "+check.schedule.start.format("h:mm a")+" to "+check.schedule.end.format("h:mm a")+" they offer only "+offered+".");
 		}
 	};
@@ -801,7 +1160,7 @@ function handleCheck(check, type, action, start, end = null){
 function handleAction(action){
    	var form = $("#createAppointment, #editAppointment").filter(":visible");
 	if (action == 'service'){
-		console.log('yup');
+		// console.log('yup');
     	$("#SelectServices").find(".clearLastBtn").click();
 	}else if (action == 'time'){
 		form.find('#time').click();

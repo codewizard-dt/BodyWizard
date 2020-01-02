@@ -87,7 +87,7 @@
         </div>
 
         <div id="Notifications">
-            <div class="open">notifications<span id='UnreadCount' style='display:none;' class="indicator">{{$user->unreadNotifications->count()}}</span></div>
+            <div class="open">notifications<span id='UnreadCount' class="indicator">{{$user->unreadNotifications->count()}}</span></div>
             <div class="list">
                 <div class="message">
                     @include('portal.user.notifications')
@@ -113,10 +113,11 @@
             <script type="text/javascript" src="{{ asset('/js/launchpad/launchpad.js') }}"></script>
             <script type="text/javascript" src="{{ asset('/js/scrollTo.js') }}"></script>
             <script type="text/javascript" src="{{ asset('/js/menus.js') }}"></script>
-            <!-- <script type="text/javascript" src="{{ asset('/js/menus.js') }}"></script> -->
             <script type="text/javascript" src="{{ asset('/js/jonthornton-jquery-timepicker-99bc9e3/jquery.timepicker.min.js') }}"></script>
             <script type="text/javascript" src="{{ asset('/js/jquery.plugin.min.js') }}"></script>
             <script type='text/javascript' src="{{ asset('/js/moment.js') }}"></script>
+<!--             <script type='text/javascript' src="{{ asset('/js/moment-timezone-with-data-10-year-range.min.js') }}"></script> -->
+<!--             <script type='text/javascript' src="{{ asset('/js/moment-timezone.js') }}"></script> -->
             <script type="text/javascript" src="{{ asset('/js/jquery.datepick.min.js') }}"></script>
             <script type="text/javascript" src="{{ asset('/js/mark/jquery.mark.js') }}"></script>
             <script type='text/javascript' src="{{ asset('/js/summernote-lite.min.js') }}"></script>
