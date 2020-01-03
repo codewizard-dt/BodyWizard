@@ -46,8 +46,8 @@ if (!isset($destinations)){
 		$displayName = isset($displayName) ? $displayName : "";
 	?>
 
-	@if (Auth::user()->is_admin)
-    	<div class='button xsmall createNew pink70' data-model='{{ $nospaces }}' data-target='#{{ $tableId }}'>{{ $btnDispText }}</div>    
+	@if (Auth::user()->is_admin && findFormId($model))
+    	<div class='button xsmall createNew pink70' data-model='{{$nospaces}}' data-target='#{{$tableId}}'>{{ $btnDispText }}</div>    
     @endif
 
     @if ($modal)

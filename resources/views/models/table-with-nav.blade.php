@@ -94,7 +94,7 @@
         $navOptions = $ctrl->optionsNavValues;
     }
 
-    $uid = getSessionUid($nospaces);
+    $uid = getUid($nospaces);
     $navOptions['uid'] = $uid;
 
 ?>

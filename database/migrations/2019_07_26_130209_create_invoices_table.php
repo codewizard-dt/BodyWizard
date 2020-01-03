@@ -15,6 +15,9 @@ class CreateInvoicesTable extends Migration
     {
         Schema::create('invoices', function (Blueprint $table) {
             $table->bigIncrements('id');
+            $table->unsignedInteger('patient_id');
+            $table->unsignedInteger('practitioner_id');
+            $table->unsignedInteger('appointment_id')->nullable();
             $table->timestamps();
         });
     }

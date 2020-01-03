@@ -58,7 +58,7 @@
                     <div class='button large cancel confirmN'>cancel</div>
                 </div>
             </div>
-            <div id="Confirm" class='prompt'>
+            <div id="Confirm" class='prompt large'>
                 <div class='message'></div>
                 <div class='options'>
                     <div class='button small submit pink confirmY'>confirm</div>
@@ -78,7 +78,7 @@
                 <div class="message"></div>
                 <div class="options">
                     <div class="button small pink markAsUnread">mark as unread</div>
-                    <div class="button small pink delete">delete</div>
+                    <div class="button small pink delete">delete notification</div>
                     <div class="button small yellow viewModel">go to there</div>
                     <div class="button small yellow clickTab">go to there</div>
                     <div class="button small cancel">go back</div>

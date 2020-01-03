@@ -24,6 +24,7 @@ function clickTab(){
 	// console.log($("#"+tabId));
 	unblurAll();
 	$(tabId).find(".title").click();
+	toggleNotifications();
 	// $($(this).data('tabId')).find(".title").click();
 }
 var notifyXhr = undefined;

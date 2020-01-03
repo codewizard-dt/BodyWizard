@@ -33,12 +33,12 @@
 		<div id='dxFormLoadTarget'></div>
 	</div>
 	@elseif ($modal)
-	<div id='create{{ $model }}' class='central large createNew modalForm {{ $noPW }} {{ $admin }}' data-model='{{ $model }}'>
+	<div id='create{{ $model }}' class='central large createNew modalForm {{$noPW}} {{$admin}}' data-model='{{$model}}'>
 		<h1 class='purple paddedSmall'>{{ $CreateNew->form_name }}</h1>
 		{{ $CreateNew->formDisplay(true) }}
 	</div>
 	@else
-	<div id='create{{ $model }}' class='central large createNew {{ $noPW }} {{ $admin }}' data-model='{{ $model }}'>
+	<div id='create{{ $model }}' class='central large createNew {{$noPW}} {{$admin}}' data-model='{{$model}}'>
 		<h1 class='purple paddedSmall'>{{ $CreateNew->form_name }}</h1>
 		{{ $CreateNew->formDisplay(false) }}
 	</div>

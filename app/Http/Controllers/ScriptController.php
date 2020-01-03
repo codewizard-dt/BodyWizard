@@ -101,6 +101,11 @@ class ScriptController extends Controller
             $models = plural($model);
 
             // setting table options and getting collection
+            if (method_exists($ctrl,'tableValues')){
+                $tableOptions = $class::tableValues();
+            }else{
+                $tableOptions = $ctrl->tableValues;
+            }
             $tableOptions = $ctrl->tableValues;
             if (!isset($orderBy)){
                 $orderBy = isset($tableOptions['orderBy']) ? $tableOptions['orderBy'] : null;
@@ -370,11 +375,9 @@ class ScriptController extends Controller
                     $typeClass::where('user_id',$uid)->delete();
                 }
                 if ($model == 'Appointment'){
-                    $appt = $class::where('uuid',$uid)->first();
-                    $appt->removeFromGoogleCal();
-                    $appt->removeFromFullCal();
+                    $appt = $class::find($uid);
+                    event(new AppointmentCancelled($appt, session('practiceId'), Auth::user()->user_type, $request));
                     $appt->delete();
-                    event(new AppointmentCancelled($appt, session('practiceId'), Auth::user()->user_type), $request);
                 }else{
                     $class::destroy($uid);
                 }

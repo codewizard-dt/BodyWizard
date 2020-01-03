@@ -30,7 +30,6 @@ class Patient extends Model
             'audit_table' => 'patients_audit',
             'includeFullJson' => false
         ];
-        $this->nameAttr = ['preferred_name!!%preferred_name% %last_name%!!%first_name% %last_name%','userInfo'];
 	    $this->tableValues = array(
 	    	'tableId' => 'PatientList',
 	    	'index' => 'id',
@@ -43,13 +42,19 @@ class Patient extends Model
                             'attribute' => 'name'
                         ],
                         [
+                            'label' => 'Phone',
+                            'className' => 'email',
+                            'attribute' => 'email',
+                            'hasThrough' => 'userInfo'
+                        ],
+                        [
                             'label' => 'Email',
                             'className' => 'email',
                             'attribute' => 'email',
                             'hasThrough' => 'userInfo'
                         ]
                     ),
-            'displayName' => "%name% %LName%",
+            // 'displayName' => "%name% %LName%",
 	    	'hideOrder' => "",
 	    	'filtersColumn' => array(),
 	    	'filtersOther' => 

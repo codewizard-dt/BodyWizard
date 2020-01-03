@@ -8,6 +8,7 @@ use App\Message;
 use App\Patient;
 use App\User;
 use App\Form;
+use App\Appointment;
 use App\Events\BugReported;
 use App\Notifications\NewRequiredForm;
 
@@ -52,6 +53,10 @@ class AppServiceProvider extends ServiceProvider
                     ]
                 ));
             }
+        });
+        Appointment::deleting(function($model){
+            $model->removeFromGoogleCal();
+            $model->removeFromFullCal();
         });
     }
 }

@@ -3,12 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Form;
+use App\User;
 use App\Image;
 use App\Submission;
 use App\Appointment;
 use App\Patient;
 use App\Events\BugReported;
+use App\Notifications\NewSubmission;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
@@ -65,11 +68,20 @@ class FormController extends Controller
             $submission->form_name = $form->form_name;
             $submission->responses = $request->jsonObj;
             $submission->save();
-            $form->has_submissions = true;
-            $form->save();
+            // Log::info("\n\n $apptId");
             if ($apptId){
-                $appt = Appointment::find($apptId)->saveToFullCal();
+                $appt = Appointment::find($apptId);
+                $appt->saveToFullCal();
+                $users = $appt->practitioner->userInfo;
+            }else{
+                $users = User::where('user_type','practitioner')->get();
             }
+            if ($patient->userInfo->id == $userId){
+                // $user->notify(new NewSubmission($submission));
+                Notification::send($users, new NewSubmission($submission));
+            }
+            // $form->has_submissions = true;
+            // $form->save();
             if (isset($request->columnObj)){
                 $model = $request->model;
                 $modelUid = $request->uid;

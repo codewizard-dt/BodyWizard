@@ -207,6 +207,13 @@
             "dropdown":false,
             "uri":"/botanicals/create"
         },
+        "chart-notes-index":
+        {
+            "id":"chart-notes-index",
+            "text":"Chart Notes",
+            "dropdown":false,
+            "uri":"/ChartNote/index"
+        },
         
         "codes-home":
         {
@@ -480,6 +487,13 @@
                     "text":"Services",
                     "dropdown":false,
                     "uri":"/Service/index"
+                },
+                "invoice-index":
+                {
+                    "id":"invoice-index",
+                    "text":"Invoices",
+                    "dropdown":false,
+                    "uri":"/Invoice/index"
                 },
                 "code-index":
                 {

@@ -30,70 +30,70 @@ class Form extends Model
 
     public function __construct(){
         $this->nameAttr = 'form_name';
-	    $this->tableValues = array(
-	    	'tableId' => 'FormList',
-	    	'index' => 'form_id',
-	    	'columns' => array(
-                        array(
-                            "label" => 'Form Name',
-                            "className" => 'name',
-                            "attribute" => 'form_name'
-                        ),
-                        array(
-                            "label" => 'Version',
-                            "className" => 'version',
-                            "attribute" => 'version_id'
-                        ),
-                        array(
-                            "label" => 'Created On',
-                            "className" => 'created',
-                            "attribute" => 'created_at'
-                        ),
-                        array(
-                            "label" => 'Updated On',
-                            "className" => 'updated',
-                            "attribute" => 'updated_at'
-                        )
-                    ),
-	    	'hideOrder' => "created,updated,version",
-	    	'filtersColumn' => array(),
-	    	'filtersOther' => array(
-                            array(
-                                "label" => 'Form Type',
-                                "filterName" => 'type',
-                                "attribute" => 'form_type',
-                                "markOptions" => null,
-                                "filterOptions" => array(
-                                    array("label" => 'practitioner',"value" => 'practitioner'),
-                                    array("label" => 'patient',"value" => 'patient'),
-                                    array("label" => 'admin',"value" => 'admin'),
-                                    array("label" => 'system',"value" => 'system')
-                                )
-                            ),
-                            [
-                                "label" => 'Hide',
-                                "filterName" => 'hide',
-                                'attribute' => null,
-                                'reverseFilter' => true,
-                                "markOptions" => null,
-                                "filterOptions" => [
-                                    [
-                                        "label" => 'previous versions',
-                                        "value" => 'current:0',
-                                        'attribute'=>'current'
-                                    ],
-                                    ["label" => 'system forms',"value" => 'form_type:system','attribute'=>'form_type'],
-                                    ["label" => 'locked forms',"value" => 'locked:1','attribute'=>'locked']
-                                ]
-                            ]
-                        ),
-            'destinations' => array("forms-settings","form-preview","forms-edit","forms-delete","forms-create"),
-            'btnText' => array("settings","preview","edit","delete","create new form"),
-            'orderBy' => [
-                ['form_name',"asc"],
-                ['version_id',"desc"]
-            ]
-	    );
+	    // $this->tableValues = array(
+	    // 	'tableId' => 'FormList',
+	    // 	'index' => 'form_id',
+	    // 	'columns' => array(
+     //                    array(
+     //                        "label" => 'Form Name',
+     //                        "className" => 'name',
+     //                        "attribute" => 'form_name'
+     //                    ),
+     //                    array(
+     //                        "label" => 'Version',
+     //                        "className" => 'version',
+     //                        "attribute" => 'version_id'
+     //                    ),
+     //                    array(
+     //                        "label" => 'Created On',
+     //                        "className" => 'created',
+     //                        "attribute" => 'created_at'
+     //                    ),
+     //                    array(
+     //                        "label" => 'Updated On',
+     //                        "className" => 'updated',
+     //                        "attribute" => 'updated_at'
+     //                    )
+     //                ),
+	    // 	'hideOrder' => "created,updated,version",
+	    // 	'filtersColumn' => array(),
+	    // 	'filtersOther' => array(
+     //                        array(
+     //                            "label" => 'Form Type',
+     //                            "filterName" => 'type',
+     //                            "attribute" => 'form_type',
+     //                            "markOptions" => null,
+     //                            "filterOptions" => array(
+     //                                array("label" => 'practitioner',"value" => 'practitioner'),
+     //                                array("label" => 'patient',"value" => 'patient'),
+     //                                array("label" => 'admin',"value" => 'admin'),
+     //                                array("label" => 'system',"value" => 'system')
+     //                            )
+     //                        ),
+     //                        [
+     //                            "label" => 'Hide',
+     //                            "filterName" => 'hide',
+     //                            'attribute' => null,
+     //                            'reverseFilter' => true,
+     //                            "markOptions" => null,
+     //                            "filterOptions" => [
+     //                                [
+     //                                    "label" => 'previous versions',
+     //                                    "value" => 'current:0',
+     //                                    'attribute'=>'current'
+     //                                ],
+     //                                ["label" => 'system forms',"value" => 'form_type:system','attribute'=>'form_type'],
+     //                                ["label" => 'locked forms',"value" => 'locked:1','attribute'=>'locked']
+     //                            ]
+     //                        ]
+     //                    ),
+     //        'destinations' => array("forms-settings","form-preview","forms-edit","forms-delete","forms-create"),
+     //        'btnText' => array("settings","preview","edit","delete","create new form"),
+     //        'orderBy' => [
+     //            ['form_name',"asc"],
+     //            ['version_id',"desc"]
+     //        ]
+	    // );
         // $this->optionsNavValues = array(
         //     'destinations' => array("settings","form-preview","forms-edit","delete","forms-create"),
         //     'btnText' => array("settings","preview","edit","delete","create new form")
@@ -336,6 +336,11 @@ class Form extends Model
         Log::info($requiredByAppointment);
 
         return ($requiredByTime || $formCheck) ? "required" : "completed";
+    }
+    public function getHasSubmissionsAttribute(){
+        $submissions = Submission::where('form_uid',$this->form_uid)->get();
+        if ($submissions){return true;
+        }else{return false;}
     }
 
     public function lastSubmittedBy(Patient $patient){

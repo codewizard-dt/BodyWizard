@@ -13,7 +13,11 @@
     $models = title(pluralSpaces($model));
 
     // setting table options and getting collection
-    $tableOptions = $ctrl->tableValues;
+    if (method_exists($ctrl,'tableValues')){
+        $tableOptions = $class::tableValues();
+    }else{
+        $tableOptions = $ctrl->tableValues;
+    }
 	$orderBy = isset($tableOptions['orderBy']) ? $tableOptions['orderBy'] : null;
 	$where = isset($tableOptions['where']) ? $tableOptions['where'] : null;
 

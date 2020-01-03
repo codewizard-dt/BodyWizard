@@ -61,6 +61,8 @@
     <div class="options">
         <div class="button medium pink" id="EditApptBtn">edit details</div>
         <div class="button medium pink70" id="DeleteApptBtn">delete</div>
+        <div class="button medium yellow" id="ChartNoteBtn">chart note</div>
+        <div class="button medium yellow70" id="PaymentBtn">payment</div>
         <div class="button medium cancel">dismiss</div>
     </div>
 </div>

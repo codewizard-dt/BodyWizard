@@ -215,7 +215,7 @@ class Appointment extends Model
         });
     }
     public function getLongDateTimeAttribute(){
-        return $this->date_time->format('D n/j/y \a\t h:ia');
+        return $this->date_time->format('h:ia \o\n D n/j/y');
     }
     public function getServiceListAttribute(){
         $services = $this->services->map(function($service){
@@ -228,6 +228,9 @@ class Appointment extends Model
             return $patient->name;
         })->toArray();
         return implode(", ",$patients);
+    }
+    public function getNameAttribute(){
+        return $this->service_list." (".$this->date_time->format('n/j/y').")";
     }
 
     public function requiresForm($formId, $usertype = null){
@@ -254,7 +257,7 @@ class Appointment extends Model
 
         $calendar = app('GoogleCalendar');
         // $calendarId = isset($calendarId) ? $calendarId : session('calendarId');
-        $calendarId = isset($calendarId) ? $calendarId : config("practices.$practiceId.app.calendarId");
+        $calendarId = isset($calendarId) ? $calendarId : practiceConfig("practices.$practiceId.app.calendarId");
         $start = Carbon::parse($this->date_time);
         $end = Carbon::parse($this->date_time)->addMinutes($this->duration);
 
@@ -330,7 +333,7 @@ class Appointment extends Model
     }
     public function saveToFullCal($practiceId = null, $eventId = null){
         $practiceId = isset($practiceId) ? $practiceId : session('practiceId');
-        $calendarId = config("practices.$practiceId.app.calendarId");
+        $calendarId = practiceConfig("practices.$practiceId.app.calendarId");
         $eventId = isset($eventId) ? $eventId : $this->uuid;
         $cal = app("GoogleCalendar");
         $event = $cal->events->get($calendarId, $eventId);

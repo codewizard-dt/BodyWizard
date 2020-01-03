@@ -36,7 +36,6 @@ $(document).ready(function(){
     }
 })
 function loadCal(target){
-    console.log(target.data('timezone'),moment.tz.guess());
     var tz = target.data('timezone'), clientTz = moment.tz.guess(), location = target.data('location');
     moment.tz.setDefault(tz.replace(" ","_"));
     calendar = new FullCalendar.Calendar(target[0], {

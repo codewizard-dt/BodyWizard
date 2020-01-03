@@ -432,7 +432,7 @@ $menuJson = json_decode(file_get_contents(app_path("/json/menu-data.json")),true
     session(['uidList' => $uidList]);
     Log::info(session("uidList"));
   }
-  function getSessionUid($model){
+  function getUid($model){
     if (session('uidList')===null){return null;}
     elseif (!isset(session('uidList')[$model])){return null;}
     else{return session('uidList')[$model];}

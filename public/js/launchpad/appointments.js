@@ -758,9 +758,7 @@ function hideAlreadySelected(progressiveSelector){
 	        patientInfo['id'] = patient;
 	        patientInfo['name'] = trimCellContents(row.find('.name'));
 		}
-		// $("#SelectServices").data('patientInfo',patientInfo);
-		// console.log(patientInfo);
-		// addDetail('patient',patientInfo.name);
+		updateAvailableServices();
 	}
 	function updatePractitionerData(){
 		// console.log('updatePractitionerData');
@@ -952,7 +950,7 @@ function deleteAppt(obj){
 	blurTopMost("#loading");
 
 	$.ajax({
-		url:"/delete/Appointment/"+$("#ApptInfo").data('apptId'),
+		url:"/delete/Appointment/"+$("#editAppointment").data('uid'),
 		method:"DELETE",
 		data:obj,
 		success:function(data){

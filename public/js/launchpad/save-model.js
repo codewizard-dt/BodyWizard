@@ -111,12 +111,12 @@ function updateEditForm(modal, dispModel, name){
     		$(this).text(ot);
     	}else{
     		$(this).data('originaltext',$(this).text());
-    		otsplice = $(this).text().replace("Add","Edit").replace("New","This").replace("This " + dispModel, "");
+    		otsplice = $(this).text().replace("Add ","Edit ").replace("New ","This ").replace("This " + dispModel, "");
     		$(this).data('originalsplice',otsplice);
     	}
         // $(this).data('originaltext',t);
         t = $(this).text();
-        t = t.replace("Add","Edit").replace("New","This").replace("This " + dispModel, "'" + name + "'");
+        t = t.replace("Add ","Edit ").replace("New ","This ").replace("This " + dispModel, "'" + name + "'");
         $(this).text(t);
     });
 }

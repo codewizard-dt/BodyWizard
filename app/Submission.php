@@ -18,50 +18,6 @@ class Submission extends Model
     public function __construct($attributes = []){
         parent::__construct($attributes);
 
-        // $this->auditOptions = [
-        //     'audit_table' => 'users_audit',
-        //     'includeFullJson' => false
-        // ];
-        // $this->nameAttr = 'preferred_name!!%preferred_name% %last_name%!!%first_name% %last_name%';
-        // $this->tableValues = array(
-        //     'tableId' => 'SubmisisonList',
-        //     'index' => 'id',
-        //     'columns' => [
-        //                 [
-        //                     "label" => 'Form',
-        //                     "className" => 'name',
-        //                     "attribute" => 'name'
-        //                 ],
-        //                 [
-        //                     "label" => 'Submitted At',
-        //                     "className" => 'submitted',
-        //                     "attribute" => 'created_at'
-        //                 ],
-        //                 [
-        //                     'label' => 'Submitted By',
-        //                     'className' => 'userType',
-        //                     'attribute' => 'user_type'
-        //                 ],
-        //                 [
-        //                     "label" => 'Email',
-        //                     "className" => 'email',
-        //                     "attribute" => 'email'
-        //                 ]
-        //     ],
-        //     'hideOrder' => "email",
-        //     'filtersColumn' => array(),
-        //     'filtersOther' => array(),
-        //     'destinations' => array("settings","edit","delete","create"),
-        //     'btnText' => array("settings","edit","delete","add new patient"),
-        //     'orderBy' => [
-        //         ['last_name',"asc"],
-        //         ['first_name',"asc"]
-        //     ]
-        // );
-        // $this->optionsNavValues = array(
-        //     'destinations' => array("settings","edit","delete"),
-        //     'btnText' => array("settings","edit","delete"),
-        // );
         $this->connectedModels = [  
             // ['Service','many','morphToMany']
         ];
@@ -150,7 +106,10 @@ class Submission extends Model
         return $this->belongsTo('App\Patient', 'patient_id');
     }
     public function form(){
-    	return $this->belongsTo('App\Form', 'form_uid');
+        return $this->belongsTo('App\Form', 'form_uid');
+    }
+    public function appointment(){
+        return $this->belongsTo('App\Appointment', 'appointment_id');
     }
 
 }

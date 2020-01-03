@@ -4,5 +4,5 @@
 
 @include('layouts.menus.portal-menu',[
 	'menuName'=>'launchpadMenu',
-	'items'=>['appointments-index','patients-home','diagnoses-home','botanicals-home','new','indices']
+	'items'=>['appointments-index','patients-home','chart-notes-index','new','indices']
 ])

@@ -15,6 +15,10 @@ class CreateChartNotesTable extends Migration
     {
         Schema::create('chart_notes', function (Blueprint $table) {
             $table->bigIncrements('id');
+            $table->unsignedInteger('patient_id');
+            $table->unsignedInteger('practitioner_id');
+            $table->unsignedInteger('appointment_id');
+            $table->json('points')->nullable();
             $table->timestamps();
         });
     }

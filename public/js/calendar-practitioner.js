@@ -12,6 +12,7 @@ $(document).ready(function(){
      });
      $("#SelectServices").on('click', '.override',overrideService);
      $('#createAppointment, #editAppointment').find('.item').hide();
+     $("#ChartNoteBtn").on('click',checkForChartNote);
 })
 function loadCal(target){
     var tz = target.data('timezone'), clientTz = moment.tz.guess(), location = target.data('location');
@@ -111,7 +112,6 @@ function loadCal(target){
     }
     $("#ChangeTitleWrap").insertAfter(tb).css('display','inline-block');
     $("#ChangeTitleWrap").on('click','li',changeTitles);
-
 }
 function changeTitles(){
     var attr = $(this).data('value'), events = calendar.getEvents();
@@ -139,7 +139,6 @@ function overrideService(){
     $("#CategoryDetails").find(".active").removeClass('active');
     $("#CategoryDetails").fadeIn();
 }
-// function resetOverride(){
-//     $("#SelectServices").on('click', '.override',overrideService);
-//     $("#SelectServices").find(".override").text("show all");
-// }
+function checkForChartNote(){
+    
+}
