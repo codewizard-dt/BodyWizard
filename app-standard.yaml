@@ -1,9 +1,8 @@
 runtime: php
-env: flex
+env: standard
 
 runtime_config:
   document_root: public
-  enable_stackdriver_integration: true
 
 # Ensure we skip ".env", which is only for local development
 skip_files:

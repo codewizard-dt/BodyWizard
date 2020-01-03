@@ -763,8 +763,10 @@ $menuJson = json_decode(file_get_contents(app_path("/json/menu-data.json")),true
         if (is_array($practiceId)){
             $practiceId = practiceConfig("domains")[$host][$port];
         }
+    }elseif(strpos($host,"bodywizard.appspot")){
+      $practiceId = "8eeb792e29ca4eb485554c2acd63c40c";
     }else{
-        return false;
+      return false;
     }
     return $practiceId;
   }
