@@ -6,7 +6,7 @@ use App\Appointment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
-date_default_timezone_set(env('DEFAULT_TIMEZONE'));
+date_default_timezone_set(session('timezone'));
 
 class AppointmentController extends Controller
 {
