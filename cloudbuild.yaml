@@ -4,4 +4,4 @@ steps:
   - name: 'gcr.io/cloud-builders/gcloud'
     args: ['config','get-value','account']
   - name: 'gcr.io/cloud-builders/gcloud'
-    args: ['app','deploy','--no-promote','--project','bodywizard']
+    args: ['app','deploy','--no-promote']
