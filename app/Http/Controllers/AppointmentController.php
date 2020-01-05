@@ -5,8 +5,7 @@ namespace App\Http\Controllers;
 use App\Appointment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-
-date_default_timezone_set(session('timezone'));
+use Illuminate\Support\Facades\Log;
 
 class AppointmentController extends Controller
 {

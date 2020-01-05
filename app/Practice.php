@@ -3,6 +3,8 @@
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
+
 use Google\ApiCore\ApiException;
 use Google\Cloud\Kms\V1\CryptoKey;
 use Google\Cloud\Kms\V1\CryptoKey\CryptoKeyPurpose;
@@ -313,7 +315,7 @@ class Practice extends Model
         Storage::disk('local')->put('calendar/'.$practiceId.'/practitioner/ehr-feed.json',json_encode($ehrArr));
         Storage::disk('local')->put('calendar/'.$practiceId.'/practitioner/non-ehr-feed.json',json_encode($nonEhrArr));
         return isset($e) ? false : true;
-    }    	
+    }
 	public static function savePractitionerSchedules($practiceId = null){
 		if (!$practiceId){
 			if (session()->has('practiceId')){
@@ -355,4 +357,64 @@ class Practice extends Model
         }
         return (isset($result)) ? $result : "";
     }
+    public static function nonEhrEventFeed(){
+        $usertype = Auth::user()->user_type;
+        $id = Auth::user()->id;
+        $practiceId = session('practiceId');
+        if ($usertype == 'practitioner'){
+            $exists = Storage::disk('local')->exists('/calendar/'.$practiceId.'/practitioner/non-ehr-feed.json');
+            if ($exists){
+                $events = json_decode(Storage::disk('local')->get('/calendar/'.$practiceId.'/practitioner/non-ehr-feed.json'),true);
+                $array = [];
+                foreach($events as $id => $event){
+                    $array[] = $event;
+                }
+                $result = json_encode($array);
+            }else{
+                $result = '';
+            }
+            return $result;
+        }        
+    }
+    public static function appointmentEventFeed(){
+        $usertype = Auth::user()->user_type;
+        $userId = Auth::user()->id;
+        $practiceId = session('practiceId');
+        Log::info(session()->all(),['location'=>'practice.php 383']);
+        // Log::info(json_encode(session()->all()));
+        if ($usertype == 'practitioner'){
+            $exists = Storage::disk('local')->exists('/calendar/'.$practiceId.'/practitioner/ehr-feed.json');
+            if ($exists){
+                $events = json_decode(Storage::disk('local')->get('/calendar/'.$practiceId.'/practitioner/ehr-feed.json'),true);
+                $array = [];
+                foreach($events as $id => $event){
+                    $array[] = $event;
+                }
+                $result = json_encode($array);
+            }else{
+                $result = '';
+            }
+            return $result;
+        }
+        elseif ($usertype == 'patient'){
+            $exists = Storage::disk('local')->exists('/calendar/'.$practiceId.'/practitioner/ehr-feed.json');
+            if ($exists){
+                $events = json_decode(Storage::disk('local')->get('/calendar/'.$practiceId.'/practitioner/ehr-feed.json'),true);
+                $array = [];
+                foreach($events as $id => $event){
+                    // RETURNS ONLY THIS PATIENT'S APPOINTMENTS
+                    $patientIds = $event['extendedProps']['patientIds'];
+                    $patientUserIds = Patient::returnUserIds($patientIds);
+                    if (in_array($userId, $patientUserIds)){
+                        $array[] = $event;
+                    }
+                }
+                $result = json_encode($array);
+            }else{
+                $result = '';
+            }
+            return $result;
+        }
+    }
+
 }

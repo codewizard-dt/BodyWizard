@@ -424,8 +424,22 @@ function resetConnectedModels(){
 	$(".connectedModelItem").val("");
 	// console.log("resetConnectedModels");
 }
-
-
+function refreshAppointmentFeed(info){
+	var appts = JSON.parse(info.appointments), anon = JSON.parse(info.anon);
+	calendar.getEventSourceById('appointments').remove();
+	calendar.addEventSource({events:appts,id:'appointments'});
+	$("#AnonFeed").data('schedule',anon);
+	// $.ajax({
+	// 	url: "/schedule/appointments",
+	// 	method: 'GET',
+	// 	success:function(data){
+	// 		var sched = JSON.parse(data);
+	// 		// $("#AppointmentsFullCal").data('schedule',sched);
+	// 		// console.log(sched);
+	// 		// calendar.refetchEvents();
+	// 	}
+	// });
+}
 function checkFormStatus(){
 	var formInfo = $(this).closest('.checkFormStatus');
 	console.log(usertype);
@@ -931,6 +945,7 @@ function confirmApptDelete(){
 	}
 	confirm('Cancelling Appointment',text+'<h3 class="pink">Are you sure?</h3>','yes, cancel it','no, do not cancel');
 	var wait = setInterval(function(){
+		console.log(confirmBool);
 		if (confirmBool != undefined){
 			var obj = {};
 			if ($("#DoNotSendEmail").length == 1 && $("#DoNotSendEmail").is(":checked")){obj['send_email'] = false;}
@@ -954,11 +969,13 @@ function deleteAppt(obj){
 		method:"DELETE",
 		data:obj,
 		success:function(data){
-			if (data == 'checkmark'){
+			// if (data == 'checkmark'){
 				blurTopMost("#checkmark");
 				delayedUnblurAll();
-				calendar.refetchEvents();
-			}
+				refreshAppointmentFeed(data);
+				// delayedUnblurAll();
+				// calendar.refetchEvents();
+			// }
 		}
 	})
 }
@@ -1045,10 +1062,12 @@ function createCheckObj(dateInfo, serviceInfo){
 	return returnObj;
 }
 function availablePractitioners(momentObj, duration, services, idsOnly = false){
-	var practitioners = $("#Practitioners").data('schedule'), availablePractitioners = [], availableIds = [];
+	var practitioners = $("#Practitioners").data('schedule'), anonEvents = $("#AnonFeed").data('schedule'), availablePractitioners = [], availableIds = [];
+	console.log(typeof anonEvents);
+	// practitioners = typeof practitioners == 'string
 	$.each(practitioners,function(p,practitioner){
-		var schedule = practitioner.schedule, anonEvents = $("#AnonFeed").data('schedule'), 
-			pracMatch = anonEvents.filter(event => 
+		var schedule = practitioner.schedule;
+		var	pracMatch = anonEvents.filter(event => 
 				(event.practitionerId != undefined && event.practitionerId == practitioner.practitioner_id)
 				|| (event.block != undefined && event.block == true)
 			), scheduleCheck = checkSchedule(momentObj, schedule, services, duration),

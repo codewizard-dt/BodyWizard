@@ -252,11 +252,9 @@ class Appointment extends Model
         return $required;
     }
     public function saveToGoogleCal($method = 'POST', $calendarId = null){
-        // include_once app_path("/php/functions.php");
         $practiceId = session('practiceId');
 
         $calendar = app('GoogleCalendar');
-        // $calendarId = isset($calendarId) ? $calendarId : session('calendarId');
         $calendarId = isset($calendarId) ? $calendarId : practiceConfig("practices.$practiceId.app.calendarId");
         $start = Carbon::parse($this->date_time);
         $end = Carbon::parse($this->date_time)->addMinutes($this->duration);

@@ -17,6 +17,7 @@ $(document).ready(function(){
 function loadCal(target){
     var tz = target.data('timezone'), clientTz = moment.tz.guess(), location = target.data('location');
     moment.tz.setDefault(tz.replace(" ","_"));
+
     calendar = new FullCalendar.Calendar(target[0], {
         plugins: ['dayGrid','list', 'timeGrid', 'interaction', 'rrule', 'momentTimezone'],
         timeZone: tz,
@@ -74,13 +75,15 @@ function loadCal(target){
         eventSources: 
         [
             {
-                url: "/schedule/appointments",
-                type: "GET",
+                // url: "/schedule/appointments",
+                // type: "GET",
+                events: confirmJson($("#AppointmentsFullCall").data('schedule')),
                 id: "appointments"
             },
             {
-                url: "/schedule/non-ehr",
-                type: "GET",
+                // url: "/schedule/non-ehr",
+                // type: "GET",
+                events: confirmJson($("#NonEhr").data('schedule')),
                 id: "nonEHR"
             }    
         ],

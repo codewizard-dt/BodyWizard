@@ -1,11 +1,12 @@
 var notify, notificationCheck, notificationCategory = 'all', clickWhenFinished = null, multiBtns;
 $(document).ready(function () {
 	checkNotifications();
-    notificationCheck = setInterval(checkNotifications,1000*20);
+    // notificationCheck = setInterval(checkNotifications,1000*20);
     notify = $("#Notifications");
     notify.on('click','.open, .cancel',toggleNotifications);
     notify.on('click','li',showFullNotification);
     notify.on('click','.selectMultiple',toggleSelectMode);
+    notify.on('click','.selectAll',toggleSelectAll);
     notify.on('click','.markMultiAsUnread',markMultiAsUnread);
     notify.on('click','.markMultiAsRead',markMultiAsRead);
     notify.on('click','.deleteMulti',deleteMulti);
@@ -195,8 +196,17 @@ function markMultiAsRead(){
 function toggleSelect(){
 	$(this).toggleClass('active');
 }
+function toggleSelectAll(){
+	var lis = $("#Notifications").find('li'), count = lis.length, active = lis.filter('.active'), activeCount = active.length,
+		multiBtn = $("#Notifications").find(".selectMultiple"), multiMode = multiBtn.text().includes("exit");
+	if (!multiMode){multiBtn.click();}
+	if (activeCount !== count){lis.addClass('active')
+	}else{
+		lis.removeClass('active');
+	}
+}
 function toggleSelectMode(){
-	var showNow = $(this).text().includes("select multiple");
+	var showNow = $(this).text().includes("select");
 	if (showNow){
 		if (notifyXhr != undefined){
 			notifyXhr.abort();
@@ -215,7 +225,6 @@ function toggleSelectMode(){
 	    notify.off('click','li',toggleSelect);
 	    multiBtns.slideFadeOut();
 	    $("#Notifications").find("li").filter(".active").removeClass('active');
-	    $(this).text('select multiple');
+	    $(this).text('select');
 	}
-
 }

@@ -164,7 +164,7 @@ class ScriptController extends Controller
             return view('models.create',['model'=>$model]);
         }
         public function saveNewModel($model, Request $request){
-            include_once app_path("php/functions.php");
+            // include_once app_path("php/functions.php");
             // $model = (in_array($model,['Patient','Practitioner','StaffMember'])) ? "User" : $model;
             $class = "App\\$model";
 
@@ -197,20 +197,30 @@ class ScriptController extends Controller
                 $result = $this->saveModel($model, $newModel, $request);
             }
 
-            if ($result === true){
+            if ($model == 'Appointment' && $result === true){
+                return [
+                    'appointments' => Practice::AppointmentEventFeed(),
+                    'anon' => Practice::anonApptEventFeed()
+                ];
+            }elseif ($result === true){
                 return "checkmark";
             }else{
                 return $result;
             }
         }
         public function UpdateModel($model, $uid, Request $request){
-            include_once app_path("php/functions.php");
+            // include_once app_path("php/functions.php");
             $class = "App\\$model";
             $existingInstance = $class::find($uid);
 
             $result = $this->saveModel($model, $existingInstance, $request);
 
-            if ($result === true){
+            if ($model == 'Appointment' && $result === true){
+                return [
+                    'appointments' => Practice::AppointmentEventFeed(),
+                    'anon' => Practice::anonApptEventFeed()
+                ];
+            }elseif ($result === true){
                 return "checkmark";
             }else{
                 return $result;
@@ -261,16 +271,11 @@ class ScriptController extends Controller
                     }
                 }
 
-                // if ($model == 'Message' && !isset($instance->status)){
-                //     $instance->status = $instance->defaultStatus();
-                // }
-
                 if (isset($request->full_json)){
                     $instance->full_json = $request->full_json;
                 }
 
             try{
-
                 // Save things
                 $instance->save();
                 $uidList = session('uidList');
@@ -309,9 +314,12 @@ class ScriptController extends Controller
                     $result = $instance->saveToGoogleCal($method);
                     if ($result !== true){return $result;}
                     $result = $instance->saveToFullCal();
-                    if ($request->isMethod('post')){
-                        $changes = null;
-                    }
+                    // if ($request->isMethod('post')){
+                    // $returnMe = Practice::AppointmentEventFeed();
+                    // if ($method == 'post'){
+                    //     $changes = null;
+                    // }
+                    $changes = isset($changes) ? $changes : null;
                     event(new AppointmentSaved($instance, $changes, session('practiceId'), Auth::user()->user_type));
                 }
 
@@ -385,7 +393,10 @@ class ScriptController extends Controller
                 unset($uidList[$model]);
                 session(['uidList'=>$uidList]);
                 session()->forget($model);
-                return "checkmark";
+                return ($model == 'Appointment') ? [
+                    'appointments' => Practice::AppointmentEventFeed(),
+                    'anon' => Practice::anonApptEventFeed()
+                ] : "checkmark";
             }
             catch(\Exception $e){
                 event(new BugReported(

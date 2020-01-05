@@ -18,6 +18,8 @@ class CheckDomain
      */
     public function handle($request, Closure $next)
     {
+        Log::info($request);
+        Log::info(session()->all(),['location'=>'checkdomain.php 22']);
         if ((session('domain') !== null && session('domain') !== $request->getHost()) ||
             (session('port') !== null && session('port') != $request->getPort()) ){
             $request->session()->invalidate();

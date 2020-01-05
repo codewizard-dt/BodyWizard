@@ -6,19 +6,19 @@ runtime_config:
   enable_stackdriver_integration: true
 
 # Ensure we skip ".env", which is only for local development
-skip_files:
-  - .env
 
 env_variables:
   # Put production environment variables here.
-  APP_LOG: errorlog
   APP_KEY: base64:B25yE1A7qIXy7WGKAG+NfMsULWoTjolnL21SSLfNeuE=
+  APP_STORAGE: /tmp
+  VIEW_COMPILED_PATH: /tmp
   DB_CONNECTION: mysql
   DB_SOCKET: '/cloudsql/bodywizard:us-central1:ehr-data'
   DB_PORT: 3306
   DB_DATABASE: 'bodywizard_ehr'
   DB_USERNAME: 'david'
   DB_PASSWORD: 'b0nerzFTW'
+  LOG_CHANNEL: 'stackdriver'
 
 beta_settings:
   cloud_sql_instances: 'bodywizard:us-central1:ehr-data'

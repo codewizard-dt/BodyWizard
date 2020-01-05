@@ -98,7 +98,8 @@
                         <div class="button pink xsmall markMultiAsRead">mark read</div>
                         <div class="button pink xsmall deleteMulti">delete</div>
                     </div>
-                    <div class="button yellow xsmall selectMultiple">select multiple</div>
+                    <div class="button yellow xsmall selectMultiple">select</div>
+                    <div class="button yellow xsmall selectAll">all</div>
                     <div class="button minimize cancel xsmall">minimize</div>
                 </div>                
             </div>

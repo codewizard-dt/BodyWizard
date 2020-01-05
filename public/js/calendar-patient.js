@@ -87,8 +87,7 @@ function loadCal(target){
         eventSources: 
         [
             {
-                url: "/schedule/appointments",
-                type: "GET",
+                events: $("#AppointmentsFullCall").data('schedule'),
                 id: "appointments"
             }
         ],

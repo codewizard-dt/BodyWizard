@@ -15,6 +15,9 @@ $app = new Illuminate\Foundation\Application(
     $_ENV['APP_BASE_PATH'] ?? dirname(__DIR__)
 );
 
+//UPDATE FOR GOOGLE APP ENGINE
+$app->useStoragePath(env('APP_STORAGE', base_path() . '/storage'));
+
 /*
 |--------------------------------------------------------------------------
 | Bind Important Interfaces

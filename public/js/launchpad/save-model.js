@@ -229,10 +229,11 @@ function saveModel(includeInvisible = false){
 		success:function(data){
 			console.log(data);
 			$("#booknow").find('.active').removeClass('active');
-			if (model == 'Appointment' && data == 'checkmark'){
+			if (model == 'Appointment'){
 				blurTopMost("#checkmark");
 				delayedUnblurAll(1200);
-				calendar.refetchEvents();
+				refreshAppointmentFeed(data); 
+				// calendar.refetchEvents();
 			}else if (data == 'checkmark'){
 				if (m.is("body")){
 					blurTopMost("#checkmark");

@@ -28,7 +28,16 @@ $.fn.resetActives = function (){
     this.find('.active').removeClass('active');
     return this;
 }
+$.fn.confirmJson = function(){
+    // console.log(this,typeof this);
+    // return this;
+    return confirmJson(this);
+}
 
+function confirmJson(data){
+    console.log(data,typeof data);
+    return data;
+}
 
 // Elements must have data-order attributes already set
 jQuery.fn.sortEle = function sortEle(eleStr = "div") {
@@ -108,7 +117,9 @@ $.ajaxSetup({
             'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
         },
         dataFilter: function(data,type){
-            data = data.trim();
+            data = typeof data == 'string' ? data.trim() : data;
+            console.log(typeof data);
+            console.log(data.length);
             return data;
         }
 });
