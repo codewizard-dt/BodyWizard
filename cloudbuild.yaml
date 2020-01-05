@@ -1,3 +1,7 @@
 steps:
   - name: 'gcr.io/cloud-builders/gcloud'
-    args: ['app','deploy','--no-promote','--impersonate-service-account','full-admin@bodywizard.iam.gserviceaccount.com','--project','bodywizard']
+    args: ['auth','activate-service-account','--key-file','storage/keys/full-admin-key.json']
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args: ['config','set','project','bodywizard']
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args: ['app','deploy','--no-promote']
