@@ -1,5 +1,7 @@
 steps:
   - name: 'gcr.io/cloud-builders/gcloud'
+    args: ['auth','activate-service-account']
+  - name: 'gcr.io/cloud-builders/gcloud'
     args: ['config','set','project','bodywizard']
   - name: 'gcr.io/cloud-builders/gcloud'
     args: ['app','deploy','--no-promote']
