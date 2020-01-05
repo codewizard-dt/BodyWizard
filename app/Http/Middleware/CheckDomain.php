@@ -18,8 +18,29 @@ class CheckDomain
      */
     public function handle($request, Closure $next)
     {
-        Log::info($request);
+        Log::info($request->getHost(),['location'=>'checkdomain.php 21']);
         Log::info(session()->all(),['location'=>'checkdomain.php 22']);
+
+        if (Auth::user()){
+            if (session('practiceId') === null){
+                $host = $request->getHost();
+                $port = $request->getPort();
+                $practiceId = getPracticeId($request);
+                $calendarId = practiceConfig("practices.$practiceId.app.calendarId");
+                $tz = practiceConfig("practices.$practiceId.public.timezone");
+                date_default_timezone_set($tz);
+                session([
+                    'domain' => $host,
+                    'port' => $port,
+                    'practiceId' => $practiceId,
+                    'calendarId' => $calendarId,
+                    'timezone' => $tz
+                ]);
+                Log::info(session()->all(),['location'=>'checkdomain.php 39']);
+            }else{
+                date_default_timezone_set(session('timezone'));
+            }
+        }
         if ((session('domain') !== null && session('domain') !== $request->getHost()) ||
             (session('port') !== null && session('port') != $request->getPort()) ){
             $request->session()->invalidate();

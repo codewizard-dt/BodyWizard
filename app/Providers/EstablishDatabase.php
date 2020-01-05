@@ -19,6 +19,7 @@ class EstablishDatabase extends ServiceProvider
         $port = \Request::getPort();
         if ($domain != "localhost" && isset(practiceConfig('domains')[$domain])){
             $practiceId = practiceConfig("domains")[$domain];
+            // Log::info($practiceId);
             if (is_array($practiceId)){
                 $practiceId = practiceConfig("domains")[$domain][$port];
             }

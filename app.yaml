@@ -10,7 +10,6 @@ runtime_config:
 env_variables:
   # Put production environment variables here.
   APP_KEY: base64:B25yE1A7qIXy7WGKAG+NfMsULWoTjolnL21SSLfNeuE=
-  APP_STORAGE: /tmp
   VIEW_COMPILED_PATH: /tmp
   DB_CONNECTION: mysql
   DB_SOCKET: '/cloudsql/bodywizard:us-central1:ehr-data'
@@ -19,6 +18,8 @@ env_variables:
   DB_USERNAME: 'david'
   DB_PASSWORD: 'b0nerzFTW'
   LOG_CHANNEL: 'stackdriver'
+  SESSION_DRIVER: database
+  SESSION_LIFETIME: 30
 
 beta_settings:
   cloud_sql_instances: 'bodywizard:us-central1:ehr-data'
