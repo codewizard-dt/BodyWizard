@@ -758,10 +758,11 @@ $menuJson = json_decode(file_get_contents(app_path("/json/menu-data.json")),true
   function getPracticeId(Request $request){
     $host = $request->getHost();
     $port = $request->getPort();
-    if (practiceConfig('domains')[$host]){
-        $practiceId = practiceConfig("domains")[$host];
+    $domains = practiceConfig('domains');
+    if (isset($domains[$host])){
+        $practiceId = $domains[$host];
         if (is_array($practiceId)){
-            $practiceId = practiceConfig("domains")[$host][$port];
+            $practiceId = $domains[$host][$port];
         }
     }elseif(strpos($host,"bodywizard.appspot")){
       $practiceId = "8eeb792e29ca4eb485554c2acd63c40c";
