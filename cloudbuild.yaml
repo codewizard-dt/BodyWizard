@@ -2,4 +2,4 @@ steps:
   - name: 'gcr.io/cloud-builders/gcloud'
     args: ['auth','activate-service-account','--key-file','storage/keys/full-admin-key.json']
   - name: 'gcr.io/cloud-builders/gcloud'
-    args: ['app','deploy','--no-promote']
+    args: ['app','deploy','--no-promote','--project','bodywizard']
