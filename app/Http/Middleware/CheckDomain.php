@@ -36,6 +36,7 @@ class CheckDomain
                     'calendarId' => $calendarId,
                     'timezone' => $tz
                 ]);
+                Log::info("HEY",['location'=>'checkdomain.php 39']);
                 Log::info(session()->all(),['location'=>'checkdomain.php 39']);
             }else{
                 date_default_timezone_set(session('timezone'));
