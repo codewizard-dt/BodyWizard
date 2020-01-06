@@ -120,7 +120,3 @@ if ($model == 'Form'){
 @endforeach
 
 <script type='text/javascript' src='{{ asset("js/launchpad/model-settings.js")}}'></script>
-<script type='text/javascript' src='{{ asset("js/launchpad/model-table.js")}}'></script>
-@if (!$modal)
-<script type='text/javascript' src='{{ asset("js/launchpad/save-model.js")}}'></script>
-@endif

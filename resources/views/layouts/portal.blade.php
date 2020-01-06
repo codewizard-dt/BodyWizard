@@ -3,7 +3,7 @@
     use Illuminate\Support\Facades\Log;
 
     $user = Auth::user();
-    $notifications = $user->unreadNotifications;
+    // $notifications = $user->unreadNotifications;
     $usertype = $user->user_type;
     if ($usertype == 'practitioner'){
         $menuData = "PortalPractitioner";
@@ -122,6 +122,10 @@
             <script type="text/javascript" src="{{ asset('/js/jquery.datepick.min.js') }}"></script>
             <script type="text/javascript" src="{{ asset('/js/mark/jquery.mark.js') }}"></script>
             <script type='text/javascript' src="{{ asset('/js/summernote-lite.min.js') }}"></script>
+            <script type='text/javascript' src='{{asset("/js/launchpad/forms.js")}}'></script>
+            <script type='text/javascript' src="{{ asset('/js/launchpad/save-model.js') }}"></script>
+            <script type='text/javascript' src="{{ asset('/js/launchpad/model-table.js') }}"></script>
+
 
 
         @yield('scripts')

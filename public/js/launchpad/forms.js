@@ -1,9 +1,181 @@
 $(document).ready(function () {
     masterStyle();
 
-    var answerList = $('.answer.radio, .answer.checkboxes');
 
-    $("input").on("keyup",function(e){
+    
+    // INITIALIZING ITEMS
+        // var answerList = $('.answer.radio, .answer.checkboxes');
+        // var inputs = filterUninitialized('input');
+        // inputs.on("keyup",function(e){
+        //     if (!e){
+        //         return false;
+        //     }
+        //     var k = e.keyCode;
+        //     var f = $(this).closest("form");
+        //     if (f.length>0){
+        //         if (k == 13){
+        //             f.find(".submitForm").click();
+        //         }
+        //     }
+        // });
+        // inputs.data('initialized',true);
+
+        // var fullscreenBtn = filterUninitialized(".btn-fullscreen");
+        // fullscreenBtn.on('click',function(){
+        //     var p = modalOrBody($(this));
+        //     p.scrollTo($(this).closest(".note-editor"),200);
+        // })
+        // fullscreenBtn.data('initialized',true);
+
+        // items = filterUninitialized($(".formDisp").find(".item, .itemFU"));
+        // items.each(function(i,item){
+        //     UpdateCss($(item));
+        // });
+        // items.data('initialized',true);
+            
+        // var checkboxes = filterUninitialized(".checkboxes");
+        // var plzSelectNode = $("<div class='plzselect'>(select as many as apply)</div>");
+        // checkboxes.each(function(){
+        //     plzSelectNode.clone().insertBefore($(this));
+        // })
+        // checkboxes.attr('tabindex','0').on("click","li",checkbox);
+        // checkboxes.find('li').filter(function(){
+        //     return $.inArray($(this).data('value'),['no','none','never']) > -1;
+        // }).on('click',masterCheckbox);
+        // checkboxes.data("initialized",true);
+        
+        // var radios = filterUninitialized(".radio");
+        // radios.attr('tabindex','0').on("click","li",radio);
+        // radios.data("initialized",true);
+
+        // var dropdowns = filterUninitialized(".dropdown");
+        // dropdowns.on("change","select",function(){
+        //     var response = $(this).val();
+        //     var item = $(this).closest(".item, .itemFU");
+        //     if (item.is(".item")){
+        //         showFollowUps(response,item);
+        //     }
+        // })
+        // dropdowns.data("initialized",true);
+
+        // var datepickers = filterUninitialized(".datepicker");
+        // datepickers.each(function(){
+        //     $(this).on("focus",function(e){
+        //         e.preventDefault();
+        //     })
+        //     var r = $(this).data("yearrange");
+        //     var min = $(this).data("mindate");
+        //     var max = $(this).data("maxdate");
+            
+        //     var options = {};
+        //     options['yearRange'] = r;
+        //     if (min!="" && max!=""){
+        //         options['minDate']=min;
+        //         options['maxDate']=max;
+        //     }
+            
+        //     $(this).datepick(options);
+        // })
+        // datepickers.data("initialized",true);
+
+        // var signatures = filterUninitialized(".signature");
+        // signatures.each(function(){
+        //     $(this).jSignature();
+        //     $(this).on("click",".clear",function(){
+        //         $(this).parent().jSignature("reset");
+        //     })
+        // })
+        // signatures.attr('tabindex','0');
+        // signatures.data("initialized",true);
+
+        // var times = filterUninitialized(".time");
+        // times.each(function(){
+        //     var i = $(this).find("input"), o = i.data('options');
+        //     i.timepicker(o);
+        //     i.on('focus',function(){
+        //         $(this).blur();
+        //     })
+        // })
+        // times.data("initialized",true);
+
+        // var pointerEventToXY = function (e) {
+        //     var out = {x: 0, y: 0};
+        //     if (e.type === 'touchstart' || e.type === 'touchmove' || e.type === 'touchend' || e.type === 'touchcancel') {
+        //         var touch = e.originalEvent.touches[0] || e.originalEvent.changedTouches[0];
+        //         out.x = touch.pageX;
+        //         out.y = touch.pageY;
+        //     } else if (e.type === 'mousedown' || e.type === 'mouseup' || e.type === 'mousemove' || e.type === 'mouseover' || e.type === 'mouseout' || e.type === 'mouseenter' || e.type === 'mouseleave') {
+        //         out.x = e.pageX;
+        //         out.y = e.pageY;
+        //     }
+        //     return out;
+        // };
+           
+        // // var sliderXPos;
+        
+        // var scales = filterUninitialized(".scale");
+        // scales.on("mouseenter",function(){
+        //     var item = $(this).closest('.item');
+            
+        //     clearTimeout(item.data("timeoutId"));
+        //     changeSliderValue(item);
+        // });    
+        // scales.on("mouseleave touchend", function(){
+        //     var item = $(this).closest('.item');
+        //     var timeoutId = setTimeout(function(){
+        //         hideSliderValue(item);
+        //     }, 1000);
+            
+        //     clearInterval(item.data('updateId'));
+        //     item.data("updateId","clear");
+        //     item.data('timeoutId', timeoutId); 
+        //     var response = item.find("input").val();
+        //     showFollowUps(response,item);
+        // });
+        // scales.data("initialized",true);
+
+
+        // var sliders = filterUninitialized(".slider");
+        // sliders.closest(".item").data("updateId","clear");
+        // sliders.on("mousedown touchstart",function(){
+        //     var item = $(this).closest('.item');
+        //     if (item.data("updateId")=="clear"){
+        //         var updateId = setInterval(function(){
+        //             changeSliderValue(item);
+        //         },100);
+        //         showSliderValue(item);
+        //         item.data('updateId',updateId);
+        //     }
+        // });
+        // sliders.data("initialized",true);
+        
+
+        
+        // $(".SliderValue").css("opacity",1);
+    
+    
+        // var submitBtns = filterUninitialized(".submitForm");
+        // submitBtns.on('click',submitForm);
+        // submitBtns.data("initialized",true);
+        
+        
+        // var numbers = filterUninitialized(".number");
+        // numbers.on("mousedown touchstart",".change",startChange);
+        // numbers.on("mouseup touchend",".change",stopChange);
+        // numbers.on('keyup',"input",inputNum);
+        // numbers.data("initialized",true);
+
+        // $(".clearTableFilters").off("click",clearTableFilters);
+        // $(".clearTableFilters").on("click",clearTableFilters);
+
+        // var loadDxFormBtns = filterUninitialized($("#load_dx_form").find("li"));
+        // loadDxFormBtns.on("click",loadDxForm);
+        // loadDxFormBtns.data("initialized",true);
+})
+
+function initializeNewForms(){
+    var inputs = filterUninitialized('input');
+    inputs.on("keyup",function(e){
         if (!e){
             return false;
         }
@@ -11,10 +183,11 @@ $(document).ready(function () {
         var f = $(this).closest("form");
         if (f.length>0){
             if (k == 13){
-                f.find(".submit").click();
+                f.find(".submitForm").click();
             }
         }
-    })
+    });
+    inputs.data('initialized',true);
 
     var fullscreenBtn = filterUninitialized(".btn-fullscreen");
     fullscreenBtn.on('click',function(){
@@ -22,153 +195,153 @@ $(document).ready(function () {
         p.scrollTo($(this).closest(".note-editor"),200);
     })
     fullscreenBtn.data('initialized',true);
+
+    items = filterUninitialized($(".formDisp").find(".item, .itemFU"));
+    items.each(function(i,item){
+        UpdateCss($(item));
+    });
+    items.data('initialized',true);
+        
+    var checkboxes = filterUninitialized(".checkboxes");
+    var plzSelectNode = $("<div class='plzselect'>(select as many as apply)</div>");
+    checkboxes.each(function(){
+        plzSelectNode.clone().insertBefore($(this));
+    })
+    checkboxes.attr('tabindex','0').on("click","li",checkbox);
+    checkboxes.find('li').filter(function(){
+        return $.inArray($(this).data('value'),['no','none','never']) > -1;
+    }).on('click',masterCheckbox);
+    checkboxes.data("initialized",true);
     
-    // INITIALIZING ITEMS
-        items = filterUninitialized($(".formDisp").find(".item, .itemFU"));
-        items.each(function(i,item){
-            UpdateCss($(item));
-        });
-        items.data('initialized',true);
-            
-        var checkboxes = filterUninitialized(".checkboxes");
-        var plzSelectNode = $("<div class='plzselect'>(select as many as apply)</div>");
-        checkboxes.each(function(){
-            plzSelectNode.clone().insertBefore($(this));
-        })
-        checkboxes.attr('tabindex','0').on("click","li",checkbox);
-        checkboxes.find('li').filter(function(){
-            return $.inArray($(this).data('value'),['no','none','never']) > -1;
-        }).on('click',masterCheckbox);
-        checkboxes.data("initialized",true);
-        
-        var radios = filterUninitialized(".radio");
-        radios.attr('tabindex','0').on("click","li",radio);
-        radios.data("initialized",true);
+    var radios = filterUninitialized(".radio");
+    radios.attr('tabindex','0').on("click","li",radio);
+    radios.data("initialized",true);
 
-        var dropdowns = filterUninitialized(".dropdown");
-        dropdowns.on("change","select",function(){
-            var response = $(this).val();
-            var item = $(this).closest(".item, .itemFU");
-            if (item.is(".item")){
-                showFollowUps(response,item);
-            }
-        })
-        dropdowns.data("initialized",true);
-
-        var datepickers = filterUninitialized(".datepicker");
-        datepickers.each(function(){
-            $(this).on("focus",function(e){
-                e.preventDefault();
-            })
-            var r = $(this).data("yearrange");
-            var min = $(this).data("mindate");
-            var max = $(this).data("maxdate");
-            
-            var options = {};
-            options['yearRange'] = r;
-            if (min!="" && max!=""){
-                options['minDate']=min;
-                options['maxDate']=max;
-            }
-            
-            $(this).datepick(options);
-        })
-        datepickers.data("initialized",true);
-
-        var signatures = filterUninitialized(".signature");
-        signatures.each(function(){
-            $(this).jSignature();
-            $(this).on("click",".clear",function(){
-                $(this).parent().jSignature("reset");
-            })
-        })
-        signatures.attr('tabindex','0');
-        signatures.data("initialized",true);
-
-        var times = filterUninitialized(".time");
-        times.each(function(){
-            var i = $(this).find("input"), o = i.data('options');
-            i.timepicker(o);
-            i.on('focus',function(){
-                $(this).blur();
-            })
-        })
-        times.data("initialized",true);
-
-        var pointerEventToXY = function (e) {
-            var out = {x: 0, y: 0};
-            if (e.type === 'touchstart' || e.type === 'touchmove' || e.type === 'touchend' || e.type === 'touchcancel') {
-                var touch = e.originalEvent.touches[0] || e.originalEvent.changedTouches[0];
-                out.x = touch.pageX;
-                out.y = touch.pageY;
-            } else if (e.type === 'mousedown' || e.type === 'mouseup' || e.type === 'mousemove' || e.type === 'mouseover' || e.type === 'mouseout' || e.type === 'mouseenter' || e.type === 'mouseleave') {
-                out.x = e.pageX;
-                out.y = e.pageY;
-            }
-            return out;
-        };
-           
-        var sliderXPos;
-        
-        var scales = filterUninitialized(".scale");
-        scales.on("mouseenter",function(){
-            var item = $(this).closest('.item');
-            
-            clearTimeout(item.data("timeoutId"));
-            changeSliderValue(item);
-        });    
-        scales.on("mouseleave touchend", function(){
-            var item = $(this).closest('.item');
-            var timeoutId = setTimeout(function(){
-                hideSliderValue(item);
-            }, 1000);
-            
-            clearInterval(item.data('updateId'));
-            item.data("updateId","clear");
-            item.data('timeoutId', timeoutId); 
-            var response = item.find("input").val();
+    var dropdowns = filterUninitialized(".dropdown");
+    dropdowns.on("change","select",function(){
+        var response = $(this).val();
+        var item = $(this).closest(".item, .itemFU");
+        if (item.is(".item")){
             showFollowUps(response,item);
-        });
-        scales.data("initialized",true);
+        }
+    })
+    dropdowns.data("initialized",true);
 
-
-        var sliders = filterUninitialized(".slider");
-        sliders.closest(".item").data("updateId","clear");
-        sliders.on("mousedown touchstart",function(){
-            var item = $(this).closest('.item');
-            if (item.data("updateId")=="clear"){
-                var updateId = setInterval(function(){
-                    changeSliderValue(item);
-                },100);
-                showSliderValue(item);
-                item.data('updateId',updateId);
-            }
-        });
-        sliders.data("initialized",true);
+    var datepickers = filterUninitialized(".datepicker");
+    datepickers.each(function(){
+        $(this).on("focus",function(e){
+            e.preventDefault();
+        })
+        var r = $(this).data("yearrange");
+        var min = $(this).data("mindate");
+        var max = $(this).data("maxdate");
         
-
+        var options = {};
+        options['yearRange'] = r;
+        if (min!="" && max!=""){
+            options['minDate']=min;
+            options['maxDate']=max;
+        }
         
-        $(".SliderValue").css("opacity",1);
+        $(this).datepick(options);
+    })
+    datepickers.data("initialized",true);
+
+    var signatures = filterUninitialized(".signature");
+    signatures.each(function(){
+        $(this).jSignature();
+        $(this).on("click",".clear",function(){
+            $(this).parent().jSignature("reset");
+        })
+    })
+    signatures.attr('tabindex','0');
+    signatures.data("initialized",true);
+
+    var times = filterUninitialized(".time");
+    times.each(function(){
+        var i = $(this).find("input"), o = i.data('options');
+        i.timepicker(o);
+        i.on('focus',function(){
+            $(this).blur();
+        })
+    })
+    times.data("initialized",true);
+
+    var pointerEventToXY = function (e) {
+        var out = {x: 0, y: 0};
+        if (e.type === 'touchstart' || e.type === 'touchmove' || e.type === 'touchend' || e.type === 'touchcancel') {
+            var touch = e.originalEvent.touches[0] || e.originalEvent.changedTouches[0];
+            out.x = touch.pageX;
+            out.y = touch.pageY;
+        } else if (e.type === 'mousedown' || e.type === 'mouseup' || e.type === 'mousemove' || e.type === 'mouseover' || e.type === 'mouseout' || e.type === 'mouseenter' || e.type === 'mouseleave') {
+            out.x = e.pageX;
+            out.y = e.pageY;
+        }
+        return out;
+    };
+       
+    // var sliderXPos;
+    
+    var scales = filterUninitialized(".scale");
+    scales.on("mouseenter",function(){
+        var item = $(this).closest('.item');
+        
+        clearTimeout(item.data("timeoutId"));
+        changeSliderValue(item);
+    });    
+    scales.on("mouseleave touchend", function(){
+        var item = $(this).closest('.item');
+        var timeoutId = setTimeout(function(){
+            hideSliderValue(item);
+        }, 1000);
+        
+        clearInterval(item.data('updateId'));
+        item.data("updateId","clear");
+        item.data('timeoutId', timeoutId); 
+        var response = item.find("input").val();
+        showFollowUps(response,item);
+    });
+    scales.data("initialized",true);
+
+
+    var sliders = filterUninitialized(".slider");
+    sliders.closest(".item").data("updateId","clear");
+    sliders.on("mousedown touchstart",function(){
+        var item = $(this).closest('.item');
+        if (item.data("updateId")=="clear"){
+            var updateId = setInterval(function(){
+                changeSliderValue(item);
+            },100);
+            showSliderValue(item);
+            item.data('updateId',updateId);
+        }
+    });
+    sliders.data("initialized",true);
+    
+
+    
+    $(".SliderValue").css("opacity",1);
+
+
+    var submitBtns = filterUninitialized(".submitForm");
+    submitBtns.on('click',submitForm);
+    submitBtns.data("initialized",true);
     
     
-        var submitBtns = filterUninitialized(".submitForm");
-        submitBtns.on('click',submitForm);
-        submitBtns.data("initialized",true);
-        
-        
-        var numbers = filterUninitialized(".number");
-        numbers.on("mousedown touchstart",".change",startChange);
-        numbers.on("mouseup touchend",".change",stopChange);
-        numbers.on('keyup',"input",inputNum);
-        numbers.data("initialized",true);
+    var numbers = filterUninitialized(".number");
+    numbers.on("mousedown touchstart",".change",startChange);
+    numbers.on("mouseup touchend",".change",stopChange);
+    numbers.on('keyup',"input",inputNum);
+    numbers.data("initialized",true);
 
-        $(".clearTableFilters").off("click",clearTableFilters);
-        $(".clearTableFilters").on("click",clearTableFilters);
+    $(".clearTableFilters").off("click",clearTableFilters);
+    $(".clearTableFilters").on("click",clearTableFilters);
 
-        var loadDxFormBtns = filterUninitialized($("#load_dx_form").find("li"));
-        loadDxFormBtns.on("click",loadDxForm);
-        loadDxFormBtns.data("initialized",true);
-})
+    var loadDxFormBtns = filterUninitialized($("#load_dx_form").find("li"));
+    loadDxFormBtns.on("click",loadDxForm);
+    loadDxFormBtns.data("initialized",true);
+    
+}
 
 // var itemCss = getDefaultCSS('item');
 function UpdateCss(item){

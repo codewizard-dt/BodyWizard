@@ -1,15 +1,152 @@
-var waitForForm, autoClickBtn = undefined, xhrWait = undefined;
+var waitForForm, autoClickBtn = undefined, xhrWait = undefined, purple = "rgb(105,12,104)", yellow = "rgb(240,154,53)", pink = "rgb(234,78,80)";
 $(document).ready(function(){
-    var purple = "rgb(105,12,104)", yellow = "rgb(240,154,53)", orange = "rgb(234,78,80)";
+    // var purple = "rgb(105,12,104)", yellow = "rgb(240,154,53)", pink = "rgb(234,78,80)";
 
+    // var MenuItems = filterUninitialized($(".menuBar").find('.tab'));
+    // MenuItems.on("touchstart",function(e){
+    //     e.preventDefault();
+    //     $(e.target).click();
+    // })
+    // MenuItems.hover(tabMouseEnter,tabMouseLeave);
+    
+
+    // MenuItems.on("click",".title",function(e){
+    //     var tab = $(this).parent(), underline = tab.children(".underline"), id = tab.attr("id"), 
+    //         dropdown = tab.children(".dropDown"), menu = $(this).closest(".menuBar"), menuId = menu.attr('id'),
+    //         target = (menu.data("target")!="window") ? $(menu).data("target") : "window", uri = $(this).data("uri"),
+    //         hasDropdown = (tab.children('.dropDown').length === 1), titleActive = $(this).hasClass("active"),
+    //         parentTitles = getParentTitles($(this)), dropdownActive = (hasDropdown) ? dropdown.hasClass("active") : null;
+
+    //     if (tab.is("#booknow") && uri == '#createAppointment'){
+    //         var btn = $(this);
+    //         if ($(uri).length == 0){
+    //             feedback('Page Still Loading','The booking form is still loading. This box will close and the form will open automatically as soon as it\'s ready.');
+    //             autoClickBtn = $("#booknow");
+    //             return;
+    //         }
+    //     }
+    //     if (uri == '' && target != "window"){            
+    //         return false;
+    //     }
+    //     if (uri != undefined && uri.match(/(edit|delete|show|update|settings)/)){
+    //         uri = $(this).data('uri').split("/");
+    //         var model = singular(uri[1]), Model = model.substr(0,1).toUpperCase() + model.substr(1), models = plural(model);
+    //             action = uri[3];
+                    
+    //         var match = $(".optionsNav").filter(function(){
+    //             var d = $(this).data('tabanchor');
+    //             return (d == plural(model) || d == model);
+    //         })
+
+    //         if (uri[2] == "UID"){
+    //             var uid = match.data("uid");
+    //             if (uid == undefined || uid == ""){
+    //                 var uidList = JSON.parse($("#uidList").text());
+    //                 uid = (uidList[Model] !== undefined) ? uidList[Model] : uid;
+    //             }
+
+    //             if ((uid == undefined || uid == "") && $("#"+Model+"List").length > 0){
+    //                 $.scrollTo($("#"+Model+"List"));
+    //                 alertBox('select a ' + model + ' to edit',$("#"+Model+"List"),"ontop",1000,"-50%,-50%");
+    //                 return false;
+    //             }else if ((uid == undefined || uid == "") && $("#"+Model+"List").length == 0){
+    //                 var index = $("#" + plural(model) + "-index");
+    //                 var warning = "<h2>Select a " + model + " before you can " + action + "</h2><div id='listLink' class='button xsmall pink'>Select a " + model + "</div><div class='button xsmall cancel'>dismiss</div>";
+    //                 $("<div/>",{
+    //                     id:"uidWarning",
+    //                     class:'modal delete'
+    //                 }).appendTo("#ModalHome").html(warning);
+    //                 blurElement($("body"),"#uidWarning");
+    //                 $("#listLink").on("click",function(){
+    //                     var t = $("#"+plural(model)+"-index").find(".title");
+    //                     t.click();
+    //                     unblurElement($("body"));
+    //                 })
+    //                 return false;
+    //             }
+    //             uri[2] = uid;
+    //         }
+    //         uri = uri.join("/");
+    //         $(this).data('uri',uri);
+    //     }
+    //     if (uri=='/logout'){
+    //         $("#logoutForm").submit();
+    //         return false;
+    //     }
+        
+    //     if (menu.data("mode")=="scroll" && target != 'window'){
+    //         $(target).scrollTo($(uri),400,{
+    //             offset: {left:0,top:-20}
+    //         });
+    //         var h = $("#SiteMenu").height() + menu.height();
+    //         var offset = $(window).scrollTop() + h;
+    //         if (offset > $(target).offset().top){
+    //             $(window).scrollTo($(target),400,{
+    //                 offset: {left:0,top:-h}
+    //             })
+    //         }
+    //         return false;
+    //     }else if (menu.data("mode")=='scroll'){
+    //         var h = $("#SiteMenu").height() + menu.height() + 20;
+    //         $.scrollTo($(uri),400,{
+    //             offset: {left:0,top:-h}
+    //         })
+    //         // console.log('hi');
+    //         return false;
+    //     }
+                
+    //     if (hasDropdown && titleActive){
+    //         dropdown.removeClass('active');
+    //     }else if (hasDropdown && !titleActive){
+    //         dropdown.addClass('active');
+    //     }else if (!hasDropdown && titleActive){
+    //         return false;
+    //     }else if (!hasDropdown && !titleActive){
+    //         menu.find('.active').removeClass('active');
+
+    //         $(this).add(parentTitles).addClass('active');
+    //         if (target=="window"){
+    //             window.location.href = uri;
+    //         }else{
+    //             // setActiveTab(menuId,id);
+    //             var obj = {};
+    //             obj[menuId] = id;
+    //             LoadingContent(target,uri,obj);
+    //         }
+    //     }        
+    //     animateMenuV2(menu);
+    // })
+    // MenuItems.data('initialized',true);
+    
+    // // to organize and stylize multiple menus
+    //     var AllMenus = $(".menuBar.portal").not(".siteMenu");
+    //     var l = AllMenus.length;
+    //     AllMenus.removeClass("topMenu subMenu1 subMenu2 subMenu3 subMenu4")
+    //     AllMenus.each(function(i,m){
+    //         var zIndex = -(i-l), orderClass;
+    //         if (i==0){
+    //             orderClass = "topMenu";
+    //         }else if (i==1){
+    //             orderClass = "subMenu1";
+    //         }else if (i==2){
+    //             orderClass = "subMenu2";
+    //         }else if (i==3){
+    //             orderClass = "subMenu3";
+    //         }else if (i==4){
+    //             orderClass = "subMenu4";
+    //         }
+    //         $(m).addClass(orderClass);
+    //     })
+
+    // ClickActiveTabsV2();
+})
+function initializeNewMenus(){
     var MenuItems = filterUninitialized($(".menuBar").find('.tab'));
     MenuItems.on("touchstart",function(e){
         e.preventDefault();
         $(e.target).click();
     })
     MenuItems.hover(tabMouseEnter,tabMouseLeave);
-    
-
     MenuItems.on("click",".title",function(e){
         var tab = $(this).parent(), underline = tab.children(".underline"), id = tab.attr("id"), 
             dropdown = tab.children(".dropDown"), menu = $(this).closest(".menuBar"), menuId = menu.attr('id'),
@@ -116,7 +253,6 @@ $(document).ready(function(){
         }        
         animateMenuV2(menu);
     })
-    // console.log(MenuItems);
     MenuItems.data('initialized',true);
     
     // to organize and stylize multiple menus
@@ -140,7 +276,7 @@ $(document).ready(function(){
         })
 
     ClickActiveTabsV2();
-})
+}
 var scrollTimer = undefined;
 function checkScrollMenus(){
     if (scrollTimer == undefined){
@@ -318,6 +454,10 @@ function LoadingContent(target,uri,currentTab = {}){
                 $("#uidList").text(JSON.stringify(uids));
                 $("#tabList").text(JSON.stringify(tabs));
             }
+            initializeNewMenus();
+            initializeNewForms();
+            initializeNewModelForms();
+            initializeNewModelTables();
         },
         error: function(e){
             if (e.status == 404){

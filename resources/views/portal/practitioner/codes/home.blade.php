@@ -10,4 +10,4 @@
 <div id="codeTarget" class='loadTarget'>
 </div>
 
-<script type="text/javascript" src="{{ asset('/js/menus.js') }}"></script>
+<script type="text/javascript">$(document).ready(function(){initializeNewMenus();})</script>

@@ -77,5 +77,6 @@
     @include('models.table',$tableOptions)
 </div>
 
-<script src="{{ asset('/js/launchpad/forms.js') }}"></script>
+<!-- <script src="{{ asset('/js/launchpad/forms.js') }}"></script> -->
+
 @endif

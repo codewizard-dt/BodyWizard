@@ -143,6 +143,4 @@ $(document).ready(function(){
             }
         })
     }    
-    
-    
 })

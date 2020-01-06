@@ -181,6 +181,3 @@ if (!isset($destinations)){
     <div class='button xsmall cancel'>dismiss</div>
     @endif
 </div>
-
-<script type='text/javascript' src="{{ asset('js/launchpad/model-table.js') }}"></script>
-<script type='text/javascript' src="{{ asset('js/launchpad/save-model.js') }}"></script>

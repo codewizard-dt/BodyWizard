@@ -1,4 +1,27 @@
 $(document).ready(function(){
+	// var saveModelBtns = $(".createNew, .editExisting").find(".submitForm").filter(function(){
+	// 	return $(this).data('updated') != true;
+	// });
+	// saveModelBtns.data('submission',false);
+	// saveModelBtns.on("click",saveModel);
+	// saveModelBtns.data('updated',true);
+
+	// var modalBtns = $(".button").filter(".createNew, .editExisting").filter(function(){
+	// 	if ($(this).data('model') == 'Template' && !$("#createTemplate").data('initialized')){
+	// 		initializeTemplateForm();
+	// 	}else if ($(this).data('model') == 'Message' && !$("#createMessage").data('initialized')){
+	// 		initializeMessageForm();
+	// 	}
+	// 	return $(this).data('initialized') != true ;
+	// });
+	// modalBtns.on("click",openModal);
+	// modalBtns.data('initialized',true);
+
+	// removePasswordInputs();
+})
+function initializeNewModelForms(){
+	initializeMessageForm();
+	initializeTemplateForm();
 	var saveModelBtns = $(".createNew, .editExisting").find(".submitForm").filter(function(){
 		return $(this).data('updated') != true;
 	});
@@ -18,10 +41,9 @@ $(document).ready(function(){
 	modalBtns.data('initialized',true);
 
 	removePasswordInputs();
-
-})
+}
 function initializeTemplateForm(){
-	var forms = $("#createTemplate, #editTemplate");
+	var forms = filterUninitialized("#createTemplate, #editTemplate");
 	forms.each(function(){
 		var section = $(this).find(".section").first();
 		$("<div/>",{
@@ -69,7 +91,7 @@ function initializeTemplateForm(){
 	forms.data('initialized',true);
 }
 function initializeMessageForm(){
-	var form = $("#createMessage");
+	var form = filterUninitialized("#createMessage");
 	form.find("#rich_text_message").addClass('summernote');
 	form.find(".summernote").summernote({
 			height:500,

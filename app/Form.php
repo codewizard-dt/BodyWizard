@@ -477,13 +477,10 @@ class Form extends Model
                                     }else{
                                         $options['name'] = $name;
                                     }
-                                    // echo "<div class='itemFU' data-type='$type' data-required='$required' data-disp='$disp' data-condition='$condition' data-key='$FUkey'>";
                                     echo "<div class='itemFU' data-type='$type' data-required='$required' data-disp='$disp' data-condition='$condition' data-key='$f'>";
                                     if ($type != "narrative"){
                                         echo "<div class='question'><p><span class='q'>$question</span><span class='requireSign'>$requireStar</span></p></div><br>";
                                     }
-                                    // echo "<div class='question'><span class='q'>$question</span></div><br>";
-                                    // echo "<div class='itemFU' data-type='$type' data-disp='$disp' data-condition='$condition'><div class='question'><span class='q'>$question</span></div><br>";
                                     $this->answerDisp($type,$options);
                                     echo "</div>";
                                 }
@@ -503,7 +500,7 @@ class Form extends Model
                 } 
             echo "</form>";
             echo "</div>";
-            echo "<script type='text/javascript' src='/js/launchpad/forms.js'></script>";
+            echo "<script type='text/javascript'>$(document).ready(function(){initializeNewForms();})</script>";
         }
         public function radio($options){
             unset($name);

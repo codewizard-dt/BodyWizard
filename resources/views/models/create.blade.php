@@ -56,7 +56,3 @@
 		])
 	@endforeach
 @endif
-
-
-<script type='text/javascript' src="{{ asset('/js/launchpad/forms.js') }}"></script>
-<script type='text/javascript' src="{{ asset('/js/launchpad/save-model.js') }}"></script>

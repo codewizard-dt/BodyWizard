@@ -117,11 +117,6 @@
 @if (findFormId($nospaces))
     @include('models.create-modal',['model'=>$nospaces,'request'=>$request])
     @include('models.edit-modal',['model'=>$nospaces,'request'=>$request])
-    <script type='text/javascript' src='{{ asset("js/launchpad/save-model.js") }}'></script>
-@elseif ($model == "Form" || $model == 'Submission')
-    <script type="text/javascript" src="{{ asset('/js/jquery.datepick.min.js') }}"></script>
-    <script type="text/javascript" src="{{ asset('/js/jSignature.min.js') }}"></script>
-    <script type="text/javascript" src="{{ asset('/js/summernote-lite.min.js') }}"></script>
 @endif
 
 <div id="delete{{ $nospaces }}" class='modalForm prompt'>
@@ -137,4 +132,5 @@
 <div class="listUpdate" data-tabs="{{json_encode($tabs)}}" data-uids="{{json_encode($uids)}}"></div>
 
 
-<script src="{{ asset('/js/launchpad/forms.js') }}"></script>
+<!-- <script src="{{ asset('/js/launchpad/forms.js') }}"></script>
+ -->
