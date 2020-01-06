@@ -201,10 +201,9 @@ function rowClickLoadModel(){
             $(".optionsNav").removeClass("hide");
             $(target).closest(".wrapper").show();
             resetOptionsNavBtns();
-            updateUriUids();
+            // updateUriUids();
             allowButtonFocus();
             optionsLoadXHR = undefined;
-            updateUidList();
             $(target).on('click','.toggleDetails',toggleDetails);
         },
         error: function(e){

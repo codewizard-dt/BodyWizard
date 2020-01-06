@@ -15,6 +15,15 @@ use App\Form;
 use App\Practitioner;
 
 $menuJson = json_decode(file_get_contents(app_path("/json/menu-data.json")),true);
+function listReturn($requestStatus, $url='not given'){
+  return 
+  [
+    'message'=>$requestStatus,
+    'url'=>$url,
+    'uidList' => session('uidList'),
+    'tabList' => session('CurrentTabs')
+  ];
+}
 
 // String related functions
   function plural($str){return Str::plural($str);}

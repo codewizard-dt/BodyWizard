@@ -50,14 +50,18 @@ class ScriptController extends Controller
                         session([$model => $uid]);
                     }
                     session(['uidList' => $uidList]);
+                    // return $uidList;
                 }else{
                     $request->session()->put($key, $val);
+                    // return session($key);
                 }
     		    if ($val == "unset"){
     				$request->session()->forget($key);
+                    // return null;
     		    }
     		}
-        	// return true;
+        	return listReturn('checkmark',$request->path());
+            // return response()->withLists('checkmark');
         }
         // public function notificationCheck(Request $request){
         //     $user = Auth::user();
@@ -198,12 +202,13 @@ class ScriptController extends Controller
             }
 
             if ($model == 'Appointment' && $result === true){
-                return [
+                $apptFeeds = [
                     'appointments' => Practice::AppointmentEventFeed(),
                     'anon' => Practice::anonApptEventFeed()
                 ];
+                return listReturn($apptFeeds, $request->path());
             }elseif ($result === true){
-                return "checkmark";
+                return listReturn("checkmark",$request->path());
             }else{
                 return $result;
             }
@@ -216,12 +221,13 @@ class ScriptController extends Controller
             $result = $this->saveModel($model, $existingInstance, $request);
 
             if ($model == 'Appointment' && $result === true){
-                return [
+                $apptFeeds = [
                     'appointments' => Practice::AppointmentEventFeed(),
                     'anon' => Practice::anonApptEventFeed()
                 ];
+                return listReturn($apptFeeds, $request->path());
             }elseif ($result === true){
-                return "checkmark";
+                return listReturn("checkmark",$request->path());
             }else{
                 return $result;
             }
@@ -384,6 +390,7 @@ class ScriptController extends Controller
                 }
                 if ($model == 'Appointment'){
                     $appt = $class::find($uid);
+                    Log::info($appt,['location'=>'387','uid'=>$uid]);
                     event(new AppointmentCancelled($appt, session('practiceId'), Auth::user()->user_type, $request));
                     $appt->delete();
                 }else{

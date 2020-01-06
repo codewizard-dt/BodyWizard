@@ -380,7 +380,7 @@ class Practice extends Model
         $usertype = Auth::user()->user_type;
         $userId = Auth::user()->id;
         $practiceId = session('practiceId');
-        Log::info(session()->all(),['location'=>'practice.php 383']);
+        // Log::info(session()->all(),['location'=>'practice.php 383']);
         // Log::info(json_encode(session()->all()));
         if ($usertype == 'practitioner'){
             $exists = Storage::disk('local')->exists('/calendar/'.$practiceId.'/practitioner/ehr-feed.json');

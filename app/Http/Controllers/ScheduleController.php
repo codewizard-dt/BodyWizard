@@ -26,7 +26,7 @@ class ScheduleController extends Controller
     	$id = Auth::user()->id;
         $practiceId = session('practiceId');
         
-        Log::info(session()->all(),['location'=>'ScheduleController 29']);
+        // Log::info(session()->all(),['location'=>'ScheduleController 29']);
         // PRACTITIONER SCHEDULE
         $exists = Storage::disk('local')->exists('/calendar/'.$practiceId.'/practitioner-schedule.json');
         $practitionerSched = $exists ? Storage::disk('local')->get('/calendar/'.$practiceId.'/practitioner-schedule.json') : '';

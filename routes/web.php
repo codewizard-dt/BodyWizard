@@ -111,5 +111,7 @@ Route::post('/security-questions/update', 'SettingsController@updateSecQ');
 Route::post('/password/update', 'SettingsController@changePw');
 Route::post('/password/check', 'SettingsController@checkPw');
 
+Route::get('/artisan/execute/{command}', 'ArtisanController@execute');
+
 Auth::routes(['verify' => true]);
 

@@ -36,7 +36,7 @@ $.fn.confirmJson = function(){
 
 function confirmJson(data){
     console.log(data,typeof data);
-    return data;
+    return (typeof data != 'object') ? JSON.parse(data) : data; 
 }
 
 // Elements must have data-order attributes already set
@@ -111,24 +111,36 @@ function randomArrayElements(array,number){
         }
     } while (newArray.length < number);
 }
-
+var uidList, tabList, tabHeaderInfo = {};
 $.ajaxSetup({
         headers: {
-            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
         },
         dataFilter: function(data,type){
-            data = typeof data == 'string' ? data.trim() : data;
-            console.log(typeof data);
-            console.log(data.length);
-            return data;
+            data = data.trim();
+            var returnData = data;
+            try{
+                var json = JSON.parse(data);
+                if (json.uidList != undefined){$("#uidList").text(JSON.stringify(json.uidList));}
+                if (json.tabList != undefined){$("#tabList").text(JSON.stringify(json.tabList));}
+                if (json.message != undefined){returnData = JSON.stringify(json.message);}
+                console.log(json);
+            }catch(e){
+
+            }
+            return returnData;
         }
 });
 var SystemModalBtnFlash;
 $(document).ajaxSuccess(function(ev,xhr,settings){
-    // console.log(xhr.responseText);
-    if (xhr.responseText.trim() == "no changes"){
+    var text = xhr.responseText;
+    if (text.trim() == "no changes"){
         $("#Feedback").find(".message").html("<h2>Update failed</h2><div>No update performed because there were <u>no changes to the record.</u></div>");
         blurTopMost("#Feedback");
+    }else if (text.includes("<h2>Notifications</h2>")){
+        console.log('notifications',xhr);
+    }else{
+        console.log("AJAX BABY!!!",xhr);
     }
 })
 $(document).ajaxError(function(ev,xhr,settings,error){
@@ -182,39 +194,45 @@ $(document).ajaxError(function(ev,xhr,settings,error){
 function submitErrorReport(){
     console.log($("#Error").find(".submit").data('error'));
 }
-function updateUidList(){
-    $.ajax({
-        url:"/getvar",
-        method:"POST",
-        data:{
-            "getVar":"uidList"
-        },
-        success:function(data){
-            $("#uidList").text(data);
-        }
-    })
+function updateUidList(uidList = null){
+    if (uidList){
+        $("#uidList").text(uidList);
+    }else{
+        $.ajax({
+            url:"/getvar",
+            method:"POST",
+            data:{
+                "getVar":"uidList"
+            },
+            success:function(data){
+                $("#uidList").text(data);
+            }
+        })
+
+    }
 }
 function setUid(model, uid){
-    var obj = {};
-    obj[model] = uid;
-    console.log(obj);
-    $.ajax({
-        url:"/setvar",
-        method:"POST",
-        data:{
-            setUID: obj
-        },
-        success: function(){
-            updateUidList();
-        }
-    });
+    console.log("fix me setUid", model, uid);
+    alert("fix me setUid!");
+    try{
+        uidList = JSON.parse($("#uidList").text());
+        if (uidList == null){uidList = {};};
+    }catch(e){
+        uidList = {};
+    }
+    uidList[model] = uid;
+    $("#uidList").text(JSON.stringify(uidList));
 }
 function getUids(model = null){
-    var uidList = JSON.parse($("#uidList").text());
-    if (uidList == null){return null;}
-    else if (model == null){return uidList;}
-    else if (uidList[model] == undefined){return null;}
-    else{return uidList[model];}
+    try{
+        var uidList = JSON.parse($("#uidList").text());
+        if (uidList == null){return null;}
+        else if (model == null){return uidList;}
+        else if (uidList[model] == undefined){return null;}
+        else{return uidList[model];}        
+    }catch(e){
+        return null;
+    }
 }
 
 $(document).on("mousedown",".button",function(e){
@@ -546,14 +564,16 @@ $(document).on("click",".toggle",function(){
 
 
 function setSessionVar(KeysValuesObj){
-    $.ajax({
-        url:"/setvar",
-        method:"POST",
-        data:KeysValuesObj,
-        success:function(data){
-            // console.log(data);
-        }
-    })
+    console.log('dont use this  setSessionVar!');
+    alert("fix me setSessionVar!");
+    // $.ajax({
+    //     url:"/setvar",
+    //     method:"POST",
+    //     data:KeysValuesObj,
+    //     success:function(data){
+    //         // console.log(data);
+    //     }
+    // })
 }
 var yourSessionVar = undefined;
 function getSessionVar(keyName){

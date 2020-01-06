@@ -11,6 +11,7 @@ use App\Form;
 use App\Appointment;
 use App\Events\BugReported;
 use App\Notifications\NewRequiredForm;
+use Illuminate\Support\Facades\Response;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -32,31 +33,31 @@ class AppServiceProvider extends ServiceProvider
     public function boot()
     {
         //
-        // include_once app_path("/php/functions.php");
-        Message::creating(function($model){$model->status = $model->defaultStatus();});
-        Patient::created(function($model){
-            try{
-                $forms = Form::where('settings->required','!=','never')->get();
-                if ($model->userInfo){
-                    foreach($forms as $form){
-                        Notification::send($model->userInfo, new NewRequiredForm($form));
+        // ELOQUENT MODEL EVENTS
+            Message::creating(function($model){$model->status = $model->defaultStatus();});
+            Patient::created(function($model){
+                try{
+                    $forms = Form::where('settings->required','!=','never')->get();
+                    if ($model->userInfo){
+                        foreach($forms as $form){
+                            Notification::send($model->userInfo, new NewRequiredForm($form));
+                        }
                     }
+                }catch(\Exception $e){
+                    event(new BugReported(
+                        [
+                            'description' => "Patient::created event", 
+                            'details' => $e, 
+                            'category' => 'Patients', 
+                            'location' => 'AppServiceProvider.php',
+                            'user' => null
+                        ]
+                    ));
                 }
-            }catch(\Exception $e){
-                event(new BugReported(
-                    [
-                        'description' => "Patient::created event", 
-                        'details' => $e, 
-                        'category' => 'Patients', 
-                        'location' => 'AppServiceProvider.php',
-                        'user' => null
-                    ]
-                ));
-            }
-        });
-        Appointment::deleting(function($model){
-            $model->removeFromGoogleCal();
-            $model->removeFromFullCal();
-        });
+            });
+            Appointment::deleting(function($model){
+                $model->removeFromGoogleCal();
+                $model->removeFromFullCal();
+            });
     }
 }

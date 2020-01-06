@@ -221,7 +221,8 @@ function saveModel(includeInvisible = false){
 		m = parentModalOrBody($(this));
 	// blurElement(p,"#loading");
 	blurTopMost('#loading');
-
+	var uidList = getUids() ? getUids() : {};
+	alert(uidList);
 	$.ajax({
 		url: url,
 		method: method,
@@ -261,7 +262,8 @@ function saveModel(includeInvisible = false){
 				// 	console.log(data);
 				// }
 			}
-		}
+		},
+		headers: {"X-CURRENT-UIDS":JSON.stringify(uidList)}
 	})
 }
 function deleteModel(){

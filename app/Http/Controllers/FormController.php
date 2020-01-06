@@ -88,7 +88,7 @@ class FormController extends Controller
                 $columns = $request->columnObj;
                 $this->storeColumns($model, $modelUid, $columns, $request);
             }
-            return "checkmark";
+            return listReturn("checkmark");
         }catch(\Exception $e){
             event(new BugReported(
                 [

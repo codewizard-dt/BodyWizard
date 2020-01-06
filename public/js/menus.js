@@ -91,7 +91,7 @@ $(document).ready(function(){
             $.scrollTo($(uri),400,{
                 offset: {left:0,top:-h}
             })
-            console.log('hi');
+            // console.log('hi');
             return false;
         }
                 
@@ -108,8 +108,10 @@ $(document).ready(function(){
             if (target=="window"){
                 window.location.href = uri;
             }else{
-                setActiveTab(menuId,id);
-                LoadingContent(target,uri);
+                // setActiveTab(menuId,id);
+                var obj = {};
+                obj[menuId] = id;
+                LoadingContent(target,uri,obj);
             }
         }        
         animateMenuV2(menu);
@@ -258,12 +260,15 @@ function tabMouseLeave(e){
     },500);
 }
 function setActiveTab(menu,tab){
-    if ($("#tabList").text().trim() == 'no session'){return false;}
-    var tabJson = JSON.parse($("#tabList").text());
-    if (!tabJson){tabJson = {};}
-    tabJson[menu] = tab;
-    setSessionVar({"CurrentTabs":tabJson})
-    $("#tabList").text(JSON.stringify(tabJson));
+    // if ($("#tabList").text().trim() == 'no session'){return false;}
+    // var tabJson = JSON.parse($("#tabList").text());
+    // if (!tabJson){tabJson = {};}
+    // tabJson[menu] = tab;
+    // setSessionVar({"CurrentTabs":tabJson})
+    // $("#tabList").text(JSON.stringify(tabJson));
+    tabHeaderInfo = {};
+    tabHeaderInfo[menu] = tab;
+    console.log(tabHeaderInfo);
 }
 function reloadTab(){
     var active = $(".menuBar").last().find(".title.active").last(),
@@ -283,7 +288,7 @@ function delayedReloadTab(time = 800){
     },time)
 }
 var loadXHR = undefined, xhrWait = undefined;
-function LoadingContent(target,uri){
+function LoadingContent(target,uri,currentTab = {}){
     if (target=="window"){
         alert("window");
     }
@@ -295,50 +300,62 @@ function LoadingContent(target,uri){
     if (loadXHR!=undefined){
         loadXHR.abort();
     }
+
     loadXHR = $.ajax({
         url:uri,
+        headers:{
+            'X-CURRENT-TAB': JSON.stringify(currentTab),
+            'X-CURRENT-UIDS': $("#uidList").text()
+        },
         success:function(data){
             console.log(uri);
             $("#ModalHome").children().filter(function(){
                 return $.inArray($(this).attr('id'),systemModalList) === -1;
             }).remove();
             $(target).html(data);
+            if ($(target).find(".listUpdate").length != 0){
+                var lists = $(target).find(".listUpdate").data(), uids = lists.uids, tabs = lists.tabs;
+                $("#uidList").text(JSON.stringify(uids));
+                $("#tabList").text(JSON.stringify(tabs));
+            }
         },
         error: function(e){
             if (e.status == 404){
                 $(target).html("<h2 class='paddedSmall'>Content Unavailable</h2><div class='central small paddedSmall bottomOnly'>Sorry for the inconvenience. If this continues, please submit an error report. Submitting an error report is just one-click away.</div><div class='button pink xxsmall errorReport'>send error report</div>");
             }
-            console.log(e);
+            // console.log(e);
         }
     })
 }
 function updateUriUids(){
-    getSessionVar('uidList');
-    var check = setInterval(function(){
-        if (yourSessionVar!=undefined && yourSessionVar!=""){
-            var uidList = JSON.parse(yourSessionVar);
-            // console.log(uidList);
-            $.each(uidList,function(label,uid){
-                var model = label.split("_")[0];
-                var menuItems = $('.menuBar').find(".tab, li").filter(function(){
-                    return $(this).data('uri') !== undefined;
-                }).filter(function(){
-                    var model = label.split("_")[0], uri = $(this).data('uri');
-                    var includesModel = uri.includes(model);
-                    var needsUid = uri.match(/(edit|delete|show|update|settings)/);
-                    return includesModel && needsUid;
-                })
-                menuItems.each(function(){
-                    var uri = $(this).data('uri');
-                    uri = uri.split("/");
-                    uri[2] = uid;
-                    uri =   uri.join("/");
-                    $(this).data('uri',uri);
-                })
-            })
-            yourSessionVar=undefined;
-            clearInterval(check);
-        }
-    },50)
+    console.log("don't use this updateUriUids!");
+    alert("Fix me updateUriUids!");
+    // getSessionVar('uidList');
+    // var check = setInterval(function(){
+    //     if (yourSessionVar!=undefined && yourSessionVar!=""){
+    //         var uidList = JSON.parse(yourSessionVar);
+    //         // console.log(uidList);
+    //         $.each(uidList,function(label,uid){
+    //             var model = label.split("_")[0];
+    //             var menuItems = $('.menuBar').find(".tab, li").filter(function(){
+    //                 return $(this).data('uri') !== undefined;
+    //             }).filter(function(){
+    //                 var model = label.split("_")[0], uri = $(this).data('uri');
+    //                 var includesModel = uri.includes(model);
+    //                 var needsUid = uri.match(/(edit|delete|show|update|settings)/);
+    //                 return includesModel && needsUid;
+    //             })
+    //             menuItems.each(function(){
+    //                 var uri = $(this).data('uri');
+    //                 uri = uri.split("/");
+    //                 uri[2] = uid;
+    //                 uri =   uri.join("/");
+    //                 $(this).data('uri',uri);
+    //             })
+    //         })
+    //         yourSessionVar=undefined;
+    //         clearInterval(check);
+    //     }
+    // },50)
 }
 

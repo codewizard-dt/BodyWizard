@@ -18,8 +18,8 @@ class CheckDomain
      */
     public function handle($request, Closure $next)
     {
-        Log::info($request->getHost(),['location'=>'checkdomain.php 21']);
-        Log::info(session()->all(),['location'=>'checkdomain.php 22']);
+        // Log::info($request->getHost(),['location'=>'checkdomain.php 21']);
+        // Log::info(session()->all(),['location'=>'checkdomain.php 22']);
 
         if (Auth::user()){
             if (session('practiceId') === null){
@@ -36,8 +36,8 @@ class CheckDomain
                     'calendarId' => $calendarId,
                     'timezone' => $tz
                 ]);
-                Log::info("HEY",['location'=>'checkdomain.php 39']);
-                Log::info(session()->all(),['location'=>'checkdomain.php 39']);
+                // Log::info("HEY",['location'=>'checkdomain.php 39']);
+                // Log::info(session()->all(),['location'=>'checkdomain.php 39']);
             }else{
                 date_default_timezone_set(session('timezone'));
             }

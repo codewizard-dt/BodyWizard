@@ -185,6 +185,21 @@
             "dropdown":false,
             "uri":"/appointments/settings"
         },
+        "artisan":
+        {
+            "id":"artisan",
+            "text":"Artisan",
+            "dropdown":
+            {
+                "refresh-appointments":
+                {
+                    "id":"refresh-appointments",
+                    "text":"Reset Appointments",
+                    "dropdown":false,
+                    "uri":"/artisan/execute/refresh-appointments"
+                }
+            }
+        },
 
         "botanicals-home":
         {
