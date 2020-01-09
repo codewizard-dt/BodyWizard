@@ -60,11 +60,10 @@
     "prefer-stable": true,
     "scripts": {
         "post-install-cmd": [
-            "chmod -R 755 bootstrap\/cache",
             "php artisan optimize:clear"
         ],
         "post-autoload-dump": [
-            "chmod -R 755 bootstrap\/cache",
+            "chmod -R 755 app\/bootstrap\/cache",
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"
         ],
