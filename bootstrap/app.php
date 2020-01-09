@@ -16,7 +16,7 @@ $app = new Illuminate\Foundation\Application(
 );
 
 //UPDATE FOR GOOGLE APP ENGINE
-$app->useStoragePath(env('APP_STORAGE', base_path() . '/storage'));
+$app->useStoragePath(env('APP_BOOTSTRAP_CACHE', base_path() . '/storage'));
 
 /*
 |--------------------------------------------------------------------------

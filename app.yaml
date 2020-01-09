@@ -20,6 +20,7 @@ env_variables:
   LOG_CHANNEL: 'stackdriver'
   SESSION_DRIVER: database
   SESSION_LIFETIME: 30
+  APP_BOOTSTRAP_CACHE: /tmp
 
 beta_settings:
   cloud_sql_instances: 'bodywizard:us-central1:ehr-data'
