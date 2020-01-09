@@ -65,6 +65,7 @@
         "post-autoload-dump": [
             "ls \/app",
             "ls \/app\/bootstrap",
+            "mkdir \/app\/bootstrap\/cache",
             "chmod -R 755 \/app\/bootstrap\/cache",
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"
