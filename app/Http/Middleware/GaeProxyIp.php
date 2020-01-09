@@ -21,6 +21,7 @@ class GaeProxyIp
             $request->server->set('REMOTE_ADDR', $_SERVER['REMOTE_ADDR'] = $forwardedFor[0]);
 
             $agent = new Agent(['sourceRoot' => realpath('/app')]);
+            
         }
         
         return $next($request);
