@@ -5,8 +5,6 @@
 <script type='text/javascript' src="{{ asset('/fullcalendar4.1/interaction/main.js') }}"></script>
 <script type='text/javascript' src="{{ asset('/fullcalendar4.1/list/main.js') }}"></script>
 <script type='text/javascript' src="{{ asset('/fullcalendar4.1/timegrid/main.js') }}"></script>
-<script type='text/javascript' src="{{ asset('/js/moment.js') }}"></script>
-<script type='text/javascript' src="{{ asset('/js/moment-timezone-with-data-10-year-range.js') }}"></script>
 <script type='text/javascript' src="{{ asset('/fullcalendar4.1/moment/main.min.js') }}"></script>
 <script type='text/javascript' src="{{ asset('/fullcalendar4.1/moment-timezone/main.min.js') }}"></script>
 <script type='text/javascript' src="{{ asset('/js/launchpad/appointments.js') }}"></script>

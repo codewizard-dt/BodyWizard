@@ -487,21 +487,21 @@ form, .indent, .report, .w95 {
 .detail {
     margin:0 !important;
 }
-#Details{
+#ApptDetails{
     display: none;
     margin: 0 0 0.5em 0;
 }
-#Details .type{
+#ApptDetails .type{
     width: 6em;
     text-align: right;
     margin: 0 0.5em 0 0;
     display: inline-block;
 }
-#Details .info{
+#ApptDetails .info{
     display: inline-block;
     width: calc(100% - 9em);
 }
-#Details .edit, .conditionalLabel .override{
+#ApptDetails .edit, .conditionalLabel .override{
     cursor: pointer;
     vertical-align: baseline;
     margin-left: 0.5em;
@@ -511,13 +511,16 @@ form, .indent, .report, .w95 {
 .conditionalLabel .button{
     margin-bottom: -1em;
 }
+.calendar #ChangeTitleWrap{
+    float:right;
+}
 #ChangeTitleWrap{
     position: relative;
     display: inline-block;
     border-radius: 5px;
     border: 1px solid var(--purple10);
     height: 2.25em;
-    float: right;
+    /*float: right;*/
     width:auto;
     margin: -1em 0 0.5em 0;
     z-index: 5;
@@ -1677,6 +1680,7 @@ input#PatientName {
     padding: 1em 0;
     border: 1px solid var(--purple);
     border-width: 1px 0 0 0;
+    font-size: 0.9em;
 }
 .optionsNav .toggleDetails{
     padding: 0.4em;

@@ -3,7 +3,6 @@
     use Illuminate\Support\Facades\Log;
 
     $user = Auth::user();
-    // $notifications = $user->unreadNotifications;
     $usertype = $user->user_type;
     if ($usertype == 'practitioner'){
         $menuData = "PortalPractitioner";
@@ -103,31 +102,28 @@
                     <div class="button minimize cancel xsmall">minimize</div>
                 </div>                
             </div>
-
         </div>
 
 
         @include('layouts.footer-simple')
 
             <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-color/2.1.2/jquery.color.min.js" integrity="sha256-H28SdxWrZ387Ldn0qogCzFiUDDxfPiNIyJX7BECQkDE=" crossorigin="anonymous"></script>
-            <script type="text/javascript" src="{{ asset('/js/functions.js') }}"></script>
-            <script type="text/javascript" src="{{ asset('/js/launchpad/launchpad.js') }}"></script>
-            <script type="text/javascript" src="{{ asset('/js/scrollTo.js') }}"></script>
-            <script type="text/javascript" src="{{ asset('/js/menus.js') }}"></script>
-            <script type="text/javascript" src="{{ asset('/js/jonthornton-jquery-timepicker-99bc9e3/jquery.timepicker.min.js') }}"></script>
-            <script type="text/javascript" src="{{ asset('/js/jquery.plugin.min.js') }}"></script>
-            <script type='text/javascript' src="{{ asset('/js/moment.js') }}"></script>
-<!--             <script type='text/javascript' src="{{ asset('/js/moment-timezone-with-data-10-year-range.min.js') }}"></script> -->
-<!--             <script type='text/javascript' src="{{ asset('/js/moment-timezone.js') }}"></script> -->
-            <script type="text/javascript" src="{{ asset('/js/jquery.datepick.min.js') }}"></script>
-            <script type="text/javascript" src="{{ asset('/js/mark/jquery.mark.js') }}"></script>
-            <script type='text/javascript' src="{{ asset('/js/summernote-lite.min.js') }}"></script>
+            <script type="text/javascript" src="{{asset('/js/functions.js')}}"></script>
+            <script type="text/javascript" src="{{asset('/js/launchpad/launchpad.js')}}"></script>
+            <script type="text/javascript" src="{{asset('/js/scrollTo.js')}}"></script>
+            <script type="text/javascript" src="{{asset('/js/menus.js')}}"></script>
+            <script type="text/javascript" src="{{asset('/js/jonthornton-jquery-timepicker-99bc9e3/jquery.timepicker.min.js')}}"></script>
+            <script type="text/javascript" src="{{asset('/js/jquery.plugin.min.js')}}"></script>
+            <script type='text/javascript' src="{{asset('/js/moment.js')}}"></script>
+            <script type='text/javascript' src="{{asset('/js/moment-timezone-with-data-10-year-range.js')}}"></script>
+            <script type="text/javascript" src="{{asset('/js/jquery.datepick.min.js')}}"></script>
+            <script type="text/javascript" src="{{asset('/js/mark/jquery.mark.js')}}"></script>
+            <script type='text/javascript' src="{{asset('/js/summernote-lite.min.js')}}"></script>
             <script type='text/javascript' src='{{asset("/js/launchpad/forms.js")}}'></script>
-            <script type='text/javascript' src="{{ asset('/js/launchpad/save-model.js') }}"></script>
-            <script type='text/javascript' src="{{ asset('/js/launchpad/model-table.js') }}"></script>
-
-
-
+            <script type='text/javascript' src="{{asset('/js/launchpad/save-model.js')}}"></script>
+            <script type='text/javascript' src="{{asset('/js/launchpad/model-table.js')}}"></script>
+            <script type='text/javascript' src="{{asset('/js/launchpad/model-settings.js')}}"></script>
+            @include ('schedules.scripts')
         @yield('scripts')
 
     </body>

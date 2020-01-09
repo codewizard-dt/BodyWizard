@@ -42,26 +42,26 @@ $(document).ready(function(){
 })
 
 function submitRegistration(){
-    var obj = checkForm($("#NewUser")), u = $("#NewUser").find("#username"), e = $("#NewUser").find("#email_address"), p = $("#NewUser").find("#phone_number");
+    var obj = checkForm($("#NewUser")), form = $("#NewUser"), u = form.find("#username"), e = form.find("#email_address"), p = form.find("#phone_number");
     if (!obj){return false;}
     if (finalizePhone(p) && finalizeEmail(e) && finalizeUsername(u)){
-        blurElement($("#NewUser"),"#loading");
+        blurElement(form,"#loading");
     }else{
         return false;
     }
     var data = {
-            username : $("#email_address").val(),
-            first_name : $("#first_name").val(),
-            middle_name : ($("#middle_name").val() != "") ? $("#middle_name").val() : null,
-            last_name : $("#last_name").val(),
-            preferred_name : ($("#preferred_name").val() != "") ? $("#preferred_name").val() : null,
-            password : $("#password").val(),
-            password_confirmation : $("#confirm_password").val(),
-            date_of_birth: justResponse($("#date_of_birth")),
+            username : form.find(".email_address").val(),
+            first_name : form.find(".first_name").val(),
+            middle_name : (form.find(".middle_name").val() != "") ? form.find(".middle_name").val() : null,
+            last_name : form.find(".last_name").val(),
+            preferred_name : (form.find(".preferred_name").val() != "") ? form.find(".preferred_name").val() : null,
+            password : form.find(".password").val(),
+            password_confirmation : form.find(".confirm_password").val(),
+            date_of_birth: justResponse(form.find(".date_of_birth")),
             full_json: JSON.stringify(obj),
-            phone: $("#phone_number").val(),
-            email: $("#email_address").val(),
-            username: ($("#username").val() != "") ? $("#username").val() : $("#email_address").val()
+            phone: form.find(".phone_number").val(),
+            email: form.find(".email_address").val(),
+            username: (form.find(".username").val() != "") ? form.find(".username").val() : form.find(".email_address").val()
         };
         console.log(data);
     $.ajax({
@@ -71,20 +71,20 @@ function submitRegistration(){
         success:function(data){
             console.log(data);
             if (data=='checkmark'){
-                blurElement($("#NewUser"),"#checkmark");
+                blurElement(form,"#checkmark");
                 setTimeout(function(){
                     location.reload();
                 },1000)
             }else{
                 unblurElement($("body"));
-                unblurElement($("#NewUser"));                
+                unblurElement(form);                
             }
         },
         error:function(data){
             console.log(data);
             $("#Error").html(data.reponseText + "<br><div class='button cancel'>cancel</div>").css("max-height","10em");
-            // $("#NewUser").html(data.responseText);
-            unblurElement($("#NewUser"));
+            // form.html(data.responseText);
+            unblurElement(form);
             blurElement($("body"),"#Error");
         }
     })

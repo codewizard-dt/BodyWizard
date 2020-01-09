@@ -197,6 +197,13 @@
                     "text":"Reset Appointments",
                     "dropdown":false,
                     "uri":"/artisan/execute/refresh-appointments"
+                },
+                "update-appointments":
+                {
+                    "id":"update-appointments",
+                    "text":"Refresh Appointments",
+                    "dropdown":false,
+                    "uri":"/artisan/execute/update-appointments"
                 }
             }
         },

@@ -16,8 +16,11 @@ class ArtisanController extends Controller
     		Artisan::call("refresh:appointments",[
     			'practiceId' => session('practiceId'),
     		]);
-    		$message = 'Appointments reset';
-    	}else{
+    		$message = 'Appointments cleared.';
+    	}elseif($command == 'update-appointments'){
+            \App\Practice::updateEntireEventFeed();
+            $message = 'Appointment feed updated.';
+        }else{
     		$message = 'command not recognized';
     	}
     	return $message;

@@ -1,7 +1,7 @@
 var notify, notificationCheck, notificationCategory = 'all', clickWhenFinished = null, multiBtns;
 $(document).ready(function () {
 	checkNotifications();
-    // notificationCheck = setInterval(checkNotifications,1000*20);
+    notificationCheck = setInterval(checkNotifications,1000*60);
     notify = $("#Notifications");
     notify.on('click','.open, .cancel',toggleNotifications);
     notify.on('click','li',showFullNotification);
@@ -31,7 +31,6 @@ function clickTab(){
 var notifyXhr = undefined;
 function checkNotifications(){
 	if (notifyXhr == undefined){
-		console.log('checking');
 	    notifyXhr = $.ajax({
 	        url:'/notification-check',
 	        method:'post',
@@ -42,7 +41,7 @@ function checkNotifications(){
 	        	updateNotificationList(notifications);
 	        }
 	    });		
-	}else{console.log('no check');}
+	}
 }
 function updateNotificationList(notifications){
 	// console.log(notifications);

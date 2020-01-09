@@ -4,7 +4,10 @@ $(".jump").on("click",function(){
 });
 
 var systemModalList = ['Confirm','Warn','Error','Feedback','Refresh','Notification'],
-    systemModals = $('#Confirm, #Warn, #Error, #Feedback, #Refresh, #Notification');
+    systemModals = $('#Confirm, #Warn, #Error, #Feedback, #Refresh, #Notification'), usertype,
+    defaultTemplateInfo;
+
+
 
 (function($) {
     $.sanitize = function(input) {
@@ -28,15 +31,20 @@ $.fn.resetActives = function (){
     this.find('.active').removeClass('active');
     return this;
 }
-$.fn.confirmJson = function(){
-    // console.log(this,typeof this);
-    // return this;
-    return confirmJson(this);
-}
 
 function confirmJson(data){
-    console.log(data,typeof data);
-    return (typeof data != 'object') ? JSON.parse(data) : data; 
+    var json;
+    try{
+        json = JSON.parse(data);
+    }catch(e){
+        if (typeof data != 'object'){
+            alert('invalid json, functions.js 38');
+            json = "not valid JSON";
+        }else{
+            json = data;
+        }
+    }
+    return json;
 }
 
 // Elements must have data-order attributes already set
@@ -61,7 +69,11 @@ function commaSeparated (arr, quotes = false) {
     }
 }
 
-function filterUninitialized(selector){
+function getUsertype(){
+    return $("#uidList").data('usertype');
+}
+
+function filterUninitialized(selector,debug = false){
     var uninitialized, obj;
     if (selector instanceof jQuery){obj = selector;}
     else if(typeof selector == 'string'){obj = $(selector);}
@@ -69,6 +81,15 @@ function filterUninitialized(selector){
     uninitialized = obj.filter(function(){
         return !$(this).data('initialized');
     });
+    if (debug){
+        var alreadyInitialized = obj.not(uninitialized);
+        if (alreadyInitialized.length > 0){
+            console.log('already initialized',obj.not(uninitialized).length);
+        }else{
+            console.log('none already initialized');
+        }
+        
+    }
     return uninitialized;
 }
 function filterByData(selector,key,value){
@@ -119,14 +140,18 @@ $.ajaxSetup({
         dataFilter: function(data,type){
             data = data.trim();
             var returnData = data;
+            // console.log(data);
             try{
                 var json = JSON.parse(data);
                 if (json.uidList != undefined){$("#uidList").text(JSON.stringify(json.uidList));}
-                if (json.tabList != undefined){$("#tabList").text(JSON.stringify(json.tabList));}
+                if (json.tabList != undefined){
+                    $("#tabList").text(JSON.stringify(json.tabList));
+                    console.log('tablist',json.tabList);
+                }
                 if (json.message != undefined){returnData = JSON.stringify(json.message);}
                 console.log(json);
             }catch(e){
-
+                // console.log(data);
             }
             return returnData;
         }
@@ -135,12 +160,12 @@ var SystemModalBtnFlash;
 $(document).ajaxSuccess(function(ev,xhr,settings){
     var text = xhr.responseText;
     if (text.trim() == "no changes"){
-        $("#Feedback").find(".message").html("<h2>Update failed</h2><div>No update performed because there were <u>no changes to the record.</u></div>");
+        $("#Feedback").find(".message").html("<h2>No Changes</h2><div>There was no update performed because there were <u>no changes.</u></div>");
         blurTopMost("#Feedback");
     }else if (text.includes("<h2>Notifications</h2>")){
-        console.log('notifications',xhr);
+        // console.log('notifications');
     }else{
-        console.log("AJAX BABY!!!",xhr);
+        // console.log("AJAX BABY!!!",xhr);
     }
 })
 $(document).ajaxError(function(ev,xhr,settings,error){
@@ -212,8 +237,6 @@ function updateUidList(uidList = null){
     }
 }
 function setUid(model, uid){
-    console.log("fix me setUid", model, uid);
-    alert("fix me setUid!");
     try{
         uidList = JSON.parse($("#uidList").text());
         if (uidList == null){uidList = {};};
@@ -606,9 +629,15 @@ function slideFadeOut(elem,time = 400,callback = null) {
 }
 function slideFadeIn(elem,time = 400,callback = null){
     var t = "opacity "+time+"ms";
-    var solid = { opacity: 1, transition: t};
-    elem.css("opacity","0")
+    var solid = {opacity: 1, transition: t};
+    elem.css("opacity","0");
     elem.slideDown(time).delay(100).css(solid);
+    // setTimeout(function(){
+    //     if (elem.css('opacity') == 0){
+    //         alert('help!');
+    //         elem.animate({opacity:1},time);
+    //     }
+    // },101)
     if (callback){
         setTimeout(callback,time+101);
     }
@@ -666,6 +695,9 @@ function saveSystemModals(){
     systemModals.appendTo("#ModalHome");
 }
 function blurElement(elem,modal,time,callback){
+    if (modal == "#Feedback"){
+        console.log(elem, modal, $(modal));
+    }
     time = (time != undefined) ? time : "400";
     var position = $(elem).css("position"),
         home = ($("#ModalHome").length > 0) ? $("#ModalHome") : $("body");
@@ -814,6 +846,11 @@ function blurTopMost(modal){
     else if (ele.attr('id') == "loading"){ele = $(".blur").last().parent();}
     if (ele.is(modal)){
         console.log("can't blur "+ele.attr('id')+" since top most is "+modal);
+        return;
+    }else if (ele.is("#checkmark")){
+        setTimeout(function(){
+            blurTopMost(modal);
+        },100);
         return;
     }
     blurElement(ele,modal);
@@ -1281,9 +1318,6 @@ function optionsNavBtnClick(){
         dest = $(this).data('destination'),
         link = $(".tab").filter("#"+dest).find(".title"),
         uid = optionsNav.data("uid");
-
-
-    // console.log(link.data());
     
     if (link.length>0){
         if (link.data('uri').match(/(edit|delete|show|update|settings)/)){
@@ -1357,7 +1391,6 @@ function optionsNavBtnClick(){
 
         removePasswordInputs();
 
-        // console.log(dispModel);
         updateEditForm(modal, dispModel, name);
         $(modal).find(".submitForm").text("update");
         $(modal).data('uid',optionsNav.data('uid'));
@@ -1383,6 +1416,8 @@ function optionsNavBtnClick(){
             success:function(data){
                 $(data).appendTo("#ModalHome");
                 var form = $("#"+id), settings = (form.data('settings')!=undefined) ? form.data('settings') : false;
+                initializeNewForms();
+                initializeSettingsForm();
                 form.find(".button.submitForm").text("save settings");
                 form.find("h1, h2, .q").filter(function(){return !$(this).data('updated');}).each(function(){
                     var t = $(this).text(), name = optionsNav.find(".name").text();
@@ -1422,11 +1457,12 @@ function optionsNavBtnClick(){
                     }).appendTo("#ModalHome");
                     $("#LoadedForm").load("/retrieve/Form/"+uid,function(){
                         blurTopMost("#LoadedForm");
-                    })
+                        initializeNewForms();
+                    });
                 }
             })            
         }else{
-            confirm('Form Already Completed',"You've already completed this form and you don't have to complete it again right now. Would you like to view your completed form?","yes, go to submissions",'no thanks');
+            confirm('Form Already Completed',"You've already completed this form and you don't have to complete it again right now. Would you like to view your submission?","yes, go to submissions",'no thanks');
             var wait = setInterval(function(){
                 if (confirmBool != undefined){
                     if (confirmBool){
@@ -1451,6 +1487,7 @@ function optionsNavBtnClick(){
                 }).appendTo("#ModalHome");
                 $("#LoadedSubmission").load("/retrieve/Submission/"+uid,function(){
                     var json = $("#responses").data('json');
+                    initializeNewForms();
                     setTimeout(function(){
                         fillForm(json,$("#LoadedSubmission"));
                         disableForm($("#LoadedSubmission"));
@@ -1622,6 +1659,8 @@ function singular(model){
 }
 
 var loadingRing = "<div class='lds-ring dark'><div></div><div></div><div></div><div></div></div>", loadingRingCSS = {top:"50%",transform:"translate(-50%,-50%)"};
+// $(document).ready(function(){
+// });
 
 $(document).ready(function(){
     resizeElements();
@@ -1630,6 +1669,12 @@ $(document).ready(function(){
             slideFadeOut($("#LoggedOut"));
         },2000)
     }
+    usertype = getUsertype();
+    if (usertype == 'patient'){
+        systemModalList.push("createAppointment","editAppointment","SelectServices","SelectPractitioner","SelectDateTime","ApptDetails","ServiceListModal","PractitionerListModal");
+        systemModals = systemModals.add($("#createAppointment, #editAppointment, #SelectServices, #SelectPractitioner, #SelectDateTime, #ApptDetails, #ServiceListModal, #PractitionerListModal"));
+    }
+
     $(".booknow").addClass("link").data("target","/booknow");
     $(".link").on("click",followLink);
     $(document).on('click','.cancel',unblurTopMost);

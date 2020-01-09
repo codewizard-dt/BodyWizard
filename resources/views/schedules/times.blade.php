@@ -27,7 +27,7 @@ $dateOptions = [
 ];
 ?>
 
-<div id="SelectDateTime" class='progressiveSelection selector'>
+<div id="SelectDateTime" class='progressiveSelection selector toModalHome'>
 	<div class="progressBar">
 		<div class='back'></div>
 	</div>

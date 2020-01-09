@@ -9,5 +9,3 @@
     'items' => $items,
     'type' => 'portal'
 ])
-
-<script type="text/javascript">$(document).ready(function(){initializeNewMenus();})</script>

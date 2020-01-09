@@ -7,7 +7,7 @@
         $items = ['about','what_how','portal_login','divide','booknow'];
         $tabs = "no session";
     }elseif (Auth::user()){
-        $items = ['about','what_how','portal_home','divide','logout','booknow'];
+        $items = ['about','what_how','divide','logout','portal_home'];
         $tabs = json_encode(session('CurrentTabs'));
         $uids = json_encode(session('uidList'));
     }

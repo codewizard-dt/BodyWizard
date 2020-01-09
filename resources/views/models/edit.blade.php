@@ -5,25 +5,31 @@
 
 	// Display a form that can create new Models
 	// REQUIRES $model such that App\$model resolves
-	$CreateNew = Form::where('form_id', findFormId($model))->orderBy('version_id','desc')->first();
+	$form = Form::where('form_id', findFormId($model))->orderBy('version_id','desc')->first();
 	$class = "App\\$model";
 	$ctrl = new $class;
 	$connectedModels = isset($ctrl->connectedModels) ? $ctrl->connectedModels : [];
 	$includeConnectedModals = isset($includeConnectedModals) ? $includeConnectedModals : false;
 
-	$noPW = (in_array($model,['User','Patient','Practitioner','StaffMember']) && Auth::check()) ? "noPW" : "";
+	if (in_array($model, ['User','Patient','Practitioner','StaffMember'])){
+		$noPW = Auth::check() ? 'noPW' : "";
+		$user = $model;
+	}else{
+		$noPW = "";
+		$user = false;
+	}
 	$admin = (Auth::user()->is_admin) ? "admin" : "";
 ?>
 
 @if ($modal)
 <div id='edit{{ $model }}' class='central large editExisting modalForm {{ $noPW }} {{ $admin }}' data-model='{{ $model }}'>
-	<h1 class='purple paddedSmall'>{{ $CreateNew->form_name }}</h1>
-	{{ $CreateNew->formDisplay(true) }}
+	<h1 class='purple paddedSmall'>{{ $form->form_name }}</h1>
+	{{ $form->formDisplay(true,true,true,$user) }}
 </div>
 @else
 <div id='edit{{ $model }}' class='central large editExisting {{ $noPW }} {{ $admin }}' data-model='{{ $model }}'>
-	<h1 class='purple paddedSmall'>{{ $CreateNew->form_name }}</h1>
-	{{ $CreateNew->formDisplay(false) }}
+	<h1 class='purple paddedSmall'>{{ $form->form_name }}</h1>
+	{{ $form->formDisplay(false,true,true,$user) }}
 </div>
 @endif
 
@@ -35,8 +41,10 @@
 			'relationship' => $includeModel[2],
 			'connectedTo' => $model
 		])
-		@include('models.create-modal', [
-			'model' => $includeModel[0]
-		])
+		@if (Auth::user()->user_type == 'practitioner')
+			@include('models.create-modal', [
+				'model' => $includeModel[0]
+			])
+		@endif
 	@endforeach
 @endif

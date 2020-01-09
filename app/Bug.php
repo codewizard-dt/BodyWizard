@@ -89,7 +89,7 @@ class Bug extends Model
     }
     public function moreOptions(){
         // $bug = $this->toArray();
-        $bug = [
+        $options = [
             'Category' => $this->category,
             'Description' => $this->description,
             'Location' => $this->location,
@@ -97,7 +97,7 @@ class Bug extends Model
             'Details' => $this->details
         ];
         echo '<div class="split3366KeyValues">';
-        foreach($bug as $attr => $val){
+        foreach($options as $attr => $val){
             if (is_array($val)){
                 echo "<div class='label'>$attr</div><div class='value little'>";
                 foreach ($val as $k => $v){

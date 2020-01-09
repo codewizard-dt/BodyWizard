@@ -1,5 +1,6 @@
 <?php 
-	if (Auth::user()->user_type == 'patient'){
+	$type = Auth::user()->user_type;
+	if ($type == 'patient'){
 		setUid('Patient', Auth::user()->patientInfo->id);
 	}
 	$tabs = json_encode(session('CurrentTabs'));
@@ -16,7 +17,5 @@
 	])
 </div>
 
-<div id="tabList"> {{ $tabs }} </div>
-<div id="uidList"> {{ $uids }} </div>
-
-<script type="text/javascript">$(document).ready(function(){initializeNewMenus();})</script>
+<div id="tabList">{{$tabs}}</div>
+<div id="uidList" data-usertype='{{$type}}'>{{$uids}}</div>

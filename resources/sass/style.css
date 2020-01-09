@@ -398,7 +398,7 @@ a:hover {color:var(--pink);}
     right:7em;
 }
 
-#booknow{
+#booknow, #portal_home{
     font-weight: bold;
     color: var(--pink);
     font-size: 1em;

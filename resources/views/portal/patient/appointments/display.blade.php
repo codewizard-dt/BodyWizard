@@ -20,26 +20,23 @@
 
     $type = camel(Auth::user()->user_type);
     if ($type == 'patient'){
-        $patient = Patient::find(Auth::user()->patientInfo->id);
-        $patientInfo = [
-            'id' => $patient->id,
-            'isNewPatient' => ($patient->isNewPatient() == 'true'),
-            'name' => getNameFromUid('Patient',$patient->id)
-        ];
-
-    }elseif ($type == 'practitioner'){
-        $patientInfo = [];
-    }else{
+        // $patient = Patient::find(Auth::user()->patientInfo->id);
+        // $patient = Auth::user()->patientInfo;
+        // $patientInfo = [
+        //     'id' => $patient->id,
+        //     'isNewPatient' => ($patient->isNewPatient() == 'true'),
+        //     // 'name' => getNameFromUid('Patient',$patient->id)
+        //     'name' => $patient->name
+        // ];
 
     }
 ?>  
 
 <h2 class="purple paddedSmall">Your Appointments</h2>
 <div id="TimezoneWrap"></div>
-<div id="PatientCalendar" class='calendar patient' data-location='Austin, TX' data-timezone='{{date_default_timezone_get()}}' data-patient='{{json_encode($patientInfo)}}'>
+<div id="PatientCalendar" class='calendar patient' data-location='Austin, TX' data-timezone='{{date_default_timezone_get()}}'>
     <div class='lds-ring dark'><div></div><div></div><div></div><div></div></div>
 </div>
-<div id='ScheduleFeedTarget'></div>
 <div id="ApptInfo" class="modalForm prompt">
     <div class="message">
         <h1 class='purple'>Appointment Details</h1>
@@ -69,45 +66,4 @@
     </div>
 </div>
 
-@include ('models.create-modal',["model" => "Appointment"])
-@include ('models.edit-modal',["model" => "Appointment"])
-
-@include ('schedules.services')
-@include ('schedules.practitioners')
-@include ('schedules.times')
-
-<div id="Details">
-    <h3 class="services">
-        <span class='type purple'>Services:</span>
-        <span class='info'>
-            <span class='value pink'>none</span>
-            <span class='edit yellow italic' data-target="#SelectServices">select</span>            
-        </span>
-    </h3>
-    <h3 class="date">
-        <span class='type purple'>Date:</span>
-        <span class='info'>            
-            <span class='value pink'>none</span>
-            <span class='edit yellow italic' data-target="#SelectDateTime">select</span>
-        </span>
-    </h3>
-    <h3 class="time">
-        <span class='type purple'>Time:</span>
-        <span class='info'>
-            <span class='value pink'>none</span>
-            <span class='edit yellow italic' data-target="#SelectDateTime"></span>
-        </span>
-    </h3>
-    <h3 class="practitioner">
-        <span class='type purple'>Practitioner:</span>
-        <span class='info'>
-            <span class='value pink'>none</span>
-            <span class='edit yellow italic' data-target="#SelectPractitioner">select</span>       
-        </span>
-    </h3>
-</div>
-
-@include ('schedules.scripts')
-<script type='text/javascript' src="{{ asset('/js/calendar-patient.js') }}"></script>
-
-
+@include('portal.list-update')

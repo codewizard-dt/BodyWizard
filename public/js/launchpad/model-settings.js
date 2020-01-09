@@ -1,4 +1,7 @@
 $(document).ready(function(){
+
+})
+function initializeSettingsForm(){
 	var settingsBtns = $(".settingsForm").find(".submitForm").filter(function(){
 		return $(this).data('updated') != true;
 	});
@@ -6,73 +9,76 @@ $(document).ready(function(){
 	settingsBtns.on("click",saveSettings);
 	settingsBtns.data('updated',true);
 
-	var model = $(".settingsForm").data('model'), json = $(".settingsForm").data('settingsjson'), form = $("#ModelSettings");
+	var settingsForm = filterUninitialized('.settingsForm');
+	if (settingsForm.length > 0){
+		var model = $(".settingsForm").data('model'), json = $(".settingsForm").data('settingsjson'), form = $("#ModelSettings");
 
-	if (model == 'Form'){
-		var target, sections;
-		$(".submitForm").first().remove();
-		target = $("#"+$(".settingsForm").data('target'));
-		sections = target.find(".section");
+		if (model == 'Form'){
+			var target, sections;
+			$(".submitForm").first().remove();
+			target = $("#"+$(".settingsForm").data('target'));
+			sections = target.find(".section");
 
-        var template = $(".template").filter("[data-type='section']"), 
-        	blockCss = {
-        		backgroundColor: "rgba(130,130,130,0.2)",
-        		opacity: '1'
-        	}, dynamicBtns = template.find("#dynamic").find("li");
-        
-        template.find(".plzselect").remove();
-        template.find("#complaint_types").hide().css("font-size","0.9em");
-        template.on('click','li',updateSectionOptions);
-        dynamicBtns.on('click',function(){
-        	var p = $(this).closest(".displayOptions"), t = p.find("#complaint_types"), v = $(this).data('value');
+	        var template = $(".template").filter("[data-type='section']"), 
+	        	blockCss = {
+	        		backgroundColor: "rgba(130,130,130,0.2)",
+	        		opacity: '1'
+	        	}, dynamicBtns = template.find("#dynamic").find("li");
+	        
+	        template.find(".plzselect").remove();
+	        template.find("#complaint_types").hide().css("font-size","0.9em");
+	        template.on('click','li',updateSectionOptions);
+	        dynamicBtns.on('click',function(){
+	        	var p = $(this).closest(".displayOptions"), t = p.find("#complaint_types"), v = $(this).data('value');
 
-       		var h4 = t.prev().is("h4");
-        	if (v == 'display based on complaint type'){
-        		if (!h4){
-	        		$("<h4/>",{
-	        			text: "Section will only display when treating one of the selected complaint types"
-	        		}).insertBefore(t);
-	        		$("<h4/>").insertAfter(t);        			
-        		}
-        		slideFadeIn(t);
-        	}else{
-        		if (h4){
-	        		t.prev().remove();
-	        		t.next().remove();
-        		}
-        		slideFadeOut(t);
-        		t.find('.active').removeClass('active');
-        	}        		
-        })
-        sections.each(function(){
-        	$("<div class='block'/>").css(blockCss).appendTo($(this));
-            template.clone(true).appendTo($(this).find(".block")).removeClass("template").show();
-            $(this).children(".requireSign").remove();
-        });
-        $(".showOptions").on('click',showOptions);
-	}else if (model == 'Service'){
-		$("#ServiceMap").insertAfter($("#to_which_other_services_can_this_service_be_added").closest(".itemFU")).hide();
-		$("#to_which_other_services_can_this_service_be_added").on('click',"li",function(){
-			var value = $(this).data('value');
-			if (value == "select which service(s)"){
-				slideFadeIn($("#ServiceMap"));
-			}else{
-				slideFadeOut($("#ServiceMap"));
-			}
-		})
-		console.log($("#ServiceMap").data('currentaddonservices'));
+	       		var h4 = t.prev().is("h4");
+	        	if (v == 'display based on complaint type'){
+	        		if (!h4){
+		        		$("<h4/>",{
+		        			text: "Section will only display when treating one of the selected complaint types"
+		        		}).insertBefore(t);
+		        		$("<h4/>").insertAfter(t);        			
+	        		}
+	        		slideFadeIn(t);
+	        	}else{
+	        		if (h4){
+		        		t.prev().remove();
+		        		t.next().remove();
+	        		}
+	        		slideFadeOut(t);
+	        		t.find('.active').removeClass('active');
+	        	}        		
+	        })
+	        sections.each(function(){
+	        	$("<div class='block'/>").css(blockCss).appendTo($(this));
+	            template.clone(true).appendTo($(this).find(".block")).removeClass("template").show();
+	            $(this).children(".requireSign").remove();
+	        });
+	        $(".showOptions").on('click',showOptions);
+		}else if (model == 'Service'){
+			$("#ServiceMap").insertAfter($("#to_which_other_services_can_this_service_be_added").closest(".itemFU")).hide();
+			$("#to_which_other_services_can_this_service_be_added").on('click',"li",function(){
+				var value = $(this).data('value');
+				if (value == "select which service(s)"){
+					slideFadeIn($("#ServiceMap"));
+				}else{
+					slideFadeOut($("#ServiceMap"));
+				}
+			})
+			// console.log($("#ServiceMap").data('currentaddonservices'));
+		}
+
+		if (json != undefined){
+		    fillForm(json,form);
+		}
+
+	    $(".settingsForm").on("mousedown touchstart",function(e){
+	        var btn = $(".displayOptions").filter(function(){return $(this).find(".options").is(":visible");}).find(".showOptions"), t = $(e.target);
+	        if (btn.length > 0 && t.closest(".options").length == 0 && !t.hasClass("showOptions")){btn.click();}
+	    })	
 	}
-
-	if (json != undefined){
-	    fillForm(json,form);
-	}
-
-    $(".settingsForm").on("mousedown touchstart",function(e){
-        var btn = $(".displayOptions").filter(function(){return $(this).find(".options").is(":visible");}).find(".showOptions"), t = $(e.target);
-        if (btn.length > 0 && t.closest(".options").length == 0 && !t.hasClass("showOptions")){btn.click();}
-    })
-})
-
+	settingsForm.data('initialized',true);
+}
 var defaultSectionOptions = {
 	"dynamic":["always display"],
 	"complaint_types":[]
@@ -139,8 +145,8 @@ function hideOptions(){
 function saveSettings(){
 	var form = $("#ModelSettings"), formWrap = form.closest(".settingsForm"), model = formWrap.data('model'),
 		obj = checkForm(form), connectedModelArr = checkConnectedModels(model), uid = formWrap.data('uid'),
-		url = "/save/settings/" + model + "/" + uid, columnObj = constructColumnSettingsObj(model),
-		settings = constructEasyAccessList(model);
+		url = "/save/settings/" + model + "/" + uid, columnObj = constructColumnSettingsObj(model, form),
+		settings = constructEasyAccessList(model, form);
 
 	if (model == 'Form'){
 		saveSectionSettings();
@@ -183,21 +189,21 @@ function saveSettings(){
 		return false;
 	}
 }
-function constructColumnSettingsObj(model){
+function constructColumnSettingsObj(model,form){
 	var obj = {};
 	if (model == 'Service'){
 		obj = {
-			is_addon: turnToBoolean(justResponse($("#is_this_service_an_add-on_type_service"))),
-			new_patients_ok: turnToBoolean(justResponse($("#is_this_service_available_for_new_patients")))
+			is_addon: turnToBoolean(justResponse(form.find(".is_this_service_an_add-on_type_service"))),
+			new_patients_ok: turnToBoolean(justResponse(form.find(".is_this_service_available_for_new_patients")))
 		}
-		if ($("#is_this_service_only_for_new_patients").is(":visible")){
-			obj['new_patients_only'] = turnToBoolean(justResponse($("#is_this_service_only_for_new_patients")));
+		if (form.find(".is_this_service_only_for_new_patients").is(":visible")){
+			obj['new_patients_only'] = turnToBoolean(justResponse(form.find(".is_this_service_only_for_new_patients")));
 		}
-		if ($("#is_this_service_only_available_as_an_add-on").is(":visible")){
-			obj['addon_only'] = turnToBoolean(justResponse($("#is_this_service_only_available_as_an_add-on")));
+		if (form.find(".is_this_service_only_available_as_an_add-on").is(":visible")){
+			obj['addon_only'] = turnToBoolean(justResponse(form.find(".is_this_service_only_available_as_an_add-on")));
 		}
-		if ($("#to_which_other_services_can_this_service_be_added").is(":visible")){
-			var val = justResponse($("#to_which_other_services_can_this_service_be_added")), serviceIds = null, services, map = $("#ServiceMap").data('map');
+		if (form.find(".to_which_other_services_can_this_service_be_added").is(":visible")){
+			var val = justResponse(form.find(".to_which_other_services_can_this_service_be_added")), serviceIds = null, services, map = $("#ServiceMap").data('map');
 			if (val != "any service"){
 				serviceIds = [];
 				services = $("#ServiceNames").find(".active");
@@ -219,14 +225,14 @@ function constructColumnSettingsObj(model){
 	}
 	else if (model == 'Form'){
 		obj = {
-			form_type: justResponse($("#select_form_type"))
+			form_type: justResponse(form.find(".select_form_type"))
 		}
 	}
 	if ($.isEmptyObject(obj)){obj = null;}
 	// console.log(obj);
 	return obj;
 }
-function constructEasyAccessList(model){
+function constructEasyAccessList(model, form){
 	var obj = {};
 	if (model == 'Service'){
 	}
@@ -235,26 +241,26 @@ function constructEasyAccessList(model){
 	else if (model == 'ServiceCategory'){
 	}
 	else if (model == 'Form'){ 
-		var requirement = $("#how_often").is(":visible") ? justResponse($("#how_often")) : $("#require_this_form_for_all_new_patients_at_registration");
-		obj['form_type'] = justResponse($("#select_form_type"));
-		obj['admin_only'] = (justResponse($("#require_admin_privileges_to_use_this_form"))!==null) ? justResponse($("#require_admin_privileges_to_use_this_form")) : "no restriction";
-		obj['portal_listing'] = (justResponse($("#add_this_form_to_patient_portal"))!==null) ? justResponse($("#add_this_form_to_patient_portal")) : "never";
-		obj['in_office'] = (justResponse($("#will_patients_complete_this_form_in-office_only"))!==null) ? justResponse($("#will_patients_complete_this_form_in-office_only")) : "never";
-		// obj['required_every'] = justResponse($("#require_this_form_to_be_completed_periodically").closest(".item").find("#how_often"));
-		if ($("#how_often").is(":visible")){
-			obj['required'] = justResponse($("#how_often"));
+		var requirement = form.find(".how_often").is(":visible") ? justResponse(form.find(".how_often")) : form.find(".require_this_form_for_all_new_patients_at_registration");
+		obj['form_type'] = justResponse(form.find(".select_form_type"));
+		obj['admin_only'] = (justResponse(form.find(".require_admin_privileges_to_use_this_form"))!==null) ? justResponse(form.find(".require_admin_privileges_to_use_this_form")) : "no restriction";
+		obj['portal_listing'] = (justResponse(form.find(".add_this_form_to_patient_portal"))!==null) ? justResponse(form.find(".add_this_form_to_patient_portal")) : "never";
+		obj['in_office'] = (justResponse(form.find(".will_patients_complete_this_form_in-office_only"))!==null) ? justResponse(form.find(".will_patients_complete_this_form_in-office_only")) : "never";
+		// obj['required_every'] = justResponse(form.find(".require_this_form_to_be_completed_periodically").closest(".item").find("#how_often"));
+		if (form.find(".how_often").is(":visible")){
+			obj['required'] = justResponse(form.find(".how_often"));
 		}else{
-			obj['required'] = justResponse($("#require_once_at_registration")) == 'yes' ? 'at registration only' : 'never';
+			obj['required'] = justResponse(form.find(".require_once_at_registration")) == 'yes' ? 'at registration only' : 'never';
 		}
 	}
 	else if (model == 'Patient'){
-		var appts = turnToBoolean(justResponse($("#appointment_reminders"))), 
-			confirms = justResponse($("#appointment_confirmation_cancellation_emails"),true),
-			forms = justResponse($("#reminder_to_complete_required_forms"),true), apptReminder, formReminder;
+		var appts = turnToBoolean(justResponse(form.find(".appointment_reminders"))), 
+			confirms = justResponse(form.find(".appointment_confirmation_cancellation_emails"),true),
+			forms = justResponse(form.find(".reminder_to_complete_required_forms"),true), apptReminder, formReminder;
 		if (!appts){
 			apptReminder = false;
 		}else{
-			var type = justResponse($("#appointment_reminders").closest('.item').find("#text_or_email"),true);
+			var type = justResponse(form.find(".appointment_reminders").closest('.item').find(".text_or_email"),true);
 			apptReminder = {
 				'text': ($.inArray('text',type) > -1),
 				'email': ($.inArray('email',type) > -1)
@@ -263,7 +269,7 @@ function constructEasyAccessList(model){
 		if ($.inArray('never',forms) > -1){
 			formReminder = false;
 		}else{
-			var type = justResponse($("#reminder_to_complete_required_forms").closest('.item').find("#text_or_email"),true);
+			var type = justResponse(form.find(".reminder_to_complete_required_forms").closest('.item').find(".text_or_email"),true);
 			formReminder = {
 				'24hr': ($.inArray('24hr before',forms) > -1),
 				'48hr': ($.inArray('48hr before',forms) > -1),

@@ -68,6 +68,7 @@ class FormController extends Controller
             $submission->form_name = $form->form_name;
             $submission->responses = $request->jsonObj;
             $submission->save();
+            setUid("Submission",$submission->id);
             // Log::info("\n\n $apptId");
             if ($apptId){
                 $appt = Appointment::find($apptId);

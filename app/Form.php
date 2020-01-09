@@ -203,26 +203,46 @@ class Form extends Model
     public static function neededByAnyAppointment($patientId = null){
         if (Auth::user()->user_type == 'patient'){
             $patient = Auth::user()->patientInfo;
-            $formIds = [];
-            $forms = Form::all()->filter(function($form, $f) use ($patient){
-                $appts = $patient->appointments->filter(function($appt, $a) use ($patient, $form){
-                    $timeCheck = $appt->date_time->isAfter(Carbon::now()->subMonths(1));
-                    if (!$timeCheck){return false;} // don't bother if appt over a month ago;
-                    foreach($appt->services as $service){
-                        if ($service->forms->count() > 0){
-                            foreach($service->forms as $reqForm){
-                                if ($reqForm->form_id == $form->form_id){
-                                    $submission = Submission::where([['patient_id',$patient->id],['form_id',$form->form_id],['appointment_id',$appt->id]])->get();
-                                    if ($submission->count() == 0){return true;}
-                                }
-                            }
-                        }
-                        return false;
-                    }
-                });
-                // Log::info($appts);
-                return ($appts->count() != 0);
+            // $forms = Form::all()->filter(function($form, $f) use ($patient){
+            //     $appts = $patient->appointments->filter(function($appt, $a) use ($patient, $form){
+            //         $timeCheck = $appt->date_time->isAfter(Carbon::now()->subMonths(1));
+            //         if (!$timeCheck){return false;} // don't bother if appt over a month ago;
+            //         foreach($appt->services as $service){
+            //             if ($service->forms->count() > 0){
+            //                 foreach($service->forms as $reqForm){
+            //                     if ($reqForm->form_id == $form->form_id){
+            //                         $submission = Submission::where([['patient_id',$patient->id],['form_id',$form->form_id],['appointment_id',$appt->id]])->get();
+            //                         if ($submission->count() == 0){return true;}
+            //                     }
+            //                 }
+            //             }
+            //             return false;
+            //         }
+            //     });
+            //     // Log::info($appts);
+            //     return ($appts->count() != 0);
+            // });
+            // START FRESH
+            $appts = $patient->appointments->filter(function($appt,$a){
+                return $appt->date_time->isAfter(Carbon::now()->subMonths(1));
             });
+            $formIds = [];
+            foreach ($appts as $appt){
+                foreach ($appt->services as $service){
+                    foreach ($service->forms as $form){
+                        $submissions = Submission::where([
+                            ['patient_id',$patient->id],
+                            ['form_id',$form->form_id],
+                            ['appointment_id',$appt->id]
+                        ])->get();
+                        if ($submissions->count() == 0){
+                            Log::info($form->form_name,['appointment'=>$appt->id]);
+                            $formIds[] = $form->form_id;
+                        }
+                    }
+                }
+            }
+            $forms = Form::whereIn('form_id',$formIds)->get();
             return $forms;
         }elseif (session('uidList') != null && session('uidList')['Patient'] != null){
             Log::info("2");
@@ -332,8 +352,8 @@ class Form extends Model
             $requiredByTime = false;
         }
 
-        Log::info('3 '.$this->name." time:$requiredByTime appt:$formCheck");
-        Log::info($requiredByAppointment);
+        // Log::info('3 '.$this->name." time:$requiredByTime appt:$formCheck");
+        // Log::info($requiredByAppointment);
 
         return ($requiredByTime || $formCheck) ? "required" : "completed";
     }
@@ -342,7 +362,6 @@ class Form extends Model
         if ($submissions){return true;
         }else{return false;}
     }
-
     public function lastSubmittedBy(Patient $patient){
         $submissions = $this->submissions();
 
@@ -366,25 +385,24 @@ class Form extends Model
     public function submissions(){
         return $this->hasMany('App\Submission', "form_id", 'form_id');
     }
-
     public function moreOptions(){
     }
-
-
-
-   
     //form functionality
-        public function formDisplay($modal = false, $allowSubmit = true){
+        public function formDisplay($modal = false, $allowSubmit = true, $edit = false, $usertype = false){
             $form = json_decode($this->full_json,true);
             // $sections = json_decode($this->questions,true);
             $sections = $form['sections'];            
             $uid = $this->form_uid;
             $formID = $this->form_id;
             $formName = $this->form_name;
-            $formNameAbbr = str_replace(" ", "", $formName);
+            $formNameAbbrOriginal = str_replace(" ", "", $formName);
+            if ($edit){$formNameAbbrReflectEdit = str_replace("New", "Edit", $formNameAbbrOriginal);
+            }else{$formNameAbbrReflectEdit = $formNameAbbrOriginal;
+            }
+            if ($usertype){$formNameAbbrReflectEdit = str_replace("User", $usertype, $formNameAbbrReflectEdit);}
             $settings = $this->settings;
             // var_dump($settings);
-            echo '<form id="'.$formNameAbbr.'" data-formname="'.$formNameAbbr.'" data-formid="'.$formID.'" data-uid="'.$uid.'" class="formDisp">';
+            echo '<form id="'.$formNameAbbrReflectEdit.'" data-formname="'.$formNameAbbrOriginal.'" data-formid="'.$formID.'" data-uid="'.$uid.'" class="formDisp">';
             for ($x=0;$x<count($sections);$x++){
                 $section = $sections[$x];
                 $name = $section['sectionName'];
@@ -433,12 +451,11 @@ class Form extends Model
                         $disp = $item['displayOptions'];
                         $dispStr = json_encode($item['displayOptions']);
                         // $inline = $disp['inline'];
-                        $inline = (strpos($disp['inline'],"true") > -1) ? "inline" : "" ;
+                        $inline = (strpos($disp['inline'],"true") > -1) ? " inline" : "" ;
                         $newline = (strpos($disp['inline'],"BR") > -1) ? true : false;
                         $followups = $item['followups'];
                         // echo "<div class='item $inline' data-display='$dispStr' data-type='$type' data-required='$required' data-key='$key'>";
-                        echo "<div class='item $inline' data-display='$dispStr' data-type='$type' data-required='$required' data-key='$i'>";
-                        // echo "<div class='item$inline' data-disp='$dispStr' data-type='$type'>";
+                        echo "<div class='item$inline' data-display='$dispStr' data-type='$type' data-required='$required' data-key='$i'>";
                         if ($type !== "narrative"){
                             $n++;
                             echo "<div class='question'><p><span class='n'>$n.</span><span class='q'>$question</span><span class='requireSign'>$requireStar</span></p></div><br>";
@@ -471,6 +488,7 @@ class Form extends Model
                                     $condition = $itemFU['condition'];
                                     $condition = str_replace("'","&apos;",$condition);
                                     $condition = join("***",$condition);
+                                    
                                     $name = removepunctuation(replacespaces(strtolower(cleaninput($question))));
                                     if (in_array($type, ['radio','checkboxes','dropdown'])){
                                         array_push($options,"ID*".$name);
@@ -493,14 +511,13 @@ class Form extends Model
             }
             echo "<div class='wrapper'>";
                 if ($allowSubmit){
-                    echo "<div class='button small submitForm pink' data-formName='$formNameAbbr' data-submission='true'>submit</div>";
+                    echo "<div class='button small submitForm pink' data-formName='$formNameAbbrOriginal' data-submission='true'>submit</div>";
                 }
                 if ($modal){
                     echo "<div class='button small cancel'>dismiss</div>";
                 } 
             echo "</form>";
             echo "</div>";
-            echo "<script type='text/javascript'>$(document).ready(function(){initializeNewForms();})</script>";
         }
         public function radio($options){
             unset($name);
@@ -512,18 +529,19 @@ class Form extends Model
             }
             $options = array_values($options);
             $name = isset($name) ? $name : "";
-            echo "<ul class='answer radio' id='$name' data-name='$name'>";
+            // echo "<ul class='answer radio' id='$name' data-name='$name'>";
+            echo "<ul class='answer radio $name' data-name='$name'>";
             for ($i=0;$i<count($options);$i++){
                 echo '<li data-value="'.$options[$i].'">'.$options[$i].'</li>';
             }
             echo '</ul>';
         }
         public function text($options){
-            if (isset($options) and isset($options['name'])){
-                $name = $options['name'];
+            if (isset($options)){
+                $name = isset($options['name']) ? $options['name'] : "";
                 $placeholder = isset($options['placeholder'])?"placeholder='".$options['placeholder']."' ":"";
                 echo "<div class='answer text'>
-                <input id='$name' name='$name' $placeholder type='text' required>
+                <input class='$name' $placeholder type='text' required>
                 </div>";
             }else{
                 echo "<div class='answer text'>
@@ -536,7 +554,7 @@ class Form extends Model
                 $name = $options['name'];
                 $placeholder = isset($options['placeholder'])?"placeholder='".$options['placeholder']."' ":"";
                 echo "<div class='answer textbox'>
-                <textarea required id='$name' name='$name' $placeholder type='text' required></textarea>
+                <textarea required class='$name' name='$name' $placeholder type='text' required></textarea>
                 </div>";
             }else{
                 echo '<div class="answer textbox">
@@ -550,7 +568,7 @@ class Form extends Model
                 $dataStr .= "data-$key='$option' ";
             }
             $name = (isset($options['name'])) ? $options['name'] : "";
-            echo "<div class='answer date'><input id='$name' readonly placeholder='tap to pick date' class='datepicker' $dataStr></div>";
+            echo "<div class='answer date'><input class='$name' readonly placeholder='tap to pick date' class='datepicker' $dataStr></div>";
         }
         public function number($options){
             $dataStr = null;
@@ -560,7 +578,7 @@ class Form extends Model
             $label = isset($options['units']) ? $options['units'] : "";
             $initial = $options['initial'];
             $name = (isset($options['name'])) ? $options['name'] : "";
-            echo "<div class='answer number' ><input size='5' id='$name' name='$name' type='text' $dataStr value='$initial'><span class='label'>$label</span>
+            echo "<div class='answer number' ><input size='5' class='$name' name='$name' type='text' $dataStr value='$initial'><span class='label'>$label</span>
             <div class='numberUpDown'><div class='change up'></div><div class='change down'></div></div></div>";
         }
         public function checkboxes($options){
@@ -573,7 +591,8 @@ class Form extends Model
             }
             $options = array_values($options);
             $name = isset($name) ? $name : "";
-            echo '<ul class="answer checkboxes" id="'.$name.'" data-name="'.$name.'">';
+            // echo '<ul class="answer checkboxes" id="'.$name.'" data-name="'.$name.'">';
+            echo '<ul class="answer checkboxes '.$name.'" data-name="'.$name.'">';
             for ($i=0;$i<count($options);$i++){
                 echo '<li data-value="'.$options[$i].'">'.$options[$i].'</li>';
             }
@@ -589,7 +608,7 @@ class Form extends Model
             }
             $options = array_values($options);
             $name = isset($name) ? $name : "";
-            echo '<div class="answer dropdown"><select id="'.$name.'" data-name="'.$name.'">';
+            echo '<div class="answer dropdown"><select class="'.$name.'" data-name="'.$name.'">';
             echo '<option value="">----</option>';
             for ($i=0;$i<count($options);$i++){
                 echo '<option value="'.$options[$i].'">'.$options[$i].'</option>';
@@ -618,7 +637,7 @@ class Form extends Model
             // echo "<div class='answer scale' $x>
             echo "<div class='answer scale'>
             <span class='left'>$minLabelStr</span>
-            <input class='slider targetInput $class' data-name='$name' value='$initial' id='$name' type='range' min='$min' max='$max'>
+            <input class='slider targetInput $class $name' data-name='$name' value='$initial' type='range' min='$min' max='$max'>
             <span class='right'>$maxLabelStr</span><div class='SliderValue' style='opacity:0;'></div></div>";
         }
         public function signature($options){
@@ -636,10 +655,11 @@ class Form extends Model
                     $options[$key] = $default[$key];
                 }
             }
-            $name = $options['name'];
+            $name = isset($options['name']) ? $options['name'] : "";
             $optJSON = json_encode($options);
             $initial = isset($options['setTime'])?$options['setTime']:"";
-            echo "<div class='answer time'><input id='$name' class='timePick' size='8' placeholder='HH:MM' value='$initial' data-options='$optJSON' type='text'></div>";
+            // echo "<div class='answer time'><input id='$name' class='timePick' size='8' placeholder='HH:MM' value='$initial' data-options='$optJSON' type='text'></div>";
+            echo "<div class='answer time'><input class='timePick $name' size='8' placeholder='HH:MM' value='$initial' data-options='$optJSON' type='text'></div>";
         }
         public function narrative($options){
             $id = isset($options['name'])?$options['name']:"";
@@ -666,7 +686,6 @@ class Form extends Model
             }
             return $markup;
         }
-        
         public function answerDisp($type,$options){
             if ($type != "narrative"){
                 foreach ($options as &$option){

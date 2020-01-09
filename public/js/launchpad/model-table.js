@@ -315,11 +315,15 @@ function rowClickLoadModel(){
     }
 
     console.log(target);
+    // target = $(target).closest(".optionsNavWrapper");
     optionsLoadXHR = $.ajax({
         url: "/optionsNav/" + model.replace(" ","") + "/" + uid,
         method: "GET",
         success: function(data){
-            $(target).replaceWith(data);
+            // console.log(data);
+            $(target).closest('.optionsNavWrapper').replaceWith(data);
+            var navWrapper = $(target).closest('.optionsNavWrapper');
+            navWrapper.find(".optionsNavHeader").show();
             $(".optionsNav").removeClass("hide");
             $(target).closest(".wrapper").show();
             resetOptionsNavBtns();
@@ -327,6 +331,13 @@ function rowClickLoadModel(){
             allowButtonFocus();
             optionsLoadXHR = undefined;
             $(target).on('click','.toggleDetails',toggleDetails);
+            console.log('list updates',$(target),navWrapper.find(".listUpdate").length);
+            if (navWrapper.find(".listUpdate").length != 0){
+                var lists = navWrapper.find(".listUpdate").data(), uids = lists.uids, tabs = lists.tabs;
+                console.log('uids',uids,'tabs',tabs);
+                $("#uidList").text(JSON.stringify(uids));
+                $("#tabList").text(JSON.stringify(tabs));
+            }
         },
         error: function(e){
             console.log(e);
@@ -409,7 +420,6 @@ function updateInputFromTable(){
     table.find(".active").removeClass('active');
 }
 function updateInputByUID(input,uids){
-    // console.log(input.data());
     var modal = $(input.data('modal')), table = modal.find('table'), selectBtn = modal.find(".selectData");
     if (uids === null){
         modal.removeData('uidArr');
@@ -419,7 +429,6 @@ function updateInputByUID(input,uids){
         selectRowsById(uids,table);
         selectBtn.click();        
     }
-    // console.log(input, uids);
 }
 function trimCellContents(td){
     return td.find(".tdSizeControl").text().trim().replace("...","");

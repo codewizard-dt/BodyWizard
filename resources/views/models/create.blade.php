@@ -7,10 +7,10 @@
 	// REQUIRES $model such that App\$model resolves
 
 	if ($model == 'Form'){
-		$CreateNew = null;
+		$form = null;
 	}else{
 		// dd($model);
-		$CreateNew = Form::where('form_id', findFormId($model))->orderBy('version_id','desc')->first();
+		$form = Form::where('form_id', findFormId($model))->orderBy('version_id','desc')->first();
 	}
 	
 	$class = "App\\$model";
@@ -20,27 +20,34 @@
 	if ($modal && $model == 'Diagnosis' && session('diagnosisType') == null){
 		$options = ['Western','Chinese',"ID*load_dx_form"];
 	}
-	$noPW = (in_array($model,['User','Patient','Practitioner','StaffMember']) && Auth::check()) ? "noPW" : "";
+	if (in_array($model, ['User','Patient','Practitioner','StaffMember'])){
+		$noPW = Auth::check() ? 'noPW' : "";
+		$user = $model;
+	}else{
+		$noPW = "";
+		$user = false;
+	}
+	// $noPW = (in_array($model,['User','Patient','Practitioner','StaffMember']) && Auth::check()) ? "noPW" : "";
 	$admin = (Auth::user()->is_admin) ? "admin" : "";
 ?>
 
-@if ($CreateNew)
+@if ($form)
 	@if ($modal && $model == 'Diagnosis' && session('diagnosisType') == null)
 	<div id='create{{ $model }}' class='central large createNew modalForm' data-model='{{ $model }}'>
 		<h2 class='purple paddedSmall'>Which Type of Diagnosis?<br>
-		{{ $CreateNew->radio($options) }}
+		{{ $form->radio($options) }}
 		</h2>
 		<div id='dxFormLoadTarget'></div>
 	</div>
 	@elseif ($modal)
 	<div id='create{{ $model }}' class='central large createNew modalForm {{$noPW}} {{$admin}}' data-model='{{$model}}'>
-		<h1 class='purple paddedSmall'>{{ $CreateNew->form_name }}</h1>
-		{{ $CreateNew->formDisplay(true) }}
+		<h1 class='purple paddedSmall'>{{ $form->form_name }}</h1>
+		{{ $form->formDisplay(true,true,false,$user) }}
 	</div>
 	@else
 	<div id='create{{ $model }}' class='central large createNew {{$noPW}} {{$admin}}' data-model='{{$model}}'>
-		<h1 class='purple paddedSmall'>{{ $CreateNew->form_name }}</h1>
-		{{ $CreateNew->formDisplay(false) }}
+		<h1 class='purple paddedSmall'>{{ $form->form_name }}</h1>
+		{{ $form->formDisplay(false,true,false,$user) }}
 	</div>
 	@endif
 
@@ -51,8 +58,10 @@
 			'relationship' => $includeModel[2],
 			'connectedTo' => $model
 		])
-		@include('models.create-modal', [
-			'model' => $includeModel[0]
-		])
+		@if (Auth::user()->user_type == 'practitioner')
+			@include('models.create-modal', [
+				'model' => $includeModel[0]
+			])
+		@endif
 	@endforeach
 @endif

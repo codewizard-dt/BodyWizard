@@ -98,22 +98,22 @@ function createTimeBlockObj(form){
 		var services = form.find("#services_offered").data('uidArr');
 		if (services != undefined && services.length == 0){services = undefined;}
 		var days = {
-			"Sunday": form.find("#selected_days").find("li[data-value='Sunday']").hasClass('active'),
-			"Monday": form.find("#selected_days").find("li[data-value='Monday']").hasClass('active'),
-			"Tuesday": form.find("#selected_days").find("li[data-value='Tuesday']").hasClass('active'),
-			"Wednesday": form.find("#selected_days").find("li[data-value='Wednesday']").hasClass('active'),
-			"Thursday": form.find("#selected_days").find("li[data-value='Thursday']").hasClass('active'),
-			"Friday": form.find("#selected_days").find("li[data-value='Friday']").hasClass('active'),
-			"Saturday": form.find("#selected_days").find("li[data-value='Saturday']").hasClass('active')
+			"Sunday": form.find(".selected_days").find("li[data-value='Sunday']").hasClass('active'),
+			"Monday": form.find(".selected_days").find("li[data-value='Monday']").hasClass('active'),
+			"Tuesday": form.find(".selected_days").find("li[data-value='Tuesday']").hasClass('active'),
+			"Wednesday": form.find(".selected_days").find("li[data-value='Wednesday']").hasClass('active'),
+			"Thursday": form.find(".selected_days").find("li[data-value='Thursday']").hasClass('active'),
+			"Friday": form.find(".selected_days").find("li[data-value='Friday']").hasClass('active'),
+			"Saturday": form.find(".selected_days").find("li[data-value='Saturday']").hasClass('active')
 		};
 		var obj = {
 			"services": services,
 			"days": days,
-			"start_time":justResponse(form.find("#start_time")),
-			"end_time":justResponse(form.find("#end_time")),
+			"start_time":justResponse(form.find(".start_time")),
+			"end_time":justResponse(form.find(".end_time")),
 			"break": form.data('break')
 		}
-		console.log(obj);
+		// console.log(obj);
 		return obj;
 	}else{
 		return false;

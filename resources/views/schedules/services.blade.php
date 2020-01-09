@@ -50,7 +50,8 @@ $categoryOptions[] = "ID*categories";
 $ctrl = new Form;
 $serviceCategoryLabel = (Auth::user()->user_type == 'patient') ? "Service Type" : "Service Category";
 ?>
-<div id="SelectServices" class='progressiveSelection selector' data-target='#select_services' data-condition='#select_patient' data-stopmsg='Select a Patient||You need to select a patient to determine which services are available' data-parent='.modalForm'>
+<!-- <div id="SelectServices" class='progressiveSelection selector toModalHome' data-target='#select_services' data-condition='#select_patient' data-stopmsg='Select a Patient||You need to select a patient to determine which services are available' data-parent='.modalForm'> -->
+<div id="SelectServices" class='progressiveSelection selector toModalHome'>
 	<div class="progressBar">
 		<div class='back'><div class="left"></div><div class="message"></div></div>
 	</div>

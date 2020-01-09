@@ -1,145 +1,7 @@
 var waitForForm, autoClickBtn = undefined, xhrWait = undefined, purple = "rgb(105,12,104)", yellow = "rgb(240,154,53)", pink = "rgb(234,78,80)";
 $(document).ready(function(){
-    // var purple = "rgb(105,12,104)", yellow = "rgb(240,154,53)", pink = "rgb(234,78,80)";
-
-    // var MenuItems = filterUninitialized($(".menuBar").find('.tab'));
-    // MenuItems.on("touchstart",function(e){
-    //     e.preventDefault();
-    //     $(e.target).click();
-    // })
-    // MenuItems.hover(tabMouseEnter,tabMouseLeave);
-    
-
-    // MenuItems.on("click",".title",function(e){
-    //     var tab = $(this).parent(), underline = tab.children(".underline"), id = tab.attr("id"), 
-    //         dropdown = tab.children(".dropDown"), menu = $(this).closest(".menuBar"), menuId = menu.attr('id'),
-    //         target = (menu.data("target")!="window") ? $(menu).data("target") : "window", uri = $(this).data("uri"),
-    //         hasDropdown = (tab.children('.dropDown').length === 1), titleActive = $(this).hasClass("active"),
-    //         parentTitles = getParentTitles($(this)), dropdownActive = (hasDropdown) ? dropdown.hasClass("active") : null;
-
-    //     if (tab.is("#booknow") && uri == '#createAppointment'){
-    //         var btn = $(this);
-    //         if ($(uri).length == 0){
-    //             feedback('Page Still Loading','The booking form is still loading. This box will close and the form will open automatically as soon as it\'s ready.');
-    //             autoClickBtn = $("#booknow");
-    //             return;
-    //         }
-    //     }
-    //     if (uri == '' && target != "window"){            
-    //         return false;
-    //     }
-    //     if (uri != undefined && uri.match(/(edit|delete|show|update|settings)/)){
-    //         uri = $(this).data('uri').split("/");
-    //         var model = singular(uri[1]), Model = model.substr(0,1).toUpperCase() + model.substr(1), models = plural(model);
-    //             action = uri[3];
-                    
-    //         var match = $(".optionsNav").filter(function(){
-    //             var d = $(this).data('tabanchor');
-    //             return (d == plural(model) || d == model);
-    //         })
-
-    //         if (uri[2] == "UID"){
-    //             var uid = match.data("uid");
-    //             if (uid == undefined || uid == ""){
-    //                 var uidList = JSON.parse($("#uidList").text());
-    //                 uid = (uidList[Model] !== undefined) ? uidList[Model] : uid;
-    //             }
-
-    //             if ((uid == undefined || uid == "") && $("#"+Model+"List").length > 0){
-    //                 $.scrollTo($("#"+Model+"List"));
-    //                 alertBox('select a ' + model + ' to edit',$("#"+Model+"List"),"ontop",1000,"-50%,-50%");
-    //                 return false;
-    //             }else if ((uid == undefined || uid == "") && $("#"+Model+"List").length == 0){
-    //                 var index = $("#" + plural(model) + "-index");
-    //                 var warning = "<h2>Select a " + model + " before you can " + action + "</h2><div id='listLink' class='button xsmall pink'>Select a " + model + "</div><div class='button xsmall cancel'>dismiss</div>";
-    //                 $("<div/>",{
-    //                     id:"uidWarning",
-    //                     class:'modal delete'
-    //                 }).appendTo("#ModalHome").html(warning);
-    //                 blurElement($("body"),"#uidWarning");
-    //                 $("#listLink").on("click",function(){
-    //                     var t = $("#"+plural(model)+"-index").find(".title");
-    //                     t.click();
-    //                     unblurElement($("body"));
-    //                 })
-    //                 return false;
-    //             }
-    //             uri[2] = uid;
-    //         }
-    //         uri = uri.join("/");
-    //         $(this).data('uri',uri);
-    //     }
-    //     if (uri=='/logout'){
-    //         $("#logoutForm").submit();
-    //         return false;
-    //     }
-        
-    //     if (menu.data("mode")=="scroll" && target != 'window'){
-    //         $(target).scrollTo($(uri),400,{
-    //             offset: {left:0,top:-20}
-    //         });
-    //         var h = $("#SiteMenu").height() + menu.height();
-    //         var offset = $(window).scrollTop() + h;
-    //         if (offset > $(target).offset().top){
-    //             $(window).scrollTo($(target),400,{
-    //                 offset: {left:0,top:-h}
-    //             })
-    //         }
-    //         return false;
-    //     }else if (menu.data("mode")=='scroll'){
-    //         var h = $("#SiteMenu").height() + menu.height() + 20;
-    //         $.scrollTo($(uri),400,{
-    //             offset: {left:0,top:-h}
-    //         })
-    //         // console.log('hi');
-    //         return false;
-    //     }
-                
-    //     if (hasDropdown && titleActive){
-    //         dropdown.removeClass('active');
-    //     }else if (hasDropdown && !titleActive){
-    //         dropdown.addClass('active');
-    //     }else if (!hasDropdown && titleActive){
-    //         return false;
-    //     }else if (!hasDropdown && !titleActive){
-    //         menu.find('.active').removeClass('active');
-
-    //         $(this).add(parentTitles).addClass('active');
-    //         if (target=="window"){
-    //             window.location.href = uri;
-    //         }else{
-    //             // setActiveTab(menuId,id);
-    //             var obj = {};
-    //             obj[menuId] = id;
-    //             LoadingContent(target,uri,obj);
-    //         }
-    //     }        
-    //     animateMenuV2(menu);
-    // })
-    // MenuItems.data('initialized',true);
-    
-    // // to organize and stylize multiple menus
-    //     var AllMenus = $(".menuBar.portal").not(".siteMenu");
-    //     var l = AllMenus.length;
-    //     AllMenus.removeClass("topMenu subMenu1 subMenu2 subMenu3 subMenu4")
-    //     AllMenus.each(function(i,m){
-    //         var zIndex = -(i-l), orderClass;
-    //         if (i==0){
-    //             orderClass = "topMenu";
-    //         }else if (i==1){
-    //             orderClass = "subMenu1";
-    //         }else if (i==2){
-    //             orderClass = "subMenu2";
-    //         }else if (i==3){
-    //             orderClass = "subMenu3";
-    //         }else if (i==4){
-    //             orderClass = "subMenu4";
-    //         }
-    //         $(m).addClass(orderClass);
-    //     })
-
-    // ClickActiveTabsV2();
-})
+    initializeNewMenus();
+});
 function initializeNewMenus(){
     var MenuItems = filterUninitialized($(".menuBar").find('.tab'));
     MenuItems.on("touchstart",function(e){
@@ -155,56 +17,52 @@ function initializeNewMenus(){
             parentTitles = getParentTitles($(this)), dropdownActive = (hasDropdown) ? dropdown.hasClass("active") : null;
 
         if (tab.is("#booknow") && uri == '#createAppointment'){
-            var btn = $(this);
-            if ($(uri).length == 0){
-                feedback('Page Still Loading','The booking form is still loading. This box will close and the form will open automatically as soon as it\'s ready.');
-                autoClickBtn = $("#booknow");
-                return;
-            }
+            return;
         }
         if (uri == '' && target != "window"){            
-            return false;
+            return;
         }
         if (uri != undefined && uri.match(/(edit|delete|show|update|settings)/)){
-            uri = $(this).data('uri').split("/");
-            var model = singular(uri[1]), Model = model.substr(0,1).toUpperCase() + model.substr(1), models = plural(model);
-                action = uri[3];
+            alert('undefined action');
+            // uri = $(this).data('uri').split("/");
+            // var model = singular(uri[1]), Model = model.substr(0,1).toUpperCase() + model.substr(1), models = plural(model);
+            //     action = uri[3];
                     
-            var match = $(".optionsNav").filter(function(){
-                var d = $(this).data('tabanchor');
-                return (d == plural(model) || d == model);
-            })
+            // var match = $(".optionsNav").filter(function(){
+            //     var d = $(this).data('tabanchor');
+            //     return (d == plural(model) || d == model);
+            // })
 
-            if (uri[2] == "UID"){
-                var uid = match.data("uid");
-                if (uid == undefined || uid == ""){
-                    var uidList = JSON.parse($("#uidList").text());
-                    uid = (uidList[Model] !== undefined) ? uidList[Model] : uid;
-                }
+            // if (uri[2] == "UID"){
+            //     var uid = match.data("uid");
+            //     if (uid == undefined || uid == ""){
+            //         var uidList = JSON.parse($("#uidList").text());
+            //         uid = (uidList[Model] !== undefined) ? uidList[Model] : uid;
+            //     }
 
-                if ((uid == undefined || uid == "") && $("#"+Model+"List").length > 0){
-                    $.scrollTo($("#"+Model+"List"));
-                    alertBox('select a ' + model + ' to edit',$("#"+Model+"List"),"ontop",1000,"-50%,-50%");
-                    return false;
-                }else if ((uid == undefined || uid == "") && $("#"+Model+"List").length == 0){
-                    var index = $("#" + plural(model) + "-index");
-                    var warning = "<h2>Select a " + model + " before you can " + action + "</h2><div id='listLink' class='button xsmall pink'>Select a " + model + "</div><div class='button xsmall cancel'>dismiss</div>";
-                    $("<div/>",{
-                        id:"uidWarning",
-                        class:'modal delete'
-                    }).appendTo("#ModalHome").html(warning);
-                    blurElement($("body"),"#uidWarning");
-                    $("#listLink").on("click",function(){
-                        var t = $("#"+plural(model)+"-index").find(".title");
-                        t.click();
-                        unblurElement($("body"));
-                    })
-                    return false;
-                }
-                uri[2] = uid;
-            }
-            uri = uri.join("/");
-            $(this).data('uri',uri);
+            //     if ((uid == undefined || uid == "") && $("#"+Model+"List").length > 0){
+            //         $.scrollTo($("#"+Model+"List"));
+            //         alertBox('select a ' + model + ' to edit',$("#"+Model+"List"),"ontop",1000,"-50%,-50%");
+            //         return false;
+            //     }else if ((uid == undefined || uid == "") && $("#"+Model+"List").length == 0){
+            //         var index = $("#" + plural(model) + "-index");
+            //         var warning = "<h2>Select a " + model + " before you can " + action + "</h2><div id='listLink' class='button xsmall pink'>Select a " + model + "</div><div class='button xsmall cancel'>dismiss</div>";
+            //         $("<div/>",{
+            //             id:"uidWarning",
+            //             class:'modal delete'
+            //         }).appendTo("#ModalHome").html(warning);
+            //         blurElement($("body"),"#uidWarning");
+            //         $("#listLink").on("click",function(){
+            //             var t = $("#"+plural(model)+"-index").find(".title");
+            //             t.click();
+            //             unblurElement($("body"));
+            //         })
+            //         return false;
+            //     }
+            //     uri[2] = uid;
+            // }
+            // uri = uri.join("/");
+            // $(this).data('uri',uri);
         }
         if (uri=='/logout'){
             $("#logoutForm").submit();
@@ -240,7 +98,7 @@ function initializeNewMenus(){
             return false;
         }else if (!hasDropdown && !titleActive){
             menu.find('.active').removeClass('active');
-
+            setActiveTab(menuId,id);
             $(this).add(parentTitles).addClass('active');
             if (target=="window"){
                 window.location.href = uri;
@@ -402,9 +260,15 @@ function setActiveTab(menu,tab){
     // tabJson[menu] = tab;
     // setSessionVar({"CurrentTabs":tabJson})
     // $("#tabList").text(JSON.stringify(tabJson));
-    tabHeaderInfo = {};
+    try{
+        tabHeaderInfo = JSON.parse($("#tabList").text());
+        tabHeaderInfo = (tabHeaderInfo === null) ? {} : tabHeaderInfo;
+    }catch(e){
+        tabHeaderInfo = {};
+    }
     tabHeaderInfo[menu] = tab;
-    console.log(tabHeaderInfo);
+    $("#tabList").text(JSON.stringify(tabHeaderInfo));
+    // console.log(tabHeaderInfo);
 }
 function reloadTab(){
     var active = $(".menuBar").last().find(".title.active").last(),
@@ -440,24 +304,35 @@ function LoadingContent(target,uri,currentTab = {}){
     loadXHR = $.ajax({
         url:uri,
         headers:{
-            'X-CURRENT-TAB': JSON.stringify(currentTab),
+            'X-CURRENT-TABS': $("#tabList").text(),
             'X-CURRENT-UIDS': $("#uidList").text()
         },
         success:function(data){
-            console.log(uri);
+            // console.log(uri);
+            $(".toModalHome, .modalForm").appendTo("#ModalHome");
+            // console.log(systemModalList);
             $("#ModalHome").children().filter(function(){
                 return $.inArray($(this).attr('id'),systemModalList) === -1;
             }).remove();
             $(target).html(data);
+            console.log('list updates',$(target).find(".listUpdate").length);
             if ($(target).find(".listUpdate").length != 0){
                 var lists = $(target).find(".listUpdate").data(), uids = lists.uids, tabs = lists.tabs;
-                $("#uidList").text(JSON.stringify(uids));
-                $("#tabList").text(JSON.stringify(tabs));
+                console.log('uids',uids,'tabs',tabs);
+                uids = (uids && uids.length == 0) ? 'null' : JSON.stringify(uids);
+                tabs = (tabs && tabs.length == 0) ? 'null' : JSON.stringify(tabs);
+                $("#uidList").text(uids);
+                $("#tabList").text(tabs);
             }
+            resetEntireAppt();
             initializeNewMenus();
             initializeNewForms();
             initializeNewModelForms();
             initializeNewModelTables();
+            initializeSettingsForm();
+            initializeApptForms();
+            activateServiceSelection();
+            masterStyle();
         },
         error: function(e){
             if (e.status == 404){

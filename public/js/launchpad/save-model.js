@@ -1,24 +1,3 @@
-$(document).ready(function(){
-	// var saveModelBtns = $(".createNew, .editExisting").find(".submitForm").filter(function(){
-	// 	return $(this).data('updated') != true;
-	// });
-	// saveModelBtns.data('submission',false);
-	// saveModelBtns.on("click",saveModel);
-	// saveModelBtns.data('updated',true);
-
-	// var modalBtns = $(".button").filter(".createNew, .editExisting").filter(function(){
-	// 	if ($(this).data('model') == 'Template' && !$("#createTemplate").data('initialized')){
-	// 		initializeTemplateForm();
-	// 	}else if ($(this).data('model') == 'Message' && !$("#createMessage").data('initialized')){
-	// 		initializeMessageForm();
-	// 	}
-	// 	return $(this).data('initialized') != true ;
-	// });
-	// modalBtns.on("click",openModal);
-	// modalBtns.data('initialized',true);
-
-	// removePasswordInputs();
-})
 function initializeNewModelForms(){
 	initializeMessageForm();
 	initializeTemplateForm();
@@ -29,18 +8,52 @@ function initializeNewModelForms(){
 	saveModelBtns.on("click",saveModel);
 	saveModelBtns.data('updated',true);
 
-	var modalBtns = $(".button").filter(".createNew, .editExisting").filter(function(){
-		if ($(this).data('model') == 'Template' && !$("#createTemplate").data('initialized')){
-			initializeTemplateForm();
-		}else if ($(this).data('model') == 'Message' && !$("#createMessage").data('initialized')){
-			initializeMessageForm();
-		}
-		return $(this).data('initialized') != true ;
-	});
+	// var modalBtns = $(".button").filter(".createNew, .editExisting").filter(function(){
+	// 	return $(this).data('initialized') != true ;
+	// });
+	modalBtns = filterUninitialized(".button.createNew, .button.editExisting");
 	modalBtns.on("click",openModal);
 	modalBtns.data('initialized',true);
 
 	removePasswordInputs();
+}
+function getDefaultTemplate(form){
+	if (!defaultTemplateInfo){
+	    $.ajax({
+	        url: '/retrieve/Template/default',
+	        success: function(data){
+	            if (data == 'not found'){
+	            	confirm('Default Template','Create a template named "Default" to make your life easier! It will automatically load each time you send a message. Would you like to create a default template now?','yes take me there','no not right now');
+	            	var wait = setInterval(function(){
+	            		if (confirmBool !== undefined){
+	            			if (confirmBool){
+	            				unblurTopMost();
+	            				$("#template-index").find('.title').click();
+	            			}
+	            			confirmBool = undefined;
+	            			clearInterval(wait);
+	            		}
+	            	},100)
+	            }else{
+	                var m = data.markup, s = data.subject, subjectInput = form.find('input').filter(function(){
+	                	return $(this).attr('name') != undefined && $(this).attr('name').includes('subject');
+	                });
+	                defaultTemplateInfo = data;
+     	            console.log("STORING DEFAULT",defaultTemplateInfo);
+	                form.find('.summernote').summernote('code',m);
+	                subjectInput.val(s);                	
+	            }
+	        }
+	    })	
+	    console.log('b');	
+	}else{
+		console.log('a');
+        var m = defaultTemplateInfo.markup, s = defaultTemplateInfo.subject, subjectInput = form.find('input').filter(function(){
+	        return $(this).attr('name') != undefined && $(this).attr('name').includes('subject');
+        });
+        form.find('.summernote').summernote('code',m);
+        subjectInput.val(s);                	
+	}
 }
 function initializeTemplateForm(){
 	var forms = filterUninitialized("#createTemplate, #editTemplate");
@@ -50,62 +63,47 @@ function initializeTemplateForm(){
 			class: 'summernote'
 		}).appendTo(section);
 	})
-	setTimeout(function(){
-		forms.find(".summernote").summernote({
-			height:500,
-	        placeholder: 'Enter your text here',
-	        toolbar: [
-	          ['style', ['style']],
-	          ['font', ['bold', 'underline', 'clear']],
-	          ['fontname', ['fontname']],
-	          ['color', ['color']],
-	          ['para', ['ul', 'ol', 'paragraph', 'height']],
-	          ['insert', ['link', 'picture']],
-	          ['view', ['fullscreen', 'codeview', 'undo', 'redo', 'help']],
-	        ]
-		});
-		// var box = $("#createTemplate").find('.summernote');
-        $.ajax({
-            url: '/retrieve/Template/default',
-            success: function(data){
-                if (data == 'not found'){
-                	confirm('Default Template','Create a template named "Default" to make your life easier! It will automatically load each time you send a message. Would you like to create a default template now?','yes take me there','no not right now');
-                	var wait = setInterval(function(){
-                		if (confirmBool !== undefined){
-                			if (confirmBool){
-                				unblurTopMost();
-                				$("#template-index").find('.title').click();
-                			}
-                			confirmBool = undefined;
-                			clearInterval(wait);
-                		}
-                	},100)
-                }else{
-	                var m = data.markup, s = data.subject;
-	                $("#createTemplate").find('.summernote').summernote('code',m);
-	                $("#createTemplate").find("#default_subject_line").val(s);                	
-                }
-            }
-        })
-	},500);
+	if (forms.length != 0){
+		setTimeout(function(){
+			forms.find(".summernote").summernote({
+				height:500,
+		        placeholder: 'Enter your text here',
+		        toolbar: [
+		          ['style', ['style']],
+		          ['font', ['bold', 'underline', 'clear']],
+		          ['fontname', ['fontname']],
+		          ['color', ['color']],
+		          ['para', ['ul', 'ol', 'paragraph', 'height']],
+		          ['insert', ['link', 'picture']],
+		          ['view', ['fullscreen', 'codeview', 'undo', 'redo', 'help']],
+		        ]
+			});
+			getDefaultTemplate($("#createTemplate"));
+		},500);
+	}
 	forms.data('initialized',true);
 }
 function initializeMessageForm(){
 	var form = filterUninitialized("#createMessage");
-	form.find("#rich_text_message").addClass('summernote');
-	form.find(".summernote").summernote({
-			height:500,
-	        placeholder: 'Enter your text here',
-	        toolbar: [
-	          ['style', ['style']],
-          	  ['font', ['bold', 'underline', 'italic', 'strikethrough', 'clear']],
-	          ['fontname', ['fontname']],
-	          ['color', ['color']],
-	          ['para', ['ul', 'ol', 'paragraph', 'height']],
-	          ['insert', ['link', 'picture','hr']],
-	          ['view', ['fullscreen', 'codeview', 'undo', 'redo', 'help']],
-	        ]
-		});
+	if (form.length != 0){
+		form.find(".rich_text_message").addClass('summernote');
+		setTimeout(function(){
+			form.find(".summernote").summernote({
+				height:500,
+		        placeholder: 'Enter your text here',
+		        toolbar: [
+		          ['style', ['style']],
+		          ['font', ['bold', 'underline', 'clear']],
+		          ['fontname', ['fontname']],
+		          ['color', ['color']],
+		          ['para', ['ul', 'ol', 'paragraph', 'height']],
+		          ['insert', ['link', 'picture']],
+		          ['view', ['fullscreen', 'codeview', 'undo', 'redo', 'help']],
+		        ]
+			});
+			getDefaultTemplate($("#createMessage"));
+		},500);
+	}
 	form.data('initialized',true);
 }
 function openModal(){
@@ -136,7 +134,6 @@ function updateEditForm(modal, dispModel, name){
     		otsplice = $(this).text().replace("Add ","Edit ").replace("New ","This ").replace("This " + dispModel, "");
     		$(this).data('originalsplice',otsplice);
     	}
-        // $(this).data('originaltext',t);
         t = $(this).text();
         t = t.replace("Add ","Edit ").replace("New ","This ").replace("This " + dispModel, "'" + name + "'");
         $(this).text(t);
@@ -222,7 +219,7 @@ function saveModel(includeInvisible = false){
 			url += "/" + uid;
 		}
 
-		columnObj = constructColumnObj(model);
+		columnObj = constructColumnObj(model, form);
 		if (!columnObj){return false;}
 
 		var noFullJson = ['Message','Attachment'];
@@ -244,20 +241,13 @@ function saveModel(includeInvisible = false){
 	// blurElement(p,"#loading");
 	blurTopMost('#loading');
 	var uidList = getUids() ? getUids() : {};
-	alert(uidList);
 	$.ajax({
 		url: url,
 		method: method,
 		data: dataObj,
 		success:function(data){
-			console.log(data);
 			$("#booknow").find('.active').removeClass('active');
-			if (model == 'Appointment'){
-				blurTopMost("#checkmark");
-				delayedUnblurAll(1200);
-				refreshAppointmentFeed(data); 
-				// calendar.refetchEvents();
-			}else if (data == 'checkmark'){
+			if (data == 'checkmark'){
 				if (m.is("body")){
 					blurTopMost("#checkmark");
 					delayedReloadTab();
@@ -269,6 +259,12 @@ function saveModel(includeInvisible = false){
 						resetForm(form);
 					},800)
 				}
+			}else if(data == 'no changes'){
+				// do nothing
+			}else if (model == 'Appointment'){
+				blurTopMost("#checkmark");
+				delayedUnblurAll(1200);
+				refreshAppointmentFeed(data); 
 			}else{
 				if (data['errors'] != undefined){
 					var str = [];
@@ -278,11 +274,6 @@ function saveModel(includeInvisible = false){
 					$("#Error").find(".message").html(str.join("<br>"));
 					blurTopMost("#Error");
 				}
-				// else{
-				// 	$("#Error").find(".message").html(data);
-				// 	$("#Error").find(".submit").data('error',data);
-				// 	console.log(data);
-				// }
 			}
 		},
 		headers: {"X-CURRENT-UIDS":JSON.stringify(uidList)}
@@ -351,112 +342,102 @@ function checkConnectedModels(model){
 	}
 	return arr;
 }
-function constructColumnObj(model){
+function constructColumnObj(model, form){
 	var obj = {};
 	if (model == 'Service'){
 		obj = {
-			name: justResponse($("#service_name")),
-			description_calendar: justResponse($("#description_for_scheduling_and_website")),
-			description_admin: justResponse($("#description_for_invoicing_and_superbills")),
-			duration: justResponse($("#duration")).split(" ")[0],
-			price: justResponse($("#price")).split(" ")[0]
+			name: justResponse(form.find(".service_name")),
+			description_calendar: justResponse(form.find(".description_for_scheduling_and_website")),
+			description_admin: justResponse(form.find(".description_for_invoicing_and_superbills")),
+			duration: justResponse(form.find(".duration")).split(" ")[0],
+			price: justResponse(form.find(".price")).split(" ")[0]
 		}
 	}
 	else if (model == 'Code'){
 		obj = {
-			name: justResponse($("#code_as_used_for_billing_and_invoicing")),
-			code_type:  justResponse($("#code_type")),
-			code_description: justResponse($("#code_description")),
-			key_words: justResponse($("#keywords"))
+			name: justResponse(form.find(".code_as_used_for_billing_and_invoicing")),
+			code_type:  justResponse(form.find(".code_type")),
+			code_description: justResponse(form.find(".code_description")),
+			key_words: justResponse(form.find(".keywords"))
 		}
-		if ($("#which_version_of_icd").is(":visible")){
-			obj['icd_version'] = justResponse($("#which_version_of_icd"))
+		if (form.find(".which_version_of_icd").is(":visible")){
+			obj['icd_version'] = justResponse(form.find(".which_version_of_icd"))
 		}
 	}
 	else if (model == 'ServiceCategory'){
 		obj = {
-			name: justResponse($("#category_name")),
-			description: justResponse($("#category_description"))
+			name: justResponse(form.find(".category_name")),
+			description: justResponse(form.find(".category_description"))
 		}
 	}
 	else if (model == 'Diagnosis'){
-		var type = $("#CurrentDiagnosis").data('dxtype');
-		var affectInput = $(".itemFU").filter(function(){
-			return $(this).find(".q").text().includes("diagnosis can affect") && !modalOrBody($(this)).is("body");
+		var type = form.find(".CurrentDiagnosis").data('dxtype');
+		var affectInput = form.find(".itemFU").filter(function(){
+			return $(this).find(".q").text().includes("diagnosis can affect");
 		}).find('.answer');
 		obj = {
-			name: justResponse($("#diagnosis_name")),
-			category: justResponse($("#what_type_of_diagnosis_is_this")),
+			name: justResponse(form.find(".diagnosis_name")),
+			category: justResponse(form.find(".what_type_of_diagnosis_is_this")),
 			affects: justResponse(affectInput),
 			medicine_type: type
 		}
 	}
 	else if ($.inArray(model,['Patient','Practitioner','StaffMember','User']) > -1){
 		obj = {
-			// user_type: (justResponse($("#select_user_type")) == null) ? "patient" : justResponse($("#select_user_type")),
-			// is_admin: turnToBoolean(justResponse($("#grant_admin_privileges"))),
-			date_of_birth: justResponse($("#date_of_birth")),
-			first_name: justResponse($("#first_name")),
-			middle_name: justResponse($("#middle_name")),
-			last_name: justResponse($("#last_name")),
-			preferred_name: (justResponse($("#preferred_name")) != "") ? justResponse($("#preferred_name")) : null,
-			phone: justResponse($("#phone_number")),
-			email: justResponse($("#email_address")),
-			username: (justResponse($("#username")) == "") ? justResponse($("#email_address")) : justResponse($("#username"))
+			// user_type: (justResponse(form.find(".select_user_type")) == null) ? "patient" : justResponse(form.find(".select_user_type")),
+			// is_admin: turnToBoolean(justResponse(form.find(".grant_admin_privileges"))),
+			date_of_birth: justResponse(form.find(".date_of_birth")),
+			first_name: justResponse(form.find(".first_name")),
+			middle_name: justResponse(form.find(".middle_name")),
+			last_name: justResponse(form.find(".last_name")),
+			preferred_name: (justResponse(form.find(".preferred_name")) != "") ? justResponse(form.find(".preferred_name")) : null,
+			phone: justResponse(form.find(".phone_number")),
+			email: justResponse(form.find(".email_address")),
+			username: (justResponse(form.find(".username")) == "") ? justResponse(form.find(".email_address")) : justResponse(form.find(".username"))
 		}
-		if ($("#select_user_type").is(":visible")){obj['user_type'] = justResponse($("#select_user_type"));}
-		if ($("#grant_admin_privileges").is(":visible")){obj['is_admin'] = turnToBoolean(justResponse($("#grant_admin_privileges")));}
+		if (form.find(".select_user_type").is(":visible")){obj['user_type'] = justResponse(form.find(".select_user_type"));}
+		if (form.find(".grant_admin_privileges").is(":visible")){obj['is_admin'] = turnToBoolean(justResponse(form.find(".grant_admin_privileges")));}
 	}
 	else if (model == 'Message'){
-		// var d = Date.now().toString(), l = d.length;
-		// d = Number(d.slice(0, l - 3));
-		// var s = {
-		// 	'pending':[d],'processed':null,'dropped':null,'delivered':null,'deferred':null,
-		// 	'bounce':null,'open':null,'click':null,'spamreport':null,'unsubscribe':null,'group_unsubscribe':null,'group_resubscribe':null
-		// };
-		var type = justResponse($("#message_type"));
+		var type = justResponse(form.find(".message_type"));
 		if (type == 'Email' || type == 'Secure Portal Message'){
 			obj = {
 				type: type,
-				message: $("#createMessage").find(".summernote").summernote('code'),
-				subject: justResponse($("#subject"))
+				message: form.find(".summernote").summernote('code'),
+				subject: justResponse(form.find(".subject"))
 			};
 		}else if (type == 'SMS'){
 			obj = {
 				type: type,
-				message: justResponse($("#plain_text_message"))
+				message: justResponse(form.find(".plain_text_message"))
 			};
 		}
-		// if ($("#subject").is(":visible")){
-		// 	obj['subject'] = justResponse($("#subject"));
-		// }
 	}
 	else if (model == 'Template'){
 		var m = $('.summernote').filter(function(){
 			return $(this).parent().is(":visible");
 		}).summernote('code');
 		obj = {
-			name: justResponse($("#template_name")),
+			name: justResponse(form.find(".template_name")),
 			markup: m,
-			type: justResponse($("#what_type_of_template_is_this")),
+			type: justResponse(form.find(".what_type_of_template_is_this")),
 		}
-		if ($("#default_subject_line").val() != ""){
-			obj['subject'] = $("#default_subject_line").val();
+		if (form.find(".default_subject_line").val() != ""){
+			obj['subject'] = form.find(".default_subject_line").val();
 		}
 	}
 	else if (model == 'Complaint'){
 		obj = {
-			name: justResponse($("#complaint_name")),
-			complaint_type: justResponse($("#complaint_category"))
+			name: justResponse(form.find(".complaint_name")),
+			complaint_type: justResponse(form.find(".complaint_category"))
 		}
 	}
 	else if (model == "Appointment"){
-		var form = $("#createAppointment").is(":visible") ? $("#createAppointment") : $("#editAppointment"),
-			dateTime = moment(form.find("#date").val() + " " + form.find("#time").val(), "MM/DD/YYYY hh:mmA");
+		var dateTime = moment(form.find(".date").val() + " " + form.find(".time").val(), "MM/DD/YYYY hh:mmA");
 		dateTime = dateTime.format("YYYY-MM-DD kk:mm:ss");
 		obj = {
 			date_time: dateTime,
-			duration: form.find("#duration").val()
+			duration: form.find(".duration").val()
 		}
 	}
 	// console.log(obj);

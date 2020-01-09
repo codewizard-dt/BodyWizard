@@ -100,7 +100,22 @@ class Submission extends Model
 		return json_decode($decryptResponse->getPlaintext(),true);
     }
     public function moreOptions(){
-        Log::info("optionsNav");
+        $options = [
+            'Submitted' => $this->created_at->format('g:ia \o\n n/j/Y'),
+            'Related Appointment' => ($this->appointment) ? $this->appointment->name : 'none',
+        ];
+        echo '<div class="split3366KeyValues">';
+        foreach($options as $attr => $val){
+            if (is_array($val)){
+                echo "<div class='label'>$attr</div><div class='value little'>";
+                foreach ($val as $k => $v){
+                    echo "<h4>$k</h4>";
+                    if (is_string($v)){echo "<div>$v</div>";}else{var_dump($v);}
+                }
+                echo "</div>";                
+            }else{echo "<div class='label'>$attr</div><div class='value'>$val</div>";}
+        }
+        echo "</div>";
     }
     public function patient(){
         return $this->belongsTo('App\Patient', 'patient_id');

@@ -9,5 +9,3 @@
 
 <div id="codeTarget" class='loadTarget'>
 </div>
-
-<script type="text/javascript">$(document).ready(function(){initializeNewMenus();})</script>

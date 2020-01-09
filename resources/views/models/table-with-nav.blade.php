@@ -57,27 +57,28 @@
             }else{
                 session()->forget('subCollection');
             }
-        if ($with){
-            $collection = $class::with($with);
-        }
-        if ($where){
-            if (!isset($collection)){
-                $collection = $class::where($where);
-            }else{
-                $collection->where($where);
+            if ($with){
+                $collection = $class::with($with);
             }
-        }
-        if ($orderBy){
-            foreach ($orderBy as $method){
-                $attr = $method[0];
-                $dir = $method[1];
+            if ($where){
                 if (!isset($collection)){
-                    $collection = $class::orderBy($attr, $dir);
+                    $collection = $class::where($where);
                 }else{
-                    $collection->orderBy($attr, $dir);
+                    $collection->where($where);
                 }
             }
-        }
+            if ($orderBy){
+                foreach ($orderBy as $method){
+                    $attr = $method[0];
+                    $dir = $method[1];
+                    if (!isset($collection)){
+                        $collection = $class::orderBy($attr, $dir);
+                    }else{
+                        $collection->orderBy($attr, $dir);
+                    }
+                }
+            }
+            
         if (!isset($collection)){
             $collection = $class::all();
         }else{

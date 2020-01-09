@@ -400,10 +400,11 @@ class ScriptController extends Controller
                 unset($uidList[$model]);
                 session(['uidList'=>$uidList]);
                 session()->forget($model);
-                return ($model == 'Appointment') ? [
+                $message = ($model == 'Appointment') ? [
                     'appointments' => Practice::AppointmentEventFeed(),
                     'anon' => Practice::anonApptEventFeed()
                 ] : "checkmark";
+                return listReturn($message);
             }
             catch(\Exception $e){
                 event(new BugReported(
