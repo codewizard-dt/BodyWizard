@@ -10,10 +10,12 @@
     "require": {
         "php": "^7.2",
         "ext-bcmath": "*",
+        "ext-stackdriver_debugger": "*",
         "aloha/twilio": "^4.0",
         "fideloper/proxy": "^4.0",
         "google/apiclient": "^2.0",
         "google/auth": "^1.5",
+        "google/cloud-debugger": "^0.20.0",
         "google/cloud-error-reporting": "^0.15.0",
         "google/cloud-kms": "^1.7",
         "google/cloud-logging": "^1.18",

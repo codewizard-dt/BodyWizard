@@ -17,10 +17,14 @@ class CheckTabHeader
     public function handle($request, Closure $next)
     {
         $headers = getallheaders();
-        if (isset($headers['X-CURRENT-TAB'])){
-            $currentTab = json_decode($headers['X-CURRENT-TABS'],true);
+        if (isset($headers['X-CURRENT-TABS'])){
+            $currentTabs = json_decode($headers['X-CURRENT-TABS'],true);
             $tabList = (session('CurrentTabs') == null) ? [] : session('CurrentTabs');
-            foreach ($currentTab as $menu => $tab){
+            Log::info('tab situation',[
+                'currentTabs' => $currentTabs,
+                'sessionTabs' => $tabList
+            ]);
+            foreach ($currentTabs as $menu => $tab){
                 $tabList[$menu] = $tab;
             }
             session(['CurrentTabs'=>$tabList]);
