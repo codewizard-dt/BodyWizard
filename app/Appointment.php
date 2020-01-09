@@ -1,5 +1,4 @@
 <?php
-//Commenting for no reason
 namespace App;
 
 use App\Traits\TrackChanges;

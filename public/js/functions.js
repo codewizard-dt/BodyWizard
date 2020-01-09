@@ -140,18 +140,12 @@ $.ajaxSetup({
         dataFilter: function(data,type){
             data = data.trim();
             var returnData = data;
-            // console.log(data);
             try{
                 var json = JSON.parse(data);
                 if (json.uidList != undefined){$("#uidList").text(JSON.stringify(json.uidList));}
-                if (json.tabList != undefined){
-                    $("#tabList").text(JSON.stringify(json.tabList));
-                    console.log('tablist',json.tabList);
-                }
-                if (json.message != undefined){returnData = JSON.stringify(json.message);}
-                console.log(json);
+                if (json.tabList != undefined){$("#tabList").text(JSON.stringify(json.tabList));}
+                if (json.message != undefined){returnData = json.message;}
             }catch(e){
-                // console.log(data);
             }
             return returnData;
         }
