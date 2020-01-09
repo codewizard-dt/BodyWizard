@@ -8,4 +8,4 @@ steps:
   - name: 'gcr.io/cloud-builders/gcloud'
     args: ['config','list']
   - name: 'gcr.io/cloud-builders/gcloud'
-    args: ['app','deploy','--no-promote']
+    args: ['app','deploy','--no-promote','--version=gae_dev_test']
