@@ -63,6 +63,8 @@
             "php artisan optimize:clear"
         ],
         "post-autoload-dump": [
+            "ls \/app",
+            "ls \/app\/bootstrap",
             "chmod -R 755 \/app\/bootstrap\/cache",
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"
