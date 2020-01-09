@@ -28,7 +28,13 @@ class CheckDomain
                 $practiceId = getPracticeId($request);
                 $calendarId = practiceConfig("practices.$practiceId.app.calendarId");
                 $tz = practiceConfig("practices.$practiceId.public.timezone");
-                Log::info($tz);
+                Log::info('checkdomain',[
+                    'host' => $host,
+                    'port' => $port,
+                    'practiceId' => $practiceId,
+                    'calendarId' => $calendarId,
+                    'tz' => $tz
+                ]);
                 date_default_timezone_set($tz);
                 session([
                     'domain' => $host,
