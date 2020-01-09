@@ -700,21 +700,28 @@ function listReturn($requestStatus, $url='not given'){
     if ($exists){
       require storage_path("/app/$qualified");
       if ($basePath === $path){
-        return $content;
+        $config = $content;
       }else{
         unset($structure[0]);
         array_keys($structure);
         $dotpath = implode(".",$structure);
         if (Arr::has($content, $dotpath)){
-          return Arr::get($content, $dotpath);
+          $config = Arr::get($content, $dotpath);
         }else{
-          return [];
+          $config = [];
         }
       }
     }else{
-      return [];
+      $config = [];
     }
-    // return $contents; 
+    Log::info('practiceConfig',[
+      'path' => $path,
+      'basePath' => $basePath,
+      'qualified' => $qualified,
+      'exists' => $exists,
+      'configVal' => $config
+    ]);
+    return $config; 
   }
   function addToConfig($configName,$key,$value){
     // ALLOWS USE OF '.' ARRAY CONFIGURATION, OR NOT
