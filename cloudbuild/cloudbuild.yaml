@@ -4,8 +4,4 @@ steps:
   - name: 'gcr.io/cloud-builders/gcloud'
     args: ['config','set','project','bodywizard']
   - name: 'gcr.io/cloud-builders/gcloud'
-    args: ['projects','list']
-  - name: 'gcr.io/cloud-builders/gcloud'
-    args: ['config','list']
-  - name: 'gcr.io/cloud-builders/gcloud'
     args: ['app','deploy','--no-promote','--version=gae-dev-test']
