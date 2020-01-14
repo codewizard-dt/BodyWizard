@@ -21,7 +21,7 @@ class RefreshUserTables extends Command
      *
      * @var string
      */
-    protected $signature = 'refresh:users {practiceId} {--factory} {--clearAppts}';
+    protected $signature = 'refresh:users {practiceId} {--factory}';
 
     /**
      * The console command description.
@@ -49,7 +49,6 @@ class RefreshUserTables extends Command
     {
         $practiceId = $this->argument('practiceId');
         $populate = $this->option('factory');
-        $calendarId = $this->option('clearAppts') ? practiceConfig('practices')[$practiceId]['app']['calendarId'] : null;
         $database = practiceConfig('practices')[$practiceId]['app']['database'];
         config(['database.connections.mysql.database' => $database]);
         DB::reconnect();
@@ -62,17 +61,6 @@ class RefreshUserTables extends Command
             $this->info("Users tables populated");
         }else{
             $this->info("User table population skipped");
-        }
-        if ($calendarId){
-            $result = Practice::clearCalendar($calendarId);
-            if ($result){
-                $this->info('Google calendar cleared.');
-            }else{
-                $this->error('Error clearing Google calendar.');
-            }
-            RefreshTables::clearApptTables();
-            Practice::updateEntireEventFeed($practiceId);
-            $this->info("Appointments cleared from database and feed updated.");
         }
     }
 }

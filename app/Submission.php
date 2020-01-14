@@ -4,22 +4,20 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
-
+use App\Traits\Encryptable;
 
 class Submission extends Model
 {
+    use Encryptable;
     //
     public $tableValues;
     public $optionsNavValues;
-    // public $nameAttr;
     public $connectedModels;
-    // public $auditOptions;
 
     public function __construct($attributes = []){
         parent::__construct($attributes);
 
         $this->connectedModels = [  
-            // ['Service','many','morphToMany']
         ];
     }
     static function tableValues(){
@@ -82,22 +80,10 @@ class Submission extends Model
     	return "{$this->form->form_name} ({$this->patient->name}, {$this->created_at->format("M j")})";
     }
     public function setResponsesAttribute($value){
-        $kms = app("GoogleKMS");
-        $practiceId = session('practiceId');
-        $cryptoKey = practiceConfig("practices.$practiceId.app.cryptoKey");
-        Log::info(session()->all());
-        Log::info($practiceId);
-        Log::info($cryptoKey);
-        $encryptResponse = $kms->encrypt($cryptoKey,json_encode($value));
-        // Log::info($encryptResponse->getCiphertext());
-    	$this->attributes['responses'] = utf8_encode($encryptResponse->getCiphertext());
+        $this->attributes['responses'] = $this->encryptKms($value);
     }
     public function getResponsesAttribute($value){
-        $kms = app("GoogleKMS");
-        $practiceId = session('practiceId');
-        $cryptoKey = practiceConfig("practices.$practiceId.app.cryptoKey");
-		$decryptResponse = $kms->decrypt($cryptoKey,utf8_decode($value));
-		return json_decode($decryptResponse->getPlaintext(),true);
+        return $this->decryptKms($value);
     }
     public function moreOptions(){
         $options = [

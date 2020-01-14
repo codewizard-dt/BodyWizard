@@ -1,16 +1,16 @@
 <?php
-require_once app_path("php/functions.php");
 Use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 
 $scheduleForm = App\Form::where('form_id', 19)->orderBy('version_id','desc')->first();
 $breakForm = App\Form::where('form_id', 20)->orderBy('version_id','desc')->first();
-$practiceId = session('practiceId');
+$practice = App\Practice::getFromSession();
 
 if ($model == 'Practice'){
-	$exists = Storage::disk('local')->exists('/calendar/'.$practiceId.'/practice-schedule.json');
-	if ($exists){$schedule = json_decode(Storage::get('/calendar/'.$practiceId.'/practice-schedule.json'),true);}
-	else{$schedule = [];}
+	// $exists = Storage::disk('local')->exists('/calendar/'.$practiceId.'/practice-schedule.json');
+	// if ($exists){$schedule = json_decode(Storage::get('/calendar/'.$practiceId.'/practice-schedule.json'),true);}
+	// else{$schedule = [];}
+	$schedule = $practice->practice_schedule;
 	$exceptions = [];
 	$nospaces = $model;
 	$uid = null;
@@ -58,9 +58,9 @@ $todayNumerical = numericalWeekday($today);
 @endif
 
 <div id='AddTimeBlock' class='modalForm' data-break='false'>{{ $scheduleForm->formDisplay(true) }}</div>
-<div id='EditTimeBlock' class='modalForm' data-break='false'>{{ $scheduleForm->formDisplay(true) }}</div>
+<div id='EditTimeBlock' class='modalForm' data-break='false'>{{ $scheduleForm->formDisplay(true,true,true) }}</div>
 <div id='AddBreak' class='modalForm' data-break='true'>{{ $breakForm->formDisplay(true) }}</div>
-<div id='EditBreak' class='modalForm' data-break='true'>{{ $breakForm->formDisplay(true) }}</div>
+<div id='EditBreak' class='modalForm' data-break='true'>{{ $breakForm->formDisplay(true,true,true) }}</div>
 <div id="editOrDeleteBlock" class="modalForm prompt">
 	<div class="message">
 		<h1 class='purple'>Time Block Details</h1>
@@ -73,7 +73,7 @@ $todayNumerical = numericalWeekday($today);
 				<div class='label'>Scheduled Times:</div>
 				<span class='value'></span>
 			</div>
-			@if ($model != 'StaffMember')
+			@if ($model != 'StaffMember' && $model != 'Practice')
 			<div class="services">
 				<div class='label'>Services Offered:</div>
 				<span class='value'></span>
@@ -114,6 +114,3 @@ $todayNumerical = numericalWeekday($today);
 	'relationship' => "morphToMany",
 	'connectedTo' => "Schedule"
 ])
-
-@include ('schedules.scripts')
-<script src="{{ asset('/js/launchpad/schedules.js') }}"></script>

@@ -189,6 +189,7 @@ $(document).ready(function(){
                 if (p.hasClass("sectionName")){
                     updateSections();
                 }
+                if ($(this).closest('h2').is("FormName")){autoSave();}
             }
             else if ($(this).hasClass("cancel")){
                 var target = $(this).closest(".editable");
@@ -1351,7 +1352,7 @@ $(document).ready(function(){
             
             if (ItemsFU.length>0){
                 ItemsFU.forEach(function(f,xFU){
-                    var tFU = f.type, qFU = f.question, oFU = f.options, cFU = f.condition, cStr = "is <span class='bold underline'>", rFU = (f.required == undefined) ? true : f.required, rFUStr = ((rFU === false) || (tFU == 'narrative')) ? "" : "<span class='requireSign'>*</span>";
+                    var tFU = f.type, qFU = f.question, oFU = f.options, cFU = f.condition, cStr = "is <span class='bold underline pink'>", rFU = (f.required == undefined) ? true : f.required, rFUStr = ((rFU === false) || (tFU == 'narrative')) ? "" : "<span class='requireSign'>*</span>";
                     $(itemFUNode).appendTo(ItemsFUList);
                     var newItemFU = ItemsFUList.find(".itemFU").last();
                     if (tFU == "narrative"){qFU = "Rich Text Block";}
@@ -1366,16 +1367,24 @@ $(document).ready(function(){
                     // console.log(cFU.length);
 
                     if (cFU.length == 1){
-                        cStr = "is <span class='bold underline'>"+cFU+"</span>";
+                        cStr = "is <span class='bold underline pink'>"+cFU+"</span>";
                     }else if (cFU.length == 2){
-                        cStr = "is <span class='bold underline'>"+cFU.join(" or ")+"</span>";
+                        cStr = "is <span class='bold underline pink'>"+cFU.join(" or ")+"</span>";
                     }else{
                         for (c = 0;c < cFU.length; c++){
                             var add = (c == cFU.length - 1) ? " or " + cFU[c] + "</span>" : " " + cFU[c] + ",";
                             cStr += add;
                         }
                     }
-                    newItemFU.find(".condition").html("Condition: <span class='bold underline'>"+q+"</span> "+cStr);
+                    var qSplit = q.split(" "), qShort = [];
+                    for (x = 0; x < 10; x++){
+                        if (qSplit[x] != undefined){
+                            qShort.push(qSplit[x]);
+                        }
+                    }
+                    qShort = qShort.join(" ");
+                    qShort = (qShort != q) ? qShort += "..." : qShort;
+                    newItemFU.find(".condition").html("Condition: <span class='bold underline'>"+qShort+"</span> "+cStr);
                     activateItem(newItemFU,tFU,oFU);
                 })
             }

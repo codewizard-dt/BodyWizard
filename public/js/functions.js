@@ -1306,7 +1306,7 @@ function clearAllScheduleModals(){
     $(list).removeAttr('id').remove();
 }
 function optionsNavBtnClick(){
-    if ($(this).hasClass("disabled")){return false;}
+    if ($(this).hasClass("disabled")){return;}
     var optionsNav = $(this).closest('.optionsNav'),
         model = optionsNav.data('model'),
         dest = $(this).data('destination'),
@@ -1315,10 +1315,10 @@ function optionsNavBtnClick(){
     
     if (link.length>0){
         if (link.data('uri').match(/(edit|delete|show|update|settings)/)){
-            var uri = link.data('uri').split("/");
-            uri[2] = uid;
-            uri = uri.join("/");
-            link.data('uri',uri);
+            // var uri = link.data('uri').split("/");
+            // uri[2] = uid;
+            // uri = uri.join("/");
+            // link.data('uri',uri);
         }
         link.click();
     }
@@ -1346,6 +1346,7 @@ function optionsNavBtnClick(){
             success:function(data){
                 $("#EditScheduleModal").html(data);
                 blurElement($("body"),"#EditScheduleModal");
+                initializeNewContent();
             }
         })
     }
@@ -1410,8 +1411,8 @@ function optionsNavBtnClick(){
             success:function(data){
                 $(data).appendTo("#ModalHome");
                 var form = $("#"+id), settings = (form.data('settings')!=undefined) ? form.data('settings') : false;
-                initializeNewForms();
-                initializeSettingsForm();
+                // initializeNewForms();
+                // initializeSettingsForm();
                 form.find(".button.submitForm").text("save settings");
                 form.find("h1, h2, .q").filter(function(){return !$(this).data('updated');}).each(function(){
                     var t = $(this).text(), name = optionsNav.find(".name").text();
@@ -1419,6 +1420,7 @@ function optionsNavBtnClick(){
                     $(this).text(t);
                     $(this).data('updated',true);
                 });
+                initializeNewContent();
                 blurElement($("body"),"#"+id);
                 setTimeout(function(){
                     attachConnectedModelInputs(form);
@@ -1638,8 +1640,13 @@ function resizeElements(){
 }
 
 function followLink(){
-    var t = $(this).data("target");
-    window.location.href = t;
+    if ($(this).data('target') != undefined){
+        var t = $(this).data("target");
+        window.location.href = t;        
+    }else if ($(this).data('tab') != undefined){
+        var t = $(this).data('tab');
+        $(t).find(".title").click();
+    }
 }
 function plural(model){
     model = model.toLowerCase();
@@ -1652,9 +1659,27 @@ function singular(model){
     return model;
 }
 
+function initializeLinks(){
+    var links = filterUninitialized('.link');
+    links.on("click",followLink);
+    links.data('initialized');
+}
+
+function initializeNewContent(){
+    resetEntireAppt();
+    initializeNewMenus();
+    initializeNewForms();
+    initializeNewModelForms();
+    initializeNewModelTables();
+    initializeSettingsForm();
+    initializeApptForms();
+    initializeLinks();
+    initializeScheduleForms();
+    activateServiceSelection();
+    masterStyle();
+}
+
 var loadingRing = "<div class='lds-ring dark'><div></div><div></div><div></div><div></div></div>", loadingRingCSS = {top:"50%",transform:"translate(-50%,-50%)"};
-// $(document).ready(function(){
-// });
 
 $(document).ready(function(){
     resizeElements();
@@ -1668,8 +1693,7 @@ $(document).ready(function(){
         systemModalList.push("createAppointment","editAppointment","SelectServices","SelectPractitioner","SelectDateTime","ApptDetails","ServiceListModal","PractitionerListModal");
         systemModals = systemModals.add($("#createAppointment, #editAppointment, #SelectServices, #SelectPractitioner, #SelectDateTime, #ApptDetails, #ServiceListModal, #PractitionerListModal"));
     }
-
+    initializeLinks();
     $(".booknow").addClass("link").data("target","/booknow");
-    $(".link").on("click",followLink);
     $(document).on('click','.cancel',unblurTopMost);
 })

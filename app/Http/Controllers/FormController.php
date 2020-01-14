@@ -141,8 +141,6 @@ class FormController extends Controller
 
     public function store(Request $request)
     {
-        include_once app_path("php/functions.php");
-
         if ($request->form_id == "none"){
             $maxFormId = Form::orderBy('form_id','desc')->take(1)->get();
             $formId = count($maxFormId) > 0 ? $maxFormId[0]->form_id + 1 : 1;
@@ -236,26 +234,20 @@ class FormController extends Controller
     }
 
     /**
-     * Display the specified resource.
-     *
-     * @param  \App\Form  $form
-     * @return \Illuminate\Http\Response
-     */
-    public function show(Form $form)
-    {
-        //
-    }
-
-    /**
      * Show the form for editing the specified resource.
      *
      * @param  \App\Form  $form
      * @return \Illuminate\Http\Response
      */
-    public function edit(Form $form)
+    public function edit(Form $form = null)
     {
-        //
         $usertype = Auth::user()->user_type;
+        $uid = getUid('Form');
+        if ($form == null && $uid == null){
+            return view('errors.no-form-selected');
+        }elseif ($form == null && $uid != null){
+            $form = Form::find($uid);
+        }
 
         return view("portal.$usertype.forms.create",['form'=>$form]);        
     }

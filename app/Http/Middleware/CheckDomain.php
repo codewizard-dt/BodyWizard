@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Auth;
+use App\Practice;
 
 use Closure;
 
@@ -21,40 +22,19 @@ class CheckDomain
         // Log::info($request->getHost(),['location'=>'checkdomain.php 21']);
         // Log::info(session()->all(),['location'=>'checkdomain.php 22']);
 
-        if (Auth::user()){
+        if (Auth::user() && session('practiceId') === null){
             if (session('practiceId') === null){
-                $host = $request->getHost();
-                $port = $request->getPort();
-                $practiceId = getPracticeId($request);
-                $calendarId = practiceConfig("practices.$practiceId.app.calendarId");
-                $tz = practiceConfig("practices.$practiceId.public.timezone");
-                Log::info('checkdomain',[
-                    'host' => $host,
-                    'port' => $port,
-                    'practiceId' => $practiceId,
-                    'calendarId' => $calendarId,
-                    'tz' => $tz
-                ]);
-                date_default_timezone_set($tz);
+                $practice = Practice::getFromRequest($request);
                 session([
-                    'domain' => $host,
-                    'port' => $port,
-                    'practiceId' => $practiceId,
-                    'calendarId' => $calendarId,
-                    'timezone' => $tz
+                    'domain' => $practice->host,
+                    'practiceId' => $practice->practice_id,
+                    'calendarId' => $practice->calendar_id,
+                    'timezone' => $practice->contact_info['timezone']
                 ]);
-                // Log::info("HEY",['location'=>'checkdomain.php 39']);
-                // Log::info(session()->all(),['location'=>'checkdomain.php 39']);
-            }else{
-                date_default_timezone_set(session('timezone'));
+                date_default_timezone_set($practice->contact_info['timezone']);
             }
         }
-        if ((session('domain') !== null && session('domain') !== $request->getHost()) ||
-            (session('port') !== null && session('port') != $request->getPort()) ){
-            $request->session()->invalidate();
-            Auth::logout();
-            return redirect('/');
-        }
+        Log::info($request->path());
         return $next($request);
     }
 }

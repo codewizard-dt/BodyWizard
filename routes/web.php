@@ -76,6 +76,7 @@ Route::post('/form/{uid}/submit','FormController@submit');
 Route::get('/home/forms', 'FormController@home');
 Route::get('/forms/{uid}/preview', 'FormController@preview');
 Route::get('/forms/{uid}/settings', 'FormController@settings');
+Route::get('/forms/UID/edit','FormController@edit');
 Route::resource('forms', 'FormController');
 
 Route::get('/home/formulas', 'FormulaController@home');

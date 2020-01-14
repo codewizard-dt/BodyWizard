@@ -20,10 +20,6 @@ class CheckTabHeader
         if (isset($headers['X-CURRENT-TABS'])){
             $currentTabs = json_decode($headers['X-CURRENT-TABS'],true);
             $tabList = (session('CurrentTabs') == null) ? [] : session('CurrentTabs');
-            Log::info('tab situation',[
-                'currentTabs' => $currentTabs,
-                'sessionTabs' => $tabList
-            ]);
             foreach ($currentTabs as $menu => $tab){
                 $tabList[$menu] = $tab;
             }

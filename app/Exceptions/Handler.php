@@ -5,6 +5,9 @@ namespace App\Exceptions;
 use Exception;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Google\Cloud\ErrorReporting\Bootstrap;
+// use App\Events\BugReported;
+// use Illuminate\Support\Facades\Auth;
+// use Illuminate\Support\Facades\Log;
 
 class Handler extends ExceptionHandler
 {
@@ -41,6 +44,17 @@ class Handler extends ExceptionHandler
             }
         } else {
             // Standard behavior
+            // event(new BugReported(
+            //     [
+            //         'description' => "Uncaught Exception", 
+            //         'details' => $exception, 
+            //         'category' => 'Exceptions', 
+            //         'location' => 'ExceptionHandler',
+            //         'user' => Auth::check() ? Auth::user()->id : null
+            //     ]
+            // ));
+            // Log::error($exception);
+
             parent::report($exception);
         }
     }

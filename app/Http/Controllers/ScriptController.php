@@ -202,11 +202,12 @@ class ScriptController extends Controller
             }
 
             if ($model == 'Appointment' && $result === true){
+                $practice = Practice::getFromSession();
                 $apptFeeds = [
-                    'appointments' => Practice::AppointmentEventFeed(),
-                    'anon' => Practice::anonApptEventFeed()
+                    'appointments' => $practice->appointments,
+                    'anon' => $practice->anon_appt_feed
                 ];
-                return listReturn($apptFeeds, $request->path());
+                return listReturn(json_encode($apptFeeds), $request->path());
             }elseif ($result === true){
                 return listReturn("checkmark",$request->path());
             }else{
@@ -221,9 +222,10 @@ class ScriptController extends Controller
             $result = $this->saveModel($model, $existingInstance, $request);
 
             if ($model == 'Appointment' && $result === true){
+                $practice = Practice::getFromSession();
                 $apptFeeds = [
-                    'appointments' => Practice::AppointmentEventFeed(),
-                    'anon' => Practice::anonApptEventFeed()
+                    'appointments' => $practice->appointments,
+                    'anon' => $practice->anon_appt_feed
                 ];
                 return listReturn($apptFeeds, $request->path());
             }elseif ($result === true){
@@ -233,6 +235,7 @@ class ScriptController extends Controller
             }
         }
         public function saveModel($model, $instance, Request $request){
+            $practice = Practice::getFromSession();
             $models = strtolower(plural($model));
             $columns = isset($request->columnObj) ? $request->columnObj : [];
             $trackChanges = usesTrait($instance,"TrackChanges");
@@ -331,7 +334,7 @@ class ScriptController extends Controller
 
                 // IF THE PRACTITIONER HAS A SCHEDULE, UPDATE SCHEDULES
                 if ($model == 'Practitioner' && isset($columns['schedule'])){
-                    Practice::savePractitionerSchedules();
+                    $practice->savePractitionerSchedules();
                 }
 
                 // SENDS PASSWORD IF RANDOMLY GENERATED
@@ -379,6 +382,7 @@ class ScriptController extends Controller
         public function deleteModel($model, $uid, Request $request){
             // include_once app_path("php/functions.php");
             $class = "App\\$model";
+            $practice = Practice::getFromSession();
             try{
                 if (isUser($model) && $model != "User"){
                     $userId = $class::find($uid)->user_id;
@@ -390,7 +394,7 @@ class ScriptController extends Controller
                 }
                 if ($model == 'Appointment'){
                     $appt = $class::find($uid);
-                    Log::info($appt,['location'=>'387','uid'=>$uid]);
+                    // Log::info($appt,['location'=>'387','uid'=>$uid]);
                     event(new AppointmentCancelled($appt, session('practiceId'), Auth::user()->user_type, $request));
                     $appt->delete();
                 }else{
@@ -401,9 +405,10 @@ class ScriptController extends Controller
                 session(['uidList'=>$uidList]);
                 session()->forget($model);
                 $message = ($model == 'Appointment') ? [
-                    'appointments' => Practice::AppointmentEventFeed(),
-                    'anon' => Practice::anonApptEventFeed()
+                    'appointments' => $practice->appointments,
+                    'anon' => $practice->anon_appt_feed
                 ] : "checkmark";
+                // Log::info(json_encode($message),['location'=>'scriptcontroller 411']);
                 return listReturn($message);
             }
             catch(\Exception $e){

@@ -16,14 +16,21 @@ function initializeNewMenus(){
             hasDropdown = (tab.children('.dropDown').length === 1), titleActive = $(this).hasClass("active"),
             parentTitles = getParentTitles($(this)), dropdownActive = (hasDropdown) ? dropdown.hasClass("active") : null;
 
-        if (tab.is("#booknow") && uri == '#createAppointment'){
+        if ((tab.is("#booknow") && uri == '#createAppointment') 
+            || (uri == '' && target != "window")
+            || (tab.is("#lock-ehr"))){
             return;
         }
-        if (uri == '' && target != "window"){            
-            return;
-        }
+        // if (uri == '' && target != "window"){            
+        //     return;
+        // }
         if (uri != undefined && uri.match(/(edit|delete|show|update|settings)/)){
-            alert('undefined action');
+            if ($.inArray(uri,[
+                    '/forms/UID/edit',
+                    '/settings/Patient/uid'
+                ]) == -1){
+                alert('undefined action menus.js 26 uri: '+uri);
+            }
             // uri = $(this).data('uri').split("/");
             // var model = singular(uri[1]), Model = model.substr(0,1).toUpperCase() + model.substr(1), models = plural(model);
             //     action = uri[3];
@@ -288,7 +295,7 @@ function delayedReloadTab(time = 800){
     },time)
 }
 var loadXHR = undefined, xhrWait = undefined;
-function LoadingContent(target,uri,currentTab = {}){
+function LoadingContent(target,uri){
     if (target=="window"){
         alert("window");
     }
@@ -310,29 +317,20 @@ function LoadingContent(target,uri,currentTab = {}){
         success:function(data){
             // console.log(uri);
             $(".toModalHome, .modalForm").appendTo("#ModalHome");
-            // console.log(systemModalList);
             $("#ModalHome").children().filter(function(){
                 return $.inArray($(this).attr('id'),systemModalList) === -1;
             }).remove();
             $(target).html(data);
-            console.log('list updates',$(target).find(".listUpdate").length);
+            // console.log('list updates',$(target).find(".listUpdate").length);
             if ($(target).find(".listUpdate").length != 0){
                 var lists = $(target).find(".listUpdate").data(), uids = lists.uids, tabs = lists.tabs;
-                console.log('uids',uids,'tabs',tabs);
+                // console.log('uids',uids,'tabs',tabs);
                 uids = (uids && uids.length == 0) ? 'null' : JSON.stringify(uids);
                 tabs = (tabs && tabs.length == 0) ? 'null' : JSON.stringify(tabs);
                 $("#uidList").text(uids);
                 $("#tabList").text(tabs);
             }
-            resetEntireAppt();
-            initializeNewMenus();
-            initializeNewForms();
-            initializeNewModelForms();
-            initializeNewModelTables();
-            initializeSettingsForm();
-            initializeApptForms();
-            activateServiceSelection();
-            masterStyle();
+            initializeNewContent();
         },
         error: function(e){
             if (e.status == 404){

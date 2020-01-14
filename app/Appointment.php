@@ -180,7 +180,7 @@ class Appointment extends Model
         foreach ($this->services as $service){
             if ($usertype){
                 $forms = $service->forms->filter(function($form) use ($usertype){
-                    Log::info($form->settings);
+                    // Log::info($form->settings);
                     return $form->settings !== null 
                             && isset($form->settings['form_type'])
                             && $form->settings['form_type'] == $usertype;
@@ -251,10 +251,11 @@ class Appointment extends Model
         return $required;
     }
     public function saveToGoogleCal($method = 'POST', $calendarId = null){
-        $practiceId = session('practiceId');
+        // $practiceId = session('practiceId');
 
         $calendar = app('GoogleCalendar');
-        $calendarId = isset($calendarId) ? $calendarId : practiceConfig("practices.$practiceId.app.calendarId");
+        $practice = Practice::getFromSession();
+        $calendarId = isset($calendarId) ? $calendarId : $practice->calendar_id;
         $start = Carbon::parse($this->date_time);
         $end = Carbon::parse($this->date_time)->addMinutes($this->duration);
 
@@ -329,8 +330,8 @@ class Appointment extends Model
         }
     }
     public function saveToFullCal($practiceId = null, $eventId = null){
-        $practiceId = isset($practiceId) ? $practiceId : session('practiceId');
-        $calendarId = practiceConfig("practices.$practiceId.app.calendarId");
+        $practice = isset($practiceId) ? Practice::find($practiceId) : Practice::getFromSession();
+        $calendarId = $practice->calendar_id;
         $eventId = isset($eventId) ? $eventId : $this->uuid;
         $cal = app("GoogleCalendar");
         $event = $cal->events->get($calendarId, $eventId);
@@ -411,12 +412,13 @@ class Appointment extends Model
                 }
 
         // EXCLUDE MODIFIED DATES FOR RECURRING EVENTS
-        foreach ($recurringEventExceptions as $id => $exDate){
-            if (isset($nonEhrArr[$id])){
-                $time = $nonEhrArr[$id]['extendedProps']['exTime'];
-                $nonEhrArr[$id]['rrule'] .= "\nEXDATE:".$exDate.$time;
+            foreach ($recurringEventExceptions as $id => $exDate){
+                if (isset($nonEhrArr[$id])){
+                    $time = $nonEhrArr[$id]['extendedProps']['exTime'];
+                    $nonEhrArr[$id]['rrule'] .= "\nEXDATE:".$exDate.$time;
+                }
             }
-        }
+        
         $appointmentData = Appointment::where('uuid',$apptIds)->with('services.forms','patients','practitioner')->get()->map(function($appt){
             $formArr = [];
             foreach ($appt->services as $service){
@@ -453,23 +455,25 @@ class Appointment extends Model
             $ehrArr[$uuid]['extendedProps'] = $extProps;
         }
         if (!empty($ehrArr)){
-            $feed = json_decode(Storage::disk('local')->get('calendar/'.$practiceId.'/practitioner/ehr-feed.json'),true);
+            $feed = $practice->appointments_enc;
             $feed[$eventId] = $ehrArr[$eventId];
-            Storage::disk('local')->put('calendar/'.$practiceId.'/practitioner/ehr-feed.json',json_encode($feed));
+            $practice->appointments_enc = $feed;
         }
         if (!empty($nonEhrArr)){
-            $feed = json_decode(Storage::disk('local')->get('calendar/'.$practiceId.'/practitioner/non-ehr-feed.json'),true);
+            $feed = $practice->other_events_enc;
             $feed[$eventId] = $nonEhrArr[$eventId];
-            Storage::disk('local')->put('calendar/'.$practiceId.'/practitioner/non-ehr-feed.json',json_encode($feed));
+            $practice->other_events_enc = $feed;
         }
+        $practice->save();
         return isset($e) ? false : true; 
     }
     public function removeFromFullCal($practiceId = null, $eventId = null){
-        $practiceId = isset($practiceId) ? $practiceId : session('practiceId');
-        $calendarId = config("practices.$practiceId.app.calendarId");
+        $practice = isset($practiceId) ? Practice::find($practiceId) : Practice::getFromSession();
+        $calendarId = $practice->calendarId;
         $eventId = isset($eventId) ? $eventId : $this->uuid;
-        $feed = json_decode(Storage::disk('local')->get('calendar/'.$practiceId.'/practitioner/ehr-feed.json'),true);
+        $feed = $practice->appointments_enc;
         unset($feed[$eventId]);
-        Storage::disk('local')->put('calendar/'.$practiceId.'/practitioner/ehr-feed.json',json_encode($feed));
+        $practice->appointments_enc = $feed;
+        $practice->save();
     }
 }

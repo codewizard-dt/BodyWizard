@@ -2466,8 +2466,16 @@ a:hover {
   transition: color 500ms;
 }
 
+.button.link {
+  text-decoration: none;
+}
+
 .link:hover {
   color: var(--pink);
+}
+
+.button.link:hover {
+  color: var(--white70);
 }
 
 .shaded30 {
@@ -3130,7 +3138,7 @@ a:hover {
 #Notifications li {
   border: 4px solid transparent;
   border-width: 0 4px;
-  margin: 0 -4px;
+  margin: 0;
   position: relative;
   cursor: pointer;
   transition: border-color 400ms, background-color 400ms;

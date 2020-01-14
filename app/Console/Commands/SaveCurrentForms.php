@@ -43,5 +43,6 @@ class SaveCurrentForms extends Command
     {
         $forms = DB::table('forms')->get()->all();
         Storage::disk('local')->put('/basicEhr/forms.json',json_encode($forms));
+        $this->info("forms saved");
     }
 }

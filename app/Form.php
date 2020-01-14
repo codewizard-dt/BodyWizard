@@ -236,7 +236,7 @@ class Form extends Model
                             ['appointment_id',$appt->id]
                         ])->get();
                         if ($submissions->count() == 0){
-                            Log::info($form->form_name,['appointment'=>$appt->id]);
+                            // Log::info($form->form_name,['appointment'=>$appt->id]);
                             $formIds[] = $form->form_id;
                         }
                     }
@@ -324,14 +324,14 @@ class Form extends Model
         if ($timeperiod){
             if ($timeperiod == 'never'){
                 if (!$formCheck){
-                    Log::info('1 '.$this->name);
+                    // Log::info('1 '.$this->name);
                     return ($this->last_submitted == 'never') ? 'incomplete' : 'completed';
                 }else{
                     $requiredByTime = false;
                 }
             }elseif(contains($timeperiod,'registration')){
                 if (!$formCheck){
-                    Log::info('2 '.$this->name);
+                    // Log::info('2 '.$this->name);
                     return ($this->last_submitted == 'never') ? 'required' : 'completed';                    
                 }else{
                     $requiredByTime = false;
@@ -359,7 +359,7 @@ class Form extends Model
     }
     public function getHasSubmissionsAttribute(){
         $submissions = Submission::where('form_uid',$this->form_uid)->get();
-        if ($submissions){return true;
+        if ($submissions->count() > 0){return true;
         }else{return false;}
     }
     public function lastSubmittedBy(Patient $patient){
@@ -391,12 +391,14 @@ class Form extends Model
         public function formDisplay($modal = false, $allowSubmit = true, $edit = false, $usertype = false){
             $form = json_decode($this->full_json,true);
             // $sections = json_decode($this->questions,true);
-            $sections = $form['sections'];            
+            $sections = $form['sections'];
             $uid = $this->form_uid;
             $formID = $this->form_id;
             $formName = $this->form_name;
             $formNameAbbrOriginal = str_replace(" ", "", $formName);
-            if ($edit){$formNameAbbrReflectEdit = str_replace("New", "Edit", $formNameAbbrOriginal);
+            if ($edit){
+                $formNameAbbrReflectEdit = str_replace("New", "Edit", $formNameAbbrOriginal);
+                $formNameAbbrReflectEdit = str_replace("Add", "Edit", $formNameAbbrReflectEdit);
             }else{$formNameAbbrReflectEdit = $formNameAbbrOriginal;
             }
             if ($usertype){$formNameAbbrReflectEdit = str_replace("User", $usertype, $formNameAbbrReflectEdit);}

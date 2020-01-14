@@ -44,13 +44,17 @@ class RefreshAppointments extends Command
         $service = app('GoogleCalendar');
         $practiceId = $this->argument('practiceId');
         $apptCount = $this->option('factory');
-        $calendarId = practiceConfig('practices')[$practiceId]['app']['calendarId'];
-        $database = practiceConfig('practices')[$practiceId]['app']['database'];
+        // $calendarId = practiceConfig('practices')[$practiceId]['app']['calendarId'];
+        // $database = practiceConfig('practices')[$practiceId]['app']['database'];
         // $appt = new Appointment;
-        config(['database.connections.mysql.database' => $database]);
+        $practice = Practice::find($practiceId);
+        $practice->reconnectDB();
+        $calendarId = $practice->calendar_id;
+        // $database = $practice->dbname;
+        // config(['database.connections.mysql.database' => $database]);
 
 
-        $result = Practice::clearCalendar($calendarId);
+        $result = $practice->clearCalendar();
         if ($result){
             $this->info('Google calendar cleared.');
         }else{
@@ -64,7 +68,7 @@ class RefreshAppointments extends Command
         $this->info('Appointment tables cleared and feed updated.');
         $this->info('Adding '.$apptCount.' appointments to EHR......');
         if ($apptCount != 0){
-            RefreshTables::seedApptTables($calendarId, $apptCount);
+            RefreshTables::seedApptTables($apptCount);
             $this->info('Appointments added to EHR database.');    
             $this->info('Adding appointments to Google Calendar: '.$calendarId);
             try{
@@ -81,8 +85,12 @@ class RefreshAppointments extends Command
         RefreshTables::clearSubmissionTables();
         $this->info('Submission table cleared.');
 
+        // Practice::updateEntireEventFeed($practiceId);
+        // $active = Storage::disk('local')->get('active.json');
+        // $active = json_decode($active,true);
 
-        Practice::updateEntireEventFeed($practiceId);
+        setActiveStorage('Practice',$practice->practice_id);
+        $practice->updateEntireEventFeed();
         $this->info('Practitioner event feed updated.');
 
     }

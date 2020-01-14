@@ -5,20 +5,23 @@ use App\Form;
 
 // include_once app_path("/php/functions.php");
 $ctrl = new Form;
-$practiceId = session('practiceId');
-$calSettings = Storage::disk('local')->exists("/calendar/$practiceId/settings.json") ? Storage::disk('local')->get("/calendar/$practiceId/settings.json") : Storage::disk('local')->get("/basicEhr/calendar-settings.json");
-$calSettings = json_decode($calSettings,true);
-$practiceSched = json_decode(Storage::disk('local')->get("/calendar/$practiceId/practice-schedule.json"),true);
-$practiceSched = scheduleToEvents($practiceSched,[]);
-$earliest = Carbon::parse($practiceSched['earliest']);
-$latest = Carbon::parse($practiceSched['latest']);
-$times = [];
-while ($earliest->isBefore($latest)){
-	$times[] = ['carbon' => $earliest->toTimeString(),'display' => $earliest->format('g:i a')];
-	$earliest->addMinutes($calSettings['interval']);
-}
+// $practiceId = session('practiceId');
+$practice = \App\Practice::getFromSession();
+// $calSettings = $practice->calendar_settings;
+// $practiceSched = $practice->practice_schedule;
+// // $practiceSched = json_decode(Storage::disk('local')->get("/calendar/$practiceId/practice-schedule.json"),true);
+// $practiceSched = scheduleToEvents($practiceSched);
+// $earliest = Carbon::parse($practiceSched['earliest']);
+// $latest = Carbon::parse($practiceSched['latest']);
 
-$practitionerSched = json_decode(Storage::disk('local')->get("/calendar/$practiceId/practitioner-schedule.json"),true);
+// $times = [];
+// while ($earliest->isBefore($latest)){
+// 	$times[] = ['carbon' => $earliest->toTimeString(),'display' => $earliest->format('g:i a')];
+// 	$earliest->addMinutes($calSettings['interval']);
+// }
+
+// $practitionerSched = json_decode(Storage::disk('local')->get("/calendar/$practiceId/practitioner-schedule.json"),true);
+$times = $practice->time_slots;
 $dateOptions = [
 	'yearRange' => 'c+0:c+1',
 	'minDate' => '-0d',
@@ -45,9 +48,4 @@ $dateOptions = [
 		</ul>
 		<br><div class="button small pink disabled next" data-target='#TimeSelector' data-targettype='ul' data-defaulttext='%PrevVAL% at %VAL%'>next ></div>
 	</div>
-<!-- 	<div id="ConfirmDateTime" class='step' data-order='3'>
-		<h2 class='pink' style='text-align:center;font-weight:normal;'>Appointment Details</h2>
-		<div class="target"></div>
-		<div class="button submit pink xsmall closeBtn">confirm</div>
-	</div> -->
 </div>

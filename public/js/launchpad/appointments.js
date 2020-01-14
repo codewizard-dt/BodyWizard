@@ -4,58 +4,6 @@ var action = undefined, appointmentDetails = {services:null,date:null,time:null,
 	// practitionersAnonEvents =[], anonEvents, defaultAnonEvents;
 
 $(document).ready(function(){
-	// $("#createAppointment, #editAppointment").find('.submitForm').text("save appointment");
- //    $("#createAppointment, #editAppointment").find(".item").hide();
- // 	$("#editAppointment").find("h1").first().text("Edit Appointment");
- //    $(".ChangeTitle").attr('id','ChangeTitle');
-//    usertype = getUsertype();
-	// if (usertype == 'patient'){
-	// 	defaultPatientInfo = $("#PatientInfo").data('patient');
-	// 	$("#createAppointment").find(".submitForm").text('book appointment');
-	//     $("#booknow").data('target','#createAppointment');
-	//     $("#EditApptBtn").data('target','#editAppointment');
-	//     $("#booknow, #EditApptBtn").on('click',showAppointmentDetails);
-	//     if ($("#PatientCalendar").length == 1){
-	// 	    $("#ScheduleFeedTarget").load("/schedule/feed",function(){
-	// 	        $("#PatientCalendar").html("");
-	// 	     	loadPatientCal($("#PatientCalendar"));
-	//      	    activateServiceSelection();
-	// 	    });
-	//     }
-	//     $("#createAppointment").on('click','.cancel',function(){$("#booknow").find('.active').removeClass('active');})
-	// }else if (usertype == 'practitioner'){
-	// 	allowOverride = true;
-	//      $("#SelectServices").on('click', '.override',overrideService);
-	//      $("#ChartNoteBtn").on('click',checkForChartNote);
-	//      if ($("#PractitionerCalendar").length == 1){
-	// 	     $("#ScheduleFeedTarget").load("/schedule/feed",function(){
-	// 	        $("#PractitionerCalendar").html("");
-	// 	     	loadPractitionerCal($("#PractitionerCalendar"));
-	// 			activateServiceSelection();
-	// 	     });	     	
-	//      }
-	// }
-
-	// $("#EditApptBtn").on('click',function(){
-	// 	blurElement($("body"),"#editAppointment");
-	// })
-	// $("#DeleteApptBtn").on('click',confirmApptDelete);
- //    $("#ApptDetails").on('click','.edit',openDetail);
- //    $('#FormInfo').on('click','.link',checkFormStatus);
-
- //    $(".selector").on('click','.next',goForward);
- //    $(".selector").on('click','.firstStep',firstStep);
- //    $(".selector").on('click',".selectDate",function(){
- //    	$("#ApptDetails").find('.date').find(".edit").click();
- //    })
- //    $(".selectPractitioner").on('click',function(){
- //    	$("#ApptDetails").find('.practitioner').find(".edit").click();
- //    })
- //    // $(".dateSelector").on('focusout',checkDate);
- //    $("#TimeSelector").on('click','li',updateTime);
- //    $("#PractitionerSelector").on('click','li',updatePractitioner);
- //    $("#SelectOrRandom").on('click','.closeBtn',randomPractitioner);
- //    $(".selector").hide();
 })
 function initializeApptForms(){
 	$("#createAppointment, #editAppointment").find('.submitForm').text("save appointment");
@@ -131,6 +79,7 @@ function activateServiceSelection(){
     practitioners = $("#Practitioners").data('schedule');
 
     if (practitioners != undefined && practitioners.length == 1){
+    	// console.log(practitioners);
     	defaultPractitionerInfo = practitioners[0];
     	resetEntireAppt();
     }
@@ -513,8 +462,13 @@ function refreshAppointmentFeed(info){
 	if (info == 'no changes'){
 		console.log('no changes');
 		return;
+	}else if (typeof info != 'object'){
+		return;
+	}else if (info.appointments == undefined){
+		return;
 	}
-	var appts = JSON.parse(info.appointments), anon = JSON.parse(info.anon);
+	
+	var appts = info.appointments, anon = info.anon;
 	if ($('.calendar').length == 1){
 		calendar.getEventSourceById('appointments').remove();
 		calendar.addEventSource({events:appts,id:'appointments'});		
@@ -897,6 +851,7 @@ function deleteAppt(obj){
 		data:obj,
 		success:function(data){
 			// if (data == 'checkmark'){
+				console.log(data);
 				blurTopMost("#checkmark");
 				delayedUnblurAll();
 				refreshAppointmentFeed(data);
@@ -1154,6 +1109,7 @@ function loadPatientCal(target){
                 $("#ApptDateTime").text(dateTime.format("h:mm a [on] dddd, MMMM Do YYYY"));
                 $("#ApptDateTime").data('dateTime',dateTime);
                 $("#ServiceInfo").text(services);
+                // console.log('updateform',details,forms);
                 updateFormInfo(forms);
                 moveServiceSelect("#editAppointment");
                 loadApptInfo(patientIds,practitionerId,serviceIds,dateTime,$("#editAppointment"));

@@ -109,7 +109,7 @@ class RefreshTables extends Model
                             );
                         });
     }
-    public static function seedApptTables($calendarId, $apptCount){
+    public static function seedApptTables($apptCount){
         $apptCount = (int)$apptCount;
         try{
             $appts = factory(Appointment::class, $apptCount)

@@ -16,13 +16,21 @@ use App\Practitioner;
 
 $menuJson = json_decode(file_get_contents(app_path("/json/menu-data.json")),true);
 function listReturn($requestStatus, $url='not given'){
-  return 
-  [
+  if (is_array($requestStatus)){
+    $requestStatus = json_encode($requestStatus);
+  }
+  $withLists = [
     'message'=>$requestStatus,
     'url'=>$url,
     'uidList' => session('uidList'),
     'tabList' => session('CurrentTabs')
   ];
+  // Log::info($withLists, ['location'=>'functions.php 25']);
+  return $withLists;
+}
+function getPractice($practiceId){
+  $practice = Practice::where('practice_id',$practiceId)->get();
+  return $practice;
 }
 
 // String related functions
@@ -200,7 +208,7 @@ function listReturn($requestStatus, $url='not given'){
     elseif ($day->isSaturday()){$dayNumerical = 6;}
     return $dayNumerical;
   }
-  function scheduleToEvents($schedule, $exceptions){
+  function scheduleToEvents($schedule, $exceptions = []){
     // Log::info($schedule);
     $today = Carbon::now();
     if ($today->isSunday()){$todayNumerical = 0;}
@@ -439,7 +447,7 @@ function listReturn($requestStatus, $url='not given'){
     $uidList = (session('uidList') !== null) ? session('uidList') : [];
     $uidList[$model]  = $uid;
     session(['uidList' => $uidList]);
-    Log::info(session("uidList"));
+    // Log::info(session("uidList"));
   }
   function getUid($model){
     if (session('uidList')===null){return null;}
@@ -692,100 +700,32 @@ function listReturn($requestStatus, $url='not given'){
     }
 
 // Practice functions
+  function setActiveStorage($key,$value){
+    $active = Storage::disk('local')->get('active.json');
+    $active = json_decode($active,true);
+    $active[$key] = $value;
+    Storage::disk('local')->put('active.json',json_encode($active));
+  }
+  function getActiveStorage($key){
+    $active = Storage::disk('local')->get('active.json');
+    $active = json_decode($active,true);
+    return $active[$key];
+  }
   function practiceConfig($path){
-    $structure = explode(".",$path);
-    $basePath = $structure[0];
-    $qualified = "/practiceConfig/$basePath.php";
-    $exists = Storage::disk('local')->exists($qualified);
-    if ($exists){
-      require storage_path("/app/$qualified");
-      if ($basePath === $path){
-        $config = $content;
-      }else{
-        unset($structure[0]);
-        array_keys($structure);
-        $dotpath = implode(".",$structure);
-        if (Arr::has($content, $dotpath)){
-          $config = Arr::get($content, $dotpath);
-        }else{
-          $config = [];
-        }
-      }
-    }else{
-      $config = [];
-    }
-    Log::info('practiceConfig',[
-      'path' => $path,
-      'basePath' => $basePath,
-      'qualified' => $qualified,
-      'exists' => $exists,
-      'configVal' => $config
-    ]);
-    return $config; 
+    throw new Exception('using practiceConfig');
   }
   function addToConfig($configName,$key,$value){
-    // ALLOWS USE OF '.' ARRAY CONFIGURATION, OR NOT
-    // $current = config($configName);
-    $current = practiceConfig($configName);
-
-    $structure = explode(".",$configName);
-    $baseName = $structure[0];
-    if ($baseName != $configName){
-      unset($structure[0]);
-      array_keys($structure);
-      $structure[] = $key;
-      // $topConfig = config($baseName);
-      $topConfig = practiceConfig($baseName);
-      Arr::set($topConfig, implode(".",$structure), $value);
-      writeConfig($topConfig, $baseName.".php");
-    }else{
-      $current[$key] = $value;
-      writeConfig($current, $baseName.".php");
-    }
+    throw new Exception('using addToConfig');
   }
   function removeFromConfig($configName,$key){
-    // $current = config($configName);
-    $current = practiceConfig($configName);
-
-    $structure = explode(".",$configName);
-    $baseName = $structure[0];
-    if ($baseName != $configName){
-      unset($structure[0]);
-      array_keys($structure);
-      $structure[] = $key;
-      // $topConfig = config($baseName);
-      $topConfig = practiceConfig($baseName);
-      Arr::forget($topConfig, implode(".",$structure));
-      writeConfig($topConfig, $baseName.".php");
-    }else{
-      // Log::info($current);
-      unset($current[$key]);
-      // Log::info($current);
-      writeConfig($current, $baseName.".php");
-    }
+    throw new Exception('using removeFromConfig');
   }
   function writeConfig($newData,$fileName){
-    $fileName = (strpos($fileName,".php") === false) ? $fileName.".php" : $fileName;
-    $configFile = fopen(storage_path().'/app/practiceConfig/'.$fileName,'w');
-    fwrite($configFile, '<?php $content = '.var_export($newData,true).";");
-    fclose($configFile);
+    throw new Exception('using writeConfig');
   }
 
   function getPracticeId(Request $request){
-    $host = $request->getHost();
-    $port = $request->getPort();
-    $domains = practiceConfig('domains');
-    if (isset($domains[$host])){
-        $practiceId = $domains[$host];
-        if (is_array($practiceId)){
-            $practiceId = $domains[$host][$port];
-        }
-    }elseif(strpos($host,"bodywizard.appspot")){
-      $practiceId = "8eeb792e29ca4eb485554c2acd63c40c";
-    }else{
-      return false;
-    }
-    return $practiceId;
+    throw new Exception('using getPracticeId');
   }
 ?>
 

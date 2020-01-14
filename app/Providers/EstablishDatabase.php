@@ -15,18 +15,6 @@ class EstablishDatabase extends ServiceProvider
     {
         //
         include_once app_path("/php/functions.php");
-        $domain = \Request::getHost();
-        $port = \Request::getPort();
-        if ($domain != "localhost" && isset(practiceConfig('domains')[$domain])){
-            $practiceId = practiceConfig("domains")[$domain];
-            // Log::info($practiceId);
-            if (is_array($practiceId)){
-                $practiceId = practiceConfig("domains")[$domain][$port];
-            }
-            $dbname = practiceConfig('practices')[$practiceId]['app']['database'];
-            config(['database.connections.mysql.database' => $dbname]);
-            \DB::reconnect();
-        }
     }
 
     /**
@@ -37,5 +25,10 @@ class EstablishDatabase extends ServiceProvider
     public function boot()
     {
         //
+        $domain = \Request::getHost();
+        $practice = \App\Practice::where('host',$domain)->get()->first();
+        if ($practice){
+            $practice->reconnectDB();
+        }
     }
 }
