@@ -26,18 +26,11 @@ class EstablishDatabase extends ServiceProvider
     {
         //
         $domain = \Request::getHost();
-        if ($domain == 'localhost'){
-            $practice = \App\Practice::find('body_wizard_medicine_8f935c6718b4402');
-        }else{
-            $practices = \App\Practice::where('host',$domain)->get();    
-            if ($practices->count() > 0){
-                $practice = $practices->first();
-            }else{
-                $practice = \App\Practice::find('body_wizard_medicine_8f935c6718b4402');
-            }
-        }
-        if ($practice){
-            $practice->reconnectDB();
+        if ($domain != 'localhost' && $domain != 'gae-dev-test-dot-bodywizard.appspot.com'){
+            $practice = \App\Practice::where('host',$domain)->get()->first();
+            if ($practice){
+                $practice->reconnectDB();
+            }            
         }
     }
 }
