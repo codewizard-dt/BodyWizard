@@ -11,6 +11,7 @@ env_variables:
   # Put production environment variables here.
   APP_KEY: base64:B25yE1A7qIXy7WGKAG+NfMsULWoTjolnL21SSLfNeuE=
   VIEW_COMPILED_PATH: /tmp
+  STORAGE_PATH: /tmp
   DB_CONNECTION: mysql
   DB_SOCKET: '/cloudsql/bodywizard:us-central1:ehr-data'
   DB_PORT: 3306
