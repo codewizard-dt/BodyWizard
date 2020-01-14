@@ -26,7 +26,16 @@ class EstablishDatabase extends ServiceProvider
     {
         //
         $domain = \Request::getHost();
-        $practice = \App\Practice::where('host',$domain)->get()->first();
+        if ($domain == 'localhost'){
+            $practice = \App\Practice::find('body_wizard_medicine_8f935c6718b4402');
+        }else{
+            $practices = \App\Practice::where('host',$domain)->get();    
+            if ($practices->count() > 0){
+                $practice = $practices->first();
+            }else{
+                $practice = \App\Practice::find('body_wizard_medicine_8f935c6718b4402');
+            }
+        }
         if ($practice){
             $practice->reconnectDB();
         }
