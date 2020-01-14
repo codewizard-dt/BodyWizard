@@ -58,7 +58,7 @@ return [
         'practices' => [
             'driver' => 'mysql',
             // 'url' => env('DATABASE_URL'),
-            'host' => env('10.57.208.4'),
+            'host' => '10.57.208.4',
             'port' => env('DB_PORT', '3306'),
             'database' => 'bodywizard_practices',
             'username' => env('DB_USERNAME', 'forge'),
