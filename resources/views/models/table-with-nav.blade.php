@@ -1,11 +1,9 @@
 <?php
-    // include_once app_path("/php/functions.php");
 
     // called by GET /{model}/display/list
     $nospaces = removespaces($model);
     $class = "App\\$nospaces";
     $ctrl = new $class;
-    // $models = plural($model);
     $models = title(pluralSpaces($model));
 
     // setting table options and getting collection
