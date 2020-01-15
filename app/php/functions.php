@@ -19,9 +19,10 @@ function listReturn($requestStatus, $url='not given'){
   if (is_array($requestStatus)){
     $requestStatus = json_encode($requestStatus);
   }
+  Log::info($requestStatus);
   $withLists = [
-    'message'=>$requestStatus,
-    'url'=>$url,
+    'message'=> $requestStatus,
+    'url'=> $url,
     'uidList' => session('uidList'),
     'tabList' => session('CurrentTabs')
   ];
