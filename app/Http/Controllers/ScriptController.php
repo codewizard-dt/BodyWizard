@@ -169,7 +169,7 @@ class ScriptController extends Controller
         }
         public function saveNewModel($model, Request $request){
             // include_once app_path("php/functions.php");
-            // $model = (in_array($model,['Patient','Practitioner','StaffMember'])) ? "User" : $model;
+            $model = (in_array($model,['Patient','Practitioner','StaffMember'])) ? "User" : $model;
             $class = "App\\$model";
 
             if ($model == "Message"){
