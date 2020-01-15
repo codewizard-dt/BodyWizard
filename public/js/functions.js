@@ -84,9 +84,9 @@ function filterUninitialized(selector,debug = false){
     if (debug){
         var alreadyInitialized = obj.not(uninitialized);
         if (alreadyInitialized.length > 0){
-            console.log('already initialized',obj.not(uninitialized).length);
+            console.log(selector,'already initialized',obj.not(uninitialized).length);
         }else{
-            console.log('none already initialized');
+            console.log(selector,'none already initialized');
         }
         
     }
@@ -145,6 +145,7 @@ $.ajaxSetup({
                 if (json.uidList != undefined){$("#uidList").text(JSON.stringify(json.uidList));}
                 if (json.tabList != undefined){$("#tabList").text(JSON.stringify(json.tabList));}
                 if (json.message != undefined){returnData = json.message;}
+                if (json.notifications != undefined){console.log(json.notifications);}
             }catch(e){
             }
             return returnData;
@@ -1675,6 +1676,7 @@ function initializeNewContent(){
     initializeApptForms();
     initializeLinks();
     initializeScheduleForms();
+    checkNotifications();
     activateServiceSelection();
     masterStyle();
 }

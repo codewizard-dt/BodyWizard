@@ -343,32 +343,5 @@ function LoadingContent(target,uri){
 function updateUriUids(){
     console.log("don't use this updateUriUids!");
     alert("Fix me updateUriUids!");
-    // getSessionVar('uidList');
-    // var check = setInterval(function(){
-    //     if (yourSessionVar!=undefined && yourSessionVar!=""){
-    //         var uidList = JSON.parse(yourSessionVar);
-    //         // console.log(uidList);
-    //         $.each(uidList,function(label,uid){
-    //             var model = label.split("_")[0];
-    //             var menuItems = $('.menuBar').find(".tab, li").filter(function(){
-    //                 return $(this).data('uri') !== undefined;
-    //             }).filter(function(){
-    //                 var model = label.split("_")[0], uri = $(this).data('uri');
-    //                 var includesModel = uri.includes(model);
-    //                 var needsUid = uri.match(/(edit|delete|show|update|settings)/);
-    //                 return includesModel && needsUid;
-    //             })
-    //             menuItems.each(function(){
-    //                 var uri = $(this).data('uri');
-    //                 uri = uri.split("/");
-    //                 uri[2] = uid;
-    //                 uri =   uri.join("/");
-    //                 $(this).data('uri',uri);
-    //             })
-    //         })
-    //         yourSessionVar=undefined;
-    //         clearInterval(check);
-    //     }
-    // },50)
 }
 

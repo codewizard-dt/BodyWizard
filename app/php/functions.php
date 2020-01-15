@@ -25,6 +25,7 @@ function listReturn($requestStatus, $url='not given'){
     'uidList' => session('uidList'),
     'tabList' => session('CurrentTabs')
   ];
+  // if (Auth::check()){$withLists['notifications'] = Auth::user()->notifications->toArray();}
   // Log::info($withLists, ['location'=>'functions.php 25']);
   return $withLists;
 }

@@ -17,6 +17,7 @@ class CheckTabHeader
     public function handle($request, Closure $next)
     {
         $headers = getallheaders();
+        Log::info($headers,['location'=>'checktabheader.php 20']);
         if (isset($headers['X-CURRENT-TABS'])){
             $currentTabs = json_decode($headers['X-CURRENT-TABS'],true);
             $tabList = (session('CurrentTabs') == null) ? [] : session('CurrentTabs');

@@ -1,7 +1,6 @@
 var notify, notificationCheck, notificationCategory = 'all', clickWhenFinished = null, multiBtns;
 $(document).ready(function () {
 	checkNotifications();
-    notificationCheck = setInterval(checkNotifications,1000*60);
     notify = $("#Notifications");
     notify.on('click','.open, .cancel',toggleNotifications);
     notify.on('click','li',showFullNotification);
@@ -30,24 +29,22 @@ function clickTab(){
 }
 var notifyXhr = undefined;
 function checkNotifications(){
-	if (notifyXhr == undefined){
-	    notifyXhr = $.ajax({
-	        url:'/notification-check',
-	        method:'post',
-	        data:{
-	        	fetch: notificationCategory
-	        },
-	        success:function(notifications){
-	        	updateNotificationList(notifications);
-	        }
-	    });		
-	}
+    var update = filterUninitialized('.notificationUpdate');
+    if (update.length == 1){
+        var current = $("#Notifications").find(".notificationUpdate");
+        if (!current.is(update)){
+            current.replaceWith(update);
+        }
+        console.log(update);
+    }
+    updateNotificationList();
+    update.data('initialized',true);
 }
-function updateNotificationList(notifications){
+function updateNotificationList(notifications = null){
 	// console.log(notifications);
 	notifyXhr = undefined, selectMultiBtn = $("#Notifications").find(".selectMultiple");
 
-	$("#Notifications").find('.message').html(notifications);
+	// $("#Notifications").find('.message').html(notifications);
 	var unreadCount = $("#UnreadCount"), allCount = $("#Notifications").find('li').length;
 	unreadCount.text($("#Notifications").find(".unread").length);
 	if (unreadCount.text() == '0'){slideFadeOut(unreadCount);
@@ -207,19 +204,19 @@ function toggleSelectAll(){
 function toggleSelectMode(){
 	var showNow = $(this).text().includes("select");
 	if (showNow){
-		if (notifyXhr != undefined){
-			notifyXhr.abort();
-			notifyXhr = undefined;
-		}
-		console.log('stop checking');
-		clearInterval(notificationCheck);
+		// if (notifyXhr != undefined){
+		// 	notifyXhr.abort();
+		// 	notifyXhr = undefined;
+		// }
+		// console.log('stop checking');
+		// clearInterval(notificationCheck);
 	    notify.off('click','li',showFullNotification);
 	    notify.on('click','li',toggleSelect);
 	    multiBtns.slideFadeIn();
 	    $(this).text('exit multi');
 	}else{
-		console.log('start checking');
-	    notificationCheck = setInterval(checkNotifications,1000*20);
+		// console.log('start checking');
+	 //    notificationCheck = setInterval(checkNotifications,1000*20);
 	    notify.on('click','li',showFullNotification);
 	    notify.off('click','li',toggleSelect);
 	    multiBtns.slideFadeOut();
