@@ -1,10 +1,6 @@
 var notify, notificationCheck, notificationCategory = 'all', clickWhenFinished = null, multiBtns;
 $(document).ready(function () {
 	checkNotifications();
-<<<<<<< HEAD
-=======
-    // notificationCheck = setInterval(checkNotifications,1000*60);
->>>>>>> old-state
     notify = $("#Notifications");
     notify.on('click','.open, .cancel',toggleNotifications);
     notify.on('click','li',showFullNotification);
