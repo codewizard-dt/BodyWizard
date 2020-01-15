@@ -14,7 +14,6 @@ class EstablishDatabase extends ServiceProvider
     public function register()
     {
         //
-        include_once app_path("/php/functions.php");
     }
 
     /**

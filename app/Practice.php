@@ -44,7 +44,8 @@ class Practice extends Model
 
     public static function getFromRequest(Request $request){
         $host = $request->getHost();
-        $practice = Practice::where('host',$host)->get()->first();
+        $practices = Practice::where('host',$host)->get();
+        $practice = ($practices->count() == 0) ? Practice::find('body_wizard_medicine_8f935c6718b4402') : $practices->first();
         return $practice ? $practice : null;
     }
     public static function getFromSession(){

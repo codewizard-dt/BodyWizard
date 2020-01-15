@@ -34,7 +34,7 @@ class CheckDomain
                 date_default_timezone_set($practice->contact_info['timezone']);
             }
         }
-        Log::info($request->path());
+        // Log::info($request->path());
         return $next($request);
     }
 }
