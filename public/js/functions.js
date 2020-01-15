@@ -146,6 +146,7 @@ $.ajaxSetup({
                 if (json.tabList != undefined){$("#tabList").text(JSON.stringify(json.tabList));}
                 if (json.message != undefined){returnData = json.message;}
             }catch(e){
+                console.log(e);
             }
             return returnData;
         }
@@ -156,8 +157,6 @@ $(document).ajaxSuccess(function(ev,xhr,settings){
     if (text.trim() == "no changes"){
         $("#Feedback").find(".message").html("<h2>No Changes</h2><div>There was no update performed because there were <u>no changes.</u></div>");
         blurTopMost("#Feedback");
-    }else if (text.includes("<h2>Notifications</h2>")){
-        // console.log('notifications');
     }else{
         // console.log("AJAX BABY!!!",xhr);
     }
