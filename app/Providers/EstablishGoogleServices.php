@@ -22,10 +22,12 @@ class EstablishGoogleServices extends ServiceProvider
     public function register()
     {
         app()->singleton('GoogleClient',function(){
-            $key = config('google')['key_file_location'];
             $client = new \Google_Client();
             $client->setApplicationName("BodyWizardEHR");
-            $client->setAuthConfig($key);
+            if (!isset($_SERVER['GAE_SERVICE'])){
+                $key = config('google')['key_file_location'];
+                $client->setAuthConfig($key);                
+            }
             return $client;
         });
         app()->singleton('GoogleCalendar',function(){
@@ -37,10 +39,14 @@ class EstablishGoogleServices extends ServiceProvider
         app()->singleton('GoogleKMS',function(){
             $client = app('GoogleClient');
             $client->addScope("https://www.googleapis.com/auth/cloudkms");
-            $auth = json_decode(Storage::disk('local')->get('google/full-admin-key.json'),true);
-            $kms = new KeyManagementServiceClient([
-                'credentials' => $auth
-            ]);
+            if (!isset($_SERVER['GAE_SERVICE'])){
+                $auth = json_decode(Storage::disk('local')->get('google/full-admin-key.json'),true);
+                $kms = new KeyManagementServiceClient([
+                    'credentials' => $auth
+                ]);                
+            }else{
+                $kms = new KeyManagementServiceClient();                
+            }
             return $kms;
         });
     }
