@@ -130,8 +130,6 @@
         <div class='button cancel medium'>Cancel</div>   
     </div>
 </div>
-<div class="listUpdate" data-tabs="{{json_encode($tabs)}}" data-uids="{{json_encode($uids)}}"></div>
-@include ('portal.user.notifications')
 
-<!-- <script src="{{ asset('/js/launchpad/forms.js') }}"></script>
- -->
+@include ('portal.user.list-update')
+@include ('portal.user.notifications')

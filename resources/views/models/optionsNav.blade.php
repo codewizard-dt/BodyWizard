@@ -114,8 +114,8 @@
 			$extraData[] = ['connectedmodels',json_encode($modelArr)];
 		}
 	}
-	$currentTabs = (session('CurrentTabs') !== null) ? session('CurrentTabs') : [];
-	$uids = (session('uidList') !== null) ? session('uidList') : [];
+	$currentTabs = (session('CurrentTabs') !== null) ? session('CurrentTabs') : null;
+	$uids = (session('uidList') !== null) ? session('uidList') : null;
 
 ?>
 
@@ -143,5 +143,5 @@
 			<div class="arrow"></div>
 		</div>
 	</div>
-	<div class="listUpdate" data-tabs='{{json_encode($currentTabs)}}' data-uids='{{json_encode($uids)}}'></div>
+	@include ('portal.user.list-update')
 </div>

@@ -267,7 +267,6 @@ class ScriptController extends Controller
 
             // TAKES EACH COLUMN FROM THE REQUEST AND ASSIGNS VALUES TO THE OBJECT
                 $datesArr = dateFieldsArray();
-                // return $columns;
                 foreach($columns as $key => $value){
                     if (($model == 'Message' && $key == 'message') || ($model == 'Template' && $key == 'markup')){
                         // RETURNS ARRAY OR FALSE IF NO IMGS ARE EMBEDDED OR IF IMGS ARE ALREADY SAVED
@@ -404,12 +403,25 @@ class ScriptController extends Controller
                 unset($uidList[$model]);
                 session(['uidList'=>$uidList]);
                 session()->forget($model);
-                $message = ($model == 'Appointment') ? [
-                    'appointments' => $practice->appointments,
-                    'anon' => $practice->anon_appt_feed
-                ] : "checkmark";
-                // Log::info(json_encode($message),['location'=>'scriptcontroller 411']);
-                return listReturn($message);
+
+                if ($model == 'Appointment'){
+                    $practice = Practice::getFromSession();
+                    $apptFeeds = [
+                        'appointments' => $practice->appointments,
+                        'anon' => $practice->anon_appt_feed
+                    ];
+                    return listReturn(json_encode($apptFeeds), $request->path());
+                }else{
+                    return listReturn("checkmark",$request->path());
+                }
+
+
+                // $message = ($model == 'Appointment') ? [
+                //     'appointments' => $practice->appointments,
+                //     'anon' => $practice->anon_appt_feed
+                // ] : "checkmark";
+                // // Log::info(json_encode($message),['location'=>'scriptcontroller 411']);
+                // return listReturn($message);
             }
             catch(\Exception $e){
                 event(new BugReported(
