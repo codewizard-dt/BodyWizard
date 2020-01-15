@@ -27,5 +27,5 @@ if ($fetch == 'unread'){
         @empty
             <li>No Notifications</li>
         @endforelse
-    </ul>
+    </ul>  
 </div>

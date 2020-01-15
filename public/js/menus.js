@@ -93,7 +93,7 @@ function initializeNewMenus(){
             $.scrollTo($(uri),400,{
                 offset: {left:0,top:-h}
             })
-            // console.log('hi');
+            console.log('scrolll',$(uri));
             return false;
         }
                 
