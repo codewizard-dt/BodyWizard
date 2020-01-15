@@ -10,6 +10,8 @@ runtime_config:
 env_variables:
   # Put production environment variables here.
   APP_KEY: base64:B25yE1A7qIXy7WGKAG+NfMsULWoTjolnL21SSLfNeuE=
+  APP_ENV: local
+  APP_DEBUG: true
   VIEW_COMPILED_PATH: /tmp
   STORAGE_PATH: /tmp
   DB_CONNECTION: mysql
