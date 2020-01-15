@@ -140,7 +140,7 @@ $.ajaxSetup({
         dataFilter: function(data,type){
             data = data.trim();
             var returnData = data;
-            console.log(data);
+            // console.log(data);
             try{
                 var json = JSON.parse(data);
                 if (json.uidList != undefined){$("#uidList").text(JSON.stringify(json.uidList));}
