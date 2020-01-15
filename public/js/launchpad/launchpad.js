@@ -1,7 +1,7 @@
 var notify, notificationCheck, notificationCategory = 'all', clickWhenFinished = null, multiBtns;
 $(document).ready(function () {
 	checkNotifications();
-    notificationCheck = setInterval(checkNotifications,1000*60);
+    // notificationCheck = setInterval(checkNotifications,1000*60);
     notify = $("#Notifications");
     notify.on('click','.open, .cancel',toggleNotifications);
     notify.on('click','li',showFullNotification);
@@ -30,24 +30,30 @@ function clickTab(){
 }
 var notifyXhr = undefined;
 function checkNotifications(){
-	if (notifyXhr == undefined){
-	    notifyXhr = $.ajax({
-	        url:'/notification-check',
-	        method:'post',
-	        data:{
-	        	fetch: notificationCategory
-	        },
-	        success:function(notifications){
-	        	updateNotificationList(notifications);
-	        }
-	    });		
+	// if (notifyXhr == undefined){
+	//     notifyXhr = $.ajax({
+	//         url:'/notification-check',
+	//         method:'post',
+	//         data:{
+	//         	fetch: notificationCategory
+	//         },
+	//         success:function(notifications){
+	//         	updateNotificationList(notifications);
+	//         }
+	//     });
+	// }
+	var update = filterUninitialized('.notificationUpdate');
+	if (update.length == 1){
+		updateNotificationList(update);
 	}
+	update.data('initialized',true);
 }
 function updateNotificationList(notifications){
 	// console.log(notifications);
-	notifyXhr = undefined, selectMultiBtn = $("#Notifications").find(".selectMultiple");
+	var notifyXhr = undefined, selectMultiBtn = $("#Notifications").find(".selectMultiple");
 
-	$("#Notifications").find('.message').html(notifications);
+	// $("#Notifications").find('.message').html(notifications);
+	$("#Notifications").find('.notificationUpdate').replaceWith(notifications);
 	var unreadCount = $("#UnreadCount"), allCount = $("#Notifications").find('li').length;
 	unreadCount.text($("#Notifications").find(".unread").length);
 	if (unreadCount.text() == '0'){slideFadeOut(unreadCount);
