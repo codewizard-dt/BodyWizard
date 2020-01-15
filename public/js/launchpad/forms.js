@@ -59,7 +59,8 @@ function initializeNewForms(){
     $(".datepicker").each(function(){
         console.log($(this).data());
     })
-    var datepickers = filterUninitialized(".datepicker");
+    // var datepickers = filterUninitialized(".datepicker");
+    var datepickers = filterByData(".datepicker",'hasDatePicker',false);
     console.log(datepickers);
     datepickers.each(function(){
         $(this).on("focus",function(e){
@@ -78,7 +79,8 @@ function initializeNewForms(){
         
         $(this).datepick(options);
     })
-    datepickers.data("initialized",true);
+    datepickers.data("hasDatePicker",true);
+    // datepickers.data("initialized",true);
 
     var signatures = filterUninitialized(".signature");
     signatures.each(function(){
