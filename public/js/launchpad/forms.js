@@ -56,6 +56,9 @@ function initializeNewForms(){
     })
     dropdowns.data("initialized",true);
 
+    $(".datepicker").each(function(){
+        console.log($(this).data());
+    })
     var datepickers = filterUninitialized(".datepicker");
     console.log(datepickers);
     datepickers.each(function(){
