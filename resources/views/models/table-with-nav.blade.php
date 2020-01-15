@@ -131,7 +131,7 @@
     </div>
 </div>
 <div class="listUpdate" data-tabs="{{json_encode($tabs)}}" data-uids="{{json_encode($uids)}}"></div>
-
+@include ('portal.users.notifications')
 
 <!-- <script src="{{ asset('/js/launchpad/forms.js') }}"></script>
  -->

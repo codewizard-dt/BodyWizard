@@ -11,7 +11,7 @@ function initializeApptForms(){
  	$("#editAppointment").find("h1").first().text("Edit Appointment");
     $(".ChangeTitle").attr('id','ChangeTitle');
 
-    var uninitialized = filterUninitialized('#EditApptBtn, #DeleteApptBtn, #ApptDetails, #FormInfo, .selector, .selectPractitioner, #SelectTime, #PractitionerSelector, #SelectOrRandom');
+    var uninitialized = filterUninitialized('#EditApptBtn, #DeleteApptBtn, #ApptDetails, #FormInfo, .selector, .selectPractitioner, #SelectTime, #PractitionerSelector, #SelectOrRandom, #booknow, #SelectServices, #ChartNoteBtn');
 	uninitialized.filter("#EditApptBtn").on('click',function(){
 		blurElement($("body"),"#editAppointment");
 	})
@@ -42,25 +42,25 @@ function initializeApptForms(){
 		$("#createAppointment").find(".submitForm").text('book appointment');
 	    $("#booknow").data('target','#createAppointment');
 	    $("#EditApptBtn").data('target','#editAppointment');
-	    $("#booknow, #EditApptBtn").on('click',showAppointmentDetails);
+	    uninitialized.filter("#booknow, #EditApptBtn").on('click',showAppointmentDetails);
 	    if ($("#PatientCalendar").length == 1){
-		    $("#ScheduleFeedTarget").load("/schedule/feed",function(){
+		    // $("#ScheduleFeedTarget").load("/schedule/feed",function(){
 		        $("#PatientCalendar").html("");
 		     	loadPatientCal($("#PatientCalendar"));
 	     	    activateServiceSelection();
-		    });
+		    // });
 	    }
 	    $("#createAppointment").on('click','.cancel',function(){$("#booknow").find('.active').removeClass('active');})
 	}else if (usertype == 'practitioner'){
 		allowOverride = true;
-	     $("#SelectServices").on('click', '.override',overrideService);
-	     $("#ChartNoteBtn").on('click',checkForChartNote);
+	     uninitialized.filter("#SelectServices").on('click', '.override',overrideService);
+	     uninitialized.filter("#ChartNoteBtn").on('click',checkForChartNote);
 	     if ($("#PractitionerCalendar").length == 1){
-		     $("#ScheduleFeedTarget").load("/schedule/feed",function(){
+		     // $("#ScheduleFeedTarget").load("/schedule/feed",function(){
 		        $("#PractitionerCalendar").html("");
 		     	loadPractitionerCal($("#PractitionerCalendar"));
 				activateServiceSelection();
-		     });	     	
+		     // });	     	
 	     }
 	}
 }

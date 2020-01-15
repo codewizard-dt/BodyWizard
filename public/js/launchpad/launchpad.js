@@ -22,38 +22,25 @@ $(document).ready(function () {
 
 function clickTab(){
 	var tabId = $(this).data('tabId');
-	// console.log($("#"+tabId));
 	unblurAll();
 	$(tabId).find(".title").click();
 	toggleNotifications();
-	// $($(this).data('tabId')).find(".title").click();
 }
 var notifyXhr = undefined;
 function checkNotifications(){
-	// if (notifyXhr == undefined){
-	//     notifyXhr = $.ajax({
-	//         url:'/notification-check',
-	//         method:'post',
-	//         data:{
-	//         	fetch: notificationCategory
-	//         },
-	//         success:function(notifications){
-	//         	updateNotificationList(notifications);
-	//         }
-	//     });
-	// }
 	var update = filterUninitialized('.notificationUpdate');
 	if (update.length == 1){
-		updateNotificationList(update);
+		$("#Notifications").find('.notificationUpdate').replaceWith(update);
 	}
+	updateNotificationList();
 	update.data('initialized',true);
 }
-function updateNotificationList(notifications){
+function updateNotificationList(){
 	// console.log(notifications);
 	var notifyXhr = undefined, selectMultiBtn = $("#Notifications").find(".selectMultiple");
 
 	// $("#Notifications").find('.message').html(notifications);
-	$("#Notifications").find('.notificationUpdate').replaceWith(notifications);
+	// $("#Notifications").find('.notificationUpdate').replaceWith(notifications);
 	var unreadCount = $("#UnreadCount"), allCount = $("#Notifications").find('li').length;
 	unreadCount.text($("#Notifications").find(".unread").length);
 	if (unreadCount.text() == '0'){slideFadeOut(unreadCount);

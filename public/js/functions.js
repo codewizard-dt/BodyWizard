@@ -1675,6 +1675,7 @@ function initializeNewContent(){
     initializeApptForms();
     initializeLinks();
     initializeScheduleForms();
+    checkNotifications();
     activateServiceSelection();
     masterStyle();
 }
