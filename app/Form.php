@@ -570,7 +570,7 @@ class Form extends Model
                 $dataStr .= "data-$key='$option' ";
             }
             $name = (isset($options['name'])) ? $options['name'] : "";
-            echo "<div class='answer date'><input class='$name' readonly placeholder='tap to pick date' class='datepicker' $dataStr></div>";
+            echo "<div class='answer date'><input class='$name datepicker' readonly placeholder='tap to pick date' $dataStr></div>";
         }
         public function number($options){
             $dataStr = null;
