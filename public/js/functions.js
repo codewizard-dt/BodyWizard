@@ -34,6 +34,7 @@ $.fn.resetActives = function (){
 
 function jsonIfValid(data){
     var val;
+    console.log(data,typeof data);
     if (typeof data !== 'string'){return;}
     try {
         var val = JSON.parse(data);
