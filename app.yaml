@@ -28,6 +28,7 @@ beta_settings:
 
 resources: 
   cpu: 2
+  memory_gb: 1.4
 
 automatic_scaling:
   min_num_instances: 2
