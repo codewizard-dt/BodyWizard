@@ -462,9 +462,11 @@ function refreshAppointmentFeed(info){
 	if (info == 'no changes'){
 		console.log('no changes');
 		return;
-	}else{
+	}else if (typeof info == 'string'){
 		var feed = jsonIfValid(info);
 		if (!feed){return;}
+	}else if (typeof info == 'object'){
+		var feed = info;
 	}
 	console.log('c',feed);
 	var appts = feed.appointments, anon = feed.anon;

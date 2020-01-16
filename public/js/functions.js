@@ -36,7 +36,7 @@ function jsonIfValid(data){
     var val;
     if (typeof data !== 'string'){return;}
     try {
-        var val = JSON.parse(jsonString);
+        var val = JSON.parse(data);
         if (val && typeof val === "object"){
             return val;
         }
