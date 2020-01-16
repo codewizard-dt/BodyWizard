@@ -463,11 +463,13 @@ function refreshAppointmentFeed(info){
 		console.log('no changes');
 		return;
 	}else if (typeof info != 'object'){
+		console.log('a',info);
 		return;
 	}else if (info.appointments == undefined){
+		console.log('b',info);
 		return;
 	}
-	
+	console.log('c',info);
 	var appts = info.appointments, anon = info.anon;
 	if ($('.calendar').length == 1){
 		calendar.getEventSourceById('appointments').remove();
@@ -851,7 +853,7 @@ function deleteAppt(obj){
 		data:obj,
 		success:function(data){
 			// if (data == 'checkmark'){
-				console.log(data);
+				// console.log(data);
 				blurTopMost("#checkmark");
 				delayedUnblurAll();
 				refreshAppointmentFeed(data);
