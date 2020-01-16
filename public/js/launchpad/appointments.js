@@ -459,6 +459,7 @@ function resetConnectedModels(){
 	// console.log("resetConnectedModels");
 }
 function refreshAppointmentFeed(info){
+	console.log(info);
 	if (info == 'no changes'){
 		console.log('no changes');
 		return;
