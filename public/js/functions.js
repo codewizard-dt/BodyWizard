@@ -32,19 +32,29 @@ $.fn.resetActives = function (){
     return this;
 }
 
-function confirmJson(data){
-    var json;
-    try{
-        json = JSON.parse(data);
-    }catch(e){
-        if (typeof data != 'object'){
-            alert('invalid json, functions.js 38');
-            json = "not valid JSON";
-        }else{
-            json = data;
+function jsonIfValid(data){
+    var val;
+    if (typeof data !== 'string'){return;}
+    try {
+        var val = JSON.parse(jsonString);
+        if (val && typeof val === "object"){
+            return val;
         }
+    }catch (e) { 
+        console.log(e);
     }
-    return json;
+    return false;
+    // try{
+    //     json = JSON.parse(data);
+    // }catch(e){
+    //     if (typeof data != 'object'){
+    //         alert('invalid json, functions.js 38');
+    //         json = "not valid JSON";
+    //     }else{
+    //         json = data;
+    //     }
+    // }
+    // return json;
 }
 
 // Elements must have data-order attributes already set

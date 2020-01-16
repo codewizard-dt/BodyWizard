@@ -64,13 +64,13 @@ $(document).ready(function(){
 //             {
 //                 // url: "/schedule/appointments",
 //                 // type: "GET",
-//                 events: confirmJson($("#AppointmentsFullCall").data('schedule')),
+//                 events: jsonIfValid($("#AppointmentsFullCall").data('schedule')),
 //                 id: "appointments"
 //             },
 //             {
 //                 // url: "/schedule/non-ehr",
 //                 // type: "GET",
-//                 events: confirmJson($("#NonEhr").data('schedule')),
+//                 events: jsonIfValid($("#NonEhr").data('schedule')),
 //                 id: "nonEHR"
 //             }    
 //         ],

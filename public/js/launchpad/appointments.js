@@ -462,15 +462,12 @@ function refreshAppointmentFeed(info){
 	if (info == 'no changes'){
 		console.log('no changes');
 		return;
-	}else if (typeof info != 'object'){
-		console.log('a',info);
-		return;
-	}else if (info.appointments == undefined){
-		console.log('b',info);
-		return;
+	}else{
+		var feed = jsonIfValid(info);
+		if (!feed){return;}
 	}
-	console.log('c',info);
-	var appts = info.appointments, anon = info.anon;
+	console.log('c',feed);
+	var appts = feed.appointments, anon = feed.anon;
 	if ($('.calendar').length == 1){
 		calendar.getEventSourceById('appointments').remove();
 		calendar.addEventSource({events:appts,id:'appointments'});		
@@ -1126,7 +1123,7 @@ function loadPatientCal(target){
         eventSources: 
         [
             {
-                events: $("#AppointmentsFullCall").data('schedule'),
+                events: jsonIfValid($("#AppointmentsFullCall").data('schedule')),
                 id: "appointments"
             }
         ],
@@ -1206,15 +1203,11 @@ function loadPractitionerCal(target){
         eventSources: 
         [
             {
-                // url: "/schedule/appointments",
-                // type: "GET",
-                events: confirmJson($("#AppointmentsFullCall").data('schedule')),
+                events: jsonIfValid($("#AppointmentsFullCall").data('schedule')),
                 id: "appointments"
             },
             {
-                // url: "/schedule/non-ehr",
-                // type: "GET",
-                events: confirmJson($("#NonEhr").data('schedule')),
+                events: jsonIfValid($("#NonEhr").data('schedule')),
                 id: "nonEHR"
             }    
         ],
