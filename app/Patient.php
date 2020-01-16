@@ -43,8 +43,8 @@ class Patient extends Model
                         ],
                         [
                             'label' => 'Phone',
-                            'className' => 'email',
-                            'attribute' => 'email',
+                            'className' => 'phone',
+                            'attribute' => 'phone',
                             'hasThrough' => 'userInfo'
                         ],
                         [

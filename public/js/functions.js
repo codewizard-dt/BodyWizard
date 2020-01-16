@@ -145,7 +145,7 @@ $.ajaxSetup({
                 var json = JSON.parse(data);
                 if (json.uidList != undefined){$("#uidList").text(JSON.stringify(json.uidList));}
                 if (json.tabList != undefined){$("#tabList").text(JSON.stringify(json.tabList));}
-                if (json.message != undefined){returnData = json.message;}
+                if (json.message != undefined){returnData = JSON.stringify(json.message);}
             }catch(e){
                 console.log(e);
             }
