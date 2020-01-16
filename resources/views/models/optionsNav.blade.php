@@ -143,5 +143,5 @@
 			<div class="arrow"></div>
 		</div>
 	</div>
-	@include ('portal.user.list-update')
+	@include ('portal.list-update')
 </div>

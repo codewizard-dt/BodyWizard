@@ -131,5 +131,5 @@
     </div>
 </div>
 
-@include ('portal.user.list-update')
+@include ('portal.list-update')
 @include ('portal.user.notifications')
