@@ -42,7 +42,9 @@ function initializeApptForms(){
 		$("#createAppointment").find(".submitForm").text('book appointment');
 	    $("#booknow").data('target','#createAppointment');
 	    $("#EditApptBtn").data('target','#editAppointment');
-	    uninitialized.filter("#booknow, #EditApptBtn").on('click',showAppointmentDetails);
+	    uninitBtns = filterByData("#booknow, #EditApptBtn",'hasFx',false);
+	    uninitBtns.on('click',showAppointmentDetails);
+	    uninitBtns.data('hasFx',true);
 	    if ($("#PatientCalendar").length == 1){
 		    // $("#ScheduleFeedTarget").load("/schedule/feed",function(){
 		        $("#PatientCalendar").html("");
