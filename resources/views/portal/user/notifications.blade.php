@@ -9,6 +9,7 @@ if ($fetch == 'unread'){
 <div class="notificationUpdate">
     <h2>Notifications</h2>
     <ul>
+        
         @forelse($notifications as $notification)
             <?php 
             $model = isset($notification->data["model"]) ? $notification->data["model"] : null; 
