@@ -460,10 +460,12 @@ function getPractice($practiceId){
   function isUser($model){
     return in_array($model,['Patient','Practitioner','StaffMember']);
   }
-  function optionButtons($destinations,$btnText){
+  function optionButtons($destinations,$btnText,$model){
+    echo "<div class='optionBtnWrap'>$model Options:";
     for ($x=0;$x<count($destinations);$x++){
       echo "<div class='button xsmall purple70' data-destination='$destinations[$x]'>$btnText[$x]</div>";
     }
+    echo "</div>";
   }
   function isCollection($var){
     if ($var instanceof Illuminate\Database\Eloquent\Collection){

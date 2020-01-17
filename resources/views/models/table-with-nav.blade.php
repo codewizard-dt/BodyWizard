@@ -101,8 +101,9 @@
     $uids = session('uidList') !== null ? session('uidList') : [];
 ?>
 
+@include('models.optionsNav',$navOptions)
+
 <div class="central large">
-    @include('models.optionsNav',$navOptions)
     @if ($model == 'Diagnosis' && session('diagnosisType') !== null)
         <h2 class='purple paddedSmall'>{{session('diagnosisType')}} {{$models}}</h2>
     @elseif ($model == 'User' && session('userType') !== null)

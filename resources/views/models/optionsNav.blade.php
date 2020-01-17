@@ -116,24 +116,23 @@
 	}
 	$currentTabs = (session('CurrentTabs') !== null) ? session('CurrentTabs') : null;
 	$uids = (session('uidList') !== null) ? session('uidList') : null;
-
 ?>
 
-<div class="optionsNavWrapper">
+<!-- <div class="optionsNavWrapper"> -->
 	<h2 class="optionsNavHeader purple paddedSmall">
 		Currently Selected {{$model}}<br>
 		<span class='hide'>hide</span>
 	</h2>
-	<div id="Current{{$nospaces}}" class="optionsNav wrapMe {{implode(' ', $extraClasses)}}" data-model="{{$model}}" data-uid="{{$uid}}">
+	<div id="Current{{$nospaces}}" class="optionsNav {{implode(' ', $extraClasses)}}" data-model="{{$model}}" data-uid="{{$uid}}">
 		<div class="navHead">
 			<span class="optionsBar">
 				<span class="name" data-uid="{{$uid}}" 
 				@foreach ($extraData as $data) data-{{$data[0]}}='{{$data[1]}}'@endforeach
-				>{{$nameText}}</span><br>
-				{{optionButtons($destinations,$btnText)}}
+				>{{$nameText}}</span>
 			</span>
 		</div>
 		<div class="navDetails">
+			{{optionButtons($destinations,$btnText,$model)}}
 			@if (isset($instance))
 			{{$instance->moreOptions()}}
 			@endif
@@ -144,4 +143,4 @@
 		</div>
 	</div>
 	@include ('portal.list-update')
-</div>
+<!-- </div> -->

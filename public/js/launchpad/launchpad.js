@@ -2,9 +2,12 @@ var notify, notificationCheck, notificationCategory = 'all', clickWhenFinished =
 $(document).ready(function () {
 	checkNotifications();
     // notificationCheck = setInterval(checkNotifications,1000*60);
+    var menu = $("#NavBar").find('.siteMenu'), divide = menu.find(".divide");
     notify = $("#Notifications");
+    notify.insertBefore(divide);
     notify.on('click','.open, .cancel',toggleNotifications);
-    notify.on('click','li',showFullNotification);
+    // notify.on('click','li',showFullNotification);
+    notify.on('click','.title',showFullNotification);
     notify.on('click','.selectMultiple',toggleSelectMode);
     notify.on('click','.selectAll',toggleSelectAll);
     notify.on('click','.markMultiAsUnread',markMultiAsUnread);
@@ -15,7 +18,7 @@ $(document).ready(function () {
     $("#Notification").on('click','.clickTab',clickTab);
     $("#Notification").on('click','.markAsUnread',markNotificationAsUnread);
     $("#Notification").on('click','.delete',deleteNotification);
-    multiBtns = notify.find(".markMultiAsRead, .markMultiAsUnread, .deleteMulti");
+    multiBtns = notify.find(".multiBtns");
     // multiBtns = notify.find(".multiBtns");
     multiBtns.hide();
 });
@@ -36,15 +39,20 @@ function checkNotifications(){
 	update.data('initialized',true);
 }
 function updateNotificationList(){
-	// console.log(notifications);
 	var notifyXhr = undefined, selectMultiBtn = $("#Notifications").find(".selectMultiple");
 
-	// $("#Notifications").find('.message').html(notifications);
-	// $("#Notifications").find('.notificationUpdate').replaceWith(notifications);
-	var unreadCount = $("#UnreadCount"), allCount = $("#Notifications").find('li').length;
+	var unreadCount = $("#UnreadCount"), allCount = $("#Notifications").find('.title').length;
 	unreadCount.text($("#Notifications").find(".unread").length);
-	if (unreadCount.text() == '0'){slideFadeOut(unreadCount);
-	}else{slideFadeIn(unreadCount);
+
+	if (unreadCount.text() == '0'){
+		slideFadeOut(unreadCount);
+	}else if (!$("#Notifications").find(".list").is(":visible")){
+	// }else{
+		// console.log({
+		// 	showingDD: $("#Notifications").find(".open").hasClass(".showingDD"),
+		// 	listVisible: $("#Notifications").find(".list").is(":visible")
+		// 	});
+		slideFadeIn(unreadCount);
 	}
 	if (allCount < 2){
 		if (selectMultiBtn.text()=='exit multi'){selectMultiBtn.click()}
@@ -134,89 +142,86 @@ function listenForToggle(ev){
 }
 function toggleNotifications(){
 	checkNotifications();
-	var openNow = notify.find(".open").is(":visible"), openBtn = notify.find('.open'), list = notify.find('.list');
+	// var openNow = notify.find(".open").is(":visible"), openBtn = notify.find('.open'), list = notify.find('.list');
+	var openNow = !notify.find(".open").hasClass('active'), openBtn = notify.find('.open'), list = notify.find('.list');
 	if (openNow){
-		openBtn.hide();
+		// openBtn.hide();
 		slideFadeIn(list,1200);
 		list.addClass('active');
-		$(document).on('mousedown touchstart scroll',listenForToggle);
+		// $(document).on('mousedown touchstart scroll',listenForToggle);
 	}else{
 		slideFadeOut(list,800,function(){
-			slideFadeIn(openBtn);
+			// slideFadeIn(openBtn);
 		});
-		$(document).off('mousedown touchstart scroll',listenForToggle);
+		// $(document).off('mousedown touchstart scroll',listenForToggle);
 	}
 }
 function deleteNotification(){
 	var id = $("#Notification").data('notificationid');
-	slideFadeOut($("#Notifications").find("li").filter(function(){return $(this).data('notificationid') == id;}),1500);
+	slideFadeOut($("#Notifications").find(".title").filter(function(){return $(this).data('notificationid') == id;}),1500);
 	unblurTopMost();
 	updateNotifications([id],'delete');
 }
 function deleteMulti(){
-	var selected = notify.find("li").filter(".active"), uids = [];
+	var selected = notify.find(".title").filter(".active"), uids = [];
 	selected.each(function(n, notification){
 		uids.push($(notification).data('notificationid'));
 	});
 	slideFadeOut(selected,1500);
 	updateNotifications(uids,'delete');
 	selected.removeClass('active');
+	toggleSelectMode();
 }
 function markNotificationAsUnread(){
 	var id = $("#Notification").data('notificationid');
-	$("#Notifications").find("li").filter(function(){return $(this).data('notificationid') == id;}).find(".indicator").removeClass('read').addClass('unread');
+	$("#Notifications").find(".title").filter(function(){return $(this).data('notificationid') == id;}).find(".indicator").removeClass('read').addClass('unread');
 	updateNotifications([id],'mark-unread');	
 }
 function markMultiAsUnread(){
-	var selected = notify.find("li").filter(".active"), uids = [];
+	var selected = notify.find(".title").filter(".active"), uids = [];
 	selected.each(function(n, notification){
 		uids.push($(notification).data('notificationid'));
 	});
 	selected.find(".indicator").removeClass('read').addClass('unread');
 	updateNotifications(uids,'mark-unread');
 	selected.removeClass('active');
+	toggleSelectMode();
 }
 function markMultiAsRead(){
-	var selected = notify.find("li").filter(".active"), uids = [];
+	var selected = notify.find(".title").filter(".active"), uids = [];
 	selected.each(function(n, notification){
 		uids.push($(notification).data('notificationid'));
 	});
 	selected.find(".indicator").removeClass('unread').addClass('read');
 	updateNotifications(uids,'mark-read');
 	selected.removeClass('active');
+	toggleSelectMode();
 }
 function toggleSelect(){
 	$(this).toggleClass('active');
 }
 function toggleSelectAll(){
-	var lis = $("#Notifications").find('li'), count = lis.length, active = lis.filter('.active'), activeCount = active.length,
+	var titles = $("#Notifications").find('.dropDown').find('.title'), count = titles.length, active = titles.filter('.active'), activeCount = active.length,
 		multiBtn = $("#Notifications").find(".selectMultiple"), multiMode = multiBtn.text().includes("exit");
 	if (!multiMode){multiBtn.click();}
-	if (activeCount !== count){lis.addClass('active')
+	if (activeCount !== count){titles.addClass('active')
 	}else{
-		lis.removeClass('active');
+		titles.removeClass('active');
 	}
 }
 function toggleSelectMode(){
-	var showNow = $(this).text().includes("select");
+	var selectBtn = $("#Notifications").find(".selectMultiple"), showNow = selectBtn.text().includes("select");
 	if (showNow){
-		if (notifyXhr != undefined){
-			notifyXhr.abort();
-			notifyXhr = undefined;
-		}
-		console.log('stop checking');
-		clearInterval(notificationCheck);
-	    notify.off('click','li',showFullNotification);
-	    notify.on('click','li',toggleSelect);
+	    notify.off('click','.title',showFullNotification);
+	    notify.on('click','.title',toggleSelect);
 	    multiBtns.slideFadeIn();
-	    $(this).text('exit multi');
+	    selectBtn.text('exit multi');
 	}else{
-		console.log('start checking');
-	    notificationCheck = setInterval(checkNotifications,1000*20);
-	    notify.on('click','li',showFullNotification);
-	    notify.off('click','li',toggleSelect);
+	    notify.on('click','.title',showFullNotification);
+	    notify.off('click','.title',toggleSelect);
 	    multiBtns.slideFadeOut();
-	    $("#Notifications").find("li").filter(".active").removeClass('active');
-	    $(this).text('select');
+	    checkNotifications();
+	    $("#Notifications").find('.title').filter(".active").removeClass('active');
+	    selectBtn.text('select');
 	}
 }

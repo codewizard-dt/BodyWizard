@@ -7,9 +7,7 @@ if ($fetch == 'unread'){
 }
 ?>
 <div class="notificationUpdate">
-    <h2>Notifications</h2>
-    <ul>
-        
+
         @forelse($notifications as $notification)
             <?php 
             $model = isset($notification->data["model"]) ? $notification->data["model"] : null; 
@@ -24,9 +22,12 @@ if ($fetch == 'unread'){
             $description = $notification->data['description'];
             $indicatorStatus = ($notification->read_at == null) ? 'unread' : 'read';
             ?>
-            <li data-notificationid='{{$notification->id}}' data-created='{{$createdAt->format("n/j/y g:ia")}}' data-model='{{$model}}' data-uid='{{$uid}}' data-changes='{{$changes}}' data-details='{{$details}}' data-tabid='{{$tabId}}' data-type='{{$type}}' data-click='{{$click}}' data-description='{{$description}}'>{{$type}}<span class="indicator {{$indicatorStatus}}"></span></li>
+            <div class="tab">
+                <div class='title' data-notificationid='{{$notification->id}}' data-created='{{$createdAt->format("n/j/y g:ia")}}' data-model='{{$model}}' data-uid='{{$uid}}' data-changes='{{$changes}}' data-details='{{$details}}' data-tabid='{{$tabId}}' data-type='{{$type}}' data-click='{{$click}}' data-description='{{$description}}'>{{$type}}<span class="indicator {{$indicatorStatus}}"></span></div>
+            </div>
         @empty
-            <li>No Notifications</li>
+            <div class="tab">
+                <div class='title'>No Notifications</div>
+            </div>
         @endforelse
-    </ul>  
 </div>

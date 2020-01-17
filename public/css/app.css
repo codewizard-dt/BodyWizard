@@ -3104,53 +3104,33 @@ a:hover {
 
 #Notifications {
   display: inline-block;
-  position: fixed;
-  top: 4em;
-  right: 3em;
-  text-align: center;
-  z-index: 51;
-  transition: width 800ms;
-}
-
-#Notifications .open {
-  position: relative;
-  display: inline-block;
-  padding: 0.5em 1em;
-  cursor: pointer;
-  background-color: var(--white70);
-  border-radius: 0 0 5px 5px;
-  border: 1px solid rgb(230, 230, 230);
-  border-top-style: dotted;
-}
-
-#Notifications .multiBtns .button {
-  margin: 1em 0.5em;
 }
 
 #Notifications .multiBtns {
-  /*margin-top: 1em;*/
+  margin: 0.5em -10px 0 -10px;
 }
 
-#Notifications ul {
-  list-style: none;
+.mobile #Notifications .dropDown {
+  -webkit-transform-origin: top right;
+          transform-origin: top right;
+  right: 0;
+  left: unset;
+  -webkit-transform: translateX(1em) scale(0);
+          transform: translateX(1em) scale(0);
 }
 
-#Notifications li {
-  border: 4px solid transparent;
-  border-width: 0 4px;
-  margin: 0;
-  position: relative;
-  cursor: pointer;
-  transition: border-color 400ms, background-color 400ms;
-  padding: 0 1em;
+.mobile #Notifications .dropDown.active {
+  -webkit-transform: translateX(1em) scale(1);
+          transform: translateX(1em) scale(1);
 }
 
-#Notifications li:hover {
-  border-color: var(--yellow30);
-  background-color: var(--yellow10);
+#Notifications .dropDown .title {
+  padding-left: 18px;
+  padding-right: 18px;
+  box-sizing: border-box;
 }
 
-#Notifications li.active {
+#Notifications .title.active {
   color: var(--yellow);
   background-color: var(--yellow10);
 }
@@ -3170,7 +3150,7 @@ a:hover {
   font-weight: bold;
 }
 
-#Notifications li .indicator {
+#Notifications .dropDown .indicator {
   top: 50%;
   right: 0;
   width: 10px;
@@ -3183,41 +3163,21 @@ a:hover {
   /*box-shadow: 0 0 3px 3px var(--pink30);*/
 }
 
-#Notifications li .indicator.unread {
+#Notifications .title .indicator.unread {
   background-color: var(--pink70);
   box-shadow: 0 0 3px 3px var(--pink30);
 }
 
-#Notifications li .time {
-  position: absolute;
-  left: 0;
-  text-align: right;
-  -webkit-transform: translateX(-100%);
-          transform: translateX(-100%);
-  width: 4em;
-}
-
-#Notifications li:hover .time {
-  opacity: 1;
-}
-
-#Notifications li.active .time {
-  opacity: 1;
-}
-
 #Notifications .list {
   display: none;
-  min-width: 15em;
-  background-color: var(--white97);
-  border-radius: 0 0 5px 5px;
-  border: 4px solid rgba(240, 240, 240, 0.97);
-  border-top-style: dotted;
-  max-height: calc(100vh - 7em);
-  overflow-y: auto;
+  /*max-height: calc(100vh - 7em);*/
+  /*box-sizing: border-box;*/
+  /*overflow-y: auto;*/
 }
 
 #Notifications .button {
   font-size: 0.7em;
+  margin: 0.5em;
 }
 
 #LoginForm a {

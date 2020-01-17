@@ -10,6 +10,8 @@ function initializeNewMenus(){
     })
     MenuItems.hover(tabMouseEnter,tabMouseLeave);
     MenuItems.on("click",".title",function(e){
+        // var isNotification = ($(this).closest('#Notifications').length == 1);
+        // if (isNotification){return;}
         var tab = $(this).parent(), underline = tab.children(".underline"), id = tab.attr("id"), 
             dropdown = tab.children(".dropDown"), menu = $(this).closest(".menuBar"), menuId = menu.attr('id'),
             target = (menu.data("target")!="window") ? $(menu).data("target") : "window", uri = $(this).data("uri"),
@@ -18,7 +20,8 @@ function initializeNewMenus(){
 
         if ((tab.is("#booknow") && uri == '#createAppointment') 
             || (uri == '' && target != "window")
-            || (tab.is("#lock-ehr"))){
+            || (tab.is("#lock-ehr"))
+            || ($(this).closest('#Notifications').length == 1)){
             return;
         }
         // if (uri == '' && target != "window"){            
@@ -213,14 +216,24 @@ function animateMenuV2(menuID){
         dropdowns = tabs.children(".dropDown"), 
         activeDD = dropdowns.filter(".active"), 
         inactiveDD = dropdowns.not(".active"),
-        activeTab = titles.filter(".active").parent();        
+        activeTab = activeDD.closest('.tab');
 
-    activeDD.closest('.tab').find('.underline').removeClass('active hover');
+    if (activeTab.is("#Notifications")){
+        // console.log("hi");
+        $("#UnreadCount").fadeOut();
+    }else if ($("#UnreadCount").length == 1 && $("#UnreadCount").text() != "0"){
+        $("#UnreadCount").fadeIn();
+        if ($("#Notifications").find(".selectMultiple").text().includes('exit')){toggleSelectMode();}
+    }else{
+        $("#UnreadCount").fadeOut();
+    }
+    activeTab.find('.underline').removeClass('active hover');
     underlines.filter(".active, .hover").animate({width: "105%"}, 200);
     underlines.not(".active, .hover").animate({width: "0%"}, 200);
     // activeDD.slideDown(400).css("transform","translateX(-50%) scaleX(1)");
     activeDD.slideDown(400);
     activeDD.closest(".tab").children(".title").addClass("showingDD");
+    if (activeDD.closest("#Notifications").length == 1){$("#UnreadCount").hide();}
     // inactiveDD.not(".active").slideUp(400).css("transform","translateX(-50%) scaleX(0)");
     inactiveDD.not(".active").slideUp(400);
     inactiveDD.closest(".tab").children(".title").removeClass("showingDD");

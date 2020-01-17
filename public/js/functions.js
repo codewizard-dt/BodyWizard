@@ -34,7 +34,7 @@ $.fn.resetActives = function (){
 
 function jsonIfValid(data){
     var val;
-    console.log(data,typeof data);
+    // console.log(data,typeof data);
     if (typeof data !== 'string'){return data;}
     try {
         var val = JSON.parse(data);
@@ -42,20 +42,9 @@ function jsonIfValid(data){
             return val;
         }
     }catch (e) { 
-        console.log(e);
+        // console.log(e);
     }
     return false;
-    // try{
-    //     json = JSON.parse(data);
-    // }catch(e){
-    //     if (typeof data != 'object'){
-    //         alert('invalid json, functions.js 38');
-    //         json = "not valid JSON";
-    //     }else{
-    //         json = data;
-    //     }
-    // }
-    // return json;
 }
 
 // Elements must have data-order attributes already set
@@ -158,7 +147,7 @@ $.ajaxSetup({
                 if (json.tabList != undefined){$("#tabList").text(JSON.stringify(json.tabList));}
                 if (json.message != undefined){returnData = JSON.stringify(json.message);}
             }catch(e){
-                console.log(e);
+                // console.log(e);
             }
             return returnData;
         }
@@ -1575,7 +1564,7 @@ function getEm(){
 var menuWidth;
 function resizeMobileMenuAndFooter(){
     var siteMenu = $(".siteMenu").first();
-    var tabs = siteMenu.add("#MenuDisplay").children(".tab");
+    var tabs = siteMenu.add("#MenuDisplay").children(".tab").not("#Notifications");
     if (!siteMenu.hasClass("mobile")){
         menuWidth = siteMenu.outerWidth();
     }
@@ -1592,12 +1581,12 @@ function resizeMobileMenuAndFooter(){
         siteMenu.addClass("mobile");
         tabs.appendTo("#MenuDisplay");
     }else if (wideEnough){
-    // }else{
         siteMenu.removeClass("mobile");
         tabs.appendTo(siteMenu);
         siteMenu.find(".dropDown").removeClass("active");
         siteMenu.removeData('width');
     }
+    moveNotifications();
 
     if (w < 480){$("footer").find(".logo, .icons, .contact, .hours").addClass("mobile");}
     else if (w < 750){
@@ -1620,6 +1609,14 @@ $("#MenuToggle").on("click",function(){
         },500)
     }
 })
+function moveNotifications(){
+    var siteMenu = $(".siteMenu").first(), mobileNow = siteMenu.hasClass('mobile');
+    if (mobileNow){
+        $("#Notifications").prependTo(siteMenu);
+    }else{
+        $("#Notifications").insertBefore(siteMenu.find(".divide"));
+    }
+}
 function listenMobileMenuExit(e){
     if (!$(e.target).is(".tab, .title, .dropdown, li, #MenuToggle")){
         $("#MenuToggle").click();

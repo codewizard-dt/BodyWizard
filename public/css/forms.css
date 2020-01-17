@@ -1626,19 +1626,22 @@ input#PatientName {
 }
 
 .optionsNav {
-    display: inline-block;
+    /*display: inline-block;*/
     position: relative;    
-    min-width: 25em;
-    max-width: 95%;
+    /*min-width: 25em;*/
+    /*max-width: 95%;*/
     overflow: hidden;
     text-align: center;
     background-color: transparent;
-    border-radius: 5px;
+    /*border-radius: 5px;*/
     border-style: solid;
-    border-width: 2px;
+    border-width: 0 0 2px 0;
     border-color: var(--purple);
     transition: height 1200ms;
     vertical-align: middle;
+}
+.optionBtnWrap{
+    padding: 0.5em;
 }
 .prompt{
     padding:0 !important;
@@ -1676,7 +1679,7 @@ input#PatientName {
     opacity: 0;
 }
 .optionsNav .navDetails{
-    max-width: 500px;
+    /*max-width: 500px;*/
     padding: 1em 0;
     border: 1px solid var(--purple);
     border-width: 1px 0 0 0;
@@ -1686,10 +1689,11 @@ input#PatientName {
     padding: 0.4em;
     cursor: pointer;
     font-size: 0.8em;
-    background-color: var(--purple10);
+    background: linear-gradient( transparent, var(--purple10));
+    /*background-color: var(--purple10);*/
     border-width: 1px 0 0 0;
     border-style: solid;
-    border-color: var(--purple);
+    border-color: var(--purple30);
     color: var(--purple);
     transition: background-color 400ms;
 }

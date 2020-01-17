@@ -19,6 +19,7 @@ class NotificationController extends Controller
     public function notificationUpdate(Request $request){
     	$action = $request->action;
     	$uids = $request->uids;
+        if ($uids == null){return;}
     	try{
     		$notifications = Auth::user()->notifications->filter(function($notification) use ($uids){
     			return in_array($notification->id, $uids);

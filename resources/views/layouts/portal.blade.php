@@ -33,6 +33,8 @@
         <form style='display:none' id='logoutForm' action='/logout' method='POST'>
             @csrf
         </form>
+
+        @include('portal.user.notification-nav')
         
         @yield("content")
         
@@ -85,24 +87,6 @@
             </div>
         </div>
 
-        <div id="Notifications">
-            <div class="open">notifications<span id='UnreadCount' class="indicator">{{$user->unreadNotifications->count()}}</span></div>
-            <div class="list">
-                <div class="message">
-                    @include('portal.user.notifications')
-                </div>
-                <div class="options">
-                    <div class='pink10BG multiBtns'>
-                        <div class="button pink xsmall markMultiAsUnread">mark unread</div>
-                        <div class="button pink xsmall markMultiAsRead">mark read</div>
-                        <div class="button pink xsmall deleteMulti">delete</div>
-                    </div>
-                    <div class="button yellow xsmall selectMultiple">select</div>
-                    <div class="button yellow xsmall selectAll">all</div>
-                    <div class="button minimize cancel xsmall">minimize</div>
-                </div>                
-            </div>
-        </div>
 
 
         @include('layouts.footer-simple')
@@ -123,6 +107,8 @@
             <script type='text/javascript' src="{{asset('/js/launchpad/save-model.js')}}"></script>
             <script type='text/javascript' src="{{asset('/js/launchpad/model-table.js')}}"></script>
             <script type='text/javascript' src="{{asset('/js/launchpad/model-settings.js')}}"></script>
+            <script type='text/javascript' src="{{asset('/js/jSignature.min.js')}}"></script>
+
             @include ('schedules.scripts')
         @yield('scripts')
 
