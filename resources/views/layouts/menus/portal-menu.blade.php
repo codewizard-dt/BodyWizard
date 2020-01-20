@@ -1,5 +1,4 @@
 <?php 
-    // include_once app_path("/php/functions.php");
     $menuData = isset($menuData) ? $menuData : "PortalMenuList";
 ?>
 
