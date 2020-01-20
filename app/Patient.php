@@ -142,19 +142,25 @@ class Patient extends Model
         return $this->belongsTo('App\User','user_id');
     }
         public function getNameAttribute(){
-            return $user = $this->userInfo->name;
+            return $this->userInfo->name;
+        }
+        public function getFullNameAttribute(){
+            return $this->userInfo->full_name;
+        }
+        public function getLegalNameAttribute(){
+            return $this->userInfo->legal_name;
         }
         public function getPhoneAttribute(){
-            return $user = $this->userInfo->phone;
+            return $this->userInfo->phone;
         }
         public function getEmailAttribute(){
-            return $user = $this->userInfo->email;
+            return $this->userInfo->email;
         }
         public function getDateOfBirthAttribute(){
-            return $user = $this->userInfo->date_of_birth;
+            return $this->userInfo->date_of_birth;
         }
         public function getPreferredNameAttribute(){
-            return $user = $this->userInfo->preferred_name;
+            return $this->userInfo->preferred_name;
         }
 
     public function getSettingsAttribute($value){

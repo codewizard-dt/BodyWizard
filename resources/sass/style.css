@@ -252,6 +252,7 @@ h5 span {font-size: 0.9em;}
 .paddedXSmall{padding-top:0.25em;padding-bottom: 0.25em;}
 .paddedSmall{padding-top:0.5em;padding-bottom: 0.5em;}
 .paddedSmall.bottomOnly{padding-top: 0em;}
+.paddedSmall.topOnly{padding-bottom: 0em;}
 .paddedSides{padding-left:2.5em;padding-right: 2.5em;box-sizing: border-box;}
 .paddedSides.small{padding-left:1em;padding-right: 1em;}
 .paddedSides.leftOnly{padding-right:0;}
@@ -1197,7 +1198,7 @@ a:hover {color:var(--pink);}
     max-height: 90%;
     max-width: 90%;
     margin: 0;
-    padding: 2em 3em;
+    padding: 2em 0.5em;
     border-radius: 5px;
     box-shadow: 0 0 15px 3px rgba(245,245,245);
 }
@@ -1219,10 +1220,10 @@ a:hover {color:var(--pink);}
     transform-origin: top right;
     right:0;
     left:unset;
-    transform: translateX(1em) scale(0);
+    transform: scale(0);
 }
 .mobile #Notifications .dropDown.active{
-    transform: translateX(1em) scale(1);
+    transform: scale(1);
 }
 #Notifications .dropDown .title{
     padding-left: 18px;
@@ -1346,6 +1347,16 @@ a:hover {color:var(--pink);}
     display: none !important;
 }
 
+.dropDown.shiftLeft{
+    right: 0px !important;
+    transform: scale(1) !important;
+    left: unset !important;
+}
+.dropDown.shiftRight{
+    left: 0px !important;
+    transform: scale(1) !important;
+    right: unset !important;
+}
 .topMenu {
     position: sticky;
     top:4em;

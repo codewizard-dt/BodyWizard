@@ -757,6 +757,11 @@ function blurElement(elem,modal,time,callback){
     }else{
         showCSS['top'] = $(elem).scrollTop();
     }
+    if (elem.is('.optionsNavWrapper')){
+        showCSS.backgroundColor = "rgba(255,255,255,0.6)";
+        showCSS.boxShadow = "unset";
+        $("#loading").addClass('dark');
+    }
     showCSS.width = (elem.is("body")) ? w : "100%";
     showCSS.height = (elem.is("body")) ? h : "100%";
     // $("#Block").prependTo(elem).css(showCSS).fadeIn(time);

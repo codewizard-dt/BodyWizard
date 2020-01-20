@@ -58,7 +58,7 @@ function initializeNewForms(){
 
     // var datepickers = filterUninitialized(".datepicker");
     var datepickers = filterByData(".datepicker",'hasDatePicker',false);
-    console.log(datepickers);
+    // console.log(datepickers);
     datepickers.each(function(){
         $(this).on("focus",function(e){
             e.preventDefault();

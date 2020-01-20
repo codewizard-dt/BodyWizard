@@ -1924,6 +1924,10 @@ h5 span {
   padding-top: 0em;
 }
 
+.paddedSmall.topOnly {
+  padding-bottom: 0em;
+}
+
 .paddedSides {
   padding-left: 2.5em;
   padding-right: 2.5em;
@@ -3091,7 +3095,7 @@ a:hover {
   max-height: 90%;
   max-width: 90%;
   margin: 0;
-  padding: 2em 3em;
+  padding: 2em 0.5em;
   border-radius: 5px;
   box-shadow: 0 0 15px 3px rgba(245, 245, 245);
 }
@@ -3115,13 +3119,13 @@ a:hover {
           transform-origin: top right;
   right: 0;
   left: unset;
-  -webkit-transform: translateX(1em) scale(0);
-          transform: translateX(1em) scale(0);
+  -webkit-transform: scale(0);
+          transform: scale(0);
 }
 
 .mobile #Notifications .dropDown.active {
-  -webkit-transform: translateX(1em) scale(1);
-          transform: translateX(1em) scale(1);
+  -webkit-transform: scale(1);
+          transform: scale(1);
 }
 
 #Notifications .dropDown .title {
@@ -3259,6 +3263,20 @@ a:hover {
 
 .divide .title {
   display: none !important;
+}
+
+.dropDown.shiftLeft {
+  right: 0px !important;
+  -webkit-transform: scale(1) !important;
+          transform: scale(1) !important;
+  left: unset !important;
+}
+
+.dropDown.shiftRight {
+  left: 0px !important;
+  -webkit-transform: scale(1) !important;
+          transform: scale(1) !important;
+  right: unset !important;
 }
 
 .topMenu {

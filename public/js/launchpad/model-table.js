@@ -281,7 +281,8 @@ var optionsLoadXHR = undefined;
 function rowClickLoadModel(){
     var uid = $(this).data('uid'), 
     	table = $(this).closest(".styledTable"),
-    	target = $(table).data('target'), 
+    	// target = $(table).data('target'), 
+        target = '.optionsNavWrapper',
     	model = $(table).data('model'),
     	destinations = $(table).data('destinations').split(","),
     	btnText = $(table).data('btntext').split(",");
@@ -313,15 +314,14 @@ function rowClickLoadModel(){
     if (optionsLoadXHR!=undefined){
         optionsLoadXHR.abort();
     }
-
-    console.log(target);
+    // return;
     // target = $(target).closest(".optionsNavWrapper");
     optionsLoadXHR = $.ajax({
         url: "/optionsNav/" + model.replace(" ","") + "/" + uid,
         method: "GET",
         success: function(data){
             // console.log(data);
-            $(target).closest('.optionsNavWrapper').replaceWith(data);
+            $(target).replaceWith(data);
             var navWrapper = $(target).closest('.optionsNavWrapper');
             navWrapper.find(".optionsNavHeader").show();
             $(".optionsNav").removeClass("hide");

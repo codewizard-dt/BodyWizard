@@ -118,11 +118,8 @@
 	$uids = (session('uidList') !== null) ? session('uidList') : null;
 ?>
 
-<!-- <div class="optionsNavWrapper"> -->
-	<h2 class="optionsNavHeader purple paddedSmall">
-		Currently Selected {{$model}}<br>
-		<span class='hide'>hide</span>
-	</h2>
+<div class="optionsNavWrapper">
+	<h3 class="optionsNavHeader purple paddedSmall topOnly">Currently Selected {{$model}}</h3>
 	<div id="Current{{$nospaces}}" class="optionsNav {{implode(' ', $extraClasses)}}" data-model="{{$model}}" data-uid="{{$uid}}">
 		<div class="navHead">
 			<span class="optionsBar">
@@ -132,15 +129,15 @@
 			</span>
 		</div>
 		<div class="navDetails">
-			{{optionButtons($destinations,$btnText,$model)}}
+			{{optionButtons($destinations,$btnText)}}
 			@if (isset($instance))
 			{{$instance->moreOptions()}}
 			@endif
 		</div>
 		<div class="toggleDetails down">
-			<span class="label">more {{strtolower(proper($model))}} details</span>
+			<span class="label">details + options</span>
 			<div class="arrow"></div>
 		</div>
 	</div>
 	@include ('portal.list-update')
-<!-- </div> -->
+</div>
