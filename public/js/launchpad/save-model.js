@@ -276,7 +276,7 @@ function saveModel(includeInvisible = false){
 				}
 			}
 		},
-		headers: {"X-CURRENT-UIDS":JSON.stringify(uidList)}
+		headers: {"X-Current-Uids":JSON.stringify(uidList)}
 	})
 }
 function deleteModel(){

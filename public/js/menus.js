@@ -285,8 +285,8 @@ function LoadingContent(target,uri){
     loadXHR = $.ajax({
         url:uri,
         headers:{
-            'X-CURRENT-TABS': $("#tabList").text(),
-            'X-CURRENT-UIDS': $("#uidList").text()
+            'X-Current-Tabs': $("#tabList").text(),
+            'X-Current-Uids': $("#uidList").text()
         },
         success:function(data){
             // console.log(uri);
