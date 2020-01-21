@@ -3,6 +3,16 @@ $(document).ready(function(){
     $("#MobileMenu").children(".title").attr('id','MenuToggle');
     $("#MobileMenu").children('.dropDown').attr('id','MenuDisplay');
     initializeNewMenus();
+    $(document).on('touchstart',function(e){
+        var dropdown = $(".dropDown").filter(".active");
+        if (dropdown.length > 0){return;}
+        else if ($(e.target).closest(dropdown).length > 0){return;}
+        else {
+            var  menu = dropdown.closest('.menuBar');
+            dropdown.removeClass('active');
+            animateMenuV2(menu);
+        }
+    })
 });
 function initializeNewMenus(){
     var MenuItems = filterUninitialized($(".menuBar").find('.tab'));
