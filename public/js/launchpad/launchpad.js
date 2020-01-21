@@ -98,7 +98,10 @@ function showRelatedModel(){
 	}
 }
 function showFullNotification(){
-	if ($(this).text() == 'No Notifications'){return;}
+	if ($(this).text() == 'No Notifications'
+		|| $(this).parent().is("#Notifications")){
+		return;
+	}
 	var data = $(this).data(), notification = $("#Notification"), msg = notification.find(".message"), details = (data.details == null) ? [] : data.details, notificationId = $(this).data('notificationid');
 	notification.data(data);
 	$(this).find(".indicator").removeClass('unread').addClass('read');
