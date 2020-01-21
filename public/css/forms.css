@@ -123,6 +123,9 @@ textarea[data-followup]{
 #miniSchedule .breakTime{background-color: var(--pink70) !important}
 .scheduleTable .breakTime{color: var(--pink);font-size: 0.9em;}
 #miniSchedule .breakTime.hover{background-color: var(--pink) !important}
+.fc-toolbar > div {
+    white-space: nowrap;
+}
 .fc-event, .fc-bgevent{
     transition: background-color 500ms;
 }
@@ -519,7 +522,7 @@ form, .indent, .report, .w95 {
     display: inline-block;
     border-radius: 5px;
     border: 1px solid var(--purple10);
-    height: 2.25em;
+    /*height: 2.25em;*/
     /*float: right;*/
     width:auto;
     margin: -1em 0 0.5em 0;
@@ -529,6 +532,12 @@ form, .indent, .report, .w95 {
     font-size: 0.9em;
     margin-left: 5px;
     color: var(--purple);
+}
+.liProxy{
+    padding: 0.2em 0.5em;
+    border: 2px solid transparent;
+    margin: 3px;
+    display: inline-block;
 }
 #ChangeTitle{
     background-color: var(--purple10);

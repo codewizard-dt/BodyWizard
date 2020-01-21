@@ -314,29 +314,29 @@ a:hover {color:var(--pink);}
     display: none;
     position: relative;
     text-align: right;
-    width:3em;
-    height:3em;
+    width:3em !important;
+    height:3em !important;
     background-image: url(/images/icons/mobile-menuB.png);
     background-size: contain;
+    background-position: center;
     cursor: pointer;
 }
 #MenuToggle{
     display: block !important;
     position: relative;
-    top:0;
-    right:0;
-    width:3em;
-    height:3em;
-    margin-bottom: 0.8em;
+    padding: 0;
+    top:50%;
+    left:50%;
+    width:1em;
+    height:1em;
+    border-radius: 1em;
+    transform: translate(-50%,-50%);
+    /*margin-bottom: 0.8em;*/
 }
 .mobile #MobileMenu{display: inline-block;}
 #MobileMenu #MenuDisplay {display: none;}
-#MobileMenu .divide{
-    height: 1px !important;
-    top:0;
-    margin: 7px 0;
-}
-#MobileMenu .divide .title{
+/*#MenuDisplay {border-color:var(--purple50);}*/
+/*#MobileMenu .divide .title{
     padding: 0 !important;
     border: 2px solid var(--yellow30) !important;
     background-color: var(--yellow30) !important;
@@ -352,8 +352,8 @@ a:hover {color:var(--pink);}
 }
 #MenuDisplay.active {
     transform: scale(1);
-}
-#MobileMenu .underline{display: none !important;}
+}*/
+/*#MobileMenu .underline{display: none !important;}
 #MobileMenu.active .tab{display:block;height:3em;}
 #MobileMenu.active .title{
     position: absolute;
@@ -374,7 +374,7 @@ a:hover {color:var(--pink);}
     border-top-style: dotted;
     text-align: center;
     z-index: 2;
-    /*padding:0;*/
+    padding:0;
     background-color: rgba(255,255,255,0.95);
     transform: translateX(-50%) scaleX(1);
     transform-origin: center;
@@ -382,7 +382,7 @@ a:hover {color:var(--pink);}
 #MobileMenu.active .dropDown .title{
     position: relative;
     border-color: transparent;
-}
+}*/
 .siteMenu .title.active {
     background-color: var(--yellow);
     color:white;
@@ -1217,13 +1217,13 @@ a:hover {color:var(--pink);}
     margin: 0.5em -10px 0 -10px;
 }
 .mobile #Notifications .dropDown{
-    transform-origin: top right;
+    /*transform-origin: top right;
     right:0;
     left:unset;
-    transform: scale(0);
+    transform: scale(0);*/
 }
 .mobile #Notifications .dropDown.active{
-    transform: scale(1);
+    /*transform: scale(1);*/
 }
 #Notifications .dropDown .title{
     padding-left: 18px;
@@ -1347,15 +1347,17 @@ a:hover {color:var(--pink);}
     display: none !important;
 }
 
-.dropDown.shiftLeft{
+.dropDown.shiftLeft, .mobile > .tab > .dropDown{
     right: 0px !important;
     transform: scale(1) !important;
     left: unset !important;
+    transform-origin: top right;
 }
 .dropDown.shiftRight{
     left: 0px !important;
     transform: scale(1) !important;
     right: unset !important;
+    transform-origin: top left;
 }
 .topMenu {
     position: sticky;
@@ -1411,7 +1413,7 @@ a:hover {color:var(--pink);}
     height: 3em;
 }
 .menuBar .dropDown .tab {
-    height: auto !important;
+    height: unset;
     /* background-color: gray; */
     width: calc(100% + 28px);
     margin-left: -14px;
@@ -1422,6 +1424,11 @@ a:hover {color:var(--pink);}
 .menuBar .dropDown .tab:hover{
     border-left-color: var(--yellow30);
     border-right-color: var(--yellow30);
+}
+.dropDown .divide{
+    height: 1px !important;
+    top:0;
+    margin: 7px -14px;
 }
 .menuBar .title{
     display:inline-block;

@@ -2029,21 +2029,26 @@ a:hover {
   display: none;
   position: relative;
   text-align: right;
-  width: 3em;
-  height: 3em;
+  width: 3em !important;
+  height: 3em !important;
   background-image: url(/images/icons/mobile-menuB.png);
   background-size: contain;
+  background-position: center;
   cursor: pointer;
 }
 
 #MenuToggle {
   display: block !important;
   position: relative;
-  top: 0;
-  right: 0;
-  width: 3em;
-  height: 3em;
-  margin-bottom: 0.8em;
+  padding: 0;
+  top: 50%;
+  left: 50%;
+  width: 1em;
+  height: 1em;
+  border-radius: 1em;
+  -webkit-transform: translate(-50%, -50%);
+          transform: translate(-50%, -50%);
+  /*margin-bottom: 0.8em;*/
 }
 
 .mobile #MobileMenu {
@@ -2054,80 +2059,56 @@ a:hover {
   display: none;
 }
 
-#MobileMenu .divide {
-  height: 1px !important;
-  top: 0;
-  margin: 7px 0;
-}
+/*#MenuDisplay {border-color:var(--purple50);}*/
 
-#MobileMenu .divide .title {
-  padding: 0 !important;
-  border: 2px solid var(--yellow30) !important;
-  background-color: var(--yellow30) !important;
-  width: 6em;
-  display: inline-block !important;
-  right: -5px !important;
+/*#MobileMenu .divide .title{
+    padding: 0 !important;
+    border: 2px solid var(--yellow30) !important;
+    background-color: var(--yellow30) !important;
+    width: 6em;
+    display: inline-block !important;
+    right: -5px !important;
 }
-
 #MenuDisplay {
-  display: inline-block !important;
-  -webkit-transform: scale(0);
-          transform: scale(0);
-  transition: -webkit-transform 500ms;
-  transition: transform 500ms;
-  transition: transform 500ms, -webkit-transform 500ms;
-  -webkit-transform-origin: top right;
-          transform-origin: top right;
+    display:inline-block !important;
+    transform:scale(0);
+    transition: transform 500ms;
+    transform-origin: top right;
 }
-
 #MenuDisplay.active {
-  -webkit-transform: scale(1);
-          transform: scale(1);
-}
+    transform: scale(1);
+}*/
 
-#MobileMenu .underline {
-  display: none !important;
+/*#MobileMenu .underline{display: none !important;}
+#MobileMenu.active .tab{display:block;height:3em;}
+#MobileMenu.active .title{
+    position: absolute;
+    right:0;
+    background-color: rgba(255,255,255,0.95);
+    border: 1px solid var(--yellow);
 }
-
-#MobileMenu.active .tab {
-  display: block;
-  height: 3em;
+#MobileMenu.active .title.showingDD{
+    box-shadow: 0 0 3px 1px inset var(--yellow);
 }
-
-#MobileMenu.active .title {
-  position: absolute;
-  right: 0;
-  background-color: rgba(255, 255, 255, 0.95);
-  border: 1px solid var(--yellow);
+#MobileMenu.active .title.active{
+    background-color: var(--yellow);
 }
-
-#MobileMenu.active .title.showingDD {
-  box-shadow: 0 0 3px 1px inset var(--yellow);
+#MobileMenu.active .dropDown{
+    left: -3em;
+    top: 3em;
+    border: 4px solid rgb(240,240,240);
+    border-top-style: dotted;
+    text-align: center;
+    z-index: 2;
+    padding:0;
+    background-color: rgba(255,255,255,0.95);
+    transform: translateX(-50%) scaleX(1);
+    transform-origin: center;
 }
-
-#MobileMenu.active .title.active {
-  background-color: var(--yellow);
-}
-
-#MobileMenu.active .dropDown {
-  left: -3em;
-  top: 3em;
-  border: 4px solid rgb(240, 240, 240);
-  border-top-style: dotted;
-  text-align: center;
-  z-index: 2;
-  /*padding:0;*/
-  background-color: rgba(255, 255, 255, 0.95);
-  -webkit-transform: translateX(-50%) scaleX(1);
-          transform: translateX(-50%) scaleX(1);
-  -webkit-transform-origin: center;
-          transform-origin: center;
-}
-
-#MobileMenu.active .dropDown .title {
-  position: relative;
-  border-color: transparent;
-}
+#MobileMenu.active .dropDown .title{
+    position: relative;
+    border-color: transparent;
+}*/
 
 .siteMenu .title.active {
   background-color: var(--yellow);
@@ -3115,17 +3096,14 @@ a:hover {
 }
 
 .mobile #Notifications .dropDown {
-  -webkit-transform-origin: top right;
-          transform-origin: top right;
-  right: 0;
-  left: unset;
-  -webkit-transform: scale(0);
-          transform: scale(0);
+  /*transform-origin: top right;
+  right:0;
+  left:unset;
+  transform: scale(0);*/
 }
 
 .mobile #Notifications .dropDown.active {
-  -webkit-transform: scale(1);
-          transform: scale(1);
+  /*transform: scale(1);*/
 }
 
 #Notifications .dropDown .title {
@@ -3265,11 +3243,14 @@ a:hover {
   display: none !important;
 }
 
-.dropDown.shiftLeft {
+.dropDown.shiftLeft,
+.mobile > .tab > .dropDown {
   right: 0px !important;
   -webkit-transform: scale(1) !important;
           transform: scale(1) !important;
   left: unset !important;
+  -webkit-transform-origin: top right;
+          transform-origin: top right;
 }
 
 .dropDown.shiftRight {
@@ -3277,6 +3258,8 @@ a:hover {
   -webkit-transform: scale(1) !important;
           transform: scale(1) !important;
   right: unset !important;
+  -webkit-transform-origin: top left;
+          transform-origin: top left;
 }
 
 .topMenu {
@@ -3342,7 +3325,7 @@ a:hover {
 }
 
 .menuBar .dropDown .tab {
-  height: auto !important;
+  height: unset;
   /* background-color: gray; */
   width: calc(100% + 28px);
   margin-left: -14px;
@@ -3354,6 +3337,12 @@ a:hover {
 .menuBar .dropDown .tab:hover {
   border-left-color: var(--yellow30);
   border-right-color: var(--yellow30);
+}
+
+.dropDown .divide {
+  height: 1px !important;
+  top: 0;
+  margin: 7px -14px;
 }
 
 .menuBar .title {

@@ -23,7 +23,7 @@
 
 <h2 class="purple paddedSmall">Appointment Calendar</h2>
 <div id="ChangeTitleWrap">
-    <span class='vertCent'>event display: </span>
+    <span class='liProxy'>event display:</span>
 {{$ctrl->answerDisp('radio',$changeTitleOptions)}}    
 </div>
 <div id="TimezoneWrap"></div>

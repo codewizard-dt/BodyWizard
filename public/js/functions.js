@@ -1553,6 +1553,24 @@ function resizeSplits(){
         rightOnly.addClass('rightOnly');
     }
 }
+function resizeFcHeaders(){
+    $(".fc-toolbar").each(function(){
+        var tb = $(this), fc = tb.closest('.fc'), w = tb.width(), em = getEm(), realWidth = tb[0].scrollWidth, wLeft = tb.find('.fc-left')[0].scrollWidth, wCenter = tb.find('.fc-center')[0].scrollWidth, wRight = tb.find('.fc-right')[0].scrollWidth, wTotal = wLeft + wCenter + wRight;        
+        // fc.css({fontSize:'1em'});
+        // console.log("\nHI");
+        while (realWidth - w > 1){
+            fc.css({fontSize:"-=0.05em"});
+            w = tb.width(); realWidth = tb[0].scrollWidth;
+            // console.log('a',em, getEm(fc));
+        }
+        // var wLeft = tb.find('.fc-left')[0].scrollWidth, wCenter = tb.find('.fc-center')[0].scrollWidth, wRight = tb.find('.fc-right')[0].scrollWidth, wTotal = wLeft + wCenter + wRight;        
+        while (wTotal + (3*em) < w && em > getEm(fc)){
+            fc.css({fontSize:"+=0.05em"});
+            w = tb.width(); wLeft = tb.find('.fc-left').width(); wCenter = tb.find('.fc-center').width(); wRight = tb.find('.fc-right').width(); wTotal = wLeft + wCenter + wRight;        
+            // console.log('b',em, getEm(fc));
+        }
+    })
+}
 function resizeQuotes(){
     $(".quote").each(function(){
         var h = $(this).outerHeight();
@@ -1563,13 +1581,14 @@ function resizeFooterPadding(){
     var h = $("footer").outerHeight();
     $("body").css("padding-bottom",h);
 }
-function getEm(){
-    return Number($("body").css('font-size').split("px")[0]);
+function getEm(ele = null){
+    if (ele == null){ele = $("body")}
+    return Number(ele.css('font-size').split("px")[0]);
 }
 var menuWidth;
 function resizeMobileMenuAndFooter(){
     var siteMenu = $(".siteMenu").first();
-    var tabs = siteMenu.add("#MenuDisplay").children(".tab").not("#Notifications");
+    var tabs = siteMenu.add("#MenuDisplay").children(".tab").not("#Notifications, #mobilePlaceholder, #MobileMenu"), hasPlaceholder = ($("#mobilePlaceholder").length == 1);
     if (!siteMenu.hasClass("mobile")){
         menuWidth = siteMenu.outerWidth();
     }
@@ -1584,7 +1603,11 @@ function resizeMobileMenuAndFooter(){
     if (tooWide){
         siteMenu.data('width',menuW);
         siteMenu.addClass("mobile");
-        tabs.appendTo("#MenuDisplay");
+        if (hasPlaceholder){
+            $("#mobilePlaceholder").replaceWith(tabs);
+        }else{
+            tabs.appendTo("#MenuDisplay");    
+        }
     }else if (wideEnough){
         siteMenu.removeClass("mobile");
         tabs.appendTo(siteMenu);
@@ -1628,16 +1651,16 @@ function listenMobileMenuExit(e){
     }
 }
 
-function resizeFont(){
-    var w = Math.max(document.documentElement.clientWidth, window.innerWidth || 0), fontSize;
-    // console.log("WIDTH "+ w);
-    if (w >= 1000){fontSize = "16px";}
-    else if (w >= 800){fontSize = "15px";}
-    else if (w >= 600){fontSize = "14px";}
-    else if (w >= 400){fontSize = "13px";}
-    else{fontSize = "12px";}
-    $("body").css("font-size",fontSize);
-}
+// function resizeFont(){
+//     var w = Math.max(document.documentElement.clientWidth, window.innerWidth || 0), fontSize;
+//     // console.log("WIDTH "+ w);
+//     if (w >= 1000){fontSize = "16px";}
+//     else if (w >= 800){fontSize = "15px";}
+//     else if (w >= 600){fontSize = "14px";}
+//     else if (w >= 400){fontSize = "13px";}
+//     else{fontSize = "12px";}
+//     $("body").css("font-size",fontSize);
+// }
 
 var timer;
 function resizeElements(){
@@ -1648,6 +1671,7 @@ function resizeElements(){
         resizeQuotes();
         resizeMobileMenuAndFooter();
         resizeFooterPadding();
+        resizeFcHeaders();
         optionsNavOverflowCheck();
     },100)
 }
@@ -1690,6 +1714,7 @@ function initializeNewContent(){
     initializeScheduleForms();
     checkNotifications();
     activateServiceSelection();
+    resizeElements();
     masterStyle();
 }
 

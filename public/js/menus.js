@@ -1,5 +1,7 @@
 var waitForForm, autoClickBtn = undefined, xhrWait = undefined, purple = "rgb(105,12,104)", yellow = "rgb(240,154,53)", pink = "rgb(234,78,80)";
 $(document).ready(function(){
+    $("#MobileMenu").children(".title").attr('id','MenuToggle');
+    $("#MobileMenu").children('.dropDown').attr('id','MenuDisplay');
     initializeNewMenus();
 });
 function initializeNewMenus(){
@@ -194,7 +196,7 @@ function animateMenuV2(menuID){
 
     if (activeDD.length > 0){
         var rect = activeDD[0].getBoundingClientRect(), w = $("body").width();
-        console.log(rect.right,$('body').width());
+        // console.log(rect.right,$('body').width());
         if (w - rect.right < 10){activeDD.addClass('shiftLeft')}
         if (rect.left < 10){activeDD.addClass('shiftRight')}
     }
@@ -298,7 +300,7 @@ function LoadingContent(target,uri){
             // console.log('list updates',$(target).find(".listUpdate").length);
             if ($(target).find(".listUpdate").length != 0){
                 var lists = $(target).find(".listUpdate").data(), uids = lists.uids, tabs = lists.tabs;
-                console.log('uids',uids,'tabs',tabs,'uri',uri);
+                // console.log('uids',uids,'tabs',tabs,'uri',uri);
                 uids = (uids && uids.length == 0) ? 'null' : JSON.stringify(uids);
                 tabs = (tabs && tabs.length == 0) ? 'null' : JSON.stringify(tabs);
                 $("#uidList").text(uids);
