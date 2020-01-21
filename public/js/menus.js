@@ -10,11 +10,11 @@ function initializeNewMenus(){
         // console.log($(this).find('.title').data());
         return $(this).find('.title').data('uri') != "";
     });
-    console.log("links",Links);
+    // console.log("links",Links);
     var Dropdowns = MenuItems.filter(function(){
         return $(this).find('.dropDown').length > 0;
     })
-    console.log("dropdowns",Dropdowns);
+    // console.log("dropdowns",Dropdowns);
     MenuItems.on("touchstart",function(e){
         // alert('hi');
         e.preventDefault();
@@ -233,8 +233,11 @@ function getParentTitles(clickedTitle){
 function determineAction(){
     var underline = $(this).children(".underline");
     var dropdown = $(this).children(".dropDown"), showNow = !dropdown.hasClass('active');
+    var parentDropDowns = $(this).parents('.dropDown');
     var menu = $(this).closest(".menuBar");
     if (showNow){
+        $(".underline").removeClass('hover');
+        $(".dropDown").not(parentDropDowns).removeClass('active');
         underline.addClass("hover");
         dropdown.addClass("active");
     }else{
