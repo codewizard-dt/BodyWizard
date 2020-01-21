@@ -237,7 +237,7 @@ function determineAction(){
     var menu = $(this).closest(".menuBar");
     if (showNow){
         $(".underline").removeClass('hover');
-        $(".dropDown").not(parentDropDowns).removeClass('active');
+        // $(".dropDown").not(parentDropDowns).removeClass('active');
         underline.addClass("hover");
         dropdown.addClass("active");
     }else{
