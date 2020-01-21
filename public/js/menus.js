@@ -7,6 +7,7 @@ $(document).ready(function(){
 function initializeNewMenus(){
     var MenuItems = filterUninitialized($(".menuBar").find('.tab'));
     MenuItems.on("touchstart",function(e){
+        alert('hi');
         e.preventDefault();
         $(e.target).click();
     })
