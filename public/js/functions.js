@@ -1623,20 +1623,20 @@ function resizeMobileMenuAndFooter(){
     }
     else {$("footer").find(".logo, .icons, .contact, .hours").removeClass("mobile");}
 }
-$("#MenuToggle").on("click",function(){
-    var b = $("#MobileMenu").hasClass("active");
-    if (!b){
-        $("#MobileMenu, #MenuDisplay").addClass("active");
-        $(window).on("mousedown scroll",listenMobileMenuExit);
-    }else{
-        $("#MenuDisplay").removeClass("active");
-        setTimeout(function(){
-            $("#MobileMenu").removeClass("active");
-            $(".siteMenu").find(".dropDown, .underline").removeClass("active");
-            $(window).off("mousedown scroll",listenMobileMenuExit);            
-        },500)
-    }
-})
+// $("#MenuToggle").on("click",function(){
+//     var b = $("#MobileMenu").hasClass("active");
+//     if (!b){
+//         $("#MobileMenu, #MenuDisplay").addClass("active");
+//         $(window).on("mousedown scroll",listenMobileMenuExit);
+//     }else{
+//         $("#MenuDisplay").removeClass("active");
+//         setTimeout(function(){
+//             $("#MobileMenu").removeClass("active");
+//             $(".siteMenu").find(".dropDown, .underline").removeClass("active");
+//             $(window).off("mousedown scroll",listenMobileMenuExit);            
+//         },500)
+//     }
+// })
 function moveNotifications(){
     var siteMenu = $(".siteMenu").first(), mobileNow = siteMenu.hasClass('mobile');
     if (mobileNow){

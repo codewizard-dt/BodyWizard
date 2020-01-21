@@ -5,7 +5,7 @@ $(document).ready(function () {
     var menu = $("#NavBar").find('.siteMenu'), divide = menu.find(".divide");
     notify = $("#Notifications");
     notify.insertBefore(divide);
-    notify.on('click','.open, .cancel',toggleNotifications);
+    // notify.on('click','.open, .cancel',toggleNotifications);
     // notify.on('click','li',showFullNotification);
     notify.on('click','.title',showFullNotification);
     notify.on('click','.selectMultiple',toggleSelectMode);

@@ -6,13 +6,22 @@ $(document).ready(function(){
 });
 function initializeNewMenus(){
     var MenuItems = filterUninitialized($(".menuBar").find('.tab'));
+    var Links = MenuItems.filter(function(){
+        return $(this).data('uri') != undefined;
+    });
+    var Dropdowns = MenuItems.filter(function(){
+        return $(this).find('.dropDown').length > 0;
+    })
     MenuItems.on("touchstart",function(e){
-        alert('hi');
+        // alert('hi');
         e.preventDefault();
         $(e.target).click();
     })
-    MenuItems.hover(tabMouseEnter,tabMouseLeave);
-    MenuItems.on("click",".title",function(e){
+
+    Dropdowns.hover(menuMouseEnter,menuMouseLeave);
+    Dropdowns.on('click',determineAction);
+
+    Links.on("click",".title",function(e){
         var tab = $(this).parent(), underline = tab.children(".underline"), id = tab.attr("id"), 
             dropdown = tab.children(".dropDown"), menu = $(this).closest(".menuBar"), menuId = menu.attr('id'),
             target = (menu.data("target")!="window") ? $(menu).data("target") : "window", uri = $(this).data("uri"),
@@ -82,6 +91,7 @@ function initializeNewMenus(){
         animateMenuV2(menu);
     })
     MenuItems.data('initialized',true);
+    
     // to organize and stylize multiple menus
         var AllMenus = $(".menuBar.portal").not(".siteMenu");
         var l = AllMenus.length;
@@ -217,7 +227,21 @@ function getParentTitles(clickedTitle){
     }
     return titles;
 }
-function tabMouseEnter(e){
+function determineAction(){
+    var underline = $(this).children(".underline");
+    var dropdown = $(this).children(".dropDown"), showNow = !dropdown.hasClass('active');
+    var menu = $(this).closest(".menuBar");
+    if (showNow){
+        underline.addClass("hover");
+        dropdown.addClass("active");
+        animateMenuV2(menu);
+    }else{
+        underline.removeClass("hover active");
+        dropdown.removeClass("active");
+        animateMenuV2(menu);
+    }
+}
+function menuMouseEnter(e){
     var underline = $(this).children(".underline");
     var dropdown = $(this).children(".dropDown");
     var menu = $(this).closest(".menuBar");
@@ -226,10 +250,9 @@ function tabMouseEnter(e){
     // console.log(menu);
     animateMenuV2(menu);
 }
-function tabMouseLeave(e){
+function menuMouseLeave(e){
     var underline = $(this).children(".underline");
     var dropdown = $(this).children(".dropDown");        
-    var title = $(this).children(".title");
     var menu = $(this).closest(".menuBar");
     underline.removeClass("hover active");
     dropdown.removeClass("active");
