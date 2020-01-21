@@ -7,13 +7,14 @@ $(document).ready(function(){
 function initializeNewMenus(){
     var MenuItems = filterUninitialized($(".menuBar").find('.tab'));
     var Links = MenuItems.filter(function(){
-        console.log($(this).find('.title').data());
-        return $(this).find('.title').data('uri') != undefined;
+        // console.log($(this).find('.title').data());
+        return $(this).find('.title').data('uri') != "";
     });
-    console.log(Links);
+    console.log("links",Links);
     var Dropdowns = MenuItems.filter(function(){
         return $(this).find('.dropDown').length > 0;
     })
+    console.log("dropdowns",Dropdowns);
     MenuItems.on("touchstart",function(e){
         // alert('hi');
         e.preventDefault();
