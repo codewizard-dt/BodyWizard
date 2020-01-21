@@ -10,6 +10,7 @@ function initializeNewMenus(){
         console.log($(this).find('.title').data());
         return $(this).find('.title').data('uri') != undefined;
     });
+    console.log(Links);
     var Dropdowns = MenuItems.filter(function(){
         return $(this).find('.dropDown').length > 0;
     })
