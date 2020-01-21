@@ -7,6 +7,7 @@ $(document).ready(function(){
 function initializeNewMenus(){
     var MenuItems = filterUninitialized($(".menuBar").find('.tab'));
     var Links = MenuItems.filter(function(){
+        console.log($(this).find('.title').data());
         return $(this).find('.title').data('uri') != undefined;
     });
     var Dropdowns = MenuItems.filter(function(){
