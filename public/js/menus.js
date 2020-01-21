@@ -7,7 +7,7 @@ $(document).ready(function(){
 function initializeNewMenus(){
     var MenuItems = filterUninitialized($(".menuBar").find('.tab'));
     var Links = MenuItems.filter(function(){
-        return $(this).data('uri') != undefined;
+        return $(this).find('.title').data('uri') != undefined;
     });
     var Dropdowns = MenuItems.filter(function(){
         return $(this).find('.dropDown').length > 0;
@@ -234,12 +234,11 @@ function determineAction(){
     if (showNow){
         underline.addClass("hover");
         dropdown.addClass("active");
-        animateMenuV2(menu);
     }else{
         underline.removeClass("hover active");
         dropdown.removeClass("active");
-        animateMenuV2(menu);
     }
+    animateMenuV2(menu);
 }
 function menuMouseEnter(e){
     var underline = $(this).children(".underline");
