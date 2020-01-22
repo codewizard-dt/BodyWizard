@@ -26,7 +26,7 @@ function initializeNewMenus(){
         var title = $(e.target);
         e.preventDefault();
         title.click();
-        alert(title.closest('.tab').attr('id'));
+        // alert(title.closest('.tab').attr('id'));
     })
 
     Dropdowns.hover(menuMouseEnter,menuMouseLeave);
