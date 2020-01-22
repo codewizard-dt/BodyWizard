@@ -3,8 +3,6 @@ var action = undefined, appointmentDetails = {services:null,date:null,time:null,
 	calendar, serviceConfirmBtn, dateTimeConfirmBtn, allowOverride = false, serviceOverride = false;
 	// practitionersAnonEvents =[], anonEvents, defaultAnonEvents;
 
-$(document).ready(function(){
-})
 function initializeApptForms(){
 	$("#createAppointment, #editAppointment").find('.submitForm').text("save appointment");
     $("#createAppointment, #editAppointment").find(".item").hide();
@@ -461,9 +459,7 @@ function resetConnectedModels(){
 	// console.log("resetConnectedModels");
 }
 function refreshAppointmentFeed(info){
-	console.log(info);
 	if (info == 'no changes'){
-		console.log('no changes');
 		return;
 	}else if (typeof info == 'string'){
 		var feed = jsonIfValid(info);
@@ -471,7 +467,7 @@ function refreshAppointmentFeed(info){
 	}else if (typeof info == 'object'){
 		var feed = info;
 	}
-	console.log('c',feed);
+	if (feed.appointments == undefined){return;}
 	var appts = feed.appointments, anon = feed.anon;
 	if ($('.calendar').length == 1){
 		calendar.getEventSourceById('appointments').remove();

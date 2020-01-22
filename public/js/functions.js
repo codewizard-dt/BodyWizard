@@ -73,7 +73,7 @@ function getUsertype(){
     return $("#uidList").data('usertype');
 }
 
-function filterUninitialized(selector,debug = false){
+function filterUninitialized(selector,debug = false,msg = false){
     var uninitialized, obj;
     if (selector instanceof jQuery){obj = selector;}
     else if(typeof selector == 'string'){obj = $(selector);}
@@ -84,9 +84,9 @@ function filterUninitialized(selector,debug = false){
     if (debug){
         var alreadyInitialized = obj.not(uninitialized);
         if (alreadyInitialized.length > 0){
-            console.log('already initialized',obj.not(uninitialized).length);
+            console.log(msg ? msg : 'already initialized',obj.not(uninitialized).length);
         }else{
-            console.log('none already initialized');
+            console.log(msg ? msg : 'already initialized',0);
         }
         
     }
@@ -1555,19 +1555,19 @@ function resizeSplits(){
 }
 function resizeFcHeaders(){
     $(".fc-toolbar").each(function(){
-        var tb = $(this), fc = tb.closest('.fc'), w = tb.width(), em = getEm(), realWidth = tb[0].scrollWidth, wLeft = tb.find('.fc-left')[0].scrollWidth, wCenter = tb.find('.fc-center')[0].scrollWidth, wRight = tb.find('.fc-right')[0].scrollWidth, wTotal = wLeft + wCenter + wRight;        
-        // fc.css({fontSize:'1em'});
-        // console.log("\nHI");
+        var tb = $(this), fc = tb.closest('.fc'), w = tb.width(), em = getEm(), realWidth = tb[0].scrollWidth, wLeft = tb.find('.fc-left')[0].scrollWidth, wCenter = tb.find('.fc-center')[0].scrollWidth, wRight = tb.find('.fc-right')[0].scrollWidth, wTotal = wLeft + wCenter + wRight, changed = false;
         while (realWidth - w > 1){
             fc.css({fontSize:"-=0.05em"});
             w = tb.width(); realWidth = tb[0].scrollWidth;
-            // console.log('a',em, getEm(fc));
+            changed = true;
         }
-        // var wLeft = tb.find('.fc-left')[0].scrollWidth, wCenter = tb.find('.fc-center')[0].scrollWidth, wRight = tb.find('.fc-right')[0].scrollWidth, wTotal = wLeft + wCenter + wRight;        
         while (wTotal + (3*em) < w && em > getEm(fc)){
             fc.css({fontSize:"+=0.05em"});
             w = tb.width(); wLeft = tb.find('.fc-left').width(); wCenter = tb.find('.fc-center').width(); wRight = tb.find('.fc-right').width(); wTotal = wLeft + wCenter + wRight;        
-            // console.log('b',em, getEm(fc));
+            changed = true;
+        }
+        if (changed){
+            $(window).resize();
         }
     })
 }

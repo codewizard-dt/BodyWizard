@@ -3,106 +3,34 @@ $(document).ready(function(){
     $("#MobileMenu").children(".title").attr('id','MenuToggle');
     $("#MobileMenu").children('.dropDown').attr('id','MenuDisplay');
     initializeNewMenus();
-    $(document).on('touchstart',function(e){
-        var dropdown = $(".dropDown").filter(".active");
-        if (dropdown.length > 0){return;}
-        else if ($(e.target).closest(dropdown).length > 0){return;}
+    $(document).on('touchstart mousedown scroll',function(e){
+        var dropdown = $(e.target).closest('.dropDown'), activeDD = $(".dropDown").filter('.active'), tabs = activeDD.parents('.tab'), parents = tabs.add(tabs.children());
+        if (activeDD.length == 0 || dropdown.length > 0 || $(e.target).is(parents)){return;}
         else {
-            var  menu = dropdown.closest('.menuBar');
-            dropdown.removeClass('active');
+            var  menu = activeDD.closest('.menuBar');
+            activeDD.removeClass('active');
             animateMenuV2(menu);
         }
     })
 });
 function initializeNewMenus(){
     var MenuItems = filterUninitialized($(".menuBar").find('.tab'));
+
     var Links = MenuItems.filter(function(){
-        // console.log($(this).find('.title').data());
-        return $(this).find('.title').data('uri') != "";
+        return $(this).children('.title').data('uri') != "";
     });
-    // console.log("links",Links);
     var Dropdowns = MenuItems.filter(function(){
-        return $(this).find('.dropDown').length > 0;
+        return $(this).children('.dropDown').length > 0;
     })
-    // console.log("dropdowns",Dropdowns);
     MenuItems.on("touchstart",function(e){
-        // alert('hi');
+        alert(e.target);
         e.preventDefault();
-        $(e.target).click();
+        $(e.target).find('.title').click();
     })
 
     Dropdowns.hover(menuMouseEnter,menuMouseLeave);
-    Dropdowns.on('click',determineAction);
-
-    Links.on("click",".title",function(e){
-        var tab = $(this).parent(), underline = tab.children(".underline"), id = tab.attr("id"), 
-            dropdown = tab.children(".dropDown"), menu = $(this).closest(".menuBar"), menuId = menu.attr('id'),
-            target = (menu.data("target")!="window") ? $(menu).data("target") : "window", uri = $(this).data("uri"),
-            hasDropdown = (tab.children('.dropDown').length === 1), titleActive = $(this).hasClass("active"),
-            parentTitles = getParentTitles($(this)), dropdownActive = (hasDropdown) ? dropdown.hasClass("active") : null;
-
-        if ((tab.is("#booknow") && uri == '#createAppointment') 
-            || (uri == '' && target != "window")
-            || (tab.is("#lock-ehr"))
-            || ($(this).closest('#Notifications').length == 1)){
-            return;
-        }
-        if (uri != undefined && uri.match(/(edit|delete|show|update|settings)/)){
-            if ($.inArray(uri,[
-                    '/forms/UID/edit',
-                    '/settings/Patient/uid'
-                ]) == -1){
-                // alert('undefined action menus.js 26 uri: '+uri);
-            }
-        }
-        if (uri=='/logout'){
-            $("#logoutForm").submit();
-            return false;
-        }
-        
-        if (menu.data("mode")=="scroll" && target != 'window'){
-            $(target).scrollTo($(uri),400,{
-                offset: {left:0,top:-20}
-            });
-            var h = $("#SiteMenu").height() + menu.height();
-            var offset = $(window).scrollTop() + h;
-            if (offset > $(target).offset().top){
-                $(window).scrollTo($(target),400,{
-                    offset: {left:0,top:-h}
-                })
-            }
-            return false;
-        }else if (menu.data("mode")=='scroll'){
-            console.log(target,uri);
-            var h = $("#SiteMenu").height() + menu.height() + 20;
-            $.scrollTo($(uri),400,{
-                offset: {left:0,top:-h}
-            })
-            // console.log('scrolll',$(uri));
-            return false;
-        }
-                
-        if (hasDropdown && titleActive){
-            dropdown.removeClass('active');
-        }else if (hasDropdown && !titleActive){
-            dropdown.addClass('active');
-        }else if (!hasDropdown && titleActive){
-            return false;
-        }else if (!hasDropdown && !titleActive){
-            menu.find('.active').removeClass('active');
-            setActiveTab(menuId,id);
-            $(this).add(parentTitles).addClass('active');
-            if (target=="window"){
-                window.location.href = uri;
-            }else{
-                // setActiveTab(menuId,id);
-                var obj = {};
-                obj[menuId] = id;
-                LoadingContent(target,uri,obj);
-            }
-        }        
-        animateMenuV2(menu);
-    })
+    Dropdowns.children('.title').on('click',dropdownClick);
+    Links.children('.title').on("click",followLink);
     MenuItems.data('initialized',true);
     
     // to organize and stylize multiple menus
@@ -201,7 +129,6 @@ function animateMenuV2(menuID){
         activeTab = activeDD.closest('.tab');
 
     if (activeTab.is("#Notifications")){
-        // console.log("hi");
         $("#UnreadCount").fadeOut();
     }else if ($("#UnreadCount").length == 1 && $("#UnreadCount").text() != "0"){
         $("#UnreadCount").fadeIn();
@@ -220,13 +147,20 @@ function animateMenuV2(menuID){
 
     if (activeDD.length > 0){
         var rect = activeDD[0].getBoundingClientRect(), w = $("body").width();
-        // console.log(rect.right,$('body').width());
-        if (w - rect.right < 10){activeDD.addClass('shiftLeft')}
-        if (rect.left < 10){activeDD.addClass('shiftRight')}
+        if (w - rect.right < 10){
+            // console.log(rect,$('body').width());
+            console.log('left',activeDD,rect,$('body').width());
+            activeDD.addClass('shiftLeft')
+        }
+        if (rect.left < 10){
+            // console.log(rect,$('body').width());
+            console.log('right',activeDD,rect,$('body').width());
+            activeDD.addClass('shiftRight')
+        }
     }
 }
 function getParentTitles(clickedTitle){
-    var parentTab = clickedTitle.parent(),
+    var parentTab = clickedTitle.closest('.tab'),
         nested = parentTab.parent().is(".dropDown"), titles = false;
 
     while (nested){
@@ -240,19 +174,77 @@ function getParentTitles(clickedTitle){
     }
     return titles;
 }
-function determineAction(){
-    var underline = $(this).children(".underline");
-    var dropdown = $(this).children(".dropDown"), showNow = !dropdown.hasClass('active');
-    var parentDropDowns = $(this).parents('.dropDown');
-    var menu = $(this).closest(".menuBar");
+function followLink(){
+    var tab = $(this).parent(), underline = tab.children(".underline"), id = tab.attr("id"), 
+        dropdown = tab.children(".dropDown"), menu = $(this).closest(".menuBar"), menuId = menu.attr('id'),
+        target = (menu.data("target")!="window") ? $(menu).data("target") : "window", uri = $(this).data("uri"),
+        hasDropdown = (tab.children('.dropDown').length === 1), titleActive = $(this).hasClass("active"),
+        parentTitles = getParentTitles($(this)), dropdownActive = (hasDropdown) ? dropdown.hasClass("active") : null;
+
+    console.log('followLink',id);
+    if ((tab.is("#booknow") && uri == '#createAppointment') 
+        || (uri == '' && target != "window")
+        || (tab.is("#lock-ehr"))
+        || ($(this).closest('#Notifications').length == 1)){
+        return;
+    }
+    if (uri=='/logout'){
+        $("#logoutForm").submit();
+        return false;
+    }
+    
+    if (menu.data("mode")=="scroll" && target != 'window'){
+        $(target).scrollTo($(uri),400,{
+            offset: {left:0,top:-20}
+        });
+        var h = $("#SiteMenu").height() + menu.height();
+        var offset = $(window).scrollTop() + h;
+        if (offset > $(target).offset().top){
+            $(window).scrollTo($(target),400,{
+                offset: {left:0,top:-h}
+            })
+        }
+        return false;
+    }else if (menu.data("mode")=='scroll'){
+        console.log(target,uri);
+        var h = $("#SiteMenu").height() + menu.height() + 20;
+        $.scrollTo($(uri),400,{
+            offset: {left:0,top:-h}
+        })
+        // console.log('scrolll',$(uri));
+        return false;
+    }
+
+    if (titleActive){
+        return false;
+    }else if (!titleActive){
+        menu.find('.active').removeClass('active');
+        setActiveTab(menuId,id);
+        $(this).add(parentTitles).addClass('active');
+        if (target=="window"){
+            window.location.href = uri;
+        }else{
+            LoadingContent(target,uri);
+        }
+    }        
+    animateMenuV2(menu);
+}
+function dropdownClick(e){
+    console.log(e.target);
+    var tab = $(this).closest('.tab');
+    var underline = tab.children(".underline");
+    var dropdownChild = tab.children(".dropDown"), showNow = !dropdownChild.hasClass('active');
+    var dropdownChildren = tab.find(".dropDown");
+    var parentDropDowns = tab.parents('.dropDown');
+    var menu = tab.closest(".menuBar");
+    console.log('dropdownClick',tab.attr('id'),parentDropDowns);
     if (showNow){
         $(".underline").removeClass('hover');
-        // $(".dropDown").not(parentDropDowns).removeClass('active');
         underline.addClass("hover");
-        dropdown.addClass("active");
+        dropdownChild.addClass("active");
     }else{
         underline.removeClass("hover active");
-        dropdown.removeClass("active");
+        dropdownChildren.removeClass("active");
     }
     animateMenuV2(menu);
 }
