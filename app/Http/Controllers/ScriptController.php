@@ -211,6 +211,7 @@ class ScriptController extends Controller
             }elseif ($result === true){
                 return listReturn("checkmark",$request->path());
             }else{
+                Log::info($result,['location'=>'ScriptController 214']);
                 return $result;
             }
         }
@@ -231,6 +232,7 @@ class ScriptController extends Controller
             }elseif ($result === true){
                 return listReturn("checkmark",$request->path());
             }else{
+                Log::info($result,['location'=>'ScriptController 235']);
                 return $result;
             }
         }
