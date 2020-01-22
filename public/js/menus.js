@@ -22,10 +22,11 @@ function initializeNewMenus(){
     var Dropdowns = MenuItems.filter(function(){
         return $(this).children('.dropDown').length > 0;
     })
-    MenuItems.on("touchstart",function(e){
-        var t = $(e.target), target = t.children('.title');
+    MenuItems.children('.title').on("touchstart",function(e){
+        var title = $(e.target);
         e.preventDefault();
-        target.click();
+        title.click();
+        alert(title.closest('.tab').attr('id'));
     })
 
     Dropdowns.hover(menuMouseEnter,menuMouseLeave);
