@@ -20,6 +20,8 @@ class Kernel extends HttpKernel
         \Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,
         \App\Http\Middleware\TrustProxies::class,
         \App\Http\Middleware\GaeProxyIp::class,
+        \App\Http\Middleware\GaeRedirectToHttps::class,
+        \App\Http\Middleware\GaeSetHstsHeader::class,
     ];
 
     /**

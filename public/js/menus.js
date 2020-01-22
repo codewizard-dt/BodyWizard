@@ -150,14 +150,14 @@ function animateMenuV2(menuID){
         var rect = activeDD[0].getBoundingClientRect(), w = $("body").width();
         if (rect.width != 0){
             if (w - rect.right < 10){
-                console.log('left',activeDD,rect,$('body').width());
+                // console.log('left',activeDD,rect,$('body').width());
                 $(activeDD[0]).addClass('shiftLeft');
-                alert('shift left');
+                // alert('shift left');
             }
             if (rect.left < 10){
-                console.log('right',activeDD,rect,$('body').width());
+                // console.log('right',activeDD,rect,$('body').width());
                 $(activeDD[0]).addClass('shiftRight');
-                alert('shift right');
+                // alert('shift right');
             }            
         }
     }
