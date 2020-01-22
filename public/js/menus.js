@@ -23,9 +23,9 @@ function initializeNewMenus(){
         return $(this).children('.dropDown').length > 0;
     })
     MenuItems.on("touchstart",function(e){
-        alert(e.target);
+        var t = $(e.target), target = t.children('.title');
         e.preventDefault();
-        $(e.target).find('.title').click();
+        target.click();
     })
 
     Dropdowns.hover(menuMouseEnter,menuMouseLeave);
@@ -147,15 +147,17 @@ function animateMenuV2(menuID){
 
     if (activeDD.length > 0){
         var rect = activeDD[0].getBoundingClientRect(), w = $("body").width();
-        if (w - rect.right < 10){
-            // console.log(rect,$('body').width());
-            console.log('left',activeDD,rect,$('body').width());
-            activeDD.addClass('shiftLeft')
-        }
-        if (rect.left < 10){
-            // console.log(rect,$('body').width());
-            console.log('right',activeDD,rect,$('body').width());
-            activeDD.addClass('shiftRight')
+        if (rect.width != 0){
+            if (w - rect.right < 10){
+                // console.log(rect,$('body').width());
+                console.log('left',activeDD,rect,$('body').width());
+                activeDD.addClass('shiftLeft')
+            }
+            if (rect.left < 10){
+                // console.log(rect,$('body').width());
+                console.log('right',activeDD,rect,$('body').width());
+                activeDD.addClass('shiftRight')
+            }            
         }
     }
 }
