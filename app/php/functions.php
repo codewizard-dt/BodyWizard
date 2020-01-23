@@ -34,8 +34,8 @@ function getPractice($practiceId){
 }
 function reportError($exception,$location){
   if (isset($_SERVER['GAE_SERVICE'])) {
-    $event = new ReportedErrorEvent;
-    $event->message = $exception;
+    $event = new ReportedErrorEvent();
+    $event->setMessage = $exception;
     $project = app('GoogleErrors')->projectName('bodywizard');
     app('GoogleErrors')->reportErrorEvent($project,$event);
   }else{
