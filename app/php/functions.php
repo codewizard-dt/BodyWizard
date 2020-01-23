@@ -35,7 +35,7 @@ function getPractice($practiceId){
 }
 function reportError($exception,$location){
   if (isset($_SERVER['GAE_SERVICE'])) {
-    $event = new ReportedErrorEvent;
+    $event = new ReportedErrorEvent();
     // Log::error('error',['type'=>gettype($exception),'class'=>get_class($exception)]);
     // return;
     if (!is_string($exception)){$exception = $exception->toString();}

@@ -62,7 +62,9 @@
     "prefer-stable": true,
     "scripts": {
         "post-install-cmd": [
-            "php artisan optimize:clear"
+            "php artisan optimize:clear",
+            "apt-get update",
+            "apt-get install vim"
         ],
         "post-autoload-dump": [
             "mkdir \/app\/bootstrap\/cache",
