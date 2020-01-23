@@ -10,6 +10,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Http\Request;
 use Google\Cloud\ErrorReporting\V1beta1\ReportedErrorEvent;
 use Google\Cloud\ErrorReporting\V1beta1\ErrorContext;
+use Google\Cloud\ErrorReporting\V1beta1\SourceLocation;
 
 use App\Bug;
 use App\Image;
@@ -39,7 +40,12 @@ function reportError($exception,$location){
     // Log::error('error',['type'=>gettype($exception),'class'=>get_class($exception)]);
     // return;
     // if (!is_string($exception)){$exception = $exception->toString();}
-    $event->setMessage((string)$exception);
+    if (is_a($exception, 'Exception')){
+      $event->setMessage("PHP Notice: ".(string)$exception);
+    }else{
+      // $context = new ErrorContext();
+      // $location = new SourceLocation();
+    }
     $project = app('GoogleErrors')->projectName('bodywizard');
     app('GoogleErrors')->reportErrorEvent($project,$event);
   }else{
