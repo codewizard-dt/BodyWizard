@@ -36,12 +36,14 @@ function getPractice($practiceId){
 function reportError($exception,$location){
   if (isset($_SERVER['GAE_SERVICE'])) {
     $event = new ReportedErrorEvent;
-    if (!is_string($exception)){$exception = json_encode($exception);}
+    // Log::error('error',['type'=>gettype($exception),'class'=>get_class($exception)]);
+    // return;
+    if (!is_string($exception)){$exception = $exception->toString();}
     $event->setMessage($exception);
     $project = app('GoogleErrors')->projectName('bodywizard');
     app('GoogleErrors')->reportErrorEvent($project,$event);
   }else{
-    Log::error($exception,['location'=>$location]);
+    Log::error($exception,['location'=>$location,'type'=>gettype($exception),'class'=>get_class($exception)]);
   }
 }
 
