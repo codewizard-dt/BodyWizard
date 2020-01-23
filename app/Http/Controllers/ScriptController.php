@@ -223,8 +223,8 @@ class ScriptController extends Controller
             $class = "App\\$model";
             $existingInstance = $class::find($uid);
 
-            $exception = new \Exception('big test');
-            reportError($exception,'TEST TES TEST');
+            // $exception = new \Exception('big test');
+            // reportError($exception,'TEST TES TEST');
 
             $result = $this->saveModel($model, $existingInstance, $request);
 

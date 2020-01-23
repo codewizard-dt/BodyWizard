@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
 use Illuminate\Http\Request;
 use Google\Cloud\ErrorReporting\V1beta1\ReportedErrorEvent;
+use Google\Cloud\ErrorReporting\V1beta1\ErrorContext;
 
 use App\Bug;
 use App\Image;
@@ -34,7 +35,7 @@ function getPractice($practiceId){
 }
 function reportError($exception,$location){
   if (isset($_SERVER['GAE_SERVICE'])) {
-    $event = new ReportedErrorEvent();
+    $event = new ReportedErrorEvent;
     if (!is_string($exception)){$exception = json_encode($exception);}
     $event->setMessage($exception);
     $project = app('GoogleErrors')->projectName('bodywizard');
