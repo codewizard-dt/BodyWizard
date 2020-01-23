@@ -68,9 +68,7 @@
             "mkdir \/app\/bootstrap\/cache",
             "chmod -R 755 \/app\/bootstrap\/cache",
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
-            "@php artisan package:discover --ansi",
-            "apt-get update",
-            "apt-get install vim"
+            "@php artisan package:discover --ansi"
         ],
         "post-root-package-install": [
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
