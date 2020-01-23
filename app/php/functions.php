@@ -38,8 +38,8 @@ function reportError($exception,$location){
     $event = new ReportedErrorEvent();
     // Log::error('error',['type'=>gettype($exception),'class'=>get_class($exception)]);
     // return;
-    if (!is_string($exception)){$exception = $exception->toString();}
-    $event->setMessage($exception);
+    // if (!is_string($exception)){$exception = $exception->toString();}
+    $event->setMessage((string)$exception);
     $project = app('GoogleErrors')->projectName('bodywizard');
     app('GoogleErrors')->reportErrorEvent($project,$event);
   }else{
