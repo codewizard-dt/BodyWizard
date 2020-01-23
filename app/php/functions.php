@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
 use Illuminate\Http\Request;
+use Google\Cloud\ErrorReporting\V1beta1\ReportedErrorEvent;
 
 use App\Bug;
 use App\Image;
@@ -19,19 +20,27 @@ function listReturn($requestStatus, $url='not given'){
   if (is_array($requestStatus)){
     $requestStatus = json_encode($requestStatus);
   }
-  Log::info($requestStatus);
   $withLists = [
     'message'=> $requestStatus,
     'url'=> $url,
     'uidList' => session('uidList'),
     'tabList' => session('CurrentTabs')
   ];
-  // Log::info($withLists, ['location'=>'functions.php 25']);
   return $withLists;
 }
 function getPractice($practiceId){
   $practice = Practice::where('practice_id',$practiceId)->get();
   return $practice;
+}
+function reportError($exception,$location){
+  if (isset($_SERVER['GAE_SERVICE'])) {
+    $event = new ReportedErrorEvent;
+    $event->exception = $exception;
+    $project = app('GoogleErrors')->projectName('bodywizard');
+    app('GoogleErrors')->reportErrorEvent($project,$event);
+  }else{
+    Log::error($exception,['location'=>$location]);
+  }
 }
 
 // String related functions

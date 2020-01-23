@@ -32,7 +32,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        //
         // ELOQUENT MODEL EVENTS
             Message::creating(function($model){$model->status = $model->defaultStatus();});
             Patient::created(function($model){

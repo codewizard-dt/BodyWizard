@@ -209,7 +209,8 @@ function saveModel(includeInvisible = false){
 			var u = modal.find(".username"), e = modal.find(".email_address"), p = modal.find(".phone_number");
 			if (!finalizePhone(p) || !finalizeEmail(e) || !finalizeUsername(u)){return false;}
 			var userid = $(".optionsNav").find(".name").data('userid');
-			if (modal.find("#NewUserRegistration").length > 0){model = 'User';uid = userid;}
+			model = 'User';
+			uid = userid;
 		}
 
 		var method = modal.hasClass("createNew") ? "POST" : "PATCH",

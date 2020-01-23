@@ -10,7 +10,7 @@ use Google\Cloud\Kms\V1\KeyManagementServiceClient;
 use Google\Cloud\Kms\V1\KeyRing;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-
+use Google\Cloud\ErrorReporting\V1beta1\ReportErrorsServiceClient;
 
 class EstablishGoogleServices extends ServiceProvider
 {
@@ -35,14 +35,18 @@ class EstablishGoogleServices extends ServiceProvider
             return $calendar;
         });
         app()->singleton('GoogleKMS',function(){
-            $client = app('GoogleClient');
-            $client->addScope("https://www.googleapis.com/auth/cloudkms");
+            // $client = app('GoogleClient');
+            // $client->addScope("https://www.googleapis.com/auth/cloudkms");
             // $auth = json_decode(Storage::disk('local')->get('google/full-admin-key.json'),true);
             $auth = json_decode(file_get_contents(config('google.key_file_location')),true);
             $kms = new KeyManagementServiceClient([
                 'credentials' => $auth
             ]);
             return $kms;
+        });
+        app()->singleton('GoogleErrors',function(){
+            $client = new ReportErrorsServiceClient();
+            return $client;
         });
     }
 

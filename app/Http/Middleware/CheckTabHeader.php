@@ -17,9 +17,9 @@ class CheckTabHeader
     public function handle($request, Closure $next)
     {
         $headers = getallheaders();
-        Log::info($headers,['location'=>'checktabheader.php']);
+        // Log::info($headers,['location'=>'checktabheader.php']);
         if (isset($headers['X-Current-Tabs'])){
-            Log::info($headers['X-Current-Tabs'],['location'=>'TABS! checktabheader.php']);
+            // Log::info($headers['X-Current-Tabs'],['location'=>'TABS! checktabheader.php']);
             $currentTabs = json_decode($headers['X-Current-Tabs'],true);
             $tabList = (session('CurrentTabs') == null) ? [] : session('CurrentTabs');
             foreach ($currentTabs as $menu => $tab){
@@ -28,7 +28,7 @@ class CheckTabHeader
             session(['CurrentTabs'=>$tabList]);
         }
         if (isset($headers['X-Current-Uids']) && $headers['X-Current-Uids'] != 'null'){
-            Log::info($headers['X-Current-Uids'],['location'=>'UIDS! checktabheader.php']);
+            // Log::info($headers['X-Current-Uids'],['location'=>'UIDS! checktabheader.php']);
             $currentUids = json_decode($headers['X-Current-Uids'],true);
             $uidList = (session('uidList') == null) ? [] : session('uidList');
             foreach ($currentUids as $model => $id){

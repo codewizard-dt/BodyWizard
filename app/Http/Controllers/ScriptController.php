@@ -22,6 +22,9 @@ use App\Events\OutgoingMessage;
 use App\Events\AppointmentSaved;
 use App\Events\AppointmentCancelled;
 use App\Events\BugReported;
+use Google\Cloud\ErrorReporting\V1beta1\ReportErrorsServiceClient;
+use Google\Cloud\ErrorReporting\V1beta1\ReportedErrorEvent;
+
 
 class ScriptController extends Controller
 {
@@ -211,14 +214,17 @@ class ScriptController extends Controller
             }elseif ($result === true){
                 return listReturn("checkmark",$request->path());
             }else{
-                Log::info($result,['location'=>'ScriptController 214']);
-                return $result;
+                Log::error($result,['location'=>'ScriptController 214']);
+                return listReturn("error",$request->path());
             }
         }
         public function UpdateModel($model, $uid, Request $request){
             // include_once app_path("php/functions.php");
             $class = "App\\$model";
             $existingInstance = $class::find($uid);
+
+            $exception = new \Exception('big test');
+            reportError($exception,'TEST TES TEST');
 
             $result = $this->saveModel($model, $existingInstance, $request);
 
@@ -232,7 +238,8 @@ class ScriptController extends Controller
             }elseif ($result === true){
                 return listReturn("checkmark",$request->path());
             }else{
-                Log::info($result,['location'=>'ScriptController 235']);
+                reportError($result,'ScriptController 235');
+                // Log::error($result,['location'=>'ScriptController 235']);
                 return $result;
             }
         }
@@ -240,6 +247,7 @@ class ScriptController extends Controller
             $practice = Practice::getFromSession();
             $models = strtolower(plural($model));
             $columns = isset($request->columnObj) ? $request->columnObj : [];
+            Log::info($instance);
             $trackChanges = usesTrait($instance,"TrackChanges");
 
             if ($trackChanges && $request->isMethod('patch')){
