@@ -209,8 +209,8 @@ function saveModel(includeInvisible = false){
 			var u = modal.find(".username"), e = modal.find(".email_address"), p = modal.find(".phone_number");
 			if (!finalizePhone(p) || !finalizeEmail(e) || !finalizeUsername(u)){return false;}
 			var userid = $(".optionsNav").find(".name").data('userid');
-			// model = 'User';
-			// uid = userid;
+			model = 'User';
+			uid = userid;
 		}
 
 		var method = modal.hasClass("createNew") ? "POST" : "PATCH",
@@ -272,8 +272,11 @@ function saveModel(includeInvisible = false){
 					$.each(data['errors'],function(attr,message){
 						str.push(message);
 					})
-					$("#Error").find(".message").html(str.join("<br>"));
+					$("#Error").find(".message").html("<h3>Server Error</h3>"+str.join("<br>"));
 					blurTopMost("#Error");
+				}else{
+					$("#Error").find(".message").html("<h3>Server error</h3><div>Apologies, there was an unspecified error in our server.</div>");
+					blurTopMost("#Error");					
 				}
 			}
 		},

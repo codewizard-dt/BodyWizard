@@ -34,22 +34,27 @@ function getPractice($practiceId){
   $practice = Practice::where('practice_id',$practiceId)->get();
   return $practice;
 }
-function reportError($exception,$location){
+function reportError($exception,$location=null){
   if (isset($_SERVER['GAE_SERVICE'])) {
     $event = new ReportedErrorEvent();
-    // Log::error('error',['type'=>gettype($exception),'class'=>get_class($exception)]);
-    // return;
-    // if (!is_string($exception)){$exception = $exception->toString();}
     if (is_a($exception, 'Exception')){
       $event->setMessage("PHP Notice: ".(string)$exception);
     }else{
       // $context = new ErrorContext();
       // $location = new SourceLocation();
+      // $location->setFunctionName( [UPDATE] );
+      // $location->setLineNumber( [UPDATE] );
+      // $location->setFilePath( [UPDATE] );
+      // $context->setReportLocation($location);
     }
     $project = app('GoogleErrors')->projectName('bodywizard');
     app('GoogleErrors')->reportErrorEvent($project,$event);
   }else{
-    Log::error($exception,['location'=>$location,'type'=>gettype($exception),'class'=>get_class($exception)]);
+    if ($location){
+      Log::error($exception,['location'=>$location,'class'=>get_class($exception)]);
+    }else{
+      Log::error($exception);
+    }
   }
 }
 

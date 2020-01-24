@@ -1,17 +1,3 @@
-:root {
-    --main-color:#06c;
-    --purple:rgb(105,12,104);
-    --purple10:rgba(105,12,104,0.1);
-    --purple30:rgba(105,12,104,0.3);
-    --purple50:rgba(105,12,104,0.5);
-    --purple70:rgba(105,12,104,0.7);
-    --yellow:rgb(240,154,53);
-    --yellow10:rgba(240,154,53,0.1);
-    --yellow30:rgba(240,154,53,0.3);
-    --yellow50:rgba(240,154,53,0.5);
-    --yellow70:rgba(240,154,53,0.7);
-    --pink:rgb(234,78,80);
-}
 
 input, select, textarea {
     vertical-align: top;

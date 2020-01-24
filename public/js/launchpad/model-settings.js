@@ -178,11 +178,6 @@ function saveSettings(){
 					$("#Error").find(".message").text("Error saving settings");
 					blurTopMost("#Error");
 				}
-			},
-			error:function(e){
-				console.log(e);
-				$("#Error").find(".message").text("Server Error");
-				blurTopMost("#Error");
 			}
 		})
 	}else{

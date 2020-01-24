@@ -3,11 +3,9 @@ $(".jump").on("click",function(){
     $.scrollTo(target);
 });
 
-var systemModalList = ['Confirm','Warn','Error','Feedback','Refresh','Notification'],
-    systemModals = $('#Confirm, #Warn, #Error, #Feedback, #Refresh, #Notification'), usertype,
+var systemModalList = ['Confirm','Warn','Error','Feedback','Refresh','Notification','ErrorMessageFromClient'],
+    systemModals = $('#Confirm, #Warn, #Error, #Feedback, #Refresh, #Notification, #ErrorMessageFromClient'), usertype,
     defaultTemplateInfo;
-
-
 
 (function($) {
     $.sanitize = function(input) {
@@ -841,6 +839,8 @@ function unblurElement(elem, callback = null){
 }
 function blurTopMost(modal){
     var ele = $(".blur").last().children().first();
+    console.log(ele,$(".blur").last(),$(".blur").last().children());
+    // return;
     if (ele.length == 0){ele = $("body");}
     else if (ele.attr('id') == "loading"){ele = $(".blur").last().parent();}
     if (ele.is(modal)){
@@ -852,11 +852,14 @@ function blurTopMost(modal){
         },100);
         return;
     }
+    // console.log(ele,modal);
     blurElement(ele,modal);
 }
-function unblurTopMost(){
+function unblurTopMost(callback = null){
+    if (callback && typeof callback !== 'function'){callback = null;}
     var ele = $(".blur").last().parent();
-    unblurElement(ele);
+    // console.log(ele);
+    unblurElement(ele, callback);
 }
 function unblurAll(){
     var clearBlurs = setInterval(function(){
@@ -1553,21 +1556,22 @@ function resizeSplits(){
         rightOnly.addClass('rightOnly');
     }
 }
-function resizeFcHeaders(){
+function resizeFcCalendar(){
     $(".fc-toolbar").each(function(){
-        var tb = $(this), fc = tb.closest('.fc'), w = tb.width(), em = getEm(), realWidth = tb[0].scrollWidth, wLeft = tb.find('.fc-left')[0].scrollWidth, wCenter = tb.find('.fc-center')[0].scrollWidth, wRight = tb.find('.fc-right')[0].scrollWidth, wTotal = wLeft + wCenter + wRight, changed = false;
+        var toolbar = $(this), fullCal = toolbar.closest('.fc'), w = toolbar.width(), em = getEm(), realWidth = toolbar[0].scrollWidth, wLeft = toolbar.find('.fc-left')[0].scrollWidth, wCenter = toolbar.find('.fc-center')[0].scrollWidth, wRight = toolbar.find('.fc-right')[0].scrollWidth, wTotal = wLeft + wCenter + wRight, changed = false;
+        if(toolbar.find('.fc-center').html() == ""){toolbar.find('.fc-center').css({padding:"0 1em"})}
         while (realWidth - w > 1){
-            fc.css({fontSize:"-=0.05em"});
-            w = tb.width(); realWidth = tb[0].scrollWidth;
+            fullCal.css({fontSize:"-=0.05em"});
+            w = toolbar.width(); realWidth = toolbar[0].scrollWidth;
             changed = true;
         }
-        while (wTotal + (3*em) < w && em > getEm(fc)){
-            fc.css({fontSize:"+=0.05em"});
-            w = tb.width(); wLeft = tb.find('.fc-left').width(); wCenter = tb.find('.fc-center').width(); wRight = tb.find('.fc-right').width(); wTotal = wLeft + wCenter + wRight;        
+        while (wTotal + (3*em) < w && em > getEm(fullCal)){
+            fullCal.css({fontSize:"+=0.05em"});
+            w = toolbar.width(); wLeft = toolbar.find('.fc-left').width(); wCenter = toolbar.find('.fc-center').width(); wRight = toolbar.find('.fc-right').width(); wTotal = wLeft + wCenter + wRight;        
             changed = true;
         }
         if (changed){
-            $(window).resize();
+            calendar.updateSize();
         }
     })
 }
@@ -1671,7 +1675,7 @@ function resizeElements(){
         resizeQuotes();
         resizeMobileMenuAndFooter();
         resizeFooterPadding();
-        resizeFcHeaders();
+        resizeFcCalendar();
         optionsNavOverflowCheck();
     },100)
 }

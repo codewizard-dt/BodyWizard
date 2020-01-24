@@ -184,7 +184,7 @@ function followLink(){
         hasDropdown = (tab.children('.dropDown').length === 1), titleActive = $(this).hasClass("active"),
         parentTitles = getParentTitles($(this)), dropdownActive = (hasDropdown) ? dropdown.hasClass("active") : null;
 
-    console.log('followLink',id);
+    // console.log('followLink',id);
     if ((tab.is("#booknow") && uri == '#createAppointment') 
         || (uri == '' && target != "window")
         || (tab.is("#lock-ehr"))
@@ -233,14 +233,7 @@ function followLink(){
     animateMenuV2(menu);
 }
 function dropdownClick(e){
-    console.log(e.target);
-    var tab = $(this).closest('.tab');
-    var underline = tab.children(".underline");
-    var dropdownChild = tab.children(".dropDown"), showNow = !dropdownChild.hasClass('active');
-    var dropdownChildren = tab.find(".dropDown");
-    var parentDropDowns = tab.parents('.dropDown');
-    var menu = tab.closest(".menuBar");
-    console.log('dropdownClick',tab.attr('id'),parentDropDowns);
+    var tab = $(this).closest('.tab'), underline = tab.children(".underline"), dropdownChild = tab.children(".dropDown"), showNow = !dropdownChild.hasClass('active'), dropdownChildren = tab.find(".dropDown"), parentDropDowns = tab.parents('.dropDown'), menu = tab.closest(".menuBar");
     if (showNow){
         $(".underline").removeClass('hover');
         underline.addClass("hover");

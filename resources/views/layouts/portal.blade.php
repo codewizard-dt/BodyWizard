@@ -13,6 +13,9 @@
         $menuName = "PortalPatient";
         $items = ['booknow','divide','logout'];
     }
+    $form = new \App\Form;
+    $optionsEmail = ['name'=>'email','placeholder'=>'Your Email Address'];
+    $optionsMsg = ['name'=>'errorMsg','placeholder'=>'Please include any relevant details, as well as any other way we can help.'];
 ?>
 <html>
     <head>
@@ -42,8 +45,21 @@
             <div id="Error" class='prompt'>
                 <div class='message'></div>
                 <div class='options'>
-                    <div class='button small submit pink'>send us an error report</div>
+                    <div class='button small openErrorMsg pink'>send us a message</div>
                     <div class='button small cancel'>dismiss</div>
+                </div>
+            </div>
+            <div id="ErrorMessageFromClient" class='prompt'>
+                <div class="message">
+                    <h2 class="purple">Send Us a Message</h2>
+                    <div>
+                        {{$form->answerDisp('text',$optionsEmail)}}
+                        {{$form->answerDisp('text box',$optionsMsg)}}
+                    </div>
+                </div>
+                <div class="options">
+                    <div class="button small pink sendErrorMsg">send</div>
+                    <div class="button small cancel">cancel</div>
                 </div>
             </div>
             <div id="Feedback" class='prompt'>

@@ -1,26 +1,26 @@
 var notify, notificationCheck, notificationCategory = 'all', clickWhenFinished = null, multiBtns;
 $(document).ready(function () {
-	checkNotifications();
-    // notificationCheck = setInterval(checkNotifications,1000*60);
-    var menu = $("#NavBar").find('.siteMenu'), divide = menu.find(".divide");
-    notify = $("#Notifications");
-    notify.insertBefore(divide);
-    // notify.on('click','.open, .cancel',toggleNotifications);
-    // notify.on('click','li',showFullNotification);
-    notify.on('click','.title',showFullNotification);
-    notify.on('click','.selectMultiple',toggleSelectMode);
-    notify.on('click','.selectAll',toggleSelectAll);
-    notify.on('click','.markMultiAsUnread',markMultiAsUnread);
-    notify.on('click','.markMultiAsRead',markMultiAsRead);
-    notify.on('click','.deleteMulti',deleteMulti);
+	//NOTIFICATIONS
+		checkNotifications();
+	    // notificationCheck = setInterval(checkNotifications,1000*60);
+	    var menu = $("#NavBar").find('.siteMenu'), divide = menu.find(".divide");
+	    notify = $("#Notifications");
+	    notify.insertBefore(divide);
+	    notify.on('click','.title',showFullNotification);
+	    notify.on('click','.selectMultiple',toggleSelectMode);
+	    notify.on('click','.selectAll',toggleSelectAll);
+	    notify.on('click','.markMultiAsUnread',markMultiAsUnread);
+	    notify.on('click','.markMultiAsRead',markMultiAsRead);
+	    notify.on('click','.deleteMulti',deleteMulti);
 
-    $("#Notification").on('click','.viewModel',showRelatedModel);
-    $("#Notification").on('click','.clickTab',clickTab);
-    $("#Notification").on('click','.markAsUnread',markNotificationAsUnread);
-    $("#Notification").on('click','.delete',deleteNotification);
-    multiBtns = notify.find(".multiBtns");
-    // multiBtns = notify.find(".multiBtns");
-    multiBtns.hide();
+	    $("#Notification").on('click','.viewModel',showRelatedModel);
+	    $("#Notification").on('click','.clickTab',clickTab);
+	    $("#Notification").on('click','.markAsUnread',markNotificationAsUnread);
+	    $("#Notification").on('click','.delete',deleteNotification);
+	    multiBtns = notify.find(".multiBtns");
+	    multiBtns.hide();
+	// ERROR MESSAGES
+		$('.openErrorMsg').on('click',openErrorMsg);
 });
 
 function clickTab(){
@@ -227,4 +227,8 @@ function toggleSelectMode(){
 	    $("#Notifications").find('.title').filter(".active").removeClass('active');
 	    selectBtn.text('select');
 	}
+}
+function openErrorMsg(){
+	var parent = $(this).closest('.blur').parent();
+	blurElement(parent,"#ErrorMessageFromClient");
 }

@@ -1510,13 +1510,18 @@ select {
   --main-color: #06c;
   --purple: rgb(105, 12, 104);
   --purple5: rgba(105, 12, 104, 0.05);
+  --purple10: rgba(105, 12, 104, 0.1);
   --purple15: rgba(105, 12, 104, 0.15);
+  --purple30: rgba(105, 12, 104, 0.3);
+  --purple50: rgba(105, 12, 104, 0.5);
+  --purple70: rgba(105, 12, 104, 0.7);
   --purple90: rgba(105, 12, 104, 0.9);
   --yellow: rgb(240, 154, 53);
   --yellow10: rgba(240, 154, 53, 0.1);
   --yellow20: rgba(240, 154, 53, 0.2);
   --yellow30: rgba(240, 154, 53, 0.3);
   --yellow40: rgba(240, 154, 53, 0.4);
+  --yellow50: rgba(240, 154, 53, 0.5);
   --yellow70: rgba(240, 154, 53, 0.7);
   --pink: rgb(234, 78, 80);
   --pink10: rgba(234, 78, 80, 0.1);
@@ -2063,7 +2068,7 @@ a:hover {
   width: 3em;
   height: 3em;
   top: 50%;
-  left: 52%;
+  left: 50%;
   border-radius: 5px;
   -webkit-transform: translate(-50%, -50%);
           transform: translate(-50%, -50%);
@@ -2077,7 +2082,7 @@ a:hover {
   width: 3em;
   height: 3em;
   top: 50%;
-  left: 52%;
+  left: 50%;
   border-radius: 5px;
   -webkit-transform: translate(-50%, -50%);
           transform: translate(-50%, -50%);

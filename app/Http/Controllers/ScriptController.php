@@ -222,10 +222,6 @@ class ScriptController extends Controller
             // include_once app_path("php/functions.php");
             $class = "App\\$model";
             $existingInstance = $class::find($uid);
-
-            // $exception = new \Exception('big test');
-            // reportError($exception,'TEST TES TEST');
-
             $result = $this->saveModel($model, $existingInstance, $request);
 
             if ($model == 'Appointment' && $result === true){
@@ -240,7 +236,7 @@ class ScriptController extends Controller
             }else{
                 reportError($result,'ScriptController 235');
                 // Log::error($result,['location'=>'ScriptController 235']);
-                return $result;
+                return ['errors' => ["Error saving $model details.","System admin has been notified."]];
             }
         }
         public function saveModel($model, $instance, Request $request){

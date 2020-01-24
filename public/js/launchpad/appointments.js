@@ -468,13 +468,15 @@ function refreshAppointmentFeed(info){
 		var feed = info;
 	}
 	if (feed.appointments == undefined){return;}
-	var appts = feed.appointments, anon = feed.anon;
+	var appts = feed.appointments;
 	if ($('.calendar').length == 1){
 		calendar.getEventSourceById('appointments').remove();
 		calendar.addEventSource({events:appts,id:'appointments'});		
 	}
-	$("#AnonFeed").data('schedule',anon);
+	console.log('did it');
 	$("#AppointmentsFullCall").data('schedule',appts);
+	var anon = (feed.anon != undefined) ? feed.anon : null;
+	if (anon){$("#AnonFeed").data('schedule',anon);}
 }
 function checkFormStatus(){
 	var formInfo = $(this).closest('.checkFormStatus');
