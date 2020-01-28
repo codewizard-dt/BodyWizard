@@ -116,7 +116,7 @@ class RefreshTables extends Model
                      ->create();
             return true;
         }catch(\Exception $e){
-            Log::info($e);
+            reportError($e);
             return false;
         }
     }

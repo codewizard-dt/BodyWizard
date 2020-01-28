@@ -51,7 +51,7 @@ function reportError($exception,$location=null){
     app('GoogleErrors')->reportErrorEvent($project,$event);
   }else{
     if ($location){
-      Log::error($exception,['location'=>$location,'class'=>get_class($exception)]);
+      Log::error($exception,['location'=>$location]);
     }else{
       Log::error($exception);
     }

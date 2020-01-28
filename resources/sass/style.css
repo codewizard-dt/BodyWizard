@@ -15,6 +15,8 @@
     --yellow40:rgba(240,154,53,0.4);
     --yellow50:rgba(240,154,53,0.5);
     --yellow70:rgba(240,154,53,0.7);
+    --yellow80:rgba(240,154,53,0.8);
+    --yellow90:rgba(240,154,53,0.9);
     --pink:rgb(234,78,80);
     --pink10:rgba(234,78,80,0.1);
     --pink30:rgba(234,78,80,0.3);
@@ -1255,9 +1257,10 @@ a:hover {color:var(--pink);}
 
 #Notifications .list{
     display: none;
-    /*max-height: calc(100vh - 7em);*/
+    max-height: 85vh;
     /*box-sizing: border-box;*/
-    /*overflow-y: auto;*/
+    overflow-y: auto;
+    padding:14px;
 }
 #Notifications .button{
     font-size: 0.7em;

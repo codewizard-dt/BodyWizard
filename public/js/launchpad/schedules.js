@@ -1,97 +1,8 @@
-$(document).ready(function(){
-	// var model = ($(".optionsNav").length > 0) ? $(".optionsNav").data('model') : "Practice",
-	// 	target = (model == "Practice") ? "body" : "#EditScheduleModal";
-	
-	// var uninitialized = filterUninitialized($("#AddTimeBlock, #EditTimeBlock, #AddTimeBlockBtn, #AddBreakBtn, #AddBreak, #EditBreak, #deleteBlockBtn, #deleteBreakBtn, #editBlockBtn, #editBreakBtn"));
-	
-	// if ($.inArray(model, ['StaffMember','Practice']) > -1){
-	// 	uninitialized.filter("#AddTimeBlock, #EditTimeBlock").find(".item").filter(function(){
-	// 		return $(this).find(".q").text() == "Services Offered" || $(this).data('type') == 'narrative';
-	// 	}).hide();
-	// }
-
-	// uninitialized.filter("#AddTimeBlockBtn").on('click',function(){blurElement($(target),"#AddTimeBlock");});
-	// uninitialized.filter("#AddBreakBtn").on('click',function(){blurElement($(target),"#AddBreak");});
-	// uninitialized.filter("#AddTimeBlock, #AddBreak").on("click",'.submitForm',function(){
-	// 	var timeBlock = createTimeBlockObj($(this).closest('.modalForm'));
-	// 	if (timeBlock){
-	// 		addBlockToScheduleAndSave(timeBlock);
-	// 	}
-	// })
-	// uninitialized.filter("#AddTimeBlock, #AddBreak, #EditTimeBlock, #EditBreak").find('.submitForm').data('submission',false);
-	// uninitialized.filter("#EditTimeBlock, #EditBreak").on("click",'.submitForm',function(){
-	// 	var timeBlock = createTimeBlockObj($(this).closest('.modalForm')), blockNum = $(this).data('block');
-	// 	if (timeBlock){
-	// 		editBlockAndSave(timeBlock,blockNum);
-	// 	}
-	// })
-
-	// uninitialized.filter("#EditTimeBlock").find("h2").text("Edit Time Block");
-	// uninitialized.filter("#EditBreak").find("h2").text("Edit Break");
-	// uninitialized.filter("#deleteBlockBtn, #deleteBreakBtn").on('click',confirmDelete);
-	// uninitialized.filter("#editBlockBtn, #editBreakBtn").on('click',editBlock);
-	// attachConnectedModelInputs(uninitialized.filter("#AddTimeBlock"));
-	// attachConnectedModelInputs(uninitialized.filter("#EditTimeBlock"));
-
-
-	// var schedule = $("#CurrentSchedule").data('schedulearray'), scheduleTables = filterByData(".scheduleTable","activated",'undefined'), timeBlockRows = scheduleTables.find("tr").not('.head');
-	
-	// // timeBlockRows.on("click",function(){
-	// // 	console.log($(this));
-	// // })
-	    
-	//     // console.log(schedule);
-
- //    var miniCal = new FullCalendar.Calendar($("#miniSchedule")[0], {
- // 		plugins: ['dayGrid','list', 'timeGrid', 'interaction','moment'],
- //        header:{
- //            left:"",
- //            center:"",
- //            right:"",
- //        },
- //        height:"auto",
- //        allDaySlot:false,
-	//   	columnHeaderText: function(date) {
-	//     	if (date.getDay() === 0) {return 'Sunday';}
-	//     	else if (date.getDay() === 1) {return 'Monday';}
-	//     	else if (date.getDay() === 2) {return 'Tuesday';}
-	//     	else if (date.getDay() === 3) {return 'Wednesday';}
-	//     	else if (date.getDay() === 4) {return 'Thursday';}
-	//     	else if (date.getDay() === 5) {return 'Friday';}
-	//     	else if (date.getDay() === 6) {return 'Saturday';}
-	//   	},
- //        dateClick: function(info){
-	// 		console.log('Clicked on: ' + info.dateStr);
-	// 		console.log('Coordinates: ' + info.jsEvent.pageX + ',' + info.jsEvent.pageY);
-	// 		console.log('Current view: ' + info.view.type);
- //        },
- //        defaultView:"timeGridWeek",
- //        minTime:($("#miniSchedule").data('earliest') != "23:00:00") ? $("#miniSchedule").data('earliest') : "8:00:00",
- //        maxTime:($("#miniSchedule").data('latest') != "00:59:59") ? $("#miniSchedule").data('latest') : "17:00:00",
- // 		events: schedule,
- // 		eventColor: 'rgba(240,154,53,0.7)',
- // 		eventTimeFormat:
- // 		{  
- // 			hour: 'numeric',
- //  			minute: '2-digit',
-	// 		meridiem:'narrow'
-	// 	},
- // 		eventRender: function(info){
- // 			var blockNum = info.event.extendedProps.block, isBreak = info.event.extendedProps.break;
- // 			$(info.el).data('block',blockNum);
- // 			if (isBreak){$(info.el).addClass('breakTime');}
- // 		}
- // 	})
-	// var timeBlocks = filterUninitialized(".timeBlock");
-	// timeBlocks.hover(highlightTimeBlock,unhighlightTimeBlock);
-	// timeBlocks.on("click",editOrDelete);
-	// timeBlocks.data('initialized',true);
-})
 function initializeScheduleForms(){
 	var model = ($(".optionsNav").length > 0) ? $(".optionsNav").data('model') : "Practice",
 		target = (model == "Practice") ? "body" : "#EditScheduleModal";
 
-	var uninitialized = filterUninitialized($("#AddTimeBlock, #EditTimeBlock, #AddTimeBlockBtn, #AddBreakBtn, #AddBreak, #EditBreak, #deleteBlockBtn, #deleteBreakBtn, #editBlockBtn, #editBreakBtn"),true);
+	var uninitialized = filterUninitialized($("#AddTimeBlock, #EditTimeBlock, #AddTimeBlockBtn, #AddBreakBtn, #AddBreak, #EditBreak, #deleteBlockBtn, #deleteBreakBtn, #editBlockBtn, #editBreakBtn"));
 	
 	if ($.inArray(model, ['StaffMember','Practice']) > -1){
 		uninitialized.filter("#AddTimeBlock, #EditTimeBlock").find(".item").filter(function(){
@@ -175,7 +86,6 @@ function initializeScheduleForms(){
 	timeBlocks.hover(highlightTimeBlock,unhighlightTimeBlock);
 	timeBlocks.on("click",editOrDelete);
 	timeBlocks.data('initialized',true);
-
 }
 function highlightTimeBlock(){
 	var block = $(this).data('block'), matches = $(".timeBlock").filter(function(){return $(this).data('block') === block;});

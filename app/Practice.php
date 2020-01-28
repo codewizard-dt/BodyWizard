@@ -192,7 +192,7 @@ class Practice extends Model
             }
         }
         catch(\Exception $e){
-            Log::info($e);
+            reportError($e);
             $events = null;
         }
 
@@ -322,7 +322,7 @@ class Practice extends Model
             // Log::info($this);
             $this->save();
         }catch(Exception $e){
-            Log::info($e);
+            reportError($e);
         }
 
         return isset($e) ? $e : true;
@@ -362,7 +362,7 @@ class Practice extends Model
     	      $createdCalendar = $service->calendars->insert($calendar);
     	      $calendarId = $createdCalendar->getId();
     	    }catch(\Exception $e){
-    	      Log::info($e);
+              reportError($e);
     	    }
 
     	    return isset($e) ? $e : $calendarId;
@@ -382,7 +382,7 @@ class Practice extends Model
             try{
     	      $createdRule = $service->acl->insert($calId, $rule);
     	    }catch(\Exception $e){
-    	      Log::info($e);
+                reportError($e);
     	    }
     	    return isset($e) ? $e : $calId;
     	}
@@ -398,7 +398,7 @@ class Practice extends Model
     	      $watch = $service->events->watch($calendarId, $channel);
               $newConfig = ["id" => $watch->getId(), "expires" => $watch->getExpiration()];
     	    }catch (\Exception $e){
-    	      Log::info($e);
+              reportError($e);
     	    }
     	    return isset($e) ? $e : $newConfig;
     	}
@@ -428,7 +428,7 @@ class Practice extends Model
                 config(['database.connections.mysql.database' => $dbname]);
                 Artisan::call("migrate");
     	    }catch(\Exception $e){
-    	        Log::info($e);
+              reportError($e);
     	    }
 
     	    return isset($e) ? $e : true;
@@ -438,7 +438,7 @@ class Practice extends Model
             try{
                 Artisan::call("refresh:users $practiceId --factory");
             }catch(\Exception $e){
-                Log::info($e);
+                reportError($e);
             }
             return isset($e) ? $e : true;
         }
@@ -462,7 +462,7 @@ class Practice extends Model
     	    try{
     	      $key = $kms->createCryptoKey($keyRing, $keyName, $key);  
     	    }catch(\Exception $e){
-    	      Log::info($e);
+                reportError($e);
     	    }
     	    
     	    return isset($e) ? false : $key->getName();
@@ -473,7 +473,7 @@ class Practice extends Model
     	      $forms = json_decode(Storage::get('/basicEhr/forms.json'),true);
     	      DB::table('forms')->insert($forms);
     	    }catch(\Exception $e){
-    	      Log::info($e);
+                reportError($e);
     	    }
     	    return isset($e) ? $e : true;
     	}

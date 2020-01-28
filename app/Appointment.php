@@ -183,21 +183,15 @@ class Appointment extends Model
                     // Log::info($form->settings);
                     return $form->settings !== null 
                             && isset($form->settings['form_type'])
-                            && $form->settings['form_type'] == $usertype;
+                            && in_array($form->settings['form_type'], [$usertype,'any user type']);
                 });
             }else{
                 $forms = $service->forms;
             }
-            // Log::info("forms");
-            // Log::info($forms);
             $allForms = !isset($allForms) ? $forms : $allForms->merge($forms);
         }
         return $allForms;
     }
-    // public function sendConfirmation(){
-    //     $msg = new Message;
-    //     $msg->type = "Email";
-    // }
     public function services(){
         return $this->morphToMany('App\Service', 'serviceable');
     }
@@ -260,36 +254,38 @@ class Appointment extends Model
         $end = Carbon::parse($this->date_time)->addMinutes($this->duration);
 
         $services = $this->services;
-        $serviceNames = $services->map(function($service){
-            return $service->name;
-        })->toArray();
-
         $serviceDesc = $services->first()->description_calendar;
-        $serviceNames = implode(", ", $serviceNames);
-        $formArr = [];
-        foreach ($services as $service){
-            $forms = $service->forms->map(function($form){
-                return [
-                    'form_id' => $form->form_id,
-                    'name' => $form->form_name
-                ];
-            })->toArray();
-            $formArr = array_merge($formArr,$forms);
-        }
-
-        $attendees = $this->patients;
-        $attendeeArr = $attendees->map(function($attendee){
+        // $formArr = [];
+        // foreach ($services as $service){
+        //     $forms = $service->forms->map(function($form){
+        //         return [
+        //             'form_id' => $form->form_id,
+        //             'name' => $form->form_name
+        //         ];
+        //     })->toArray();
+        //     $formArr = array_merge($formArr,$forms);
+        // }
+        $formArr = $this->forms()->map(function($form){
             return 
             [
-                'displayName' => getNameFromUid("Patient",$attendee->id),
-                'email' => $attendee->userInfo->email
+                'form_id' => $form->form_id,
+                'name' => $form->form_name
+            ];
+        })->toArray();
+
+        // $attendees = $this->patients;
+        $attendeeArr = $this->patients->map(function($patient){
+            return 
+            [
+                'displayName' => $patient->name,
+                'email' => $patient->email
             ];
         })->toArray();
 
         $event = new \Google_Service_Calendar_Event([
             'start' => ['dateTime' => $start->toRfc3339String()],
             'end' => ['dateTime' => $end->toRfc3339String()],
-            'summary' => $serviceNames,
+            'summary' => $this->service_list,
             'description' => $serviceDesc,
             'attendees' => $attendeeArr,
             'location' => '1706 S Lamar Blvd',
@@ -311,7 +307,9 @@ class Appointment extends Model
                 $this->appt_link = $event->htmlLink;
                 $this->save();
             }
-            elseif ($method == 'PATCH'){$event = $calendar->events->patch($calendarId, $this->uuid, $event);}
+            elseif ($method == 'PATCH'){
+                $event = $calendar->events->patch($calendarId, $this->uuid, $event);
+            }
             return true;
         }catch(\Exception $e){
             return $e;
@@ -325,14 +323,17 @@ class Appointment extends Model
             $service->events->delete($calendarId, $eventId);
             return true;
         }catch(\Exception $e){
-            Log::info($e);
+            // Log::info($e);
+            reportError($e,'Appointment.php 329');
             return false;
         }
     }
     public function saveToFullCal($practiceId = null, $eventId = null){
-        $practice = isset($practiceId) ? Practice::find($practiceId) : Practice::getFromSession();
+        // $practice = isset($practiceId) ? Practice::find($practiceId) : Practice::getFromSession();
+        $practice = Practice::getFromSession();
         $calendarId = $practice->calendar_id;
-        $eventId = isset($eventId) ? $eventId : $this->uuid;
+        // $eventId = isset($eventId) ? $eventId : $this->uuid;
+        $eventId = $this->uuid;
         $cal = app("GoogleCalendar");
         $event = $cal->events->get($calendarId, $eventId);
 
@@ -427,14 +428,12 @@ class Appointment extends Model
                     return [
                         'form_id' => $form->form_id,
                         'name' => $form->form_name,
-                        // 'completed' => !($appt->requiresForm($form->form_id,'patient'))
                         'completed' => $form->checkApptFormStatus($appt,$patient)
                     ];
                 })->toArray();
                 $formArr = array_merge($formArr,$forms);
             }
             $arr = [
-                // 'services' => implode(", ",$appt->services->map(function($service){return getNameFromUid("Service",$service->id);})->toArray()),
                 'services' => implode(", ",$appt->services->map(function($service){return $service->name;})->toArray()),
                 'patients' => implode(", ",$appt->patients->map(function($patient){return getNameFromUid("Patient",$patient->id);})->toArray()),
                 'serviceIds' => $appt->services->modelKeys(),

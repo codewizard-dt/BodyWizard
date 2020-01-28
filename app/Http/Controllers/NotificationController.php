@@ -37,16 +37,8 @@ class NotificationController extends Controller
 	    		$notifications->markAsRead();
 	    	}    		
     	}catch(\Exception $e){
-            event(new BugReported(
-                [
-                    'description' => "Sending Notifications", 
-                    'details' => $e, 
-                    'category' => 'Messages', 
-                    'location' => 'Notification Controller',
-                    'user' => null
-                ]
-            ));
+            reportError($e,'NotificationController 40');
     	}
-    	return "checkmark";
+    	return view('portal.user.notifications');
     }
 }

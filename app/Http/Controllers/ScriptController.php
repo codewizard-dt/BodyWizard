@@ -243,7 +243,7 @@ class ScriptController extends Controller
             $practice = Practice::getFromSession();
             $models = strtolower(plural($model));
             $columns = isset($request->columnObj) ? $request->columnObj : [];
-            Log::info($instance);
+            // Log::info($instance);
             $trackChanges = usesTrait($instance,"TrackChanges");
 
             if ($trackChanges && $request->isMethod('patch')){

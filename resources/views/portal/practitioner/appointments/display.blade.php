@@ -41,10 +41,6 @@
                 <span class='value' id="PatientName"></span>
             </div>
             <div>
-                <span class="label">Practitioner:</span>
-                <span class='value' id="PractitionerName"></span>
-            </div>
-            <div>
                 <span class="label">Date + Time:</span>
                 <span class='value' id="ApptDateTime"></span>
             </div>
@@ -55,6 +51,10 @@
             <div>
                 <span class="label">Required Forms:</span>
                 <span class='value' id="FormInfo"></span>
+            </div>
+            <div>
+                <span class="label">Practitioner:</span>
+                <span class='value' id="PractitionerName"></span>
             </div>
         </div>
     </div>

@@ -72,7 +72,8 @@ class SettingsController extends Controller
 	    		$user->saveTrackingInfo($user, $changes, $request->getClientIp());
 	    		return "checkmark";
     		}catch(\Exception $e){
-    			Log::info($e);
+    			// Log::info($e);
+                reportError($e);
     			return $e;
     		}
     	}
@@ -111,7 +112,8 @@ class SettingsController extends Controller
                 $user->saveTrackingInfo($user, $changes, $request->getClientIp());
                 return "checkmark";
             }catch(\Exception $e){
-                Log::info($e);
+                // Log::info($e);
+                reportError($e);
                 return $e;
             }
         }

@@ -1,8 +1,8 @@
 var notify, notificationCheck, notificationCategory = 'all', clickWhenFinished = null, multiBtns;
 $(document).ready(function () {
 	//NOTIFICATIONS
-		checkNotifications();
-	    // notificationCheck = setInterval(checkNotifications,1000*60);
+		// checkNotifications();
+	    notificationCheck = setInterval(checkNotifications,3000*60);
 	    var menu = $("#NavBar").find('.siteMenu'), divide = menu.find(".divide");
 	    notify = $("#Notifications");
 	    notify.insertBefore(divide);
@@ -34,12 +34,24 @@ function checkNotifications(){
 	var update = filterUninitialized('.notificationUpdate');
 	if (update.length == 1){
 		$("#Notifications").find('.notificationUpdate').replaceWith(update);
+		updateNotificationList();
+		update.data('initialized',true);
+	}else{
+		notifyXhr = $.ajax({
+			url:'/notification-check',
+			success:function(info){
+				$(info).appendTo('body');
+				update = filterUninitialized('.notificationUpdate');
+				$("#Notifications").find('.notificationUpdate').replaceWith(update);
+				updateNotificationList();
+				update.data('initialized',true);
+			}
+		})
 	}
-	updateNotificationList();
-	update.data('initialized',true);
+
 }
 function updateNotificationList(){
-	var notifyXhr = undefined, selectMultiBtn = $("#Notifications").find(".selectMultiple");
+	var selectMultiBtn = $("#Notifications").find(".selectMultiple");
 
 	var unreadCount = $("#UnreadCount"), allCount = $("#Notifications").find('.title').length;
 	unreadCount.text($("#Notifications").find(".unread").length);
@@ -47,11 +59,6 @@ function updateNotificationList(){
 	if (unreadCount.text() == '0'){
 		slideFadeOut(unreadCount);
 	}else if (!$("#Notifications").find(".list").is(":visible")){
-	// }else{
-		// console.log({
-		// 	showingDD: $("#Notifications").find(".open").hasClass(".showingDD"),
-		// 	listVisible: $("#Notifications").find(".list").is(":visible")
-		// 	});
 		slideFadeIn(unreadCount);
 	}
 	if (allCount < 2){
@@ -62,13 +69,11 @@ function updateNotificationList(){
 	}
 }
 function updateNotifications(uids, action = 'mark-read'){
-	// console.log(notifyXhr);
     if (notifyXhr!=undefined){
-    	// console.log('aborted');
         notifyXhr.abort();
         notifyXhr = undefined;
     }
-	$.ajax({
+	notifyXhr = $.ajax({
 		url: "/notification-update",
 		method: 'post',
 		data: {

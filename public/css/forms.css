@@ -495,6 +495,7 @@ form, .indent, .report, .w95 {
     vertical-align: baseline;
     margin-left: 0.5em;
     font-size: 0.7em;
+    font-weight: 400;
     text-decoration: underline;
 }
 .conditionalLabel .button{
@@ -522,7 +523,7 @@ form, .indent, .report, .w95 {
 .liProxy{
     padding: 0.2em 0.5em;
     border: 2px solid transparent;
-    margin: 3px;
+    margin: 1px;
     display: inline-block;
 }
 #ChangeTitle{
@@ -531,7 +532,7 @@ form, .indent, .report, .w95 {
     border-radius: 3px;
 }
 #ChangeTitle li{
-    margin: 3px;
+    margin: 1px;
     background-color: transparent;
     color: var(--purple);
 }

@@ -839,8 +839,6 @@ function unblurElement(elem, callback = null){
 }
 function blurTopMost(modal){
     var ele = $(".blur").last().children().first();
-    console.log(ele,$(".blur").last(),$(".blur").last().children());
-    // return;
     if (ele.length == 0){ele = $("body");}
     else if (ele.attr('id') == "loading"){ele = $(".blur").last().parent();}
     if (ele.is(modal)){
@@ -852,7 +850,6 @@ function blurTopMost(modal){
         },100);
         return;
     }
-    // console.log(ele,modal);
     blurElement(ele,modal);
 }
 function unblurTopMost(callback = null){
@@ -1556,7 +1553,7 @@ function resizeSplits(){
         rightOnly.addClass('rightOnly');
     }
 }
-function resizeFcCalendar(){
+function resizeFcCalendar(view){
     $(".fc-toolbar").each(function(){
         var toolbar = $(this), fullCal = toolbar.closest('.fc'), w = toolbar.width(), em = getEm(), realWidth = toolbar[0].scrollWidth, wLeft = toolbar.find('.fc-left')[0].scrollWidth, wCenter = toolbar.find('.fc-center')[0].scrollWidth, wRight = toolbar.find('.fc-right')[0].scrollWidth, wTotal = wLeft + wCenter + wRight, changed = false;
         if(toolbar.find('.fc-center').html() == ""){toolbar.find('.fc-center').css({padding:"0 1em"})}
