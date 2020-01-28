@@ -1704,17 +1704,19 @@ function initializeLinks(){
 }
 
 function initializeNewContent(){
-    resetEntireAppt();
+    if (notify != undefined){
+        resetEntireAppt();
+        initializeNewForms();
+        initializeNewModelForms();
+        initializeNewModelTables();
+        initializeSettingsForm();
+        initializeApptForms();
+        initializeScheduleForms();
+        checkNotifications();
+        activateServiceSelection();        
+    }
     initializeNewMenus();
-    initializeNewForms();
-    initializeNewModelForms();
-    initializeNewModelTables();
-    initializeSettingsForm();
-    initializeApptForms();
     initializeLinks();
-    initializeScheduleForms();
-    checkNotifications();
-    activateServiceSelection();
     resizeElements();
     masterStyle();
 }
