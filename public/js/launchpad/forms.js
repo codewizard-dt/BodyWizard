@@ -259,7 +259,8 @@ function Adj2(item,val,step,direction){
     item.data("numAdj",numInt);
 }
 function startChange(e){
-    alert(e.target);
+    // alert(e.target);
+    e.preventDefault();
     var item = $(this).closest(".number");
     var step = item.find("input").data("step");
     var val = item.find("input").val(), direction;
