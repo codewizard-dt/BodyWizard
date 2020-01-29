@@ -258,7 +258,8 @@ function Adj2(item,val,step,direction){
     
     item.data("numAdj",numInt);
 }
-function startChange(){
+function startChange(e){
+    alert(e.target);
     var item = $(this).closest(".number");
     var step = item.find("input").data("step");
     var val = item.find("input").val(), direction;
@@ -467,7 +468,6 @@ function submitForm(){
     if (!$(this).data('submission') || $(this).hasClass('disabled')){
         return;
     }
-    alert("SUBMTTING");
     var formName = $(this).data("formname"), form = $(this).closest('.formDisp'), uid = form.data('uid'), formId = Number(form.data('formid'));
     var obj = checkForm(form);
     if (!obj){

@@ -1644,9 +1644,9 @@ input#PatientName {
     display: inline-block;
     position: relative;    
     min-width: 25em;
-    max-width: 70%;
+    max-width: 96%;
     overflow: hidden;
-    max-height: 95%;
+    max-height: 96%;
     text-align: center;
     background-color: rgb(240,240,240) !important;
     border-radius: 5px;
@@ -1655,8 +1655,8 @@ input#PatientName {
     vertical-align: middle;
 }
 .prompt.large {
-    min-width: 70%;
-    max-width: 90%;
+    /*min-width: 70%;*/
+    /*max-width: 90%;*/
 }
 .prompt > div {
     padding: 1.5em;

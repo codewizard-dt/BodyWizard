@@ -1704,7 +1704,7 @@ function initializeLinks(){
 }
 
 function initializeNewContent(){
-    if (notify != undefined){
+    if (typeof notify !== 'undefined'){
         resetEntireAppt();
         initializeNewForms();
         initializeNewModelForms();

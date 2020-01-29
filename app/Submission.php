@@ -21,8 +21,6 @@ class Submission extends Model
         ];
     }
     static function tableValues(){
-        include_once app_path("php/functions.php");
-
         $usertype = \Auth::user()->user_type;
         $commonArr = [
             'tableId' => 'SubmisisonList',
@@ -41,7 +39,7 @@ class Submission extends Model
                             ["label" => 'Form',
                             "className" => 'formName',
                             "attribute" => 'form->form_name'],
-                            ["label" => 'Completed At',
+                            ["label" => 'Completed',
                             "className" => 'submitted',
                             "attribute" => 'created_at']
                         ],
@@ -60,7 +58,7 @@ class Submission extends Model
                             ["label" => 'Name of Form',
                             "className" => 'formName',
                             "attribute" => 'name'],                            
-                            ["label" => 'Submitted At',
+                            ["label" => 'Submitted',
                             "className" => 'submitted',
                             "attribute" => 'created_at']
                         ],
