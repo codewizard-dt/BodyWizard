@@ -727,6 +727,14 @@ class Form extends Model
             elseif ($type=='scale'){
                 $this->scale($options);
             }
+            elseif ($type=='bodyclick'){
+                $bodyClickOptions = [
+                    'image' => '/images/body/rsz_body12.png',
+                    'height' => '30em',
+                    'name' => 'bodyClick'
+                ];
+                $this->imageClick($bodyClickOptions);
+            }
             elseif ($type=='date'){
                 $this->datePick($options);
             }

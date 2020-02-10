@@ -9,6 +9,7 @@ function initializeNewForms(){
     initializeCheckboxes();
     initializeRadios()
     initializeDropdowns();
+    initializeImageClicks();
     initializeDatepickers();
     initializeSignatures();
     initializeTimes();

@@ -1580,6 +1580,28 @@ function getEm(ele = null){
     return Number(ele.css('font-size').split("px")[0]);
 }
 var menuWidth;
+function resizeImageClicks(){
+    $('.imageClick').each(function(){
+        var height = $(this).data('height') != 'null' ? $(this).data('height') : '20em',
+            ratio = $(this).data('ratio') != 'null' ? Number($(this).data('ratio')) : 1.5, width,
+            parentRect = $(this).parent()[0].getBoundingClientRect(), parentWidth = parentRect.width, newWidth, ratio = 1, newHeight;
+        $(this).css({height:height});
+        var heightInPx = $(this).outerHeight(), newHeight;
+        width = heightInPx * ratio;
+        newWidth = width;
+        console.log($(this),newWidth, width);
+        $(this).css({width:width});
+        // while(newWidth > parentWidth){
+        //     newWidth = newWidth*0.95;
+        // }
+        // if (newWidth != width){
+        //     newHeight = newWidth / ratio;
+        //     $(this).css({width:newWidth,height:newHeight});
+        // }
+        // if ($(this).find(".indicator").length == 0){$(this).find(".undo").slideFadeOut();}
+    });
+}
+
 function resizeMobileMenuAndFooter(){
     var siteMenu = $(".siteMenu").first();
     var tabs = siteMenu.add("#MenuDisplay").children(".tab").not("#Notifications, #mobilePlaceholder, #MobileMenu"), hasPlaceholder = ($("#mobilePlaceholder").length == 1);
@@ -1646,6 +1668,7 @@ function resizeElements(ev){
         resizeQuotes();
         resizeMobileMenuAndFooter();
         resizeFooterPadding();
+        resizeImageClicks();
         resizeFcCalendar();
         optionsNavOverflowCheck();
     }.bind(null, ev),150)
