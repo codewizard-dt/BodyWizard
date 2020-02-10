@@ -436,6 +436,7 @@ $(document).ready(function(){
         if (value == "number"){slideFadeIn($("#NumberOptions"));}else{slideFadeOut($("#NumberOptions"));}
         if (value == "date"){slideFadeIn($("#DateOptions"));}else{slideFadeOut($("#DateOptions"));}
         if (value == "text"){slideFadeIn($("#TextOptions"));}else{slideFadeOut($("#TextOptions"));}
+        if (value == "bodyclick"){slideFadeIn($("#BodyClickOptions"));}else{slideFadeOut($("#BodyClickOptions"));}
         if (value == "text box"){slideFadeIn($("#TextBoxOptions"));}else{slideFadeOut($("#TextBoxOptions"));}
         if (value == 'time'){slideFadeIn($("#TimeOptions"));}else{slideFadeOut($("#TimeOptions"));}
         if (value == "scale"){slideFadeIn($("#ScaleOptions"));}else{slideFadeOut($("#ScaleOptions"));}

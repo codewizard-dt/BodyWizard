@@ -563,6 +563,9 @@ class Form extends Model
                 </div>";
             }
         }
+        public function imageClick($options){
+            echo view('layouts.forms.image-click',$options);
+        }
         public function textbox($options){
             if (isset($options) and isset($options['name'])){
                 $name = $options['name'];
