@@ -238,6 +238,7 @@ function imageClick(ev){
             y: absCoords.y / imageRect.height * 100
         }, count, undo = image.find('.undo');
     if ($(ev.target).is('.undo')){
+        console.log($(ev.target));
         var mostRecent = filterByData(image.find('.indicatorWrap'),'index','max');
         mostRecent.remove();
         count = image.find('.indicator').length;
