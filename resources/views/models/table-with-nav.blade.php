@@ -97,8 +97,6 @@
 
     $uid = getUid($nospaces);
     $navOptions['uid'] = $uid;
-    $tabs = session('CurrentTabs') !== null ? session('CurrentTabs') : [];
-    $uids = session('uidList') !== null ? session('uidList') : [];
 ?>
 
 @include('models.optionsNav',$navOptions)

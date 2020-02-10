@@ -79,7 +79,11 @@ $(document).ready(function(){
             $(this).data("display",getDefaultCSS(type));
         }
     })
-    
+    // setTimeout(initializeNewForms,400);
+    initializeNewForms();
+    setTimeout(function(){
+        $(window).resize();
+    },500)
     
     $(".wrapMe").each(function(){
         wrapAndCenter($(this));

@@ -16,6 +16,7 @@ $(document).ready(function(){
         var uid = $("#formdata").data('formuid');
         blurElement($("body"),"#loading");
         $("#FormPreview").load("/forms/"+uid+"/preview",function(){
+            initializeNewForms();
             blurElement($('body'),"#FormPreview");
             $("#FormPreview").find(".cancel").text("close");
         })
@@ -145,7 +146,7 @@ $(document).ready(function(){
     })
     
     $("#FormBuilder").on("click",".toggle",function(){
-        var p = $(this).parent();
+        var p = $(this).closest('.editable, .question');
                 
         if (p.hasClass("editable")){
             if ($(this).hasClass("edit")){
@@ -276,28 +277,24 @@ $(document).ready(function(){
                             $("#TimeOptions").find("li").filter("[data-value='"+obj[key]+"']").click();
                         })
                     }else if(t == 'date'){
-                        var beginYear = options.yearRange.split(':')[0], endYear = options.yearRange.split(':')[1],
-                            minDate = options.minDate, maxDate = options.maxDate, minNum, minType, maxNum, maxType, currentYear = new Date().getFullYear(),
-                            nextYear = currentYear + 1;
-                        beginYear = (beginYear == "c+0") ? currentYear : beginYear;
-                        endYear = (endYear == "c+0") ? currentYear : endYear;
-                        endYear = (endYear == "c+1") ? nextYear : endYear;
-                        $("#begin").val(beginYear);
-                        $("#end").val(endYear);
+                        // var beginYear = options.yearRange.split(':')[0], endYear = options.yearRange.split(':')[1],
+                        var minDate = options.minDate, maxDate = options.maxDate, minNum, minType, maxNum, maxType, minDir, maxDir;
                         if (minDate != null){
                             minNum = options.minDate.substring(1,options.minDate.length - 1);
                             maxNum = options.maxDate.substring(1,options.maxDate.length - 1);
                             minType = options.minDate.substring(options.minDate.length - 1,options.minDate.length);
                             maxType = options.maxDate.substring(options.maxDate.length - 1,options.maxDate.length);
+                            minDir = options.minDate.charAt[0] == '-' ? 'before' : 'after';
+                            maxDir = options.maxDate.charAt[0] == '-' ? 'before' : 'after';
                             var guide = {"m":"months","d":"days","w":"weeks","y":"years"};
-                            // console.log(minType + maxType);
                             minType = guide[minType];
                             maxType = guide[maxType];
-                            // console.log(minType + maxType);
-                            $("#minNum").val(minNum);
-                            $("#maxNum").val(maxNum);
-                            $("#minType").val(minType).change();
-                            $("#maxType").val(maxType).change();
+                            $("#DateOptions").find(".minNum").val(minNum);
+                            $("#DateOptions").find(".maxNum").val(maxNum);
+                            $("#DateOptions").find(".minType").val(minType).change();
+                            $("#DateOptions").find(".maxType").val(maxType).change();
+                            $("#DateOptions").find(".minDir").val(minDir).change();
+                            $("#DateOptions").find(".maxDir").val(maxDir).change();
                             if ($("#NoRestriction").is(":checked")){$("#NoRestriction").click();}                            
                         }else{
                             if (!$("#NoRestriction").is(":checked")){$("#NoRestriction").click();}
@@ -322,6 +319,7 @@ $(document).ready(function(){
                         $("#textAreaPlaceholder").val(placeholder);
                     }
                     else{
+                        if (t == 'number'){console.log(options)}
                         for (var prop in options){
                             var val = options[prop];
                             items.filter(function(){
@@ -335,13 +333,8 @@ $(document).ready(function(){
                         inputCount = $("#OptionsList").find(".option").length,
                         dif = optionCount - inputCount,
                         extraCount = -dif;
-                    console.log(dif);
-                    for (x = 0; x < dif; x++){
-                        $("#OptionsList").find(".add").click();
-                    }
-                    for (x = 0; x < extraCount; x++){
-                        $("#OptionsList").find(".option").last().remove();
-                    }
+                    for (x = 0; x < dif; x++){$("#OptionsList").find(".add").click();}
+                    for (x = 0; x < extraCount; x++){$("#OptionsList").find(".option").last().remove();}
                     var inputs = $("#OptionsList").find("input");
                     for (x = 0; x < optionCount; x++){
                         var val = options[x];
@@ -400,9 +393,7 @@ $(document).ready(function(){
                 Items.splice(k+1,0,copy);
                 updateItems(section);
                 autoSave();
-            }
-            
-            
+            }  
         }
     })
     $("#FormBuilder").on("click",".addFollowUp",function(){
@@ -410,11 +401,12 @@ $(document).ready(function(){
         $("#Type").val("text");
         $("#Type").change();
         $("#FollowUpOptions").show();
-        // slideFadeIn($("#AddItem"));
         blurElement($("body"),"#AddItem");
-        var item = $(this).closest(".item");
+        var item = $(this).closest(".item"), question = item.find(".q").text();
+        console.log(question);
+        $("#AddItem").find("h2").first().html('"'+question+'" - ' + "<span class='pink'>Follow Up Question</span>");
         $("#FollowUpOptions").appendTo($("#AddItem").find(".message"));
-        $("#FollowUpOptions").find(".switch").text("Ask this question");
+        $("#FollowUpOptions").find(".switch").text("When To Ask This Question");
         showConditionOptions(item);
         if (!item.find(".targetFUs").is(":visible")){
             item.find(".hideFUs").click();
@@ -426,7 +418,7 @@ $(document).ready(function(){
         blurElement($("body"),"#AddText");
         var item = $(this).closest(".item");
         $("#FollowUpOptions").insertAfter($("#NarrativeOptions")).show();
-        $("#FollowUpOptions").find(".switch").text("Display this text");
+        $("#FollowUpOptions").find(".switch").text("When To Display This Text");
         showConditionOptions(item);
         if (!item.find(".targetFUs").is(":visible")){
             item.find(".hideFUs").click();
@@ -522,67 +514,68 @@ $(document).ready(function(){
             var i = $(this).find("input"), o = i.data('options');
             i.timepicker(o);
         })
-        $("#TimeRestrict").find("li").filter("[data-value='allow any time']").on("click",masterCheckbox);
-        $("#TimeRestrict").find("li").on('click',function(){
+        $(".TimeRestrict").find("li").filter("[data-value='allow any time']").on("click",masterCheckbox);
+        $(".TimeRestrict").find("li").on('click',function(){
             if ($(this).hasClass("disabled")){return false;}
-            var c = $(this).data('value'), divs = $("#TimeList").children("div").filter("[data-condition='"+c+"']");
-            if (divs.length==0 && !$(this).hasClass("active")){
-                divs = $("#TimeList").children("div").not("#TimeRestriction");
+            // var c = $(this).data('value'), divs = $("#TimeList").children("div").filter("[data-condition='"+c+"']");
+            var c = $(this).data('value'), divs = $("#TimeList").find('.flexbox').children("div"), match = divs.filter("[data-condition='"+c+"']");
+            if (match.length==0 && !$(this).hasClass("active")){
+                // divs = $("#TimeList").children("div").not("#TimeRestriction");
                 slideFadeOut(divs);
             }else{
                 if ($(this).hasClass("active")){
-                    slideFadeOut(divs);
+                    slideFadeOut(match);
                 }else{
-                    slideFadeIn(divs);
+                    slideFadeIn(match);
                 }
             }
         })
-        $("#TimeList").children("div").not("#TimeRestriction").hide();
+        $("#TimeList").find(".flexbox").children().hide();
         $("#NarrText").css({
             maxWidth:"100%",
             height:"6em"
         })
-        $("#currentYearBegin").on("click",function(){
-            var currentYear = new Date().getFullYear(), nextYear = currentYear + 1, p = $(this).closest("div");
-            if ($(this).is(":checked")){
-                $("#begin").attr("readonly",true).val(currentYear);
-                p.find(".answer").css("opacity","0.5");
-                p.find(".number").off("mousedown touchstart",'.change',startChange);
-            }else{
-                $("#begin").removeAttr("readonly");
-                p.find(".answer").css("opacity","1");
-                p.find(".number").off("mousedown touchstart",'.change',startChange);
-                p.find(".number").on("mousedown touchstart",'.change',startChange);
-            }
-        })
-        $("#currentYearEnd").on("click",function(){
-            var currentYear = new Date().getFullYear(), nextYear = currentYear + 1, p = $(this).closest("div").parent("div");
-            if ($(this).is(":checked")){
-                $("#end").attr("readonly",true).val(currentYear);
-                if ($("#nextYearEnd").is(":checked")){$("#nextYearEnd").click();}
-                p.find(".answer").css("opacity","0.5");
-                p.find(".number").off("mousedown touchstart",'.change',startChange);
-            }else{
-                $("#end").removeAttr("readonly");
-                p.find(".answer").css("opacity","1");
-                p.find(".number").off("mousedown touchstart",'.change',startChange);
-                p.find(".number").on("mousedown touchstart",'.change',startChange);
-            }
-        })
-        $("#nextYearEnd").on("click",function(){
-            var currentYear = new Date().getFullYear(), nextYear = currentYear + 1, p = $(this).closest("div").parent("div");
-            if ($(this).is(":checked")){
-                $("#end").attr("readonly",true).val(nextYear);
-                if ($("#currentYearEnd").is(":checked")){$("#currentYearEnd").click();}
-                p.find(".answer").css("opacity","0.5");
-                p.find(".number").off("mousedown touchstart",'.change',startChange);
-            }else{
-                $("#end").removeAttr("readonly");
-                p.find(".answer").css("opacity","1");
-                p.find(".number").off("mousedown touchstart",'.change',startChange);
-                p.find(".number").on("mousedown touchstart",'.change',startChange);
-            }
-        })
+        // $("#currentYearBegin").on("click",function(){
+        //     var currentYear = new Date().getFullYear(), nextYear = currentYear + 1, p = $(this).closest("div");
+        //     if ($(this).is(":checked")){
+        //         $("#begin").attr("readonly",true).val(currentYear);
+        //         p.find(".answer").css("opacity","0.5");
+        //         p.find(".number").off("mousedown touchstart",'.change',startChange);
+        //     }else{
+        //         $("#begin").removeAttr("readonly");
+        //         p.find(".answer").css("opacity","1");
+        //         p.find(".number").off("mousedown touchstart",'.change',startChange);
+        //         p.find(".number").on("mousedown touchstart",'.change',startChange);
+        //     }
+        // })
+        // $("#currentYearEnd").on("click",function(){
+        //     var currentYear = new Date().getFullYear(), nextYear = currentYear + 1, p = $(this).closest("div").parent("div");
+        //     if ($(this).is(":checked")){
+        //         $("#end").attr("readonly",true).val(currentYear);
+        //         if ($("#nextYearEnd").is(":checked")){$("#nextYearEnd").click();}
+        //         p.find(".answer").css("opacity","0.5");
+        //         p.find(".number").off("mousedown touchstart",'.change',startChange);
+        //     }else{
+        //         $("#end").removeAttr("readonly");
+        //         p.find(".answer").css("opacity","1");
+        //         p.find(".number").off("mousedown touchstart",'.change',startChange);
+        //         p.find(".number").on("mousedown touchstart",'.change',startChange);
+        //     }
+        // })
+        // $("#nextYearEnd").on("click",function(){
+        //     var currentYear = new Date().getFullYear(), nextYear = currentYear + 1, p = $(this).closest("div").parent("div");
+        //     if ($(this).is(":checked")){
+        //         $("#end").attr("readonly",true).val(nextYear);
+        //         if ($("#currentYearEnd").is(":checked")){$("#currentYearEnd").click();}
+        //         p.find(".answer").css("opacity","0.5");
+        //         p.find(".number").off("mousedown touchstart",'.change',startChange);
+        //     }else{
+        //         $("#end").removeAttr("readonly");
+        //         p.find(".answer").css("opacity","1");
+        //         p.find(".number").off("mousedown touchstart",'.change',startChange);
+        //         p.find(".number").on("mousedown touchstart",'.change',startChange);
+        //     }
+        // })
         
         $("#SectionOrder").on('click',".up",updateSecOrder);
         $("#SectionOrder").on('click',".down",updateSecOrder);
@@ -696,8 +689,10 @@ $(document).ready(function(){
             data: dataObj,
             success:function(data){
                 if (data!=false){
+                    // console.log(data);
+                    var arr = JSON.parse(data);
                     clearTimeout(autoSaveCount);
-                    var formUID = data[0], formID = data[1], wrap = $("#AutoSaveWrap");
+                    var formUID = arr[0], formID = arr[1], wrap = $("#AutoSaveWrap");
                     $("#formdata").data("formuid",formUID);
                     $("#formdata").data("formid",formID);
                     var t = new Date();
@@ -766,8 +761,8 @@ $(document).ready(function(){
     }
     function createItemObj(){
         if ($("#Text").val()=='' && !$("#AddText").is(":visible")){
-            alertBox("type a question",$("#Text"),"after","fade");
-            $.scrollTo($("#Text"));
+            feedback('Missing Question',"You need to write your question!");
+            $("#Text").css('border-color','var(--pink)');
             return false;
         }
         
@@ -839,26 +834,26 @@ $(document).ready(function(){
 
             var dateOptions = $("#DateOptions").find("input").filter(":visible");
             if (dateOptions.length!=0){
-                var beginCurrent = $("#currentYearBegin").is(":checked"), endCurrent = $("#currentYearEnd").is(":checked"),
-                    endNext = $("#nextYearEnd").is(":checked"), 
-                    dateBegin = beginCurrent ? "c+0" : dateOptions.filter("[data-name='begin']").val(),
-                    dateEnd = endCurrent ? "c+0" : dateOptions.filter("[data-name='end']").val(),
-                    dateEnd = endNext ? "c+1" : dateEnd,
-                    yearRange = dateBegin+":"+dateEnd;
-                // console.log(yearRange);
-                dateOptions = {
-                    "yearRange":yearRange
-                }
+                dateOptions = {};
                 if ($("#NoRestriction").is(":checked")==false){
-                    var stop = $("#DateOptions").find("select").filter(function(){
+                    var dropdowns = $("#DateOptions").find("select"), incomplete = dropdowns.filter(function(){
                         return $(this).find("option:selected").val() == "";
                     });
-                    if (stop.length > 0){
-                        alertBox("required if you want to restrict dates",stop.first(),"after");
+                    if (incomplete.length > 0){
+                        dropdowns.css('border-color','var(--pink');
+                        feedback('Missing Details','Complete all the date details or select "no restrictions"');
                         return false;
                     }
-                    var minDate = "-"+$("[data-name='minNum']").val() + $("[data-name='minType']").val().charAt(0);
-                    var maxDate = "+"+$("[data-name='maxNum']").val() + $("[data-name='maxType']").val().charAt(0);
+                    // var minDate = "-"+$("[data-name='minNum']").val() + $("[data-name='minType']").val().charAt(0);
+                    var minDir = ($('#DateOptions').find('.minDir').val() == 'before') ? "-" : "+",
+                        minNum = $('#DateOptions').find('.minNum').val(),
+                        minType = $('#DateOptions').find('.minType').val().charAt(0),
+                        maxDir = ($('#DateOptions').find('.maxDir').val() == 'before') ? "-" : "+",
+                        maxNum = $('#DateOptions').find('.maxNum').val(),
+                        maxType = $('#DateOptions').find('.maxType').val().charAt(0);
+                    // console.log(minDir+minNum+minType);
+                    var minDate = minDir+minNum+minType;
+                    var maxDate = maxDir+maxNum+maxType;
                     dateOptions["minDate"] = minDate;
                     dateOptions["maxDate"] = maxDate;
                 }else{
@@ -872,8 +867,8 @@ $(document).ready(function(){
             var timeOptions = $("#TimeList").is(":visible");
             if (timeOptions){
                 if ($("#TimeRestriction").find(".active").length==0){
-                    alertBox("required",$("#TimeRestrict"));
-                    $.scrollTo($("#TimeRestrict"));
+                    $(".TimeRestrict").css('border-color','var(--pink)');
+                    feedback('Time Restrictions','Choose whether to restrict time selections or allow any time');
                     return false;
                 }
                 var restrictions = $("#TimeRestriction").find(".active");
@@ -883,12 +878,12 @@ $(document).ready(function(){
                     if (v == "allow any time"){
                         timeOptions['all'] = "default";
                     }else if (v == 'set range'){
-                        timeOptions['minTime'] = $("#minTime").val();
-                        timeOptions['maxTime'] = $("#maxTime").val();
+                        timeOptions['minTime'] = $("#TimeOptions").find(".minTime").val();
+                        timeOptions['maxTime'] = $("#TimeOptions").find(".maxTime").val();
                     }else if (v == 'set interval'){
-                        timeOptions['step'] = $("#TimeOptions").find("#step").val();
+                        timeOptions['step'] = $("#TimeOptions").find(".step").val();
                     }else if (v == 'set initial value'){
-                        timeOptions['setTime'] = $("#setTime").val();
+                        timeOptions['setTime'] = $("#TimeOptions").find(".setTime").val();
                     }
                 })
             }
@@ -918,41 +913,39 @@ $(document).ready(function(){
             
             var scaleOptions = $("#ScaleOptions").find("input, select").filter(":visible");
             if (scaleOptions.length!=0){
-                var min = scaleOptions.filter("[data-name='scalemin']").val();
-                var max = scaleOptions.filter("[data-name='scalemax']").val();
-                var initial = scaleOptions.filter("[data-name='initial']").val();
-                var minL = scaleOptions.filter("[name='minLabel']").val();
-                var maxL = scaleOptions.filter("[name='maxLabel']").val();
-                var dispL = scaleOptions.filter("[name='dispLabel']").val();
-                var dispV = scaleOptions.filter("[name='dispVal']").val();
+                var min = scaleOptions.filter("[data-name='scalemin']"), max = scaleOptions.filter("[data-name='scalemax']"), initial = scaleOptions.filter("[data-name='initial']"), minL = scaleOptions.filter("[name='minLabel']"), maxL = scaleOptions.filter("[name='maxLabel']"), dispL = scaleOptions.filter("[name='dispLabel']"), dispV = scaleOptions.filter("[name='dispVal']");
                             
-                min = Number(min);
-                max = Number(max);
-                initial = Number(initial);
-                if (min>max || min==max){
-                    alertBox("must be less than max value",scaleOptions.filter("[name='scalemin']"),"after","fade");
+                minVal = Number(min.val());
+                maxVal = Number(max.val());
+                initialVal = Number(initial.val());
+                if (minVal>maxVal || minVal==maxVal){
+                    min.add(max).css('border-color','var(--pink)');
+                    feedback('Oops','Your minimum value has to be less than your maximum value.');
                     return false;
                 }
-                if (inital < min || initial > max){
-                    alertBox("must be within min and max values",scaleOptions.filter("[name='initial']"),"after","fade");
+                if (inital < minVal || initial > maxVal){
+                    initial.css('border-color','var(--pink)');
+                    feedback('Oops','Your initial value has to be between the minimum and maximum values.');
                     return false;
                 }
                 for (x=0;x<scaleOptions.length;x++){
                     var v = $(scaleOptions[x]).val();
                     if (v==""){
-                        alertBox("required",$(scaleOptions[x]),"after","fade");
+                        $(scaleOptions[x]).css('border-color','var(--pink');
+                        feedback('Oops',"Looks like you're missing a required value.");
+                        // alertBox("required",$(scaleOptions[x]),"after","fade");
                         return false;
                     }
                 }
             
                 scaleOptions = {
-                    "min":min,
-                    "max":max,
-                    "initial":initial,
-                    "minLabel":minL,
-                    "maxLabel":maxL,
-                    "displayValue":dispV,
-                    "displayLabels":dispL
+                    "min":minVal,
+                    "max":maxVal,
+                    "initial":initialVal,
+                    "minLabel":minL.val(),
+                    "maxLabel":maxL.val(),
+                    "displayValue":dispV.val(),
+                    "displayLabels":dispL.val()
                 };
             }
             else{scaleOptions=undefined;}
@@ -1107,9 +1100,11 @@ $(document).ready(function(){
     }
     
     function resetAddItem(){
-        var clear = $("#AddItem").find("#Options").find("input");
+        var clear = $("#AddItem").find("#Options").find("input").add("#Text").add($("#FollowUpOptions").find("input"));
         // clear = clear.add($("#NumberOptions").find("input"));
-        clear.add("#Text").add($("#FollowUpOptions").find("input")).val("");
+        clear.val("");
+        $("#AddItem").find("h2").first().html("New Question");
+        $("#Text").css('border-color','rgba(210,210,210,0.8)');
         $("#Type").val("text");
         $("#Type").change();
         $("#Required").val("true");
@@ -1120,6 +1115,7 @@ $(document).ready(function(){
         $("#NumberOptions").find("#initial").val("5");
         $("#NumberOptions").find("#step").val("1");
         $("#NumberOptions").find("#units").val("");
+        console.log($("#AddItemProxy"));
     }
     function resetOptions(){
         var o = $("#OptionsList").find(".option");
@@ -1127,7 +1123,6 @@ $(document).ready(function(){
         if (n>2){
             for (x=2;x<n;x++){
                 $(o[x]).remove();
-                //$("#OptionsList").find("br").last().remove();
             }
         }
         o.val("");
@@ -1337,12 +1332,15 @@ $(document).ready(function(){
             $(itemNode).appendTo(ItemsList);
             var newItem = ItemsList.find(".item").last();
             if (t == "narrative"){q = "Rich Text Block";}
-            newItem.find(".question").html(q + rStr + "<div class='toggle edit'>(edit)</div><div class='toggle copy'>(duplicate)</div><div class='toggle delete'>(delete)</div><div class='toggle save'>(save)</div><div class='toggle cancel'>(cancel edit)</div>").data({"question":q, "key":x, "type":t, "options":o, "toggleFUs":tFUs, 'required':r});
+            newItem.find(".question").html("<span class='q'>" + q + "</span>" + rStr + "<div style='display:inline-block'><div class='toggle edit'>(edit)</div><div class='toggle copy'>(duplicate)</div><div class='toggle delete'>(delete)</div><div class='toggle save'>(save)</div><div class='toggle cancel'>(cancel edit)</div></div>").data({"question":q, "key":x, "type":t, "options":o, "toggleFUs":tFUs, 'required':r});
             
             var target = (t == "narrative") ? ".narrative" : ".answer",
                 template = $(".template").filter("[data-type='"+t+"']").find(target).clone();
 
-            template.removeAttr('id');
+            // template.removeAttr('id');
+            template.add(template.find("select, input")).removeClass(function(index,classes){
+                return (classes.match (/\b([^ ]*)Template/g) || []).join(' ');
+            }).removeAttr('name data-name');
             newItem.find(".answer").replaceWith(template);
             activateItem(newItem,t,o);
                         
@@ -1356,7 +1354,7 @@ $(document).ready(function(){
                     $(itemFUNode).appendTo(ItemsFUList);
                     var newItemFU = ItemsFUList.find(".itemFU").last();
                     if (tFU == "narrative"){qFU = "Rich Text Block";}
-                    newItemFU.find(".question").html(qFU + rFUStr + "<div class='toggle edit'>(edit)</div><div class='toggle copy'>(duplicate)</div><div class='toggle delete'>(delete)</div><div class='toggle save'>(save)</div><div class='toggle cancel'>(cancel edit)</div>").data({"question":qFU, "key":xFU, "type":tFU, "options":oFU, "condition":cFU, 'required':rFU});
+                    newItemFU.find(".question").html(qFU + rFUStr + "<div style='display:inline-block'><div class='toggle edit'>(edit)</div><div class='toggle copy'>(duplicate)</div><div class='toggle delete'>(delete)</div><div class='toggle save'>(save)</div><div class='toggle cancel'>(cancel edit)</div></div>").data({"question":qFU, "key":xFU, "type":tFU, "options":oFU, "condition":cFU, 'required':rFU});
                     
                     var rFU = (tFU == "narrative") ? ".narrative" : ".answer",
                         template = $(".template").filter("[data-type='"+tFU+"']").find(rFU).clone();
@@ -1824,29 +1822,7 @@ $(document).ready(function(){
     }
     function updateItemData(){
 
-    }
-    // function saveItemFUOrder(){
-    //     var s = $(this).closest(".section");
-    //     var items = s.data('items');
-    //     var K = $(this).closest(".item").find(".question").data('key');
-    //     var itemsFU = items[K].followups;        
-    //     var qArr = [], newArr =[];
-    //     var newItemFUOrder = $("#ItemFUList").find(".itemFUName");
-        
-    //     itemsFU.forEach(function(item,i){
-    //         qArr.push(item.question);
-    //     })
-    //     for (x=0;x<newItemFUOrder.length;x++){
-    //         var q = $(newItemFUOrder[x]).find("span").text();
-    //         var k = $.inArray(q,qArr);
-    //         newArr.push(itemsFU[k]);
-    //     }
-    //     items[K].followups = newArr;
-    //     $("#ItemFUOrder").appendTo("#FormBuilder").hide();
-    //     updateItems(s);
-    //     autoSave();
-    // }
-    
+    }    
     function showConditionOptions(item){
         var k = item.find(".question").data('key');
         var Items = item.closest(".section").data('items');
@@ -1861,7 +1837,7 @@ $(document).ready(function(){
             oNode.prependTo($("#condition"));
             oNode = $("#FollowUpList").find(".answer");
             $("#DisplayQ").text(q);
-            $("#Conditionality").text("one of the following responses (select as many as you want)");
+            $("#Conditionality").text("matches one of the following (select as many as you want)");
             
             for (x=0;x<o.length;x++){
                 var escapedStr = o[x].split("\"").join("&quot;");
@@ -1877,7 +1853,7 @@ $(document).ready(function(){
             oNode.prependTo($("#condition"));
             oNode = $("#FollowUpList").find(".answer");
             $("#DisplayQ").text(q);
-            $("#Conditionality").text("the following conditions");
+            $("#Conditionality").text("matches the following condition");
             
             var conditionNode = "<span>Response is </span><select><option value='less than'>less than</option><option value='equal to'>equal to</option><option value='greater than'>greater than</option></select><div class='answer number'><input size='10' type='text' data-min='1920' data-max='2028' value='2018' data-step='1'><span class='label'></span><div><div class='change up'></div><div class='change down'></div></div></div>";
             
@@ -1909,6 +1885,7 @@ $(document).ready(function(){
                 }).click();
             }            
         }
+        $("#condition").find(".answer").addClass("flexbox");
     }
     
     function activateItem(item,type,options){
@@ -1976,47 +1953,20 @@ $(document).ready(function(){
                 scale = item.find(".scale"), slider = item.find(".slider"),
                 showValue = (options['displayValue'] == 'yes') ? true : false;
             if (displayLabel){
-                minLabelStr = "("+min+") " + minLabel;
-                maxLabelStr = maxLabel + " ("+max+")";
+                minLabelStr = min + "<br><b>" + minLabel + "</b>";
+                maxLabelStr = max + "<br><b>" + maxLabel + "</b>";
             }else if (!displayLabel){
-                minLabelStr = minLabel;
-                maxLabelStr = maxLabel;
+                minLabelStr = "<b>" + minLabel + "</b>";
+                maxLabelStr = "<b>" + maxLabel + "</b>";
             }
-            target.find(".answer").find(".left").text(minLabelStr);
-            target.find(".answer").find(".right").text(maxLabelStr);
-            target.find(".slider").attr({
-                "value":initial, "min":min, "max":max
-            });
+            target.find(".answer").find(".left").html(minLabelStr);
+            target.find(".answer").find(".right").html(maxLabelStr);
+            target.find(".slider").attr({"value":initial, "min":min, "max":max});
 
-            scale.on("mouseenter",function(){
-                var item = $(this).closest('.item');
-                
-                clearTimeout(item.data("timeoutId"));
-                changeSliderValue(item);
-            });    
-            scale.on("mouseleave touchend", function(){
-                var item = $(this).closest('.item');
-                var timeoutId = setTimeout(function(){
-                    hideSliderValue(item);
-                }, 1000);
-                
-                clearInterval(item.data('updateId'));
-                item.data("updateId","clear");
-                item.data('timeoutId', timeoutId); 
-                var response = item.find("input").val();
-                showFollowUps(response,item);
-            });
+            scale.on('mouseenter',scaleMouseEnter);
+            scale.on('mouseleave touchend',scaleMouseLeave);
             slider.closest(".item").data("updateId","clear");
-            slider.on("mousedown touchstart",function(){
-                var item = $(this).closest('.item');
-                if (item.data("updateId")=="clear"){
-                    var updateId = setInterval(function(){
-                        changeSliderValue(item);
-                    },100);
-                    showSliderValue(item);
-                    item.data('updateId',updateId);
-                }
-            });
+            slider.on('mousedown touchstart',sliderStart);
             if (showValue){slider.addClass('showValue');}
             else {slider.removeClass('showValue');}
         }
@@ -2025,8 +1975,10 @@ $(document).ready(function(){
             target.on("focus",function(e){
                 e.preventDefault();
             });
-            target.removeAttr('id');
-            target.removeClass('is-datepick');
+            if (target.hasClass('is-datepick')){
+                target.removeClass('is-datepick');
+            }
+            options = (options.minDate != null) ? options : {yearRange:'1920:c+1'};
             target.datepick(options);
         }
         else if (type == "text"){
@@ -2046,6 +1998,7 @@ $(document).ready(function(){
             target.on("click",".clear",function(){
                 target.parent().jSignature("reset");
             });
+            target.data('initialized',true);
             if (options['typedName'] == 'yes'){item.find(".printed").show();}else{item.find(".printed").hide();}
         }
         else if (type == "time"){

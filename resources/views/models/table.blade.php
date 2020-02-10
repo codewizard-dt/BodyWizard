@@ -143,7 +143,10 @@ if (!isset($destinations)){
 		            					$valArr[] = $method.":".$instance->$method();
 		            				}else{
 			            				$attr = $option['attribute'];
-			            				$valArr[] = $attr.":".$instance->$attr;            					
+			            				if ($instance->$attr === false){$val = '0';}
+			            				elseif ($instance->$attr === true){$val = '1';}
+			            				else {$val = $instance->$attr;}
+			            				$valArr[] = $attr.":".$val;            					
 		            				}
 		            			}
 		            		}elseif($attr == 'method'){

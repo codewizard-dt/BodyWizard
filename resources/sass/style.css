@@ -29,8 +29,17 @@
     --white30:rgba(255,255,255,0.3);
     --white50:rgba(255,255,255,0.5);
     --white70:rgba(255,255,255,0.7);
+    --white80:rgba(255,255,255,0.8);
     --white93:rgba(255,255,255,0.93);
     --white97:rgba(255,255,255,0.97);
+    --gray:rgba(210,210,210,1);
+    --gray10:rgba(210,210,210,0.1);
+    --gray30:rgba(210,210,210,0.3);
+    --gray50:rgba(210,210,210,0.5);
+    --gray70:rgba(210,210,210,0.7);
+    --gray80:rgba(210,210,210,0.8);
+    --gray93:rgba(210,210,210,0.93);
+    --gray97:rgba(210,210,210,0.97);
     --black10:rgba(0,0,0,0.1);
     --black30:rgba(0,0,0,0.3);
     --black50:rgba(0,0,0,0.5);
@@ -434,6 +443,7 @@ a:hover {color:var(--pink);}
     margin-bottom: -2em;
 }
 
+
 .button {
     display: inline-block;
     position: relative;
@@ -443,6 +453,7 @@ a:hover {color:var(--pink);}
     text-transform: uppercase;
     text-align: center;
     letter-spacing: 1px;
+    line-height: 1;
     border-radius: 4px;
     border-width: 1px;
     border-style: solid;
@@ -711,12 +722,12 @@ a:hover {color:var(--pink);}
     background-position: 50% 45%;
 }
 #shelf-2{
-    height: 25em;
+    height: 65vh;
     background-image: url(/images/other/shelf-2.jpg);
     background-position: 50% 45%;
 }
 #needle-tray-1{
-    height: 10em;
+    height: 25vh;
     background-image: url(/images/other/needle-tray-1.jpg);
     background-position: 50% 50%;
 }
@@ -1527,6 +1538,20 @@ a:hover {color:var(--pink);}
     background-color: rgba(230,230,230,0.7);
     box-shadow: 0 0 20px 10px rgb(230,230,230) inset;
     z-index:52; 
+}
+.blur .cancelX{
+    position: absolute;
+    top: -0.3em;
+    right: 0.2em;
+    font-size: 1.4em;
+    padding: 0.1em;
+    /*transform: translate(0, -0.5em);*/
+    color: rgb(220,220,220);
+    cursor: pointer;
+    transition: color 400ms;
+}
+.blur .cancelX:hover{
+    color: rgb(140,140,140);
 }
 body > .blur {
     background-color: rgba(0,0,0,0.4) !important;

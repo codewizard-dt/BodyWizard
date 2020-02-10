@@ -1,33 +1,24 @@
 <?php 
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 use App\Form;
 
-// include_once app_path("/php/functions.php");
 $ctrl = new Form;
-// $practiceId = session('practiceId');
 $practice = \App\Practice::getFromSession();
-// $calSettings = $practice->calendar_settings;
-// $practiceSched = $practice->practice_schedule;
-// // $practiceSched = json_decode(Storage::disk('local')->get("/calendar/$practiceId/practice-schedule.json"),true);
-// $practiceSched = scheduleToEvents($practiceSched);
-// $earliest = Carbon::parse($practiceSched['earliest']);
-// $latest = Carbon::parse($practiceSched['latest']);
 
-// $times = [];
-// while ($earliest->isBefore($latest)){
-// 	$times[] = ['carbon' => $earliest->toTimeString(),'display' => $earliest->format('g:i a')];
-// 	$earliest->addMinutes($calSettings['interval']);
-// }
-
-// $practitionerSched = json_decode(Storage::disk('local')->get("/calendar/$practiceId/practitioner-schedule.json"),true);
 $times = $practice->time_slots;
-$dateOptions = [
-	'yearRange' => 'c+0:c+1',
-	'minDate' => '-0d',
-	'maxDate' => '+6m',
-	'name' => 'DateSelector'
-];
+if (Auth::user()->user_type == 'patient'){
+	$dateOptions = [
+		'minDate' => '+1d',
+		'maxDate' => '+6m',
+		'name' => 'DateSelector'
+	];	
+}else{
+	$dateOptions = [
+		'minDate' => '-1w',
+		'maxDate' => '+1y',
+		'name' => 'DateSelector'
+	];	
+}
 ?>
 
 <div id="SelectDateTime" class='progressiveSelection selector toModalHome'>

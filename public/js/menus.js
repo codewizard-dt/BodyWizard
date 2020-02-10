@@ -31,7 +31,7 @@ function initializeNewMenus(){
 
     Dropdowns.hover(menuMouseEnter,menuMouseLeave);
     Dropdowns.children('.title').on('click',dropdownClick);
-    Links.children('.title').on("click",followLink);
+    Links.children('.title').on("click",followMenuLink);
     MenuItems.data('initialized',true);
     
     // to organize and stylize multiple menus
@@ -177,14 +177,14 @@ function getParentTitles(clickedTitle){
     }
     return titles;
 }
-function followLink(){
+function followMenuLink(){
     var tab = $(this).parent(), underline = tab.children(".underline"), id = tab.attr("id"), 
         dropdown = tab.children(".dropDown"), menu = $(this).closest(".menuBar"), menuId = menu.attr('id'),
         target = (menu.data("target")!="window") ? $(menu).data("target") : "window", uri = $(this).data("uri"),
         hasDropdown = (tab.children('.dropDown').length === 1), titleActive = $(this).hasClass("active"),
         parentTitles = getParentTitles($(this)), dropdownActive = (hasDropdown) ? dropdown.hasClass("active") : null;
 
-    // console.log('followLink',id);
+    // console.log('followMenuLink',id);
     if ((tab.is("#booknow") && uri == '#createAppointment') 
         || (uri == '' && target != "window")
         || (tab.is("#lock-ehr"))

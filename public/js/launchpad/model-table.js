@@ -4,132 +4,6 @@ var defaultFilterOptions = {
     "wholeWords":"true"
     };
 $(document).ready(function(){
-    //TABLE FILTER STUFF
-        
-    // var filterTypes = filterUninitialized('.filterType'), tableFilters = filterUninitialized('.tableFilter'), tableSearches = filterUninitialized('.tableSearch');
-    // $(".filterType").each(function(){
-    //     if ($(this).data('options')==undefined){
-    //         $(this).data('options',defaultFilterOptions);
-    //     }else{
-    //         var optObj = $(this).data('options');
-    //         $.each(defaultFilterOptions,function(key,value){
-    //             if (optObj[key]==undefined){
-    //                 optObj[key] = defaultFilterOptions[key];
-    //             }
-    //         })
-    //         $(this).data("options",optObj);
-    //     }
-    // });
-    // $(".tableFilter").on("change",function(){
-    //     table = $(this).closest(".filterType").data("target");
-    //     table = $(table);
-    //     var f = $(this).data('filter'), fT = $(".filterType").filter("[data-condition='"+f+"']");
-    //     if ($(this).is(":checked")){
-    //         slideFadeIn(fT);
-    //     }else{
-    //         slideFadeOut(fT);
-    //         fT.find(".tableFilter").each(function(){
-    //             if ($(this).is(":checked")){$(this).click();}
-    //         })
-    //     }
-    //     filterTableList(table);
-    // });
-    // $(".tableSearch").on("keyup",function(){
-    //     table = $(this).closest(".filterType").data("target");
-    //     table = $(table);
-    //     filterTableList(table);
-    // });
-    // filterTypes.add(tableFilters).add(tableSearches).data('initialized',true);
-
-
-
-    // var extraBtns = filterUninitialized(".loadInTab");
-    // extraBtns.on('click',function(){
-    //     var t = $(this).closest(".loadTarget"), uri = $(this).data('uri');
-    //     LoadingContent(t, uri);
-    // })
-    // extraBtns.data('initialized',true);
-
-    // $(".connectedModel").on('click','.cancel',function(){
-    //     $(".targetInput").removeClass("targetInput");
-    // })
-
-    // // INITIALIZING TABLES
-    //     var tables = filterUninitialized(".styledTable.clickable");
-    //     $("tr").filter(function(){
-    //     	return $(this).text().includes("No matches");
-    //     }).addClass("noMatch");
-        
-    //     tables.each(function(t,table){
-    //         var modal = ($(this).closest(".connectedModel").length > 0) ? true : false;
-    //     	filterTableList($(table));
-    // 	    var prevID = 0, 
-    // 	    	trs = $(table).find("tr").not(".head"), 
-    // 	    	index = $(table).data('index'),
-    // 	    	target = $(table).data("target"),
-    // 	    	current = ($(target).data('uid')!=undefined) ? $(table).find("tr").filter("[data-uid='"+$(target).data('uid')+"']") : null;
-    // 	    if (current){current.addClass("active");}
-    //         alternateRowColor($(table));
-
-    // 	    var formLoadXHR = undefined;
-    // 	    trs = $(table).find("tr").not(".head, .noMatch");
-
-    //         if (!modal && $(table).hasClass('modelTable')){
-    //             var model = $(table).data('model');
-    //             trs.on('click',rowClickLoadModel);
-    //             $("#delete"+model).find(".delete").on("click",deleteModel);
-    //         }else if ($(table).hasClass('modelTable')){
-    //             var model = $(table).data('model'), modal = $(this).closest('.connectedModel'), 
-    //                 connectedTo = modal.data('connectedto'), modalId = "#"+modal.attr("id");
-
-    //             var createForm = $(".modalForm").filter(function(){
-    //                 return $(this).hasClass('createNew') && $(this).data('model') == model;
-    //             });
-
-    //             var item = $(".modalForm").filter('[data-model="'+connectedTo+'"]').find(".item, .itemFU").filter(function(){
-    //                 var question = $(this).children(".question").text().toLowerCase().replace(" ","");
-    //                 if (model == 'User'){
-    //                     return chkStrForArrayElement(question,['user','recipient']);
-    //                 }else if (model == 'Diagnosis'){
-    //                     return chkStrForArrayElement(question,['diagnosis','diagnoses']);
-    //                 }else{
-    //                     return chkStrForArrayElement(question,[model.toLowerCase()]);
-    //                 }
-    //             }), input = item.find("input, textarea"), selectBtn = modal.find(".selectData");
-
-    //             var uidArr = $("#Current"+connectedTo).find(".name").data('connectedmodels');
-
-    //             if (uidArr != undefined){
-    //                 uidArr = (uidArr[model] == undefined) ? [] : uidArr[model];
-    //             }else{
-    //                 uidArr = [];
-    //             }
-
-    //             activateInput(input,modalId,uidArr);
-    //             trs.on("click", selectInputFromTable);
-    //             selectBtn.on('click',updateInputFromTable);
-    //         }
-
-    //         var hideFilters = $(".filterType").filter(function(){
-    //             return $(this).data("target") == "#"+$(table).attr("id") && $(this).data("filter") == "hide";
-    //         });
-    //         hideFilters.find("input").click();
-
-    //         checkHorizontalTableFit($(table));
-    //     })
-
-    //     tables.find('tr').filter(function(){
-    //         return trimCellContents($(this).find('.status')) == 'required'
-    //     }).addClass('required');
-
-    //     tables.data("initialized",true);
-    // if (!$(".optionsNav").first().hasClass("hide")){$(".optionsNavHeader").show();}
-    // var newHead = filterUninitialized(".optionsNavHeader");
-    // newHead.on('click','.hide',hideOptionsNav);
-    // newHead.data('initialized',true);
-    // var newNav = filterUninitialized(".optionsNav");
-    // newNav.on('click','.toggleDetails',toggleDetails);
-    // newNav.data('initialized',true);
 })
 function initializeNewModelTables(){
     var filterTypes = filterUninitialized('.filterType'), tableFilters = filterUninitialized('.tableFilter'), tableSearches = filterUninitialized('.tableSearch');
@@ -327,14 +201,11 @@ function rowClickLoadModel(){
             $(".optionsNav").removeClass("hide");
             $(target).closest(".wrapper").show();
             resetOptionsNavBtns();
-            // updateUriUids();
             allowButtonFocus();
             optionsLoadXHR = undefined;
             $(target).on('click','.toggleDetails',toggleDetails);
-            console.log('list updates',$(target),navWrapper.find(".listUpdate").length);
             if (navWrapper.find(".listUpdate").length != 0){
                 var lists = navWrapper.find(".listUpdate").data(), uids = lists.uids, tabs = lists.tabs;
-                console.log('uids',uids,'tabs',tabs);
                 $("#uidList").text(JSON.stringify(uids));
                 $("#tabList").text(JSON.stringify(tabs));
             }

@@ -148,9 +148,9 @@ class Form extends Model
                                 "markOptions" => null,
                                 "filterOptions" => [
                                     [
-                                        "label" => 'previous versions',
-                                        "value" => 'current:0',
-                                        'attribute'=>'current'
+                                        "label" => 'inactive',
+                                        "value" => 'active:0',
+                                        'attribute'=>'active'
                                     ],
                                     ["label" => 'system forms',"value" => 'form_type:system','attribute'=>'form_type'],
                                     ["label" => 'locked forms',"value" => 'locked:1','attribute'=>'locked']
@@ -158,8 +158,8 @@ class Form extends Model
                             ]
                         ],
                         'optionsNavValues' => [
-                            'destinations' => ["settings","form-preview","forms-edit","delete","forms-create"],
-                            'btnText' => ["settings","preview","edit","delete","create new form"]
+                            'destinations' => ["settings","form-preview","forms-edit","delete"],
+                            'btnText' => ["settings","preview","edit","delete"]
                         ],
                         'orderBy' => [
                             ['form_name',"asc"],
@@ -193,7 +193,6 @@ class Form extends Model
                     ['form_name',"asc"]
                 ]
             ];
-
         }
         return array_merge($commonArr,$arr);
     }
@@ -286,6 +285,12 @@ class Form extends Model
         $submission = Submission::where([["appointment_id",$appt->id],['patient_id',$patient->id],['form_id',$this->form_id]])->get();
         return ($submission->count() == 0) ? false : $submission->first()->id;
     }
+    public function newestVersion(){
+        return Form::where('form_id',$this->form_id)->orderBy('version_id','desc')->limit(1)->get()->first();
+    }
+    public function activeVersion(){
+        return Form::where([['form_id',$this->form_id],['active',1]])->limit(1)->get()->first();
+    }
 
     public function getNameAttribute(){
         return $this->form_name;
@@ -362,6 +367,13 @@ class Form extends Model
         if ($submissions->count() > 0){return true;
         }else{return false;}
     }
+    public function getNewestVersionIdAttribute(){
+        return $this->newestVersion()->version_id;
+    }
+    public function getNewestAttribute(){
+        return $this->newest_version_id == $this->version_id;
+    }
+
     public function lastSubmittedBy(Patient $patient){
         $submissions = $this->submissions();
 
@@ -543,7 +555,7 @@ class Form extends Model
                 $name = isset($options['name']) ? $options['name'] : "";
                 $placeholder = isset($options['placeholder'])?"placeholder='".$options['placeholder']."' ":"";
                 echo "<div class='answer text'>
-                <input class='$name' $placeholder type='text' required>
+                <input class='$name' name='$name' $placeholder type='text' required>
                 </div>";
             }else{
                 echo "<div class='answer text'>
@@ -623,24 +635,23 @@ class Form extends Model
             $initial = $options['initial'];
             $minLabel = $options['minLabel'];
             $maxLabel = $options['maxLabel'];
-            $displayValue = ($options['displayValue'] == "yes") ? true:false;
-            $displayLabel = ($options['displayLabels'] == "yes") ? true:false;
+            $displayValue = ($options['displayValue'] == "yes");
+            $displayLabel = ($options['displayLabels'] == "yes");
             $name = (isset($options['name'])) ? $options['name'] : "";
 
             if ($displayLabel){
-                $minLabelStr = "($min) $minLabel";
-                $maxLabelStr = "$maxLabel ($max)";
+                $minLabelStr = "$min<br><b>$minLabel</b>";
+                $maxLabelStr = "$max<br><b>$maxLabel</b>";
             }elseif (!$displayLabel){
-                $minLabelStr = "$minLabel";
-                $maxLabelStr = "$maxLabel";
+                $minLabelStr = "<b>$minLabel</b>";
+                $maxLabelStr = "<b>$maxLabel</b>";
             }
             $class="";
             if ($displayValue){$class="showValue";}
-            // echo "<div class='answer scale' $x>
-            echo "<div class='answer scale'>
+            echo "<div class='answer scale flexbox'>
             <span class='left'>$minLabelStr</span>
             <input class='slider targetInput $class $name' data-name='$name' value='$initial' type='range' min='$min' max='$max'>
-            <span class='right'>$maxLabelStr</span><div class='SliderValue' style='opacity:0;'></div></div>";
+            <span class='right'>$maxLabelStr</span><div class='SliderValue' style='display:none;'></div></div>";
         }
         public function signature($options){
             $printed = ($options['typedName']=='yes') ? "<span class='printed'>Type your full legal name here: <span class='text'><input type='text'></span></span>":"";

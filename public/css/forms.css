@@ -75,6 +75,9 @@ textarea[data-followup]{
     width:800px;
     max-width: 95%;
 }
+.datepick * {
+    transition: background-color 400ms;
+}
 #miniSchedule .fc-today{
     background-color: unset;
 }
@@ -457,8 +460,8 @@ form, .indent, .report, .w95 {
 }
 
 .button {
-    padding:0.5em;
-    margin:1em 1.5em;
+    padding:0.7em;
+    margin:1em;
 }
 
 .button.disabled{
@@ -1053,23 +1056,24 @@ li[data-response='no response']{
     border-width: 0;
     text-align: center;
     overflow: visible;
-    display: block;
+    /*display: block;*/
 }
 
 .slider {
     -webkit-appearance: none;
-    width: 75%;
+    /*width: 75%;*/
     height: 0.7em;
-    /*z-index: 1;*/
+    z-index: 1;
     position: relative;
     background: var(--yellow10);
     outline: none;
-    margin-top:5px;
+    /*margin-top:5px;*/
     border-radius: 1.5em;   
     border-style: solid;
     border-color: var(--yellow50);
     border-width: 1px;
     box-sizing: border-box;
+    flex-grow: 15;
 }
 
 .slider::-webkit-slider-thumb {
@@ -1109,11 +1113,18 @@ li[data-response='no response']{
     display:inline-block;
 }
 
-.sliderMarks{
+.slider::after{
+    content:"";
     position: absolute;
     display: inline-block;
-    width: 100%;
-    font-size: 3em;
+    left:50%;
+    top:50%;
+    transform: translate(-50%,-50%);
+    width: 5px;
+    height: 200%;
+    border-radius: 5px;
+    background-color: var(--yellow50);
+    z-index: -1;
 }
 
 .SliderValue{
@@ -1121,32 +1132,47 @@ li[data-response='no response']{
     display: none;
     padding:.4em .5em;
     left:50%;
-    top:-50%;
-    transform: translate(-50%,-0.7em);
+    top:-0.5em;
+    font-size: 1.2em;
+    line-height: 1;
+    transform: translateX(-50%);
     border-radius: 5px;
     border-style: solid;
     border-width: 1px;
     border-color: var(--purple30);
     font-weight: 700;
-    background-color: var(--purple10);
+    background-color: var(--white80);
     box-shadow: 0 0 3px 2px rgb(240,240,240);
     color: var(--purple);
+    z-index: 1;
 }
+/*.SliderValue::before{
+    content: "";
+    position:absolute;
+    width:100%;
+    height:100%;
+    top:0;
+    left:0;
+    background-color: white;
+    z-index: -1;
+}*/
 
-.answer.scale > .left{
+.answer.scale > span{
     display: inline-block;
     font-size: 0.9em;
     vertical-align: top;
     width: 10%;
-    text-align: right;
+    text-align: center;
+    flex-grow: 1;
+    margin:0 5px;
 }
- .answer.scale > .right{
+ /*.answer.scale > .right{
     display: inline-block;
     font-size: 0.9em;
     vertical-align: top;
     width: 10%;
     text-align: left;
-}
+}*/
 
 .section h2{
     text-align: left;
@@ -1557,7 +1583,7 @@ input#PatientName {
     height: 1em;
 }
 .numberUpDown{
-    margin: -1em 0;
+    /*margin: -1em 0;*/
 }
 .number .up, .number .down, .UpDown .up, .UpDown .down {
     width: 2.1em;
@@ -1811,7 +1837,10 @@ input#PatientName {
     padding-right: 0.5em;
 }
 #ScaleList > div {
-    margin: 5px 0;
+    /*padding: 1em 0;*/
+}
+#ScaleList > div.smalller {
+    padding: 1em 0;
 }
 #ScaleList > div > span{
     display: inline-block;
@@ -1819,7 +1848,7 @@ input#PatientName {
     position: relative;
     margin-right: 1em;
     text-align: right;
-    width:16em;
+    /*width:16em;*/
 }
 
 .displayOrder {
@@ -1944,7 +1973,7 @@ input#PatientName {
 }
 
 #FormBuilder .hideTarget, #FormBuilder .hideFUs{
-    margin: 1em 0;
+    margin: 1em 0 0 0;
 }
 
 #FormBuilder .question {
@@ -1981,7 +2010,7 @@ input#PatientName {
 }
 
 .Items .target, .ItemsFU .targetFUs{
-    margin: 0 1em 1em 1em;
+    margin: 1em;
     border-radius: 5px;
     border-style: solid;
     border-width: 1px;
@@ -2129,9 +2158,9 @@ input#PatientName {
 /*#Options, #NumberOptions, #DateOptions, #FollowUpOptions, #ScaleOptions, #SignatureOptions, #TimeOptions {
     display: none;
 }*/
-#FollowUpOptions{text-align: left;}
-#FormBuilder .itemOptionList {
+.itemOptionList {
     display:none;
+    text-align: center;
 }
 .insertProxy{
     display: inline-block;
@@ -2192,22 +2221,72 @@ input#PatientName {
 .itemOptionList .settingsLabel{
     display: block;
     font-weight: bold;
+    font-size: 1.1em;
     width:100%;
     color: var(--yellow);
     border-bottom: 2px solid var(--yellow);
     margin: 10px 0 0 0;
 }
-.optionsList{
-    margin-top:5px;
+.flexbox{
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+}
+.flexbox > .flexbox{
+    display: inline-flex;
+}
+.flexbox > * {
+    /*flex: auto;*/
+    display: inline-block;
 }
 
-/*#OptionsList, #NumberList, #DateList, #FollowUpList, #ScaleList, #SignatureList, #TimeList {
+.optionsList{
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+}
+.optionsList > div {
+    margin: 5px 5px 0 5px;
+    padding: 0.2em 0.5em;
+    border: 1px solid var(--gray80);
+    background-color: var(--gray10);
+    border-radius: 0.3em;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+}
+.optionsList > div > * {
+    /*flex: auto;
+    display: inline-block;*/
+}
+.optionsList > div > span {
+    /*display: inline-block;*/
+    font-size: 0.9em;
+    margin: 0 0.5em;
+    /*top: 50%;*/
+    /*position: relative;*/
+    /*transform: translateY(-50%);*/
+    /*margin-right: 5px;*/
+}
+#OptionsList > div {
+    display: block;
+}
+#OptionsList {
+    display: block;
+}
+#OptionsList .option{
+    width: 60%;
+    min-width: 20em;
+    max-width: 95%;
+    margin: 0 auto;
+    background-color: transparent;
+    border-color: transparent;
+}
+#OptionsList .button{
     display: inline-block;
-    max-width: 75%;
-}*/
-#FormBuilder .optionsList {
-    display: inline-block;
-    width: calc(100% - 7em);
+    padding: 0.5em;
 }
 #Text{
     width: 30em;
@@ -2307,7 +2386,7 @@ input#PatientName {
     margin:2px;
 }
 */
-#DateList > div, #TimeList > div {
+/*#DateList > div, #TimeList > div {
     padding: 0.5em;
     margin: 0.5em;
     border-width: 1px;
@@ -2315,16 +2394,30 @@ input#PatientName {
     border-style: solid;
     border-color: rgb(150,150,150);
     vertical-align: middle;
-}
+}*/
 
-#DateList > div > span, #TimeList > div > span {
+/*#DateList > div > span, #TimeList > div > span {
     font-weight: 700;
-}
+}*/
 #TimeList .answer{width:auto;}
-
-#condition span, #FollowUpList select, #FollowUpList .answer, #ScaleList span, #ScaleList .answer{
-    vertical-align: middle;
+#TimeList > .flexbox {
+    border-color: transparent;
+    background-color: transparent;
 }
+#TimeList > .flexbox > div {
+    margin: 5px 5px 0 5px;
+    padding: 0.2em 0.5em;
+    border: 1px solid var(--gray80);
+    background-color: var(--gray10);
+    border-radius: 0.3em;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/*#condition span, #FollowUpList select, #FollowUpList .answer, #ScaleList span, #ScaleList .answer{
+    vertical-align: middle;
+}*/
 
 #FollowUpList select, #SignatureList select{
     display: inline-block;
@@ -2352,24 +2445,16 @@ input#PatientName {
     overflow: visible;
     width: auto;
 }
-
-#NumberList .answer{
-    position: relative;
-    top:50%;
-    transform: translateY(-50%);
-    width:auto;
-    margin:0;
-}
-#DateList .answer{
-    width:auto;
+.optionsList .answer {
+    width: auto;
 }
 #DateList > div > div > div > span {
-    display: inline-block;
+    /*display: inline-block;*/
     position: relative;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 7em;
-    text-align: right;
+    /*top: 50%;*/
+    /*transform: translateY(-50%);*/
+    /*width: 7em;*/
+    /*text-align: right;*/
     font-size: 0.9em;
 }
 #DateList > div > div > div > label{
@@ -2385,46 +2470,67 @@ input#PatientName {
     margin-left: 10px;
 }
 #DateList > div > div > div > div{
-    display: inline-block;
-    position: relative;
-    top: 50%;
-    transform: translateY(-50%);
-    margin: 0;
+    /*display: inline-block;*/
+    /*position: relative;*/
+    /*top: 50%;*/
+    /*transform: translateY(-50%);*/
+    /*margin: 0;*/
+    /*text-align: left;*/
+    margin: 5px 5px 0 5px;
+    padding: 0.2em 0.5em;
+    border: 1px solid var(--gray80);
+    background-color: var(--gray10);
+    border-radius: 0.3em;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+}
+#DateList > div > div > div > div > *{
+    margin: 0 5px;
 }
 #DateList .blockable > div > span{
-    position: relative;
-    top: 50%;
-    transform: translateY(-50%);
-    display: inline-block;
+    /*position: relative;*/
+    /*top: 50%;*/
+    /*transform: translateY(-50%);*/
+    /*display: inline-block;*/
 }
 #DateList .dropdown{
-    position: relative;
-    top: 50%;
-    transform: translateY(-70%);
-    display: inline-block;
+    /*position: relative;*/
+    /*top: 50%;*/
+    /*transform: translateY(-70%);*/
+    /*display: inline-block;*/
 }
-#NumberList > div, #DateList > div > div > div:not(.blockable), #DateList .blockable > div {
-    position: relative;
-    height:3.5em;
+/*#NumberList > div, */#DateList > div > div > div:not(.blockable), #DateList .blockable > div {
+    /*position: relative;*/
+    /*height:3.5em;*/
+}
+#TimeList{
+    display: block;
+}
+#TimeList > div {
+    display:block;
+    background-color: transparent;
+    border-color: transparent;
 }
 #NumberList > div > span{
-    display: inline-block;
+    /*display: inline-block;
     width: 7em;
     font-size: 0.9em;
     text-align: right;
     top: 50%;
     position: relative;
     transform: translateY(-50%);
-    margin-right: 5px;
+    margin-right: 5px;*/
 }
-/*#NumberList > span{
-    display: inline-block;
+#NumberList > span{
+    /*display: inline-block;
     width: 6em;
     font-size: 0.9em;
     vertical-align: middle;
-    text-align: right;
+    text-align: right;*/
 }
-*/
+
 #DateList > span{
     display: inline-block;
     vertical-align: top;
@@ -2486,6 +2592,8 @@ input#PatientName {
 
 #DateList > div{
     display: inline-block;
+    background-color: transparent;
+    border-color: transparent;
 }
 
 .tdSizeControl {

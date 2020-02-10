@@ -148,18 +148,20 @@ function activateServiceSelection(){
 	removeServiceBtn.on('click',removeService);
 	// removeServiceBtn.on('click',goForward);
 	
-	var dateSelect = filterUninitialized("#SelectDate");
-	dateSelect.find('.DateSelector').datepick('destroy');
-    dateSelect.find('.DateSelector').datepick({
-    	yearRange: dateSelect.data('yearrange'),
-    	minDate: dateSelect.data('mindate'),
-    	maxDate: dateSelect.data('maxdate'),
-    	dateFormat: 'm/d/yyyy',
-    	onSelect: function(dates){
-    		var date = moment(dates[0]).format("M/D/YYYY");
-    		updateDate(date);
-    	}
-    });
+	var dateSelect = filterUninitialized('.DateSelector');
+	dateSelect.each(function(){
+		$(this).datepick('destroy');
+		var options = {
+	    	minDate: $(this).data('mindate'),
+	    	maxDate: $(this).data('maxdate'),
+	    	dateFormat: 'm/d/yyyy',
+	    	onSelect: function(dates){
+	    		var date = moment(dates[0]).format("M/D/YYYY");
+	    		updateDate(date);
+	    	}			
+		};
+	    $(this).datepick(options);
+	})
 
 	serviceItems.data('initialized',true);
 	serviceLIs.data('initialized',true);

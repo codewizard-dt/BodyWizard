@@ -141,6 +141,7 @@ class FormController extends Controller
 
     public function store(Request $request)
     {
+        Log::info($request);
         if ($request->form_id == "none"){
             $maxFormId = Form::orderBy('form_id','desc')->take(1)->get();
             $formId = count($maxFormId) > 0 ? $maxFormId[0]->form_id + 1 : 1;
@@ -157,10 +158,11 @@ class FormController extends Controller
             if (isset($current)){
                 $form->settings = $current->settings;
                 $form->settings_json = $current->settings_json;
-                $current->current = false;
-                $current->save();
+                // $current->current = false;
+                // $current->save();
             }else{
                 $form->settings = Form::defaultSettings();
+                $form->active = true;
             }
         }else{
             $form = $current;
@@ -172,8 +174,10 @@ class FormController extends Controller
         $form->full_json = $this->extractImgsFromJson($request->full_json, $form);
 
         if ($form->save()){
-            session([$form->getKeyName()=>$form->id]);
-            return array($form->form_uid,$form->form_id);
+            // session([$form->getKeyName()=>$form->id]);
+            setUid('Form',$form->form_uid);
+            return listReturn([$form->form_uid,$form->form_id]);
+            // return array($form->form_uid,$form->form_id);
         }else{
             return false;
         }

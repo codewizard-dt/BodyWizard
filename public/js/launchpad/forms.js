@@ -3,6 +3,38 @@ $(document).ready(function () {
 })
 
 function initializeNewForms(){
+    initializeInputs();
+    initializeFullScreenBtns();
+    initializeItemCss();
+    initializeCheckboxes();
+    initializeRadios()
+    initializeDropdowns();
+    initializeDatepickers();
+    initializeSignatures();
+    initializeTimes();
+    initializeNumbers();
+    initializeScales();
+    initializeSliders();
+    initializeSubmitBtns();
+    initializeDxFormBtns();
+
+    var pointerEventToXY = function (e) {
+        var out = {x: 0, y: 0};
+        if (e.type === 'touchstart' || e.type === 'touchmove' || e.type === 'touchend' || e.type === 'touchcancel') {
+            var touch = e.originalEvent.touches[0] || e.originalEvent.changedTouches[0];
+            out.x = touch.pageX;
+            out.y = touch.pageY;
+        } else if (e.type === 'mousedown' || e.type === 'mouseup' || e.type === 'mousemove' || e.type === 'mouseover' || e.type === 'mouseout' || e.type === 'mouseenter' || e.type === 'mouseleave') {
+            out.x = e.pageX;
+            out.y = e.pageY;
+        }
+        return out;
+    };    
+    
+    $(".clearTableFilters").off("click",clearTableFilters);
+    $(".clearTableFilters").on("click",clearTableFilters);    
+}
+function initializeInputs(target = null, options = null){
     var inputs = filterUninitialized('input');
     inputs.on("keyup",function(e){
         if (!e){
@@ -17,20 +49,23 @@ function initializeNewForms(){
         }
     });
     inputs.data('initialized',true);
-
+}
+function initializeFullScreenBtns(target = null, options = null){
     var fullscreenBtn = filterUninitialized(".btn-fullscreen");
     fullscreenBtn.on('click',function(){
         var p = modalOrBody($(this));
         p.scrollTo($(this).closest(".note-editor"),200);
     })
     fullscreenBtn.data('initialized',true);
-
-    items = filterUninitialized($(".formDisp").find(".item, .itemFU"));
+}
+function initializeItemCss(target = null, options = null){
+    var items = filterUninitialized($(".formDisp").find(".item, .itemFU"));
     items.each(function(i,item){
         UpdateCss($(item));
     });
     items.data('initialized',true);
-        
+}
+function initializeCheckboxes(target = null, options = null){
     var checkboxes = filterUninitialized(".checkboxes");
     var plzSelectNode = $("<div class='plzselect'>(select as many as apply)</div>");
     checkboxes.each(function(){
@@ -41,11 +76,13 @@ function initializeNewForms(){
         return $.inArray($(this).data('value'),['no','none','never']) > -1;
     }).on('click',masterCheckbox);
     checkboxes.data("initialized",true);
-    
+}
+function initializeRadios(target = null, options = null){
     var radios = filterUninitialized(".radio");
     radios.attr('tabindex','0').on("click","li",radio);
     radios.data("initialized",true);
-
+}
+function initializeDropdowns(target = null, options = null){
     var dropdowns = filterUninitialized(".dropdown");
     dropdowns.on("change","select",function(){
         var response = $(this).val();
@@ -55,40 +92,38 @@ function initializeNewForms(){
         }
     })
     dropdowns.data("initialized",true);
-
-    // var datepickers = filterUninitialized(".datepicker");
+}
+function initializeDatepickers(target = null, options = null){
     var datepickers = filterByData(".datepicker",'hasDatePicker',false);
-    // console.log(datepickers);
     datepickers.each(function(){
         $(this).on("focus",function(e){
             e.preventDefault();
         })
-        var r = $(this).data("yearrange");
-        var min = $(this).data("mindate");
-        var max = $(this).data("maxdate");
+        var min = $(this).data("mindate"), max = $(this).data("maxdate");
         
         var options = {};
-        options['yearRange'] = r;
         if (min!="" && max!=""){
             options['minDate']=min;
             options['maxDate']=max;
+        }else{
+            options['yearRange'] = "1920:c+1";
         }
         
         $(this).datepick(options);
     })
     datepickers.data("hasDatePicker",true);
-    // datepickers.data("initialized",true);
-
-    var signatures = filterUninitialized(".signature");
+}
+function initializeSignatures(target = null, options = null){
+    var signatures = $(".signature").filter(function(){return $(this).find('.jSignature').length == 0;})
     signatures.each(function(){
         $(this).jSignature();
         $(this).on("click",".clear",function(){
             $(this).parent().jSignature("reset");
         })
     })
-    signatures.attr('tabindex','0');
-    signatures.data("initialized",true);
-
+    // signatures.attr('tabindex','0');
+}
+function initializeTimes(target = null, options = null){
     var times = filterUninitialized(".time");
     times.each(function(){
         var i = $(this).find("input"), o = i.data('options');
@@ -98,78 +133,71 @@ function initializeNewForms(){
         })
     })
     times.data("initialized",true);
-
-    var pointerEventToXY = function (e) {
-        var out = {x: 0, y: 0};
-        if (e.type === 'touchstart' || e.type === 'touchmove' || e.type === 'touchend' || e.type === 'touchcancel') {
-            var touch = e.originalEvent.touches[0] || e.originalEvent.changedTouches[0];
-            out.x = touch.pageX;
-            out.y = touch.pageY;
-        } else if (e.type === 'mousedown' || e.type === 'mouseup' || e.type === 'mousemove' || e.type === 'mouseover' || e.type === 'mouseout' || e.type === 'mouseenter' || e.type === 'mouseleave') {
-            out.x = e.pageX;
-            out.y = e.pageY;
-        }
-        return out;
-    };
-       
+}
+function initializeNumbers(target = null, options = null){
     var numbers = filterUninitialized(".number");
     numbers.on("mousedown touchstart",".change",startChange);
     numbers.on("mouseup touchend",".change",stopChange);
     numbers.on('keyup',"input",inputNum);
     numbers.data("initialized",true);
-
-    // var sliderXPos;
-    
+}
+function initializeScales(target = null, options = null){
     var scales = filterUninitialized(".scale");
-    scales.on("mouseenter",function(){
-        var item = $(this).closest('.item');
-        
-        clearTimeout(item.data("timeoutId"));
-        changeSliderValue(item);
-    });    
-    scales.on("mouseleave touchend", function(){
-        var item = $(this).closest('.item');
-        var timeoutId = setTimeout(function(){
-            hideSliderValue(item);
-        }, 1000);
-        
-        clearInterval(item.data('updateId'));
-        item.data("updateId","clear");
-        item.data('timeoutId', timeoutId); 
-        var response = item.find("input").val();
-        showFollowUps(response,item);
-    });
+    scales.on("mouseenter",scaleMouseEnter);    
+    scales.on("mouseleave touchend", scaleMouseLeave);
     scales.data("initialized",true);
-
-
-    var sliders = filterUninitialized(".slider");
-    sliders.closest(".item").data("updateId","clear");
-    sliders.on("mousedown touchstart",function(){
-        var item = $(this).closest('.item');
-        if (item.data("updateId")=="clear"){
-            var updateId = setInterval(function(){
-                changeSliderValue(item);
-            },100);
-            showSliderValue(item);
-            item.data('updateId',updateId);
-        }
-    });
-    sliders.data("initialized",true);
-    
+}
+function initializeSliders(target = null, options = null){
+    var sliders = filterByData(".slider",'hasSliderFx',false);
+    sliders.closest(".item, .itemFU").data("updateId","clear");
+    sliders.on("mousedown touchstart",sliderStart);
+    sliders.on("mouseup touchend",sliderStop);
     $(".SliderValue").css("opacity",1);
-
+    hideSliderValue(sliders);
+    sliders.data("hasSliderFx",true);
+}
+function initializeSubmitBtns(target = null, options = null){
     var submitBtns = filterUninitialized(".submitForm");
     submitBtns.on('click',submitForm);
     submitBtns.data("initialized",true);
-    
-    
-    $(".clearTableFilters").off("click",clearTableFilters);
-    $(".clearTableFilters").on("click",clearTableFilters);
-
+}
+function initializeDxFormBtns(target = null, options = null){
     var loadDxFormBtns = filterUninitialized($("#load_dx_form").find("li"));
     loadDxFormBtns.on("click",loadDxForm);
     loadDxFormBtns.data("initialized",true);
+}
+
+function scaleMouseEnter(){
+    var item = $(this).closest('.item, .itemFU');
+    clearTimeout(item.data("timeoutId"));
+    changeSliderValue(item);
+}
+function scaleMouseLeave(){
+    var item = $(this).closest('.item, .itemFU');
+    var timeoutId = setTimeout(function(){
+        hideSliderValue(item);
+    }, 1000);
     
+    clearInterval(item.data('updateId'));
+    item.data("updateId","clear");
+    item.data('timeoutId', timeoutId); 
+    // var response = item.find("input").val();
+    // showFollowUps(response,item);
+}
+function sliderStart(){
+    var item = $(this).closest('.item, .itemFU');
+    // console.log(item,item.data());
+    if (item.data("updateId")=="clear"){
+        var updateId = setInterval(function(){
+            changeSliderValue(item);
+        },100);
+        showSliderValue(item);
+        item.data('updateId',updateId);
+    }
+}
+function sliderStop(){
+    var item = $(this).closest('.item, .itemFU'), response = item.find("input").val();
+    showFollowUps(response,item);
 }
 
 // var itemCss = getDefaultCSS('item');
@@ -254,7 +282,7 @@ function Adj2(item,val,step,direction){
         }
         item.find("input").val((val/mag).toString());
         checkNum(item);
-    },100)
+    },250)
     
     item.data("numAdj",numInt);
 }
@@ -299,41 +327,41 @@ function checkNum(target){
 }
 
 function showSliderValue(item){
-    var showBool = $(item).find(".slider").hasClass("showValue");
-    if (showBool){
-        $(item).find(".SliderValue").fadeIn();
+    var showVal = $(item).find(".slider").hasClass("showValue");
+    if (showVal){
+        $(item).find(".SliderValue").slideFadeIn();
     }
 }
 function hideSliderValue(item){
-    $(item).find(".SliderValue").fadeOut();
+    $(item).find(".SliderValue").slideFadeOut();
 }
 function changeSliderValue(item){
     var val = $(item).find('input').val();
-    $(item).find(".SliderValue").text("Current Value: "+val);
+    $(item).find(".SliderValue").text(val);
 }
         
-function PainBox(xPos,yPos){
-    var wrap = $('<div class="paincircle" data-left="'+xPos.toFixed(1)+'" data-top="'+yPos.toFixed(1)+'"></div>'),newBox;
-    wrap.appendTo("#model");
-    newBox = $("#model").find(".paincircle").last();
-    newBox.css({
-        "left": xPos+"px",
-        "top": yPos+"px"            
-    })
-    updatePainBoxValue();
-}
-function updatePainBoxValue(){
-    var paincircles = $(".paincircle"), values="", input = $("#painwrapper").closest(".item").find("#painLocation");
-    paincircles.each(function(i,paincircle){
-        var value = "X"+$(paincircle).data("left")+"_Y"+$(paincircle).data("top");
-        if (values===""){
-            values=value;
-        }else{
-            values= values +", "+ value;
-        }
-    })
-    input.val(values);
-}
+// function PainBox(xPos,yPos){
+//     var wrap = $('<div class="paincircle" data-left="'+xPos.toFixed(1)+'" data-top="'+yPos.toFixed(1)+'"></div>'),newBox;
+//     wrap.appendTo("#model");
+//     newBox = $("#model").find(".paincircle").last();
+//     newBox.css({
+//         "left": xPos+"px",
+//         "top": yPos+"px"            
+//     })
+//     updatePainBoxValue();
+// }
+// function updatePainBoxValue(){
+//     var paincircles = $(".paincircle"), values="", input = $("#painwrapper").closest(".item").find("#painLocation");
+//     paincircles.each(function(i,paincircle){
+//         var value = "X"+$(paincircle).data("left")+"_Y"+$(paincircle).data("top");
+//         if (values===""){
+//             values=value;
+//         }else{
+//             values= values +", "+ value;
+//         }
+//     })
+//     input.val(values);
+// }
 
 
 function loadDxForm(){
@@ -388,6 +416,7 @@ function masterCheckbox(){
     }
 }
 function showFollowUps(responseStr,item){
+    console.log(responseStr,item);
     if (item.is(".itemFU, .itemFUList")){
         return false;
     }
@@ -411,32 +440,41 @@ function showFollowUps(responseStr,item){
         })
     }
     else if ($.inArray(type,['scale','number'])>-1){
+        // console.log(FUs);
         FUs.each(function(i,FU){
-            var cond = $(FU).data("condition");
-            cond = cond[0];
-            var n, r = Number(responseStr);
-            if (cond.includes("greater than")){
-                n = Number(cond.substr(13));
-                if (r>n){
-                    slideFadeIn($(FU));
-                }else{
-                    slideFadeOut($(FU));
-                }
-            }else if (cond.includes("less than")){
-                n = Number(cond.substr(10));
-                if (r<n){
-                    slideFadeIn($(FU));
-                }else{
-                    slideFadeOut($(FU));
-                }
-            }else if (cond.includes("equal to")){
-                n = Number(cond.substr(9));
-                if (r==n){
-                    slideFadeIn($(FU));
-                }else{
-                    slideFadeOut($(FU));
-                }
+            var itemFU = $(FU), cond = itemFU.data("condition");
+            var n = Number(cond.split(" ")[2]), r = Number(responseStr), dir = cond.split(" ")[0];
+
+            if ((r > n && dir == 'greater')
+                || (r == n && dir == 'equal')
+                || (r < n && dir == 'less')){
+                itemFU.slideFadeIn();
+            }else{
+                itemFU.slideFadeOut();
             }
+
+            // if (cond.includes("greater than")){
+            //     n = Number(cond.substr(13));
+            //     if (r>n){
+            //         slideFadeIn(itemFU);
+            //     }else{
+            //         slideFadeOut(itemFU);
+            //     }
+            // }else if (cond.includes("less than")){
+            //     n = Number(cond.substr(10));
+            //     if (r<n){
+            //         slideFadeIn(itemFU);
+            //     }else{
+            //         slideFadeOut(itemFU);
+            //     }
+            // }else if (cond.includes("equal to")){
+            //     n = Number(cond.substr(9));
+            //     if (r==n){
+            //         slideFadeIn(itemFU);
+            //     }else{
+            //         slideFadeOut(itemFU);
+            //     }
+            // }
         })
     }
     var showing = FUs.filter(function(){
@@ -555,12 +593,9 @@ function scrollToInvalidItem(target){
     var p = modalOrBody(target), m = parentModalOrBody(target),
         dif = Math.abs(p.outerHeight(true) - p[0].scrollHeight);
 
-    console.log(dif);
-    console.log(target);
-
-    if (!p.is("body") && (Math.abs(p.outerHeight(true) - p[0].scrollHeight) > 10)){
+    console.log(dif, target);
+    if (!p.is("body") && dif > 10){
         p.scrollTo(target);
-        // $.scrollTo("#Block",0);
     }else{
         p.scrollTo(target);
     }

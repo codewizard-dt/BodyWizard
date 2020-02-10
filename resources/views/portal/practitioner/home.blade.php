@@ -1,4 +1,4 @@
-<div class='splash top' id='needle-tray-1'>
+<div class='splash top vhIndicator' id='needle-tray-1'>
     <h1 class='purple shaded70'>Practitioner Launchpad</h1>
 </div>
 <?php 
