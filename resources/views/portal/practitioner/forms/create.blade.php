@@ -79,6 +79,7 @@ $requiredOptions = ['required','optional','ID*requiredbool'];
                         <option value='text'>single line text</option>
                         <option value='text box'>text box</option>
                         <option value='number'>number</option>
+                        <option value='bodyclick'>body click</option>
                         <option value='radio'>select one answer</option>
                         <option value='checkboxes'>select one or more answers</option>
                         <option value='dropdown'>dropdown menu</option>
