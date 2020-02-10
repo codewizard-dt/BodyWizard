@@ -93,6 +93,16 @@ function initializeDropdowns(target = null, options = null){
     })
     dropdowns.data("initialized",true);
 }
+function initializeImageClicks(target = null, options = null){
+    var imageclicks = filterUninitialized('.imageClick');
+    imageclicks.on('touchstart mousedown', imageClick);
+    imageclicks.each(function(){
+        var width = $(this).data('width') !== undefined ? $(this).data('width') : '10em', 
+            height = $(this).data('height') !== undefined ? $(this).data('height') : '10em';
+        $(this).css({width:width,height:height});
+    })
+    imageclicks.data('initialized',true);
+}
 function initializeDatepickers(target = null, options = null){
     var datepickers = filterByData(".datepicker",'hasDatePicker',false);
     datepickers.each(function(){
