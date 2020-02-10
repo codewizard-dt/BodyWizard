@@ -18,18 +18,18 @@ function initializeNewForms(){
     initializeSubmitBtns();
     initializeDxFormBtns();
 
-    var pointerEventToXY = function (e) {
-        var out = {x: 0, y: 0};
-        if (e.type === 'touchstart' || e.type === 'touchmove' || e.type === 'touchend' || e.type === 'touchcancel') {
-            var touch = e.originalEvent.touches[0] || e.originalEvent.changedTouches[0];
-            out.x = touch.pageX;
-            out.y = touch.pageY;
-        } else if (e.type === 'mousedown' || e.type === 'mouseup' || e.type === 'mousemove' || e.type === 'mouseover' || e.type === 'mouseout' || e.type === 'mouseenter' || e.type === 'mouseleave') {
-            out.x = e.pageX;
-            out.y = e.pageY;
-        }
-        return out;
-    };    
+    // var pointerEventToXY = function (e) {
+    //     var out = {x: 0, y: 0};
+    //     if (e.type === 'touchstart' || e.type === 'touchmove' || e.type === 'touchend' || e.type === 'touchcancel') {
+    //         var touch = e.originalEvent.touches[0] || e.originalEvent.changedTouches[0];
+    //         out.x = touch.pageX;
+    //         out.y = touch.pageY;
+    //     } else if (e.type === 'mousedown' || e.type === 'mouseup' || e.type === 'mousemove' || e.type === 'mouseover' || e.type === 'mouseout' || e.type === 'mouseenter' || e.type === 'mouseleave') {
+    //         out.x = e.pageX;
+    //         out.y = e.pageY;
+    //     }
+    //     return out;
+    // };    
     
     $(".clearTableFilters").off("click",clearTableFilters);
     $(".clearTableFilters").on("click",clearTableFilters);    
@@ -200,7 +200,46 @@ function sliderStop(){
     showFollowUps(response,item);
 }
 
-// var itemCss = getDefaultCSS('item');
+var pointerEventToXY = function (ev) {
+    var out = {x: 0, y: 0};
+    if (ev.type === 'touchstart' || ev.type === 'touchmove' || ev.type === 'touchend' || ev.type === 'touchcancel') {
+        var touch = ev.originalEvent.touches[0] || ev.originalEvent.changedTouches[0];
+        out.x = touch.pageX;
+        out.y = touch.pageY;
+    } else if (ev.type === 'mousedown' || ev.type === 'mouseup' || ev.type === 'mousemove' || ev.type === 'mouseover' || ev.type === 'mouseout' || ev.type === 'mouseenter' || ev.type === 'mouseleave') {
+        out.x = ev.pageX;
+        out.y = ev.pageY;
+    }
+    return out;
+};
+var circle = $("<div/>",{
+    class: 'indicatorWrap',
+    html:"<div class='indicator'></div>"
+});
+function imageClick(ev){
+    var windowCoords = pointerEventToXY(ev), image = $(ev.target).closest('.imageClick'), imageRect = image[0].getBoundingClientRect(), newCircle = circle.clone(), imageCoords = {x:imageRect.left,y:imageRect.top},
+        absCoords = {
+            x: windowCoords.x - imageCoords.x,
+            y: windowCoords.y - imageCoords.y - window.scrollY
+        }, 
+        percentCoords = {
+            x: absCoords.x / imageRect.width * 100,
+            y: absCoords.y / imageRect.height * 100
+        }, count, undo = image.find('.undo');
+    if ($(ev.target).is('.undo')){
+        var mostRecent = filterByData(image.find('.indicatorWrap'),'index','max');
+        mostRecent.remove();
+        count = image.find('.indicator').length;
+    }else{
+        newCircle.appendTo(image).css({left:percentCoords.x + "%",top:percentCoords.y + "%"});
+        count = image.find('.indicator').length;
+        newCircle.data({index:count,coordinates:percentCoords});
+        // console.log(newCircle.data());
+    }
+    if (count > 0){undo.slideFadeIn();}
+    else{undo.slideFadeOut();}
+}
+
 function UpdateCss(item){
     var type = (item.is(".item, .itemFU")) ? 'item' : 'section',
         dispObj = (item.data('display') != null) ? item.data('display') : getDefaultCSS(type);
