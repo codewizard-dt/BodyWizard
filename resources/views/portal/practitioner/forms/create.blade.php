@@ -223,7 +223,16 @@ $requiredOptions = ['required','optional','ID*requiredbool'];
                     </div>
                 </div>
             </div>
-            <div id='ScaleOptions' class='itemOptionList'>
+            <div id='BodyClickOptions' class='itemOptionList'>
+                <?php 
+                    $imageClickOptions1 = [
+                        'image' => '/images/body/rsz_body12.png',
+                        'height' => '30em',
+                        'name' => 'bodyClick1'
+                    ];
+                ?>
+                <div>{{$ctrl->imageClick($imageClickOptions1)}}</div>
+            </div>            <div id='ScaleOptions' class='itemOptionList'>
                 <span class="settingsLabel">Options</span>
                 <span class='little'>Labels will always show on each side, but you can choose to show the values or not.<br>To approximate a 'visual analog scale', hide the values and set the max to at least 100.</span>
                 <div id="ScaleList" class='optionsList'>
