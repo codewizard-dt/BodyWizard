@@ -12,7 +12,6 @@
 
 @section('content')
 <div class='splash top flexbox vhIndicator' id='shelf-2'>
-    
     <div class="wrapper paddedBig">
         <div id="LoginForm">
             @csrf

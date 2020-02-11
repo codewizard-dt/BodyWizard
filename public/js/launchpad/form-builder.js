@@ -1339,6 +1339,7 @@ $(document).ready(function(){
                 template = $(".template").filter("[data-type='"+t+"']").find(target).clone();
 
             // template.removeAttr('id');
+            console.log(template);
             template.add(template.find("select, input")).removeClass(function(index,classes){
                 return (classes.match (/\b([^ ]*)Template/g) || []).join(' ');
             }).removeAttr('name data-name');
@@ -1936,6 +1937,18 @@ $(document).ready(function(){
             $.each(options,function(i,value){
                 $("<li data-value='"+value+"'>"+value+"</li>").appendTo(target).on("click",checkbox);
             });
+        }
+        else if (type == 'bodyclick'){
+            // console.log(item);
+            target = item.find(".imageClick");
+            target.on('touchstart mousedown', imageClick);
+            // imageclicks.each(function(){
+                var width = target.data('width') !== undefined ? target.data('width') : '10em', 
+                    height = target.data('height') !== undefined ? target.data('height') : '10em';
+                target.css({width:width,height:height});
+                target.find('.undo').slideFadeOut();
+            // });
+            target.data('initialized',true);            
         }
         else if (type == "dropdown"){
             target = item.find("select");

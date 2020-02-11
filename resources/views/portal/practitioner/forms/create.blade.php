@@ -230,6 +230,7 @@ $requiredOptions = ['required','optional','ID*requiredbool'];
                         'height' => '30em',
                         'name' => 'bodyClick1'
                     ];
+                    $imageClickSizeOptions = ['small','medium','large',"ID*imageClickSize"];
                 ?>
                 <div>{{$ctrl->imageClick($imageClickOptions1)}}</div>
             </div>
@@ -336,6 +337,11 @@ $requiredOptions = ['required','optional','ID*requiredbool'];
             'name' => 'narrativeTemplate',
             'markupStr' => "demo"
         ];
+        $bodyClickOptions = [
+            'image' => '/images/body/rsz_body12.png',
+            'height' => '70em',
+            'name' => 'bodyClickTemplate'
+        ];
     ?>
     <div class='template' data-type="narrative" data-defaultoptions="{{ json_encode($narrativeOptions) }}">{{ $ctrl->answerDisp('narrative',$narrativeOptions) }}</div>
     <div class='template' data-type="text" data-defaultoptions="{{ json_encode($textOptions) }}">{{ $ctrl->answerDisp('text',$textOptions) }}</div>
@@ -343,6 +349,7 @@ $requiredOptions = ['required','optional','ID*requiredbool'];
     <div class='template' data-type="number" data-defaultoptions="{{ json_encode($numberOptions) }}">{{ $ctrl->answerDisp('number',$numberOptions) }}</div>
     <div class='template' data-type="radio" data-defaultoptions="{{ json_encode($radioOptions) }}">{{ $ctrl->answerDisp('radio',$radioOptions) }}</div>
     <div class='template' data-type="checkboxes" data-defaultoptions="{{ json_encode($checkboxesOptions) }}">{{ $ctrl->answerDisp('checkboxes',$checkboxesOptions) }}</div>
+    <div class='template' data-type="bodyclick" data-defaultoptions="{{ json_encode($bodyClickOptions) }}">{{ $ctrl->answerDisp('bodyclick',$bodyClickOptions) }}</div>
     <div class='template' data-type="dropdown" data-defaultoptions="{{ json_encode($dropdownOptions) }}">{{ $ctrl->answerDisp('dropdown',$dropdownOptions) }}</div>
     <div class='template' data-type="scale" data-defaultoptions="{{ json_encode($scaleOptions) }}">{{ $ctrl->answerDisp('scale',$scaleOptions) }}</div>
     <div class='template' data-type="date" data-defaultoptions="{{ json_encode($dateOptions) }}">{{ $ctrl->answerDisp('date',$dateOptions) }}</div>

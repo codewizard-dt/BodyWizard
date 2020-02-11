@@ -93,17 +93,28 @@ function filterUninitialized(selector,debug = false,msg = false){
     return uninitialized;
 }
 function filterByData(selector,key,value){
-    var matches, obj;
-    if (selector instanceof jQuery){obj = selector;}
-    else if(typeof selector == 'string'){obj = $(selector);}
+    var matches, items;
+    if (selector instanceof jQuery){items = selector;}
+    else if(typeof selector == 'string'){items = $(selector);}
     else {return false;}
-    matches = obj.filter(function(){
-        if ($.inArray(value,['unset','null','undefined',false,"false"]) > -1){
-            return !$(this).data(key);
-        }else{
-            return $(this).data(key) === value;
-        }
-    });
+    if (value === 'max'){
+        var max = null;
+        items.each(function(){
+            var num = Number($(this).data(key));
+            if (max === null || num > max) {max = num;}
+        });
+        matches = items.filter(function(){
+            return $(this).data(key) === max;
+        })
+    }else{
+        matches = items.filter(function(){
+            if ($.inArray(value,['unset','null','undefined',false,"false"]) > -1){
+                return !$(this).data(key);
+            }else{
+                return $(this).data(key) === value;
+            }
+        });
+    }
     return matches;
 }
 
@@ -1584,21 +1595,22 @@ function resizeImageClicks(){
     $('.imageClick').each(function(){
         var height = $(this).data('height') != 'null' ? $(this).data('height') : '20em',
             ratio = $(this).data('ratio') != 'null' ? Number($(this).data('ratio')) : 1.5, width,
-            parentRect = $(this).parent()[0].getBoundingClientRect(), parentWidth = parentRect.width, newWidth, ratio = 1, newHeight;
+            parentRect = $(this).parent()[0].getBoundingClientRect(), parentWidth = parentRect.width, newWidth, newHeight, visible = $(this).is(":visible");
         $(this).css({height:height});
         var heightInPx = $(this).outerHeight(), newHeight;
         width = heightInPx * ratio;
         newWidth = width;
-        console.log($(this),newWidth, width);
+        console.log($(this),height);
         $(this).css({width:width});
-        // while(newWidth > parentWidth){
-        //     newWidth = newWidth*0.95;
-        // }
-        // if (newWidth != width){
-        //     newHeight = newWidth / ratio;
-        //     $(this).css({width:newWidth,height:newHeight});
-        // }
-        // if ($(this).find(".indicator").length == 0){$(this).find(".undo").slideFadeOut();}
+        if (visible){
+            while(newWidth > parentWidth){
+                newWidth = newWidth*0.95;
+            }
+            if (newWidth != width){
+                newHeight = newWidth / ratio;
+                $(this).css({width:newWidth,height:newHeight});
+            }
+        }
     });
 }
 

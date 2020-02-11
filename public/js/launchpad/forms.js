@@ -98,10 +98,11 @@ function initializeImageClicks(target = null, options = null){
     var imageclicks = filterUninitialized('.imageClick');
     imageclicks.on('touchstart mousedown', imageClick);
     imageclicks.each(function(){
-        var width = $(this).data('width') !== undefined ? $(this).data('width') : '10em', 
-            height = $(this).data('height') !== undefined ? $(this).data('height') : '10em';
-        $(this).css({width:width,height:height});
-    })
+        // var width = $(this).data('width') !== undefined ? $(this).data('width') : '10em', 
+        var height = $(this).data('height') !== undefined ? $(this).data('height') : '10em';
+        $(this).css({height:height});
+        $(this).find('.undo').slideFadeOut();
+    });
     imageclicks.data('initialized',true);
 }
 function initializeDatepickers(target = null, options = null){
@@ -238,7 +239,7 @@ function imageClick(ev){
             y: absCoords.y / imageRect.height * 100
         }, count, undo = image.find('.undo');
     if ($(ev.target).is('.undo')){
-        console.log($(ev.target));
+        // console.log($(ev.target));
         var mostRecent = filterByData(image.find('.indicatorWrap'),'index','max');
         mostRecent.remove();
         count = image.find('.indicator').length;

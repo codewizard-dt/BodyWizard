@@ -730,7 +730,7 @@ class Form extends Model
             elseif ($type=='bodyclick'){
                 $bodyClickOptions = [
                     'image' => '/images/body/rsz_body12.png',
-                    'height' => '30em',
+                    'height' => '50em',
                     'name' => 'bodyClick'
                 ];
                 $this->imageClick($bodyClickOptions);
