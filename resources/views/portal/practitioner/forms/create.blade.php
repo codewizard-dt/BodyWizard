@@ -227,11 +227,15 @@ $requiredOptions = ['required','optional','ID*requiredbool'];
                 <?php 
                     $imageClickOptions1 = [
                         'image' => '/images/body/rsz_body12.png',
-                        'height' => '30em',
-                        'name' => 'bodyClick1'
+                        'height' => '27.5em',
+                        'name' => 'bodyClickSample'
                     ];
-                    $imageClickSizeOptions = ['small','medium','large',"ID*imageClickSize"];
+                    $imageClickSizeOptions = ['small','medium','large','x-large',"ID*imageClickSize"];
                 ?>
+                <span class="settingsLabel">Options</span>
+                <div id="BodyClickList" class="optionsList">
+                    <div><span>Image height:</span>{{$ctrl->radio($imageClickSizeOptions)}}</div>                
+                </div>
                 <div>{{$ctrl->imageClick($imageClickOptions1)}}</div>
             </div>
             <div id='ScaleOptions' class='itemOptionList'>
@@ -294,14 +298,7 @@ $requiredOptions = ['required','optional','ID*requiredbool'];
             <div class='button medium cancel'>cancel</div>
         </div>
     </div>
-    
-    <div id="SectionOrder">
-        <div style='display:inline-block'>
-            <span>Section Order</span><div class='toggle save'>(save)</div><div class="toggle cancel">(cancel)</div>
-            <div id="SectionList"></div>
-        </div>
-    </div>
-        
+            
 <div id='Templates'>
     <?php 
         $textOptions = [
@@ -339,7 +336,7 @@ $requiredOptions = ['required','optional','ID*requiredbool'];
         ];
         $bodyClickOptions = [
             'image' => '/images/body/rsz_body12.png',
-            'height' => '70em',
+            'height' => '35em',
             'name' => 'bodyClickTemplate'
         ];
     ?>

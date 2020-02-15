@@ -143,6 +143,15 @@ function randomArrayElements(array,number){
         }
     } while (newArray.length < number);
 }
+function findObjKey(obj,value){
+    for (var key in obj){
+        console.log(obj,key,value);
+        if (obj[key] === value){
+            return key;
+        }
+    }
+    return null;
+}
 var uidList, tabList, tabHeaderInfo = {};
 $.ajaxSetup({
         headers: {
@@ -1597,20 +1606,24 @@ function resizeImageClicks(){
             ratio = $(this).data('ratio') != 'null' ? Number($(this).data('ratio')) : 1.5, width,
             parentRect = $(this).parent()[0].getBoundingClientRect(), parentWidth = parentRect.width, newWidth, newHeight, visible = $(this).is(":visible");
         $(this).css({height:height});
-        var heightInPx = $(this).outerHeight(), newHeight;
-        width = heightInPx * ratio;
-        newWidth = width;
-        console.log($(this),height);
-        $(this).css({width:width});
-        if (visible){
-            while(newWidth > parentWidth){
-                newWidth = newWidth*0.95;
+        var img = $(this);
+        setTimeout(function(){
+            var heightInPx = img.outerHeight(), newHeight;
+            width = heightInPx * ratio;
+            newWidth = width;
+            // console.log(img,height);
+            img.css({width:width});
+            // console.log(img.css('width'));
+            if (visible){
+                while(newWidth > parentWidth){
+                    newWidth = newWidth*0.95;
+                }
+                if (newWidth != width){
+                    newHeight = newWidth / ratio;
+                    img.css({width:newWidth,height:newHeight});
+                }
             }
-            if (newWidth != width){
-                newHeight = newWidth / ratio;
-                $(this).css({width:newWidth,height:newHeight});
-            }
-        }
+        },501)
     });
 }
 
@@ -1675,7 +1688,7 @@ function resizeElements(ev){
             // console.log(ev);
             vhIndicatorHeight = vhIndicator.height();
         }
-        if (vhIndicatorHeight !== undefined) console.log(vhIndicatorHeight);
+        // if (vhIndicatorHeight !== undefined) console.log(vhIndicatorHeight);
         resizeSplits();
         resizeQuotes();
         resizeMobileMenuAndFooter();

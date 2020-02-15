@@ -1,6 +1,6 @@
 .ui-timepicker-wrapper {
 	overflow-y: auto;
-	max-height: 150px;
+	max-height: 15em;
 	width: 6.5em;
 	background: #fff;
 	border: 1px solid #ddd;
@@ -36,7 +36,7 @@
 }
 
 .ui-timepicker-list li {
-	padding: 3px 0 3px 5px;
+	padding: 0.5em 0.7em;
 	cursor: pointer;
 	white-space: nowrap;
 	color: #000;

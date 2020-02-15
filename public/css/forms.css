@@ -1500,6 +1500,9 @@ input#PatientName {
 .optionsNav .navHead{
     /*padding: 1em;*/
 }
+.imageClick.bodyClickSample{
+    margin-top:10px;
+}
 .imageClick {
   position: relative;
   display: block;
@@ -1507,9 +1510,11 @@ input#PatientName {
   background-position: center;
   background-size: contain;
   background-repeat: no-repeat;
-  width: 100%;
+  /*width: 100%;*/
+  max-width: 100%;
   max-height: 90vh;
   cursor: crosshair;
+  transition: height 500ms, width 500ms;
 }
 
 .imageClick .undo {
@@ -1528,10 +1533,20 @@ input#PatientName {
   padding: 0;
   border-radius: 1.5em;
   border: 1px solid var(--pink90);
-  -webkit-transform: translate(-50%, -50%);
-          transform: translate(-50%, -50%);
-  background-color: var(--pink70);
+  transform: translate(-50%, -50%);
+  background-color: var(--pink30);
   box-shadow: 0 0 0.2em 0.2em var(--pink30);
+}
+.imageClick .indicatorWrap::after{
+    content: "";
+    position: absolute;
+    width:0.3em;
+    height:0.3em;
+    border-radius: 50%;
+    background-color: var(--pink);
+    top:50%;
+    left:50%;
+    transform: translate(-50%, -50%);
 }
 
 .imageClick .indicatorWrap {
@@ -2472,6 +2487,10 @@ input#PatientName {
     border-radius: 5px;
 }
 
+#NarrText{
+    max-width:100%;
+    height:6em;
+}
 #NarrativeList {
     text-align: left;
 }

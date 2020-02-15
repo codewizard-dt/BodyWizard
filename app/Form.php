@@ -728,12 +728,13 @@ class Form extends Model
                 $this->scale($options);
             }
             elseif ($type=='bodyclick'){
-                $bodyClickOptions = [
-                    'image' => '/images/body/rsz_body12.png',
-                    'height' => '50em',
-                    'name' => 'bodyClick'
-                ];
-                $this->imageClick($bodyClickOptions);
+                // $bodyClickOptions = [
+                //     'image' => '/images/body/rsz_body12.png',
+                //     'height' => '50em',
+                //     'name' => 'bodyClick'
+                // ];
+                $options['image'] = '/images/body/rsz_body12.png';
+                $this->imageClick($options);
             }
             elseif ($type=='date'){
                 $this->datePick($options);

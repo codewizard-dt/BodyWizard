@@ -8,9 +8,6 @@ $(document).ready(function(){
     $("#FormName").find(".save").css("display","inline-block");
     $("#FormName").find(".edit").hide();
 
-    var sectionNode = "<div class='section'><h2 class='sectionName editable'><div class='pair'><input type='text' class='input'> <span class='value'></span></div><div class='toggle edit'>(edit section name)</div><div class='toggle save'>(save)</div><div class='toggle cancel'>(cancel)</div></h2>  <div class='Items'>  <div class='selectMultiple'> <div class='show button xxsmall yellow70'>select multiple items</div><div class='hide button xxsmall'>cancel selection</div><div class='delete button pink70 xxsmall'>delete items</div><div class='copy button pink70 xxsmall'>duplicate items</div> </div>   <p class='hideTarget'><span class='down'></span>No questions yet</p><div class='target' data-contains='item'><div style='padding:0.5em 1em;'>Add some questions!</div></div><div class='requireSign'>* <i>required</i></div></div>  <div class='itemOptions'><div class='addQuestion button pink xsmall'>add question</div><div class='addText button pink xsmall'>add text</div><div class='button xsmall deleteSection'>delete section</div></div> </div>",
-        itemNode = "<div class='item'><div class='question'></div><br><div class='answer'></div> <div class='ItemsFU'>  <div class='selectMultiple'> <div class='show button xxsmall yellow70'>select multiple followup items</div><div class='hide button xxsmall'>cancel selection</div><div class='delete button xxsmall pink70'>delete items</div><div class='copy button pink70 xxsmall'>duplicate items</div> </div>  <p class='hideFUs'><span class='right'></span>Follow up based on response</p><div class='targetFUs' data-contains='itemFU'></div></div>   <div class='newFollowUp'><div class='button pink70 xxsmall addFollowUp'>add followup question</div><div class='button pink70 xxsmall addFollowUpText'>add followup text</div></div> <div class='UpDown'><div class='up'></div><div class='down'></div></div> </div>",
-        itemFUNode = "<div class='itemFU'><div class='question'></div><div class='condition'></div><div class='answer'></div> <div class='UpDown'><div class='up'></div><div class='down'></div></div> </div>";
 
     $("#PreviewFormBtn").on('click',function(){
         var uid = $("#formdata").data('formuid');
@@ -134,6 +131,7 @@ $(document).ready(function(){
                 setTimeout(function(){
                     $(target).remove();
                     updateSections();
+                    autoSave();
                 },600);
                 confirmBool = undefined;
                 clearInterval(check);
@@ -317,9 +315,13 @@ $(document).ready(function(){
                     }else if (t == 'text box'){
                         var placeholder = (options != undefined && options['placeholder'] != undefined) ? options['placeholder'] : "";
                         $("#textAreaPlaceholder").val(placeholder);
+                    }else if (t == 'bodyclick'){
+                        var size = findObjKey(imageSizeDecode, options.height);
+                        size = size.split("x").join("x-");
+                        $("#BodyClickList").find("li").filter("[data-value='"+size+"']").click();
                     }
                     else{
-                        if (t == 'number'){console.log(options)}
+                        // if (t == 'number'){console.log(options)}
                         for (var prop in options){
                             var val = options[prop];
                             items.filter(function(){
@@ -497,1529 +499,1484 @@ $(document).ready(function(){
         }
     })
 
-    $("#AddText").on("click",".cancel",function(){
-        // slideFadeOut($("#AddText"));
-        var p = $("#AddText").parent();
-        if (p.hasClass("item") || p.hasClass("itemFU")){
-            p.children(".question").find(".toggle").filter(".cancel").click();
-        }
-        setTimeout(function(){
-            $("#NarrTitle, #NarrText").val("");
-        },500)
-    })
-    // RANDOM OPTION HANDLERS
-        $('.signHere').on("click",".reset",function(e){
-            $(this).parent().find(".signature").jSignature("reset");
-        })
-        $(".time").each(function(){
-            var i = $(this).find("input"), o = i.data('options');
-            i.timepicker(o);
-        })
-        $(".TimeRestrict").find("li").filter("[data-value='allow any time']").on("click",masterCheckbox);
-        $(".TimeRestrict").find("li").on('click',function(){
-            if ($(this).hasClass("disabled")){return false;}
-            // var c = $(this).data('value'), divs = $("#TimeList").children("div").filter("[data-condition='"+c+"']");
-            var c = $(this).data('value'), divs = $("#TimeList").find('.flexbox').children("div"), match = divs.filter("[data-condition='"+c+"']");
-            if (match.length==0 && !$(this).hasClass("active")){
-                // divs = $("#TimeList").children("div").not("#TimeRestriction");
-                slideFadeOut(divs);
-            }else{
-                if ($(this).hasClass("active")){
-                    slideFadeOut(match);
-                }else{
-                    slideFadeIn(match);
-                }
-            }
-        })
-        $("#TimeList").find(".flexbox").children().hide();
-        $("#NarrText").css({
-            maxWidth:"100%",
-            height:"6em"
-        })
-        // $("#currentYearBegin").on("click",function(){
-        //     var currentYear = new Date().getFullYear(), nextYear = currentYear + 1, p = $(this).closest("div");
-        //     if ($(this).is(":checked")){
-        //         $("#begin").attr("readonly",true).val(currentYear);
-        //         p.find(".answer").css("opacity","0.5");
-        //         p.find(".number").off("mousedown touchstart",'.change',startChange);
-        //     }else{
-        //         $("#begin").removeAttr("readonly");
-        //         p.find(".answer").css("opacity","1");
-        //         p.find(".number").off("mousedown touchstart",'.change',startChange);
-        //         p.find(".number").on("mousedown touchstart",'.change',startChange);
-        //     }
-        // })
-        // $("#currentYearEnd").on("click",function(){
-        //     var currentYear = new Date().getFullYear(), nextYear = currentYear + 1, p = $(this).closest("div").parent("div");
-        //     if ($(this).is(":checked")){
-        //         $("#end").attr("readonly",true).val(currentYear);
-        //         if ($("#nextYearEnd").is(":checked")){$("#nextYearEnd").click();}
-        //         p.find(".answer").css("opacity","0.5");
-        //         p.find(".number").off("mousedown touchstart",'.change',startChange);
-        //     }else{
-        //         $("#end").removeAttr("readonly");
-        //         p.find(".answer").css("opacity","1");
-        //         p.find(".number").off("mousedown touchstart",'.change',startChange);
-        //         p.find(".number").on("mousedown touchstart",'.change',startChange);
-        //     }
-        // })
-        // $("#nextYearEnd").on("click",function(){
-        //     var currentYear = new Date().getFullYear(), nextYear = currentYear + 1, p = $(this).closest("div").parent("div");
-        //     if ($(this).is(":checked")){
-        //         $("#end").attr("readonly",true).val(nextYear);
-        //         if ($("#currentYearEnd").is(":checked")){$("#currentYearEnd").click();}
-        //         p.find(".answer").css("opacity","0.5");
-        //         p.find(".number").off("mousedown touchstart",'.change',startChange);
-        //     }else{
-        //         $("#end").removeAttr("readonly");
-        //         p.find(".answer").css("opacity","1");
-        //         p.find(".number").off("mousedown touchstart",'.change',startChange);
-        //         p.find(".number").on("mousedown touchstart",'.change',startChange);
-        //     }
-        // })
+    $("#AddText").on("click",".cancel",resetAddText);
+    $(".TimeRestrict").find("li").filter("[data-value='allow any time']").on("click",masterCheckbox);
+    $(".TimeRestrict").find("li").on('click',toggleTimeOptions);
+    $("#TimeList").find(".flexbox").children().hide();
         
-        $("#SectionOrder").on('click',".up",updateSecOrder);
-        $("#SectionOrder").on('click',".down",updateSecOrder);
-        // $("#SectionOrder").on('click',".save",saveSecOrder);
-        $("#SectionOrder").on('click',".cancel",function(){
-            slideFadeOut($("#SectionOrder"));
-        });
-        
-        $("#NoRestriction").on("click",function(){
-            var block = $("<div class='block selected disabled' style='border-radius:5px;'></div>");
-            if ($(this).is(":checked")){
-                slideFadeOut($("#DateOptions").find(".blockable"));
-            }else{
-                slideFadeIn($("#DateOptions").find(".blockable"));
-            }
-        })
-        $("#NoRestriction").click();
+    $("#NoRestriction").on("click",toggleDateRestrictions);
+    $("#NoRestriction").click();
     
-    $("#FormBuilder").on("click",".hideFUs",function(){
-        var target = $(this).parent().children(".targetFUs");
-        var span = $(this).find('span'), valuebox = target.find(".SliderValue");
-        var itemKey = $(this).closest(".item").find(".question").data('key');
-        var items = $(this).closest(".section").data('items');
-        var toggleFUs = items[itemKey].toggleFUs;
-        if (toggleFUs == "hide"){
-            toggleFUs = "show";
-            if ($(this).closest(".ItemsFU").find(".itemFU").length>1){
-                $(this).closest(".ItemsFU").find(".selectMultiple").fadeIn();
-            }
-        }
-        else if (toggleFUs == "show"){toggleFUs = "hide";$(this).closest(".ItemsFU").find(".selectMultiple").fadeOut();}
-        items[itemKey].toggleFUs = toggleFUs;
-        valuebox.hide();
-        span.toggleClass("right").toggleClass("down");
-        target.slideToggle();
-    })
+    $("#FormBuilder").on("click",".hideFUs",toggleItemList);
 
-    $("#SectionOptions").on("click","li",function(e){
-        if ($(e.target).is(".up, .down")){console.log($(this).closest("li").data());return false;}
-        var name = $(this).find(".name").text().toLowerCase();
-        var section = $(".section").filter(function(){
-            return $(this).find(".sectionName").find(".value").text().toLowerCase() == name;
-        });
-        $.scrollTo(section);
-    })
+    $("#SectionOptions").on("click","li",scrollToSection);
     $("#SectionOptions").on('click',".up, .down",updateSecOrder);
-    
-    function saveItem(){
-        var i = $("#AddItemProxy");
-        var p = i.parent();
-        var section = i.closest(".section");
-        var item = i.closest(".item");
-                
-        var obj = createItemObj(), saved = false;
-        if (obj == false){return false;}
-        if (p.is(".section")){
-            saved = saveItemObj(obj,section,"save");
-        }else if (p.is(".item")){
-            var k = p.find(".question").data("key");
-            saved = saveItemObj(obj,section,"update",k);
-        }else if (p.is(".newFollowUp")){
-            var k = item.children(".question").data("key");
-            saved = saveItemObj(obj,item,"save",k);
-        }else if (p.is(".itemFU")){
-            var k = item.children(".question").data("key");
-            var fk = p.find(".question").data("key");
-            // saved = saveItemObj(obj,section,"update",k,fk);
-            saved = saveItemObj(obj,item,"update",k,fk);
-        }else if (p.is(".insertProxy")){
-            var type = p.parent().data('contains'), kP;
-            k = p.data('key');
-            if (type == 'item'){
-                saved = saveItemObj(obj,section,'insert',k);
-            }else if (type == 'itemFU'){
-                kP = p.closest(".item").find(".question").data('key');
-                saved = saveItemObj(obj,item,'insert',kP,k);
-            }
-        }else{
-            console.log('fail');
-        }
-        if (saved){
-            setTimeout(function(){
-                resetAddItem();
-                resetOptions();
-            },500);
 
-            $("#AddItemProxy").appendTo('#modalHome');
-            $("#FormBuilder").find(".section").each(function(){updateItems($(this));});
-            autoSave();
-            unblurElement($("body"));
-        }
-    }
-    var autoSaveCount;
-    function autoSave(){
-        var form = createFormObj();
-        if (!form){return false;}
-        var jsonStr = JSON.stringify(form);
-        // var mode = $("#formdata").data("mode");
-        var formId = $("#formdata").data("formid") === undefined ? "none" : $("#formdata").data("formid"),
-            uid = $("#formdata").data("formuid") === undefined ? "none" : $("#formdata").data("formuid");
-        var dataObj = {
-            form_id: formId,
-            form_uid: uid,
-            form_name: form["formName"],
-            // questions: JSON.stringify(form['sections']),
-            full_json: jsonStr
-        };
-        $.ajax({
-            method:"POST",
-            url:"/forms",
-            data: dataObj,
-            success:function(data){
-                if (data!=false){
-                    // console.log(data);
-                    var arr = JSON.parse(data);
-                    clearTimeout(autoSaveCount);
-                    var formUID = arr[0], formID = arr[1], wrap = $("#AutoSaveWrap");
-                    $("#formdata").data("formuid",formUID);
-                    $("#formdata").data("formid",formID);
-                    var t = new Date();
-                    var timeStr = t.toLocaleTimeString();
-                    $("#formdata").text("Autosaved at "+timeStr);
-                    if (wrap.is(":visible")){
-                        wrap.fadeOut(400);
-                        setTimeout(function(){
-                            $("#AutoConfirm").find(".message").text("Autosaved at " + timeStr);
-                            wrap.fadeIn();
-                        },1000)
-                        autoSaveCount = setTimeout(function(){
-                            slideFadeOut(wrap);
-                        },2500);
-                    }else{
-                        $("#AutoConfirm").find(".message").text("Autosaved at " + timeStr);
-                        slideFadeIn(wrap);
-                        autoSaveCount = setTimeout(function(){
-                                slideFadeOut(wrap);
-                        },2500);
-                    }
-                }
-                else{
-                    alert("There was an error saving the form. Your changes have NOT been saved.");
-                }
-            }
-        })
-    }
-    function createFormObj(){
-        var sections = $("#FormBuilder").find(".section");
-        var sectionArr = [];
-        sections.each(function(i,section){
-            var items = $(section).data('items');
-            var name = $(section).find(".sectionName").find("span").text();
-            var obj = {
-                "sectionName":name,
-                "items":items
-            };
-            obj['displayOptions'] = ($(section).data('display') != undefined) ? $(section).data('display') : getDefaultCSS('section');
-            sectionArr.push(obj);
-        })
-
-        var formName = $.sanitize($("h2#FormName").find("input").val());
-        if (formName == ""){
-            setTimeout(function(){
-                alertBox("enter a form name",$("h2#FormName").find('.input'),"after","fade");
-                scrollToInvalidItem($("h2#FormName"));
-            },300)
-            return false;
-        }
-
-        var formID = $("#formdata").data("formid");
-        var form = {
-            "formName":formName,
-            "formID":formID,
-            "versionID":"",
-            "sections":sectionArr,
-            "numbers":{
-                "sections":sections.length,
-                "items":sections.find('.item').length+sections.find(".itemFU").length,
-                "followups":sections.find(".itemFU").length
-            }
-        }
-        //var str = JSON.stringify(form);
-        return form;
-    }
-    function createItemObj(){
-        if ($("#Text").val()=='' && !$("#AddText").is(":visible")){
-            feedback('Missing Question',"You need to write your question!");
-            $("#Text").css('border-color','var(--pink)');
-            return false;
-        }
-        
-        var ItemObj = {};
-        
-        var q = $.sanitize($("#Text").val());
-        var t = ($("#AddText").is(":visible")) ? "narrative" : $("#Type").val();
-        var r = ($("#Required").val() == 'true') ? true : false;
-        var o;
-        
-        // DEFINE OPTIONS BASED ON TYPE
-            var options = $("#Options").find("input").filter(":visible");
-            if (options.length!=0){
-                optionsY = options.filter(function(){
-                    return $(this).val() != "";
-                })
-                optionsN = options.not(optionsY);
-                if (optionsY.length < 2){
-                    alertBox("must have at least two options",optionsN.first(),"after","fade");
-                    return false;
-                }
-                
-                var options = [];
-                for (x=0;x<optionsY.length;x++){
-                    var check = $.sanitize($(optionsY[x]).val());
-                    check = check.split("\"").join("");
-                    if ($.inArray(check,options)>-1){
-                        alertBox("duplicate options not allowed",$(optionsY[x]),"after","fade");
-                        return false;
-                    }else{
-                        options[x] = check;
-                    }
-                }
-            }
-            else {options=undefined;}
-
-            var numberOptions = $("#NumberOptions").find("input").filter(":visible");
-            if (numberOptions.length!=0){
-                for (x=0;x<numberOptions.length;x++){
-                    var i = $(numberOptions[x]);
-                    if (i.val() == ""){
-                        alertBox("required",i,"after","fade");
-                        return false;
-                    }
-                }
-                var min = Number(numberOptions.filter("[name='min']").val());
-                var max = Number(numberOptions.filter("[name='max']").val());
-                var inital = Number(numberOptions.filter("[name='initial']").val());
-                var step = Number(numberOptions.filter("[name='step']").val());
-                var units = numberOptions.filter("[name='units']").val();
-                
-                if (min>max){
-                    alertBox("must be lesser than max",numberOptions.filter("[name='min']"),"after","2500");
-                    return false;
-                }
-                if (inital>max || inital<min){
-                    alertBox("must be between min and max",numberOptions.filter("[name='initial']"),"after","2500");
-                    return false;
-                }
-                numberOptions = {
-                    "min":min,
-                    "max":max,
-                    "initial":inital,
-                    "step":step,
-                    "units":units
-                };
-            }
-            else {numberOptions = undefined;}
-
-            var dateOptions = $("#DateOptions").find("input").filter(":visible");
-            if (dateOptions.length!=0){
-                dateOptions = {};
-                if ($("#NoRestriction").is(":checked")==false){
-                    var dropdowns = $("#DateOptions").find("select"), incomplete = dropdowns.filter(function(){
-                        return $(this).find("option:selected").val() == "";
-                    });
-                    if (incomplete.length > 0){
-                        dropdowns.css('border-color','var(--pink');
-                        feedback('Missing Details','Complete all the date details or select "no restrictions"');
-                        return false;
-                    }
-                    // var minDate = "-"+$("[data-name='minNum']").val() + $("[data-name='minType']").val().charAt(0);
-                    var minDir = ($('#DateOptions').find('.minDir').val() == 'before') ? "-" : "+",
-                        minNum = $('#DateOptions').find('.minNum').val(),
-                        minType = $('#DateOptions').find('.minType').val().charAt(0),
-                        maxDir = ($('#DateOptions').find('.maxDir').val() == 'before') ? "-" : "+",
-                        maxNum = $('#DateOptions').find('.maxNum').val(),
-                        maxType = $('#DateOptions').find('.maxType').val().charAt(0);
-                    // console.log(minDir+minNum+minType);
-                    var minDate = minDir+minNum+minType;
-                    var maxDate = maxDir+maxNum+maxType;
-                    dateOptions["minDate"] = minDate;
-                    dateOptions["maxDate"] = maxDate;
-                }else{
-                    dateOptions["minDate"] = null;
-                    dateOptions["maxDate"] = null;
-                }
-                console.log(dateOptions);
-            }
-            else{dateOptions=undefined;}
-
-            var timeOptions = $("#TimeList").is(":visible");
-            if (timeOptions){
-                if ($("#TimeRestriction").find(".active").length==0){
-                    $(".TimeRestrict").css('border-color','var(--pink)');
-                    feedback('Time Restrictions','Choose whether to restrict time selections or allow any time');
-                    return false;
-                }
-                var restrictions = $("#TimeRestriction").find(".active");
-                timeOptions = {};
-                restrictions.each(function(){
-                    var v = $(this).data('value');
-                    if (v == "allow any time"){
-                        timeOptions['all'] = "default";
-                    }else if (v == 'set range'){
-                        timeOptions['minTime'] = $("#TimeOptions").find(".minTime").val();
-                        timeOptions['maxTime'] = $("#TimeOptions").find(".maxTime").val();
-                    }else if (v == 'set interval'){
-                        timeOptions['step'] = $("#TimeOptions").find(".step").val();
-                    }else if (v == 'set initial value'){
-                        timeOptions['setTime'] = $("#TimeOptions").find(".setTime").val();
-                    }
-                })
-            }
-            else{timeOptions=undefined;}
-
-            var textOptions = $("#TextOptions").is(":visible");
-            if (textOptions){
-                textOptions = {
-                    'placeholder':$("#textPlaceholder").val()
-                }
-            }else{textOptions=undefined}
-            var textBoxOptions = $("#TextBoxOptions").is(":visible");
-            if (textBoxOptions){
-                textBoxOptions = {
-                    'placeholder':$("#textAreaPlaceholder").val()
-                }
-            }else{textBoxOptions=undefined}
-
-            var sigOptions = $("#SignatureOptions").find("select").filter(":visible");
-            if (sigOptions.length!=0){
-                var printBool = $("#typedName").val();
-                sigOptions = {
-                    "typedName":printBool
-                }
-            }
-            else{sigOptions=undefined;}
-            
-            var scaleOptions = $("#ScaleOptions").find("input, select").filter(":visible");
-            if (scaleOptions.length!=0){
-                var min = scaleOptions.filter("[data-name='scalemin']"), max = scaleOptions.filter("[data-name='scalemax']"), initial = scaleOptions.filter("[data-name='initial']"), minL = scaleOptions.filter("[name='minLabel']"), maxL = scaleOptions.filter("[name='maxLabel']"), dispL = scaleOptions.filter("[name='dispLabel']"), dispV = scaleOptions.filter("[name='dispVal']");
-                            
-                minVal = Number(min.val());
-                maxVal = Number(max.val());
-                initialVal = Number(initial.val());
-                if (minVal>maxVal || minVal==maxVal){
-                    min.add(max).css('border-color','var(--pink)');
-                    feedback('Oops','Your minimum value has to be less than your maximum value.');
-                    return false;
-                }
-                if (inital < minVal || initial > maxVal){
-                    initial.css('border-color','var(--pink)');
-                    feedback('Oops','Your initial value has to be between the minimum and maximum values.');
-                    return false;
-                }
-                for (x=0;x<scaleOptions.length;x++){
-                    var v = $(scaleOptions[x]).val();
-                    if (v==""){
-                        $(scaleOptions[x]).css('border-color','var(--pink');
-                        feedback('Oops',"Looks like you're missing a required value.");
-                        // alertBox("required",$(scaleOptions[x]),"after","fade");
-                        return false;
-                    }
-                }
-            
-                scaleOptions = {
-                    "min":minVal,
-                    "max":maxVal,
-                    "initial":initialVal,
-                    "minLabel":minL.val(),
-                    "maxLabel":maxL.val(),
-                    "displayValue":dispV.val(),
-                    "displayLabels":dispL.val()
-                };
-            }
-            else{scaleOptions=undefined;}
-            
-            var narrativeOptions = $("#NarrativeList").filter(":visible");
-            if (narrativeOptions.length!=0){
-                narrativeOptions={
-                    "markupStr":$("#NarrativeList").find(".summernote").summernote('code')
-                };
-            }
-            else{narrativeOptions = undefined;}
-
-            
-            var followUpOptions = $("#FollowUpOptions").find("input, select");
-            if ($("#FollowUpOptions").is(":visible")){
-                if ($("#condition").find(".checkboxes").length>0){
-                    if ($("#condition").find(".active").length==0){
-                        var t = $("#condition").find(".answer");
-                        alertBox("required",t,"after","fade");
-                        return false;
-                    }else{
-                        var conditions=[];
-                        $("#condition").find(".active").each(function(){
-                            conditions.push($(this).data("value"));
-                        });
-                        followUpOptions = conditions;
-                    }
-                }
-                else{
-                    var conditionInputs=[];
-                    for (x=0;x<followUpOptions.length;x++){
-                        var i = $(followUpOptions[x]);
-                        if (i.val() == ""){
-                            alertBox("required",i.closest(".answer"),"after","fade");
-                            return false;
-                        }else{
-                            conditionInputs.push(i.val());
-                        }
-                    }
-                    followUpOptions = [conditionInputs.join(" ")];
-                }
-            }
-            else{followUpOptions=undefined;}
-        
-        if (options!=undefined){o=options}
-        else if (numberOptions!=undefined){o=numberOptions}
-        else if (dateOptions!=undefined){o=dateOptions}
-        else if (textOptions!=undefined){o=textOptions}
-        else if (textBoxOptions!=undefined){o=textBoxOptions}
-        else if (timeOptions!=undefined){o=timeOptions}
-        else if (scaleOptions!=undefined){o=scaleOptions}
-        else if (sigOptions!=undefined){o=sigOptions}
-        else if (narrativeOptions!=undefined){o=narrativeOptions}
-        
-        ItemObj={
-            "question":q,
-            "type":t,
-            "options":o,
-            'required':r
-        };
-
-        if (followUpOptions!=undefined){
-            ItemObj["condition"] = followUpOptions;
-            section = $("#AddItemProxy").closest(".item");
-        }        
-
-        return ItemObj;
-    }
-    function saveItemObj(ItemObj,section,mode,itemKey,FUkey){
-        if (section.is(".section")){
-            var Items = section.data('items');
-            if (mode=="update"){
-                if (checkItem(ItemObj,section)){
-                    ItemObj["followups"] = Items[itemKey].followups;
-                    ItemObj['toggleFUs'] = Items[itemKey].toggleFUs;
-                    ItemObj['key'] = itemKey;
-                    ItemObj['displayOptions'] = (Items[itemKey].displayOptions!==undefined) ? Items[itemKey].displayOptions : getDefaultCSS('item') ;
-                    Items[itemKey] = ItemObj;
-                    Items.forEach(function(item, i){
-                        item['key'] = i;
-                    })
-
-                }else{
-                    return false;
-                }
-            }
-            else if (mode=="save"){
-                if (checkItem(ItemObj,section)){
-                    ItemObj["followups"] = [];
-                    ItemObj['toggleFUs'] = 'hide';
-                    ItemObj['key'] = Items.length;
-                    ItemObj['displayOptions'] = getDefaultCSS('item');
-                    Items.push(ItemObj);
-                }else{
-                    return false;
-                }
-            }   
-            else if (mode=='insert'){
-                if (checkItem(ItemObj,section)){
-                    ItemObj["followups"] = [];
-                    ItemObj['toggleFUs'] = 'hide';
-                    // ItemObj['key'] = Items.length;
-                    ItemObj['displayOptions'] = getDefaultCSS('item');
-                    Items.splice(itemKey+1, 0, ItemObj);
-                    Items.forEach(function(item, i){
-                        item['key'] = i;
-                    })
-                }else{
-                    return false;
-                }
-            }         
-        }
-        else if (section.is('.item')){
-            if (mode=='save'){
-                if (checkItem(ItemObj,section)){
-                    var Items = section.closest(".section").data('items');
-                    var FUs = Items[itemKey].followups;
-                    ItemObj['key'] = FUs.length;
-                    ItemObj['displayOptions'] = getDefaultCSS('item');
-                    FUs.push(ItemObj);
-                }else{
-                    return false;
-                }
-            }
-            else if (mode=='update'){
-                if (checkItem(ItemObj,section)){
-                    var Items = section.closest(".section").data('items');
-                    var FUs = Items[itemKey].followups;
-                    ItemObj['displayOptions'] = (FUs[FUkey].displayOptions!=undefined) ? FUs[FUkey].displayOptions : getDefaultCSS('item') ;
-                    FUs[FUkey] = ItemObj;
-                    FUs.forEach(function(FU, f){
-                        FU['key'] = f;
-                    })
-                }else{
-                    return false;
-                }
-            }else if (mode=='insert'){
-                if (checkItem(ItemObj,section)){
-                    var Items = section.closest(".section").data('items');
-                    var FUs = Items[itemKey].followups;
-                    ItemObj['displayOptions'] = getDefaultCSS('item');
-                    FUs.splice(FUkey+1,0,ItemObj);
-                    FUs.forEach(function(FU, f){
-                        FU['key'] = f;
-                    })
-                }else{
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-    
-    function resetAddItem(){
-        var clear = $("#AddItem").find("#Options").find("input").add("#Text").add($("#FollowUpOptions").find("input"));
-        // clear = clear.add($("#NumberOptions").find("input"));
-        clear.val("");
-        $("#AddItem").find("h2").first().html("New Question");
-        $("#Text").css('border-color','rgba(210,210,210,0.8)');
-        $("#Type").val("text");
-        $("#Type").change();
-        $("#Required").val("true");
-        $("#textPlaceholder").val("");
-        $("#textAreaPlaceholder").val("");
-        $("#NumberOptions").find("#min").val("0");
-        $("#NumberOptions").find("#max").val("100");
-        $("#NumberOptions").find("#initial").val("5");
-        $("#NumberOptions").find("#step").val("1");
-        $("#NumberOptions").find("#units").val("");
-        console.log($("#AddItemProxy"));
-    }
-    function resetOptions(){
-        var o = $("#OptionsList").find(".option");
-        var n = o.length;
-        if (n>2){
-            for (x=2;x<n;x++){
-                $(o[x]).remove();
-            }
-        }
-        o.val("");
-    }
-    function resetAddText(){$("#NarrTitle, #NarrText").val("");}
+    var sizeOption = $("#BodyClickList").find(".imageClickSize");
+    sizeOption.find('li').data('target',$("#BodyClickOptions").find(".bodyClickSample"));
+    sizeOption.on('click','li',toggleImageClickSize);
+    sizeOption.find('li').filter("[data-value='medium']").click();
         
     if ($("#formdata").data("json")!=undefined){loadFormData();}
-    function loadFormData(){
-        var data = $("#formdata").data("json");
-        var sections = data['sections'];
-        var formName = data['formName'];
-        var formID = data['formID'];
-        $("#formdata").data("formid",formID);
-        $("#FormName").find("input").val(formName);
-        $("#FormName").find(".save").click();
-        sections.forEach(function(section,i){
-            var name = section.sectionName, items = section.items, showByDefault = section.showByDefault;
-            $("#SectionName").val(name);
-            $("#AddSection").find(".add").click();
-            var newSec = $(".section").not("#examples").last();
-            newSec.data('items',items);
-            updateItems(newSec);
-            //console.log(newSec.data("items"));
-        })
-    }
-    
-    function updateSections(){
-        var sections = $("#Sections").find(".section"), sectionHeight = $("#Sections").height();
-        var sectionCount = sections.length;
-        var names = $("#Sections").find(".section").find(".sectionName").find("span");
-        var nameArr = [], sectionLists, 
-            node = $('<li><span class="name"></span><span class="details">loading . . .</span><div class="UpDown"><div class="up"></div> <div class="down"></div></div>  </li>'), Qs, FUs, name, newNode, headerText;
-    
-        $("#SectionOptions").find("li").remove();
-        sections.each(function(s, section){
-            name = $(section).find(".sectionName").find("span").text();
-            newNode = node.clone().data('key',s);
-            newNode.find(".name").text(name);
-            $("#SectionOptions").find("ul").append(newNode);
-        });
-        setTimeout(function(){
-            updateSecItemCount();
-        },100)
-
-        if (sectionCount == 0){
-            headerText = "No Sections Yet";
-            $("#SectionOptions").find("ul").hide();
-        }else{
-            headerText = "Sections";
-            $("#SectionOptions").find("ul").show();
-        }
-        var text = (sectionCount != 0) ? "Sections" : "No Sections Yet";
-        $("#SectionOptions").find("h3").text(text);
-    }
-    function updateSecItemCount(){
-        var Qs, FUs, sections = $(".section"), node, wName = 0, wDetails = 0;
-        sections.each(function(s,section){
-            Qs = $(section).find(".item").not(".narrative").length;
-            FUs = $(section).find(".itemFU").not(".narrative").length;
-            Qs = (Qs == 1) ? Qs + " question" : Qs + " questions";
-            FUs = (FUs == 1) ? FUs + " followup" : FUs + " followups";
-            
-            node = $("#SectionOptions").find("li").filter(function(){
-                wName = (wName < $(this).find(".name").width()) ? $(this).find(".name").width() : wName;
-                return $(this).find('.name').text().toLowerCase() == $(section).find(".sectionName").find(".value").text().toLowerCase();
-            }).find(".details").text(Qs + ", " + FUs);
-            
-            $(".details").each(function(){
-                wDetails = (wDetails < $(this).width()) ? $(this).width() : wDetails;
-            })
-        })
-        $("#SectionOptions").find(".name").width(wName);
-        $("#SectionOptions").find(".details").width(wDetails);
-    }
-    function updateSecOrder(){
-        var d, currentLI = $(this).closest("li"), name = currentLI.find(".name").text(), currentSec, changeSec, changeLI, sections = $(".section"), n = sections.length, currentSec, k = currentLI.data('key'), allLIs = $("#SectionOptions").find("li"), current, change;
-        if ($(this).hasClass('up')){
-            d = 'up';
-        }else if ($(this).hasClass("down")){
-            d = 'down';
-        }
-        currentSec = $(".section").filter(function(){
-            return $(this).find(".sectionName").find(".value").text() == name;
-        })
-
-        if ((k == 0 && d == "up") || (k == n -1 && d == "down")){
-            return false;
-        }
-
-        if (d == "up"){
-            changeSec = $(sections[k-1]);
-            currentSec.insertBefore(changeSec);            
-            changeLI = $(allLIs[k-1]);
-            currentLI.insertBefore(changeLI);            
-        }else if (d == "down"){
-            changeSec = $(sections[k+1])
-            currentSec.insertAfter(changeSec);
-            changeLI = $(allLIs[k+1]);
-            currentLI.insertAfter(changeLI);            
-        }
-        
-        current = currentSec.add(currentLI);
-        change = changeSec.add(changeLI);
-        currentSec.animate({
-            "height":"-=30px",
-            "opacity":0.2
-        },100,function(){
-            currentSec.animate({
-                "height":"+=30px",
-                "opacity":1
-            },400,function(){
-                currentSec.css("height","auto");
-            })
-        })
-        changeSec.animate({
-            "height":"+=30px",
-            "opacity":0.2
-        },100,function(){
-            changeSec.animate({
-                "height":"-=30px",
-                "opacity":1
-            },400,function(){
-                changeSec.css("height","auto");
-            })
-        })
-        currentLI.animate({
-            "height":"-=30px",
-            "opacity":0.2
-        },100,function(){
-            currentLI.animate({
-                "height":"+=30px",
-                "opacity":1
-            },400,function(){
-                currentLI.css("height","auto");
-            })
-        })
-        changeLI.animate({
-            "height":"+=30px",
-            "opacity":0.2
-        },100,function(){
-            changeLI.animate({
-                "height":"-=30px",
-                "opacity":1
-            },400,function(){
-                changeLI.css("height","auto");
-            })
-        })
-
-        allLIs = $("#SectionOptions").find("li");
-        allLIs.each(function(l,LI){
-            $(LI).data('key',l);
-        });
-        autoSave();         
-    }
-    function checkItem(i,section){
-        var q = i.question, big, little ;
-        if (i.type == 'narrative'){
-            return true;
-        }
-        if ($(section).is(".section")){
-            big = ".Items";
-            little = ".item";
-        }else if ($(section).is(".item")){
-            big = ".ItemsFU";
-            little = ".itemFU";
-        }
-        var items = $(section).find(big).find(little).children(".question");
-        var qArr = [];
-                
-        items.each(function(i,item){
-            var t = $(item).data("question");
-            qArr.push(t.toLowerCase());
-        })
-        
-        if ($("#AddItemProxy").parent().is(little)){
-            var itemKey = $("#AddItemProxy").parent().find(".question").data("key");
-        }
-        if ($.inArray(q.toLowerCase(),qArr)>-1){
-            if ($("#AddItemProxy").parent().is(little) && itemKey == $.inArray(q.toLowerCase(),qArr)){
-                return true;
-            }
-            var t = $("#AddItem").find("#Text"), m;
-            if (big == '.Items'){
-                m = '<div>All questions within each section must be unique.</div><div class="pink">A question with text "'+q+'" already exists in "'+section.find('h2').contents().first().text().trim()+'".</div>';
-            }else{
-                m = '<div>All followup questions connected to the same main question must be unique.</div><div class="pink">A question with text "'+q+'" already exists as pertains to "'+section.children('.question').contents().first().text()+'".</div>';
-            }
-            feedback('Duplicate Question',m);
-            // alertBox("question already exists",$(t),"after","2500");
-            return false;
-        }else{
-            return true;
-        }
-    }
-    
-    function updateItems(section){
-        var Items = section.data("items");
-        var big = ".Items";
-        var little = ".item";
-        var ItemsList = $(section).find(".Items").find(".target"), n = Items.length;
-
-        $("#AddItem, #AddText, #AddItemProxy").hide().appendTo("#FormBuilder");
-        ItemsList.html("");
-        Items.forEach(function(i,x){
-            var t = i.type, q = i.question, o = i.options, c = i.condition, ItemsFU = i.followups, tFUs = i.toggleFUs, r = (i.required == undefined) ? true : i.required,
-                rStr = ((r === false) || (t == 'narrative')) ? "" : "<span class='requireSign'>*</span>";
-            $(itemNode).appendTo(ItemsList);
-            var newItem = ItemsList.find(".item").last();
-            if (t == "narrative"){q = "Rich Text Block";}
-            newItem.find(".question").html("<span class='q'>" + q + "</span>" + rStr + "<div style='display:inline-block'><div class='toggle edit'>(edit)</div><div class='toggle copy'>(duplicate)</div><div class='toggle delete'>(delete)</div><div class='toggle save'>(save)</div><div class='toggle cancel'>(cancel edit)</div></div>").data({"question":q, "key":x, "type":t, "options":o, "toggleFUs":tFUs, 'required':r});
-            
-            var target = (t == "narrative") ? ".narrative" : ".answer",
-                template = $(".template").filter("[data-type='"+t+"']").find(target).clone();
-
-            // template.removeAttr('id');
-            console.log(template);
-            template.add(template.find("select, input")).removeClass(function(index,classes){
-                return (classes.match (/\b([^ ]*)Template/g) || []).join(' ');
-            }).removeAttr('name data-name');
-            newItem.find(".answer").replaceWith(template);
-            activateItem(newItem,t,o);
-                        
-            CurrentItem = newItem;
-            
-            var ItemsFUList = CurrentItem.find(".ItemsFU").find(".targetFUs");
-            
-            if (ItemsFU.length>0){
-                ItemsFU.forEach(function(f,xFU){
-                    var tFU = f.type, qFU = f.question, oFU = f.options, cFU = f.condition, cStr = "is <span class='bold underline pink'>", rFU = (f.required == undefined) ? true : f.required, rFUStr = ((rFU === false) || (tFU == 'narrative')) ? "" : "<span class='requireSign'>*</span>";
-                    $(itemFUNode).appendTo(ItemsFUList);
-                    var newItemFU = ItemsFUList.find(".itemFU").last();
-                    if (tFU == "narrative"){qFU = "Rich Text Block";}
-                    newItemFU.find(".question").html(qFU + rFUStr + "<div style='display:inline-block'><div class='toggle edit'>(edit)</div><div class='toggle copy'>(duplicate)</div><div class='toggle delete'>(delete)</div><div class='toggle save'>(save)</div><div class='toggle cancel'>(cancel edit)</div></div>").data({"question":qFU, "key":xFU, "type":tFU, "options":oFU, "condition":cFU, 'required':rFU});
-                    
-                    var rFU = (tFU == "narrative") ? ".narrative" : ".answer",
-                        template = $(".template").filter("[data-type='"+tFU+"']").find(rFU).clone();
-
-                    template.removeAttr('id');
-                    newItemFU.find(".answer").replaceWith(template);
-                    // cFU = cFU.join(", or ");
-                    // console.log(cFU.length);
-
-                    if (cFU.length == 1){
-                        cStr = "is <span class='bold underline pink'>"+cFU+"</span>";
-                    }else if (cFU.length == 2){
-                        cStr = "is <span class='bold underline pink'>"+cFU.join(" or ")+"</span>";
-                    }else{
-                        for (c = 0;c < cFU.length; c++){
-                            var add = (c == cFU.length - 1) ? " or " + cFU[c] + "</span>" : " " + cFU[c] + ",";
-                            cStr += add;
-                        }
-                    }
-                    var qSplit = q.split(" "), qShort = [];
-                    for (x = 0; x < 10; x++){
-                        if (qSplit[x] != undefined){
-                            qShort.push(qSplit[x]);
-                        }
-                    }
-                    qShort = qShort.join(" ");
-                    qShort = (qShort != q) ? qShort += "..." : qShort;
-                    newItemFU.find(".condition").html("Condition: <span class='bold underline'>"+qShort+"</span> "+cStr);
-                    activateItem(newItemFU,tFU,oFU);
-                })
-            }
-            
-            var nFU = ItemsFU.length;
-            var s = CurrentItem.find(".ItemsFU").children("p").find("span").clone();
-            var text;
-            if (nFU == 0){
-                text = "Follow up based on response";
-            }else if (nFU==1){
-                text = "1 followup";
-            }else {
-                text = nFU + " followups";
-            }
-            CurrentItem.find(".ItemsFU").children("p").html(text).prepend(s);
-
-
-            if ($(ItemsFUList).text() == ""){
-                $(ItemsFUList).html("<div style='padding:0.5em 1em;'>Add some followup questions!</div>");
-            }
-            
-            var toggleFUs = CurrentItem.find(".question").data("toggleFUs");
-            if (toggleFUs == "show"){
-                CurrentItem.find(".targetFUs").show();
-                CurrentItem.find(".hideFUs").find("span").removeClass("right").addClass("down");
-            }
-            
-            var noFUs = ['text','date','signature','narrative','text box','time'];
-            if ($.inArray(t,noFUs)>-1){
-                $(CurrentItem).find(".ItemsFU").hide();
-                $(CurrentItem).find(".newFollowUp").hide();
-            }
-        })
-        
-        
-        var s = $(section).find(".Items").children("p").find("span").clone();
-        var text;
-        if (n == 0){text = "No questions";}
-        else if (n==1){text = "1 question";}
-        else {text = n + " questions";}
-
-        n = $(section).find(".itemFU").length;
-        if (n == 0){text += "";}
-        else if (n==1){text += " with 1 followup question";}
-        else {text += " with " + n + " followup questions";}
-
-        $(section).find(".Items").children("p").html(text).prepend(s);
-        
-        updateSections();
-                
-        if ($(ItemsList).text() == ""){
-            $(ItemsList).html("<div style='padding:0.5em 1em;'>Add some questions!</div>");
-        }
-
-        
-        var itemOrder = $(".item").children(".UpDown").find(".up, .down");
-        itemOrder.off("click",updateItemOrder);
-        itemOrder.on("click",updateItemOrder);
-        var itemFUOrder = $(".itemFU").children(".UpDown").find(".up, .down");
-        itemFUOrder.off("click",updateItemFUOrder);
-        itemFUOrder.on("click",updateItemFUOrder);
-        
-        $(section).find('.Items').find('.target').find(".selectMultiple").find(".show").on("click",multiItemOptions);
-        $(section).find('.Items').find('.target').find(".selectMultiple").find(".hide").on("click",hideMultiItemOptions);
-        $(section).find('.Items').find('.target').find(".selectMultiple").find(".copy").on("click",copyMultiple);
-        $(section).find('.Items').find('.target').find(".selectMultiple").find(".delete").on("click",deleteMultiple);
-        
-        $(".ItemsFU").each(function(){
-            if (!$(this).find(".targetFUs").is(":visible")){
-                $(this).find(".selectMultiple").hide();
-            }
-        })
-        updatedInsertProxies();
-    }
-
-    function updatedInsertProxies(){
-        var insertNode = $("<div/>",{
-            class: "insertProxy",
-            html:"<div class='insertBtns'><div class='button white xxsmall insertQuestion'>insert question</div><div class='button white xxsmall insertText'>insert text</div></div><div class='plus'>+</div>"
-        });
-        $(".insertProxy").remove();
-        $(".target, .targetFUs").each(function(t, target){
-            var items = $(target).children().not($(target).children().last()), k;
-            items.each(function(){
-                // console.log($(this).children(".question").data('key'));
-                k = $(this).children(".question").data('key');
-                insertNode.clone().insertAfter($(this)).data('key',k);
-            })
-        })
-    }
-    
-    var stickyCSS = {position:"sticky",top:"11em",right:"0",display:"inline-block",margin:"0 1em"}, 
-        notStickyCSS = {position:"relative",margin:"-1em 1em",top:"1em",right:"0"},
-        centerCSS = {position: "absolute",left:"50%",top:"50%",transform:"translate(-50%,-50%)"},
-        rightAlignCSS = {position: "absolute",right:'0',top:"50%",transform:"translateY(-50%)"};
-    
-    function multiItemOptions(){
-        var section = $(this).closest(".Items, .ItemsFU");
-        $(this).hide();
-        $(this).parent().css(stickyCSS);
-        $(".selectMultiple").find(".hide").filter(":visible").click();
-        $(this).parent().find(".hide").show();
-        if (section.is(".Items")){
-            var items = section.find(".target").children(".item");
-            items.each(function(i,item){
-                if ($(item).find(".targetFUs").is(":visible")){$(item).find(".hideFUs").click();}
-                $(item).find(".ItemsFU").find(".selectMultiple").fadeOut();
-            })
-        }
-        else if (section.is(".ItemsFU")){var items = section.find(".targetFUs").children(".itemFU");}
-        items.children('.question').find(".toggle").fadeOut();
-        items.children(".UpDown").html("<input class='selectChkBx' type='checkbox'>");
-        items.each(function(i,item){
-            $("<div/>",{class:"block multiItem"}).prependTo($(item))
-                .on("mouseenter",hoverItem)
-                .on("mouseleave",unhoverItem)
-                .on("click",selectItem);
-        })
-    }
-    function selectItem(){
-        $(this).addClass("selected");
-        var item = $(this).closest(".item, .itemFU");
-        item.find(".selectChkBx").attr("checked",true);
-        $(this).off("click",selectItem).on("click",unselectItem);
-        var section = $(this).closest(".Items, .ItemsFU");
-        section.children(".selectMultiple").find(".copy, .delete").css(stickyCSS);
-    };
-    function unselectItem(){
-        $(this).removeClass("selected");
-        var item = $(this).closest(".item, .itemFU");
-        item.find(".selectChkBx").attr("checked",false);
-        $(this).off("click",unselectItem).on("click",selectItem);
-        var section = item.closest(".Items, .ItemsFU");
-        if (section.find(".block").filter(".selected").length == 0){
-            section.children(".selectMultiple").find(".delete, .copy").fadeOut();
-        }
-    };
-    function hoverItem(){$(this).addClass("hover");};
-    function unhoverItem(){$(this).removeClass("hover");};
-
-    function copyMultiple(){
-        var optBox = $(this).closest(".selectMultiple"),
-            itemList = $(this).closest(".Items, .ItemsFU"),
-            section = $(this).closest(".section");
-
-        var Items = section.data("items"), selected = section.find(".block").filter(".selected").closest(".item, .itemFU"),
-            confirmText = (selected.length == 1) ? "Duplicating 1 item" : "Duplicating " + selected.length + " items";
-
-        $("#Confirm").clone().attr('id','MultiCopy').appendTo("#ModalHome");
-        $("#MultiCopy").find(".message").html("<h2>"+confirmText+"</h2><div>Where would you like to put the new copies?</div>");
-        $("#MultiCopy").find(".options").find(".submit").remove();
-        $("#MultiCopy").find(".options").find(".cancel").text("cancel").addClass('multiCopyOption');
-        $("<div/>",{
-            class:"multiCopyOption button small pink",
-            data:{
-                value:"asBlock"
-            },
-            text:"end of section"
-        }).prependTo($("#MultiCopy").find(".options"));
-        $("<div/>",{
-            class:"multiCopyOption button small pink",
-            data:{
-                value:"afterOriginal"
-            },
-            text:"after each original"
-        }).prependTo($("#MultiCopy").find(".options"));
-        blurElement($("body"),"#MultiCopy");
-
-        $(".multiCopyOption").on("click",function(){
-            var opt = $(this).data("value"), section = $("#FormBuilder").find(".section").filter(function(){
-                    return $(this).find(".selectMultiple").find(".hide").is(":visible");
-                }), Items = section.data("items"), selected = section.find(".block").filter(".selected").closest(".item, .itemFU");
-            if (opt=="asBlock"){
-                selected.each(function(i,x){
-                    var item = $(x), k = item.find('.question').data('key');
-                    if (item.is(".itemFU")){
-                        Items = section.data("items");
-                        var kP = item.closest(".item").find(".question").data('key');
-                        Items = Items[kP].followups;
-                    }
-                    var copy = {};
-                    $.extend(true,copy,Items[k]);
-                    copy.question = copy.question + " COPY";
-                    Items.push(copy);
-                })
-                updateItems(section);
-                autoSave();
-                $(".zeroWrap").remove();
-                optBox.find(".hide").click();
-                unblurElement($("body"));
-                $("#MultiCopy").removeAttr("id").remove();
-            }
-            else if (opt=="afterOriginal"){
-                var Items = section.data("items"), selected = section.find(".block").filter(".selected").closest(".item, .itemFU");
-                selected.each(function(i,x){
-                    var item = $(x), k = item.find('.question').data('key');
-                    if (item.is(".itemFU")){
-                        Items = section.data("items");
-                        var kP = item.closest(".item").find(".question").data('key');
-                        Items = Items[kP].followups;
-                    }
-                    var copy = {};
-                    $.extend(true,copy,Items[k+i]);
-                    copy.question = copy.question + " COPY";
-                    Items.splice(k+1+i,0,copy);
-                })
-                updateItems(section);
-                autoSave();
-                optBox.find(".hide").click();
-                unblurElement($("body"));
-                $("#MultiCopy").removeAttr("id").remove();
-            }
-        })    
-    }
-    function deleteMultiple(){
-        var section = $(this).closest(".section"), optBox = $(this).closest(".selectMultiple");
-        var Items = section.data("items"), selected = section.find(".block").filter(".selected").closest(".item, .itemFU"),
-            warningText = (selected.length == 1) ? "DELETE 1 ITEM" : "DELETE " + selected.length + " ITEMS";
-
-        $("#Warn").find(".message").html("<h2 class='pink'>"+warningText+"?</h2><div>Are you sure you want to do this? It <u>cannot be undone.</u></div>");
-        $("#Warn").find(".submit").text(warningText);
-        blurElement($("body"),"#Warn");
-        var wait = setInterval(function(){
-            if (confirmBool!=undefined){
-                if (confirmBool==true){
-                    selected.each(function(i,x){
-                        var item = $(x), k = item.find('.question').data('key');
-                        if (item.is(".itemFU")){
-                            Items = section.data("items");
-                            var kP = item.closest(".item").find(".question").data('key');
-                            Items = Items[kP].followups;
-                        }
-                        Items.splice(k-i,1);
-                    })
-                    updateItems(section);
-                    optBox.find(".hide").click();
-                    autoSave();
-                    confirmBool=undefined;
-                    unblurElement($("body"));
-                    clearInterval(wait);
-                }
-                else if (confirmBool==false){
-                    confirmBool=undefined;
-                    clearInterval(wait);
-                }
-            }
-        },100);
-    }
-    function hideMultiItemOptions(){
-        var section = $(this).closest(".Items, .ItemsFU");
-        section.find(".block").remove();
-        $(this).parent().css(notStickyCSS);
-        $(this).parent().find(".show").show();
-        $(this).parent().find(".delete, .copy, .hide").hide();
-        if (section.is(".Items")){
-            var items = section.find(".target").children(".item");
-        }
-        else if (section.is(".ItemsFU")){var items = section.find(".targetFUs").children(".itemFU");}
-        items.children('.question').find(".toggle").filter(".edit, .copy, .delete").fadeIn();
-        items.children(".UpDown").html("<div class='up'></div><div class='down'></div>");
-        //items.find('.ItemsFU').find(".selectMultiple").fadeIn();
-        
-        if (section.is(".Items")){
-            items.children(".UpDown").find(".up, .down").on("click",updateItemOrder);
-        }else{
-            items.children(".UpDown").find(".up, .down").on("click",updateItemFUOrder);
-        }
-    }
-    
-    function updateItemOrder(){
-        if ($(this).hasClass('up')){
-            var d = 'up';
-        }else if ($(this).hasClass("down")){
-            var d = 'down';
-        }
-        var items = $(this).closest(".section").find(".item");
-        var ItemArr = $(this).closest(".section").data("items");
-        var currentItem = $(this).closest(".item");
-        var n = items.length, k = Number($(this).closest(".item").find(".question").data("key"));
-        if ((k == 0 && d == "up") || (k == n -1 && d == "down")){
-            return false;
-        }
-        if (d == "up"){
-            var change = $(items[k-1]);
-            change.find(".question").data("key",k);
-            currentItem.find(".question").data("key",k-1);
-            ItemArr[k].key = k -1;
-            ItemArr[k-1].key = k;
-            currentItem.insertBefore(change);            
-        }else if (d == "down"){
-            var change = $(items[k+1]);
-            change.find(".question").data("key",k);
-            currentItem.find(".question").data("key",k+1);
-            ItemArr[k].key = k +1;
-            ItemArr[k+1].key = k;
-            currentItem.insertAfter(change);
-        }
-        ItemArr.sort(function(a,b){
-            return a.key-b.key;
-        });
-        updatedInsertProxies();
-
-        currentItem.animate({
-            "height":"-=30px",
-            "opacity":0.2
-        },100,function(){
-            currentItem.animate({
-                "height":"+=30px",
-                "opacity":1
-            },400,function(){
-                currentItem.css("height","auto");
-            })
-        })
-        change.animate({
-            "height":"+=30px",
-            "opacity":0.2
-        },100,function(){
-            change.animate({
-                "height":"-=30px",
-                "opacity":1
-            },400,function(){
-                change.css("height","auto");
-                updateItems($(this).closest('.section'));
-            })
-        })        
-
-        autoSave();
-    }
-    function updateOptionOrder(){
-        if ($(this).hasClass('up')){
-            var d = 'up';
-        }else if ($(this).hasClass("down")){
-            var d = 'down';
-        }
-        var options = $("#OptionsList").find(".option");
-        var currentOption = $(this).closest(".option");
-        var n = options.length;//, k = Number($(this).closest(".itemName").data("key"));
-        var f = options.first(), l = options.last();
-        if ((currentOption.is(f) && d == 'up') || (currentOption.is(l) && d == 'down')){
-            return false;
-        }
-        if (d == "up"){
-            var change = currentOption.prev();
-            currentOption.insertBefore(change);            
-        }else if (d == "down"){
-            var change = currentOption.next();
-            currentOption.insertAfter(change);
-        }
-        
-        currentOption.animate({
-            "height":"-=30px",
-            "opacity":0.2
-        },100,function(){
-            currentOption.animate({
-                "height":"+=30px",
-                "opacity":1
-            },400)
-        })
-        change.animate({
-            "height":"+=30px",
-            "opacity":0.2
-        },100,function(){
-            change.animate({
-                "height":"-=30px",
-                "opacity":1
-            },400)
-        })
-        
-        /*items = $(".itemName");
-        for (x=0;x<n;x++){
-            $(items[x]).data("key",x);
-        }*/
-    }
-    function updateItemFUOrder(){
-        if ($(this).hasClass('up')){
-            var d = 'up';
-        }else if ($(this).hasClass("down")){
-            var d = 'down';
-        }
-        
-        var itemsFU = $(this).closest(".item").find(".itemFU"), f = itemsFU.first(), l = itemsFU.last();
-        var currentItemFU = $(this).closest(".itemFU");
-        var nFU = itemsFU.length, kFU = Number($(this).closest(".itemFU").find(".question").data("key"));
-        var k = Number($(this).closest(".item").find(".question").data("key"));
-        var ItemArr = $(this).closest(".section").data("items");
-        var ItemFUArr = ItemArr[k]['followups'];
-
-        if ((currentItemFU.is(f) && d == "up") || (currentItemFU.is(l) && d == "down")){
-            return false;
-        }
-        if (d == "up"){
-            var change = $(itemsFU[kFU-1]);
-            change.find(".question").data("key",kFU);
-            currentItemFU.find(".question").data("key",kFU-1);
-            ItemFUArr[kFU].key = kFU -1;
-            ItemFUArr[kFU-1].key = kFU;
-            currentItemFU.insertBefore(change);            
-        }else if (d == "down"){
-            var change = $(itemsFU[kFU+1]);
-            change.find(".question").data("key",kFU);
-            currentItemFU.find(".question").data("key",kFU+1);
-            ItemFUArr[kFU].key = kFU +1;
-            ItemFUArr[kFU+1].key = kFU;
-            currentItemFU.insertAfter(change);
-        }
-        ItemFUArr.sort(function(a,b){
-            return a.key-b.key;
-        });
-        updatedInsertProxies();
-
-        currentItemFU.animate({
-            "height":"-=30px",
-            "opacity":0.2
-        },100,function(){
-            currentItemFU.animate({
-                "height":"+=30px",
-                "opacity":1
-            },400,function(){
-                currentItemFU.css("height","auto");
-            })
-        });
-        change.animate({
-            "height":"+=30px",
-            "opacity":0.2
-        },100,function(){
-            change.animate({
-                "height":"-=30px",
-                "opacity":1
-            },400,function(){
-                change.css("height","auto");
-                updateItems($(this).closest('.section'));
-            })
-        });
-        currentItemFU.add(change).css("height","auto");
-        
-        autoSave();
-    }
-    function updateItemData(){
-
-    }    
-    function showConditionOptions(item){
-        var k = item.find(".question").data('key');
-        var Items = item.closest(".section").data('items');
-        var currentItem = Items[k];
-        var o = currentItem.options, t = currentItem.type, q = currentItem.question;
-        var oStr = '';
-        
-        $("#condition").find(".answer").remove();
-        
-        if (t == "radio" || t == 'checkboxes' || t == 'dropdown'){
-            var oNode = $("<ul class='answer'></ul>");
-            oNode.prependTo($("#condition"));
-            oNode = $("#FollowUpList").find(".answer");
-            $("#DisplayQ").text(q);
-            $("#Conditionality").text("matches one of the following (select as many as you want)");
-            
-            for (x=0;x<o.length;x++){
-                var escapedStr = o[x].split("\"").join("&quot;");
-                escapedStr = escapedStr.split("'").join("&apos;");
-                oStr += "<li data-value='"+escapedStr+"'>"+escapedStr+"</li>";
-            }
-            oNode.addClass("checkboxes").html(oStr);
-            oNode.append("<input class='targetInput' name='condition' type='hidden'>");
-            oNode.on("click","li",checkbox);
-       }
-        else if (t == "number" || t == "scale"){
-            var oNode = $("<div class='answer'></div>");
-            oNode.prependTo($("#condition"));
-            oNode = $("#FollowUpList").find(".answer");
-            $("#DisplayQ").text(q);
-            $("#Conditionality").text("matches the following condition");
-            
-            var conditionNode = "<span>Response is </span><select><option value='less than'>less than</option><option value='equal to'>equal to</option><option value='greater than'>greater than</option></select><div class='answer number'><input size='10' type='text' data-min='1920' data-max='2028' value='2018' data-step='1'><span class='label'></span><div><div class='change up'></div><div class='change down'></div></div></div>";
-            
-            var min = o.min, max = o.max, initial = o.initial, step = o.step, units = o.units;
-            oNode.html(conditionNode);
-            $("#condition").find("input").data({
-                min: min,
-                max: max,
-                step: step
-            });
-            $("#condition").find('input').val(initial);
-            $("#condition").find(".label").text(units);
-            $("#condition").off("mousedown touchstart",".change",startChange);
-            $("#condition").off("mouseup touchend",".change",stopChange);
-            $("#condition").on("mousedown touchstart",".change",startChange);
-            $("#condition").on("mouseup touchend",".change",stopChange);
-        }
-        else if (t == "scale"){
-            //var oNode = $("<input type='slider'>")
-        }
-        
-        p = $("#AddItemProxy").parent();
-        if (p.is(".itemFU")){
-            c = p.find(".question").data("condition");
-            //c = c.split(", ");
-            for (x=0;x<c.length;x++){
-                p.find("li").filter(function(){
-                    return $(this).data("value") == c[x];
-                }).click();
-            }            
-        }
-        $("#condition").find(".answer").addClass("flexbox");
-    }
-    
-    function activateItem(item,type,options){
-        var target;
-        if (type == "radio"){
-            target = item.find("ul");
-            target.find("li").remove();
-            $.each(options,function(i,value){
-                $("<li data-value='"+value+"'>"+value+"</li>").appendTo(target).on("click",radio);
-            });
-        }
-        else if (type == "narrative"){
-            target = item.find(".narrative");
-            var str = options.markupStr.replace(/<img src="%%EMBEDDED:([^>]*)>/g,"<div class='loadImg'>click to load images</div>");
-            target.html(str);
-            item.on("click",".loadImg",function(){
-                blurElement(item,"#loading");
-                $.ajax({
-                    url: "/narrativeImgData",
-                    method: "POST",
-                    data: options,
-                    success: function(data){
-                        var markup = $(data).html();
-                        target.html(markup);
-                        // UPDATE ITEM FOR EDITING PURPOSES
-                        options['markupStr'] = markup;
-                        item.find('.question').data('options',options);
-                        target.css('min-height','unset');
-                        unblurElement(item);
-                    }
-                })
-            })
-        }
-        else if (type == "number"){
-            target = item.find('.number').find("input");
-            target.data(options);
-            target.val(options['initial']);
-            item.find('.number').find(".label").text(options['units']);
-            item.find('.number').on("mousedown touchstart",".change",startChange);
-            item.find('.number').on("mouseup touchend",".change",stopChange);
-            item.find('.number').on('keyup',"input",inputNum);
-            item.data('options',options);
-        }
-        else if (type == "checkboxes"){
-            target = item.find("ul");
-            target.find("li").remove();
-            $.each(options,function(i,value){
-                $("<li data-value='"+value+"'>"+value+"</li>").appendTo(target).on("click",checkbox);
-            });
-        }
-        else if (type == 'bodyclick'){
-            // console.log(item);
-            target = item.find(".imageClick");
-            target.on('touchstart mousedown', imageClick);
-            // imageclicks.each(function(){
-                var width = target.data('width') !== undefined ? target.data('width') : '10em', 
-                    height = target.data('height') !== undefined ? target.data('height') : '10em';
-                target.css({width:width,height:height});
-                target.find('.undo').slideFadeOut();
-            // });
-            target.data('initialized',true);            
-        }
-        else if (type == "dropdown"){
-            target = item.find("select");
-            target.find("li").remove();
-            $.each(options,function(i,value){
-                $("<option value='"+value+"'>"+value+"</option>").appendTo(target).on("click",radio);
-            });
-        }
-        else if (type == "scale"){
-            target = item;
-            var displayValue = (options['displayValue'] == "yes") ? true:false,
-                displayLabel = (options['displayLabels'] == "yes") ? true:false,
-                minLabelStr, maxLabelStr,
-                min = options['min'], max = options['max'], initial = options['initial'],
-                minLabel = options['minLabel'], maxLabel = options['maxLabel'],
-                scale = item.find(".scale"), slider = item.find(".slider"),
-                showValue = (options['displayValue'] == 'yes') ? true : false;
-            if (displayLabel){
-                minLabelStr = min + "<br><b>" + minLabel + "</b>";
-                maxLabelStr = max + "<br><b>" + maxLabel + "</b>";
-            }else if (!displayLabel){
-                minLabelStr = "<b>" + minLabel + "</b>";
-                maxLabelStr = "<b>" + maxLabel + "</b>";
-            }
-            target.find(".answer").find(".left").html(minLabelStr);
-            target.find(".answer").find(".right").html(maxLabelStr);
-            target.find(".slider").attr({"value":initial, "min":min, "max":max});
-
-            scale.on('mouseenter',scaleMouseEnter);
-            scale.on('mouseleave touchend',scaleMouseLeave);
-            slider.closest(".item").data("updateId","clear");
-            slider.on('mousedown touchstart',sliderStart);
-            if (showValue){slider.addClass('showValue');}
-            else {slider.removeClass('showValue');}
-        }
-        else if (type == "date"){
-            target = item.find("input");
-            target.on("focus",function(e){
-                e.preventDefault();
-            });
-            if (target.hasClass('is-datepick')){
-                target.removeClass('is-datepick');
-            }
-            options = (options.minDate != null) ? options : {yearRange:'1920:c+1'};
-            target.datepick(options);
-        }
-        else if (type == "text"){
-            target = item.find('input');
-            t = (options != undefined && options['placeholder'] != undefined) ? options['placeholder'] : "";
-            target.attr('placeholder',t);
-        }
-        else if (type == "text box"){
-            target = item.find('textarea');
-            t = (options != undefined && options['placeholder'] != undefined) ? options['placeholder'] : "";
-            target.attr('placeholder',t);
-        }
-        else if (type == "signature"){
-            target = item.find(".signature");
-            target.find(".jSignature").remove();
-            target.jSignature();
-            target.on("click",".clear",function(){
-                target.parent().jSignature("reset");
-            });
-            target.data('initialized',true);
-            if (options['typedName'] == 'yes'){item.find(".printed").show();}else{item.find(".printed").hide();}
-        }
-        else if (type == "time"){
-            target = item.find('input');
-            target.removeAttr('id').removeClass('ui-timepicker-input').val(options['setTime']);
-            target.timepicker(options);
-            // console.log(options);
-        }
-    }
 })
+var imageSizeDecode = {small:'20em',medium:'27.5em',large:'35em',xlarge:'50em'};
+function toggleImageClickSize(){
+    var size = $(this).parent().find(".active"), key = size.data('value').split("-").join(""), newSize = imageSizeDecode[key], target = $(this).data('target');
+    if (target == undefined){return false;}
+    target.data('height',newSize);
+    resizeImageClicks();
+}
+function toggleTimeOptions(){
+    if ($(this).hasClass("disabled")){return false;}
+    var c = $(this).data('value'), divs = $("#TimeList").find('.flexbox').children("div"), match = divs.filter("[data-condition='"+c+"']");
+    if (match.length==0 && !$(this).hasClass("active")){
+        slideFadeOut(divs);
+    }else{
+        if ($(this).hasClass("active")){
+            slideFadeOut(match);
+        }else{
+            slideFadeIn(match);
+        }
+    }
+}
+function toggleDateRestrictions(){
+    if ($(this).is(":checked")){
+        $("#DateOptions").find(".blockable").slideFadeOut();
+    }else{
+        $("#DateOptions").find(".blockable").slideFadeIn();
+    }
+}
+function toggleItemList(){
+    var target = $(this).parent().children(".targetFUs");
+    var span = $(this).find('span'), valuebox = target.find(".SliderValue");
+    var itemKey = $(this).closest(".item").find(".question").data('key');
+    var items = $(this).closest(".section").data('items');
+    var toggleFUs = items[itemKey].toggleFUs;
+    if (toggleFUs == "hide"){
+        toggleFUs = "show";
+        if ($(this).closest(".ItemsFU").find(".itemFU").length>1){
+            $(this).closest(".ItemsFU").find(".selectMultiple").fadeIn();
+        }
+    }
+    else if (toggleFUs == "show"){toggleFUs = "hide";$(this).closest(".ItemsFU").find(".selectMultiple").fadeOut();}
+    items[itemKey].toggleFUs = toggleFUs;
+    valuebox.hide();
+    span.toggleClass("right").toggleClass("down");
+    target.slideToggle();
+}
+function scrollToSection(e){
+    if ($(e.target).is(".up, .down")){;return false;}
+    var name = $(this).find(".name").text().toLowerCase();
+    var section = $(".section").filter(function(){
+        return $(this).find(".sectionName").find(".value").text().toLowerCase() == name;
+    });
+    $.scrollTo(section);
+}
+function saveItem(){
+    var i = $("#AddItemProxy");
+    var p = i.parent();
+    var section = i.closest(".section");
+    var item = i.closest(".item");
+            
+    var obj = createItemObj(), saved = false;
+    if (obj == false){return false;}
+    if (p.is(".section")){
+        saved = saveItemObj(obj,section,"save");
+    }else if (p.is(".item")){
+        var k = p.find(".question").data("key");
+        saved = saveItemObj(obj,section,"update",k);
+    }else if (p.is(".newFollowUp")){
+        var k = item.children(".question").data("key");
+        saved = saveItemObj(obj,item,"save",k);
+    }else if (p.is(".itemFU")){
+        var k = item.children(".question").data("key");
+        var fk = p.find(".question").data("key");
+        // saved = saveItemObj(obj,section,"update",k,fk);
+        saved = saveItemObj(obj,item,"update",k,fk);
+    }else if (p.is(".insertProxy")){
+        var type = p.parent().data('contains'), kP;
+        k = p.data('key');
+        if (type == 'item'){
+            saved = saveItemObj(obj,section,'insert',k);
+        }else if (type == 'itemFU'){
+            kP = p.closest(".item").find(".question").data('key');
+            saved = saveItemObj(obj,item,'insert',kP,k);
+        }
+    }else{
+        console.log('fail');
+    }
+    if (saved){
+        setTimeout(function(){
+            resetAddItem();
+            resetOptions();
+        },500);
+
+        $("#AddItemProxy").appendTo('#modalHome');
+        $("#FormBuilder").find(".section").each(function(){updateItems($(this));});
+        autoSave();
+        unblurElement($("body"));
+    }
+}
+var autoSaveCount;
+function autoSave(){
+    var form = createFormObj();
+    if (!form){return false;}
+    var jsonStr = JSON.stringify(form);
+    // var mode = $("#formdata").data("mode");
+    var formId = $("#formdata").data("formid") === undefined ? "none" : $("#formdata").data("formid"),
+        uid = $("#formdata").data("formuid") === undefined ? "none" : $("#formdata").data("formuid");
+    var dataObj = {
+        form_id: formId,
+        form_uid: uid,
+        form_name: form["formName"],
+        // questions: JSON.stringify(form['sections']),
+        full_json: jsonStr
+    };
+    $.ajax({
+        method:"POST",
+        url:"/forms",
+        data: dataObj,
+        success:function(data){
+            if (data!=false){
+                // console.log(data);
+                var arr = JSON.parse(data);
+                clearTimeout(autoSaveCount);
+                var formUID = arr[0], formID = arr[1], wrap = $("#AutoSaveWrap");
+                $("#formdata").data("formuid",formUID);
+                $("#formdata").data("formid",formID);
+                var t = new Date();
+                var timeStr = t.toLocaleTimeString();
+                $("#formdata").text("Autosaved at "+timeStr);
+                if (wrap.is(":visible")){
+                    wrap.fadeOut(400);
+                    setTimeout(function(){
+                        $("#AutoConfirm").find(".message").text("Autosaved at " + timeStr);
+                        wrap.fadeIn();
+                    },1000)
+                    autoSaveCount = setTimeout(function(){
+                        slideFadeOut(wrap);
+                    },2500);
+                }else{
+                    $("#AutoConfirm").find(".message").text("Autosaved at " + timeStr);
+                    slideFadeIn(wrap);
+                    autoSaveCount = setTimeout(function(){
+                            slideFadeOut(wrap);
+                    },2500);
+                }
+            }
+            else{
+                alert("There was an error saving the form. Your changes have NOT been saved.");
+            }
+        }
+    })
+}
+function createFormObj(){
+    var sections = $("#FormBuilder").find(".section");
+    var sectionArr = [];
+    sections.each(function(i,section){
+        var items = $(section).data('items');
+        var name = $(section).find(".sectionName").find("span").text();
+        var obj = {
+            "sectionName":name,
+            "items":items
+        };
+        obj['displayOptions'] = ($(section).data('display') != undefined) ? $(section).data('display') : getDefaultCSS('section');
+        sectionArr.push(obj);
+    })
+
+    var formName = $.sanitize($("h2#FormName").find("input").val());
+    if (formName == ""){
+        setTimeout(function(){
+            alertBox("enter a form name",$("h2#FormName").find('.input'),"after","fade");
+            scrollToInvalidItem($("h2#FormName"));
+        },300)
+        return false;
+    }
+
+    var formID = $("#formdata").data("formid");
+    var form = {
+        "formName":formName,
+        "formID":formID,
+        "versionID":"",
+        "sections":sectionArr,
+        "numbers":{
+            "sections":sections.length,
+            "items":sections.find('.item').length+sections.find(".itemFU").length,
+            "followups":sections.find(".itemFU").length
+        }
+    }
+    //var str = JSON.stringify(form);
+    return form;
+}
+function createItemObj(){
+    if ($("#Text").val()=='' && !$("#AddText").is(":visible")){
+        feedback('Missing Question',"You need to write your question!");
+        $("#Text").css('border-color','var(--pink)');
+        return false;
+    }
+    
+    var ItemObj = {};
+    
+    var q = $.sanitize($("#Text").val());
+    var t = ($("#AddText").is(":visible")) ? "narrative" : $("#Type").val();
+    var r = ($("#Required").val() == 'true') ? true : false;
+    var o;
+    
+    // DEFINE OPTIONS BASED ON TYPE
+        var options = $("#Options").find("input").filter(":visible");
+        if (options.length!=0){
+            optionsY = options.filter(function(){
+                return $(this).val() != "";
+            })
+            optionsN = options.not(optionsY);
+            if (optionsY.length < 2){
+                alertBox("must have at least two options",optionsN.first(),"after","fade");
+                return false;
+            }
+            
+            var options = [];
+            for (x=0;x<optionsY.length;x++){
+                var check = $.sanitize($(optionsY[x]).val());
+                check = check.split("\"").join("");
+                if ($.inArray(check,options)>-1){
+                    alertBox("duplicate options not allowed",$(optionsY[x]),"after","fade");
+                    return false;
+                }else{
+                    options[x] = check;
+                }
+            }
+        }
+        else {options=undefined;}
+
+        var numberOptions = $("#NumberOptions").find("input").filter(":visible");
+        if (numberOptions.length!=0){
+            for (x=0;x<numberOptions.length;x++){
+                var i = $(numberOptions[x]);
+                if (i.val() == ""){
+                    alertBox("required",i,"after","fade");
+                    return false;
+                }
+            }
+            var min = Number(numberOptions.filter("[name='min']").val());
+            var max = Number(numberOptions.filter("[name='max']").val());
+            var inital = Number(numberOptions.filter("[name='initial']").val());
+            var step = Number(numberOptions.filter("[name='step']").val());
+            var units = numberOptions.filter("[name='units']").val();
+            
+            if (min>max){
+                alertBox("must be lesser than max",numberOptions.filter("[name='min']"),"after","2500");
+                return false;
+            }
+            if (inital>max || inital<min){
+                alertBox("must be between min and max",numberOptions.filter("[name='initial']"),"after","2500");
+                return false;
+            }
+            numberOptions = {
+                "min":min,
+                "max":max,
+                "initial":inital,
+                "step":step,
+                "units":units
+            };
+        }
+        else {numberOptions = undefined;}
+
+        var dateOptions = $("#DateOptions").find("input").filter(":visible");
+        if (dateOptions.length!=0){
+            dateOptions = {};
+            if ($("#NoRestriction").is(":checked")==false){
+                var dropdowns = $("#DateOptions").find("select"), incomplete = dropdowns.filter(function(){
+                    return $(this).find("option:selected").val() == "";
+                });
+                if (incomplete.length > 0){
+                    dropdowns.css('border-color','var(--pink');
+                    feedback('Missing Details','Complete all the date details or select "no restrictions"');
+                    return false;
+                }
+                // var minDate = "-"+$("[data-name='minNum']").val() + $("[data-name='minType']").val().charAt(0);
+                var minDir = ($('#DateOptions').find('.minDir').val() == 'before') ? "-" : "+",
+                    minNum = $('#DateOptions').find('.minNum').val(),
+                    minType = $('#DateOptions').find('.minType').val().charAt(0),
+                    maxDir = ($('#DateOptions').find('.maxDir').val() == 'before') ? "-" : "+",
+                    maxNum = $('#DateOptions').find('.maxNum').val(),
+                    maxType = $('#DateOptions').find('.maxType').val().charAt(0);
+                // console.log(minDir+minNum+minType);
+                var minDate = minDir+minNum+minType;
+                var maxDate = maxDir+maxNum+maxType;
+                dateOptions["minDate"] = minDate;
+                dateOptions["maxDate"] = maxDate;
+            }else{
+                dateOptions["minDate"] = null;
+                dateOptions["maxDate"] = null;
+            }
+            console.log(dateOptions);
+        }
+        else{dateOptions=undefined;}
+
+        var timeOptions = $("#TimeList").is(":visible");
+        if (timeOptions){
+            if ($("#TimeRestriction").find(".active").length==0){
+                $(".TimeRestrict").css('border-color','var(--pink)');
+                feedback('Time Restrictions','Choose whether to restrict time selections or allow any time');
+                return false;
+            }
+            var restrictions = $("#TimeRestriction").find(".active");
+            timeOptions = {};
+            restrictions.each(function(){
+                var v = $(this).data('value');
+                if (v == "allow any time"){
+                    timeOptions['all'] = "default";
+                }else if (v == 'set range'){
+                    timeOptions['minTime'] = $("#TimeOptions").find(".minTime").val();
+                    timeOptions['maxTime'] = $("#TimeOptions").find(".maxTime").val();
+                }else if (v == 'set interval'){
+                    timeOptions['step'] = $("#TimeOptions").find(".step").val();
+                }else if (v == 'set initial value'){
+                    timeOptions['setTime'] = $("#TimeOptions").find(".setTime").val();
+                }
+            })
+        }
+        else{timeOptions=undefined;}
+
+        var textOptions = $("#TextOptions").is(":visible");
+        if (textOptions){
+            textOptions = {
+                'placeholder':$("#textPlaceholder").val()
+            }
+        }else{textOptions=undefined}
+        var textBoxOptions = $("#TextBoxOptions").is(":visible");
+        if (textBoxOptions){
+            textBoxOptions = {
+                'placeholder':$("#textAreaPlaceholder").val()
+            }
+        }else{textBoxOptions=undefined}
+
+        var sigOptions = $("#SignatureOptions").find("select").filter(":visible");
+        if (sigOptions.length!=0){
+            var printBool = $("#typedName").val();
+            sigOptions = {
+                "typedName":printBool
+            }
+        }
+        else{sigOptions=undefined;}
+        
+        var scaleOptions = $("#ScaleOptions").find("input, select").filter(":visible");
+        if (scaleOptions.length!=0){
+            var min = scaleOptions.filter("[data-name='scalemin']"), max = scaleOptions.filter("[data-name='scalemax']"), initial = scaleOptions.filter("[data-name='initial']"), minL = scaleOptions.filter("[name='minLabel']"), maxL = scaleOptions.filter("[name='maxLabel']"), dispL = scaleOptions.filter("[name='dispLabel']"), dispV = scaleOptions.filter("[name='dispVal']");
+                        
+            minVal = Number(min.val());
+            maxVal = Number(max.val());
+            initialVal = Number(initial.val());
+            if (minVal>maxVal || minVal==maxVal){
+                min.add(max).css('border-color','var(--pink)');
+                feedback('Oops','Your minimum value has to be less than your maximum value.');
+                return false;
+            }
+            if (inital < minVal || initial > maxVal){
+                initial.css('border-color','var(--pink)');
+                feedback('Oops','Your initial value has to be between the minimum and maximum values.');
+                return false;
+            }
+            for (x=0;x<scaleOptions.length;x++){
+                var v = $(scaleOptions[x]).val();
+                if (v==""){
+                    $(scaleOptions[x]).css('border-color','var(--pink');
+                    feedback('Oops',"Looks like you're missing a required value.");
+                    // alertBox("required",$(scaleOptions[x]),"after","fade");
+                    return false;
+                }
+            }
+        
+            scaleOptions = {
+                "min":minVal,
+                "max":maxVal,
+                "initial":initialVal,
+                "minLabel":minL.val(),
+                "maxLabel":maxL.val(),
+                "displayValue":dispV.val(),
+                "displayLabels":dispL.val()
+            };
+        }
+        else{scaleOptions=undefined;}
+
+        var imageClickOptions = $("#BodyClickOptions").is(":visible");
+        if (imageClickOptions){
+            var sizeOption = $("#BodyClickList").find(".imageClickSize"), size = sizeOption.find(".active"), key;
+            if (size.length == 0){
+                sizeOption.css('border-color','var(--pink');
+                feedback('Missing Option',"Select a size option for this question.");
+                return false;
+            }else{
+                key = size.data('value').split("-").join("");
+                imageClickOptions = {
+                    height: imageSizeDecode[key]
+                };
+                // console.log(imageClickOptions, size.data('value'),size.data('value').split("-").join(""));
+                // return false;
+            }
+        }
+        
+        var narrativeOptions = $("#NarrativeList").filter(":visible");
+        if (narrativeOptions.length!=0){
+            narrativeOptions={
+                "markupStr":$("#NarrativeList").find(".summernote").summernote('code')
+            };
+        }
+        else{narrativeOptions = undefined;}
+
+
+        
+        var followUpOptions = $("#FollowUpOptions").find("input, select");
+        if ($("#FollowUpOptions").is(":visible")){
+            if ($("#condition").find(".checkboxes").length>0){
+                if ($("#condition").find(".active").length==0){
+                    var t = $("#condition").find(".answer");
+                    alertBox("required",t,"after","fade");
+                    return false;
+                }else{
+                    var conditions=[];
+                    $("#condition").find(".active").each(function(){
+                        conditions.push($(this).data("value"));
+                    });
+                    followUpOptions = conditions;
+                }
+            }
+            else{
+                var conditionInputs=[];
+                for (x=0;x<followUpOptions.length;x++){
+                    var i = $(followUpOptions[x]);
+                    if (i.val() == ""){
+                        alertBox("required",i.closest(".answer"),"after","fade");
+                        return false;
+                    }else{
+                        conditionInputs.push(i.val());
+                    }
+                }
+                followUpOptions = [conditionInputs.join(" ")];
+            }
+        }
+        else{followUpOptions=undefined;}
+    
+    if (options!=undefined){o=options}
+    else if (numberOptions!=undefined){o=numberOptions}
+    else if (dateOptions!=undefined){o=dateOptions}
+    else if (textOptions!=undefined){o=textOptions}
+    else if (textBoxOptions!=undefined){o=textBoxOptions}
+    else if (timeOptions!=undefined){o=timeOptions}
+    else if (scaleOptions!=undefined){o=scaleOptions}
+    else if (sigOptions!=undefined){o=sigOptions}
+    else if (narrativeOptions!=undefined){o=narrativeOptions}
+    else if (imageClickOptions){o=imageClickOptions}
+    
+    ItemObj={
+        "question":q,
+        "type":t,
+        "options":o,
+        'required':r
+    };
+
+    if (followUpOptions!=undefined){
+        ItemObj["condition"] = followUpOptions;
+        section = $("#AddItemProxy").closest(".item");
+    }        
+
+    return ItemObj;
+}
+function saveItemObj(ItemObj,section,mode,itemKey,FUkey){
+    if (section.is(".section")){
+        var Items = section.data('items');
+        if (mode=="update"){
+            if (checkItem(ItemObj,section)){
+                ItemObj["followups"] = Items[itemKey].followups;
+                ItemObj['toggleFUs'] = Items[itemKey].toggleFUs;
+                ItemObj['key'] = itemKey;
+                ItemObj['displayOptions'] = (Items[itemKey].displayOptions!==undefined) ? Items[itemKey].displayOptions : getDefaultCSS('item') ;
+                Items[itemKey] = ItemObj;
+                Items.forEach(function(item, i){
+                    item['key'] = i;
+                })
+
+            }else{
+                return false;
+            }
+        }
+        else if (mode=="save"){
+            if (checkItem(ItemObj,section)){
+                ItemObj["followups"] = [];
+                ItemObj['toggleFUs'] = 'hide';
+                ItemObj['key'] = Items.length;
+                ItemObj['displayOptions'] = getDefaultCSS('item');
+                Items.push(ItemObj);
+            }else{
+                return false;
+            }
+        }   
+        else if (mode=='insert'){
+            if (checkItem(ItemObj,section)){
+                ItemObj["followups"] = [];
+                ItemObj['toggleFUs'] = 'hide';
+                // ItemObj['key'] = Items.length;
+                ItemObj['displayOptions'] = getDefaultCSS('item');
+                Items.splice(itemKey+1, 0, ItemObj);
+                Items.forEach(function(item, i){
+                    item['key'] = i;
+                })
+            }else{
+                return false;
+            }
+        }         
+    }
+    else if (section.is('.item')){
+        if (mode=='save'){
+            if (checkItem(ItemObj,section)){
+                var Items = section.closest(".section").data('items');
+                var FUs = Items[itemKey].followups;
+                ItemObj['key'] = FUs.length;
+                ItemObj['displayOptions'] = getDefaultCSS('item');
+                FUs.push(ItemObj);
+            }else{
+                return false;
+            }
+        }
+        else if (mode=='update'){
+            if (checkItem(ItemObj,section)){
+                var Items = section.closest(".section").data('items');
+                var FUs = Items[itemKey].followups;
+                ItemObj['displayOptions'] = (FUs[FUkey].displayOptions!=undefined) ? FUs[FUkey].displayOptions : getDefaultCSS('item') ;
+                FUs[FUkey] = ItemObj;
+                FUs.forEach(function(FU, f){
+                    FU['key'] = f;
+                })
+            }else{
+                return false;
+            }
+        }else if (mode=='insert'){
+            if (checkItem(ItemObj,section)){
+                var Items = section.closest(".section").data('items');
+                var FUs = Items[itemKey].followups;
+                ItemObj['displayOptions'] = getDefaultCSS('item');
+                FUs.splice(FUkey+1,0,ItemObj);
+                FUs.forEach(function(FU, f){
+                    FU['key'] = f;
+                })
+            }else{
+                return false;
+            }
+        }
+    }
+    return true;
+}
+function checkItem(i,section){
+    var q = i.question, big, little ;
+    if (i.type == 'narrative'){
+        return true;
+    }
+    if ($(section).is(".section")){
+        big = ".Items";
+        little = ".item";
+    }else if ($(section).is(".item")){
+        big = ".ItemsFU";
+        little = ".itemFU";
+    }
+    var items = $(section).find(big).find(little).children(".question");
+    var qArr = [];
+            
+    items.each(function(i,item){
+        var t = $(item).data("question");
+        qArr.push(t.toLowerCase());
+    })
+    
+    if ($("#AddItemProxy").parent().is(little)){
+        var itemKey = $("#AddItemProxy").parent().find(".question").data("key");
+    }
+    if ($.inArray(q.toLowerCase(),qArr)>-1){
+        if ($("#AddItemProxy").parent().is(little) && itemKey == $.inArray(q.toLowerCase(),qArr)){
+            return true;
+        }
+        var t = $("#AddItem").find("#Text"), m;
+        if (big == '.Items'){
+            m = '<div>All questions within each section must be unique.</div><div class="pink">A question with text "'+q+'" already exists in "'+section.find('h2').contents().first().text().trim()+'".</div>';
+        }else{
+            m = '<div>All followup questions connected to the same main question must be unique.</div><div class="pink">A question with text "'+q+'" already exists as pertains to "'+section.children('.question').contents().first().text()+'".</div>';
+        }
+        feedback('Duplicate Question',m);
+        // alertBox("question already exists",$(t),"after","2500");
+        return false;
+    }else{
+        return true;
+    }
+}
+
+function updateItems(section){
+    var Items = section.data("items");
+    var big = ".Items";
+    var little = ".item";
+    var ItemsList = $(section).find(".Items").find(".target"), n = Items.length;
+
+    $("#AddItem, #AddText, #AddItemProxy").hide().appendTo("#FormBuilder");
+    ItemsList.html("");
+    Items.forEach(function(i,x){
+        var t = i.type, q = i.question, o = i.options, c = i.condition, ItemsFU = i.followups, tFUs = i.toggleFUs, r = (i.required == undefined) ? true : i.required,
+            rStr = ((r === false) || (t == 'narrative')) ? "" : "<span class='requireSign'>*</span>";
+        $(itemNode).appendTo(ItemsList);
+        var newItem = ItemsList.find(".item").last();
+        if (t == "narrative"){q = "Rich Text Block";}
+        newItem.find(".question").html("<span class='q'>" + q + "</span>" + rStr + "<div style='display:inline-block'><div class='toggle edit'>(edit)</div><div class='toggle copy'>(duplicate)</div><div class='toggle delete'>(delete)</div><div class='toggle save'>(save)</div><div class='toggle cancel'>(cancel edit)</div></div>").data({"question":q, "key":x, "type":t, "options":o, "toggleFUs":tFUs, 'required':r});
+        
+        var target = (t == "narrative") ? ".narrative" : ".answer",
+            template = $(".template").filter("[data-type='"+t+"']").find(target).clone();
+
+        template.add(template.find("select, input")).removeClass(function(index,classes){
+            return (classes.match (/\b([^ ]*)Template/g) || []).join(' ');
+        }).removeAttr('name data-name');
+        newItem.find(".answer").replaceWith(template);
+        activateItem(newItem,t,o);
+                    
+        CurrentItem = newItem;
+        
+        var ItemsFUList = CurrentItem.find(".ItemsFU").find(".targetFUs");
+        
+        if (ItemsFU.length>0){
+            ItemsFU.forEach(function(f,xFU){
+                var tFU = f.type, qFU = f.question, oFU = f.options, cFU = f.condition, cStr = "is <span class='bold underline pink'>", rFU = (f.required == undefined) ? true : f.required, rFUStr = ((rFU === false) || (tFU == 'narrative')) ? "" : "<span class='requireSign'>*</span>";
+                $(itemFUNode).appendTo(ItemsFUList);
+                var newItemFU = ItemsFUList.find(".itemFU").last();
+                if (tFU == "narrative"){qFU = "Rich Text Block";}
+                newItemFU.find(".question").html(qFU + rFUStr + "<div style='display:inline-block'><div class='toggle edit'>(edit)</div><div class='toggle copy'>(duplicate)</div><div class='toggle delete'>(delete)</div><div class='toggle save'>(save)</div><div class='toggle cancel'>(cancel edit)</div></div>").data({"question":qFU, "key":xFU, "type":tFU, "options":oFU, "condition":cFU, 'required':rFU});
+                
+                var rFU = (tFU == "narrative") ? ".narrative" : ".answer",
+                    template = $(".template").filter("[data-type='"+tFU+"']").find(rFU).clone();
+
+                template.removeAttr('id');
+                newItemFU.find(".answer").replaceWith(template);
+                // cFU = cFU.join(", or ");
+                // console.log(cFU.length);
+
+                if (cFU.length == 1){
+                    cStr = "is <span class='bold underline pink'>"+cFU+"</span>";
+                }else if (cFU.length == 2){
+                    cStr = "is <span class='bold underline pink'>"+cFU.join(" or ")+"</span>";
+                }else{
+                    for (c = 0;c < cFU.length; c++){
+                        var add = (c == cFU.length - 1) ? " or " + cFU[c] + "</span>" : " " + cFU[c] + ",";
+                        cStr += add;
+                    }
+                }
+                var qSplit = q.split(" "), qShort = [];
+                for (x = 0; x < 10; x++){
+                    if (qSplit[x] != undefined){
+                        qShort.push(qSplit[x]);
+                    }
+                }
+                qShort = qShort.join(" ");
+                qShort = (qShort != q) ? qShort += "..." : qShort;
+                newItemFU.find(".condition").html("Condition: <span class='bold underline'>"+qShort+"</span> "+cStr);
+                activateItem(newItemFU,tFU,oFU);
+            })
+        }
+        
+        var nFU = ItemsFU.length;
+        var s = CurrentItem.find(".ItemsFU").children("p").find("span").clone();
+        var text;
+        if (nFU == 0){
+            text = "Follow up based on response";
+        }else if (nFU==1){
+            text = "1 followup";
+        }else {
+            text = nFU + " followups";
+        }
+        CurrentItem.find(".ItemsFU").children("p").html(text).prepend(s);
+
+
+        if ($(ItemsFUList).text() == ""){
+            $(ItemsFUList).html("<div style='padding:0.5em 1em;'>Add some followup questions!</div>");
+        }
+        
+        var toggleFUs = CurrentItem.find(".question").data("toggleFUs");
+        if (toggleFUs == "show"){
+            CurrentItem.find(".targetFUs").show();
+            CurrentItem.find(".hideFUs").find("span").removeClass("right").addClass("down");
+        }
+        
+        var noFUs = ['text','date','signature','narrative','text box','time'];
+        if ($.inArray(t,noFUs)>-1){
+            $(CurrentItem).find(".ItemsFU").hide();
+            $(CurrentItem).find(".newFollowUp").hide();
+        }
+    })
+    
+    
+    var s = $(section).find(".Items").children("p").find("span").clone();
+    var text;
+    if (n == 0){text = "No questions";}
+    else if (n==1){text = "1 question";}
+    else {text = n + " questions";}
+
+    n = $(section).find(".itemFU").length;
+    if (n == 0){text += "";}
+    else if (n==1){text += " with 1 followup question";}
+    else {text += " with " + n + " followup questions";}
+
+    $(section).find(".Items").children("p").html(text).prepend(s);
+    
+    updateSections();
+            
+    if ($(ItemsList).text() == ""){
+        $(ItemsList).html("<div style='padding:0.5em 1em;'>Add some questions!</div>");
+    }
+
+    
+    var itemOrder = $(".item").children(".UpDown").find(".up, .down");
+    itemOrder.off("click",updateItemOrder);
+    itemOrder.on("click",updateItemOrder);
+    var itemFUOrder = $(".itemFU").children(".UpDown").find(".up, .down");
+    itemFUOrder.off("click",updateItemFUOrder);
+    itemFUOrder.on("click",updateItemFUOrder);
+    
+    $(section).find('.Items').find('.target').find(".selectMultiple").find(".show").on("click",multiItemOptions);
+    $(section).find('.Items').find('.target').find(".selectMultiple").find(".hide").on("click",hideMultiItemOptions);
+    $(section).find('.Items').find('.target').find(".selectMultiple").find(".copy").on("click",copyMultiple);
+    $(section).find('.Items').find('.target').find(".selectMultiple").find(".delete").on("click",deleteMultiple);
+    
+    $(".ItemsFU").each(function(){
+        if (!$(this).find(".targetFUs").is(":visible")){
+            $(this).find(".selectMultiple").hide();
+        }
+    })
+    updatedInsertProxies();
+}
+function activateItem(item,type,options){
+    var target;
+    if (type == "radio"){
+        target = item.find("ul");
+        target.find("li").remove();
+        $.each(options,function(i,value){
+            $("<li data-value='"+value+"'>"+value+"</li>").appendTo(target).on("click",radio);
+        });
+    }
+    else if (type == "narrative"){
+        target = item.find(".narrative");
+        var str = options.markupStr.replace(/<img src="%%EMBEDDED:([^>]*)>/g,"<div class='loadImg'>click to load images</div>");
+        target.html(str);
+        item.on("click",".loadImg",function(){
+            blurElement(item,"#loading");
+            $.ajax({
+                url: "/narrativeImgData",
+                method: "POST",
+                data: options,
+                success: function(data){
+                    var markup = $(data).html();
+                    target.html(markup);
+                    // UPDATE ITEM FOR EDITING PURPOSES
+                    options['markupStr'] = markup;
+                    item.find('.question').data('options',options);
+                    target.css('min-height','unset');
+                    unblurElement(item);
+                }
+            })
+        })
+    }
+    else if (type == "number"){
+        target = item.find('.number').find("input");
+        target.data(options);
+        target.val(options['initial']);
+        item.find('.number').find(".label").text(options['units']);
+        item.find('.number').on("mousedown touchstart",".change",startChange);
+        item.find('.number').on("mouseup touchend",".change",stopChange);
+        item.find('.number').on('keyup',"input",inputNum);
+        item.data('options',options);
+    }
+    else if (type == "checkboxes"){
+        target = item.find("ul");
+        target.find("li").remove();
+        $.each(options,function(i,value){
+            $("<li data-value='"+value+"'>"+value+"</li>").appendTo(target).on("click",checkbox);
+        });
+    }
+    else if (type == 'bodyclick'){
+        var img = item.find('.imageClick');
+        img.data('height',options.height);
+        initializeImageClicks();
+        resizeImageClicks();
+    }
+    else if (type == "dropdown"){
+        target = item.find("select");
+        target.find("li").remove();
+        $.each(options,function(i,value){
+            $("<option value='"+value+"'>"+value+"</option>").appendTo(target).on("click",radio);
+        });
+    }
+    else if (type == "scale"){
+        target = item;
+        var displayValue = (options['displayValue'] == "yes") ? true:false,
+            displayLabel = (options['displayLabels'] == "yes") ? true:false,
+            minLabelStr, maxLabelStr,
+            min = options['min'], max = options['max'], initial = options['initial'],
+            minLabel = options['minLabel'], maxLabel = options['maxLabel'],
+            scale = item.find(".scale"), slider = item.find(".slider"),
+            showValue = (options['displayValue'] == 'yes') ? true : false;
+        if (displayLabel){
+            minLabelStr = min + "<br><b>" + minLabel + "</b>";
+            maxLabelStr = max + "<br><b>" + maxLabel + "</b>";
+        }else if (!displayLabel){
+            minLabelStr = "<b>" + minLabel + "</b>";
+            maxLabelStr = "<b>" + maxLabel + "</b>";
+        }
+        target.find(".answer").find(".left").html(minLabelStr);
+        target.find(".answer").find(".right").html(maxLabelStr);
+        target.find(".slider").attr({"value":initial, "min":min, "max":max});
+
+        scale.on('mouseenter',scaleMouseEnter);
+        scale.on('mouseleave touchend',scaleMouseLeave);
+        slider.closest(".item").data("updateId","clear");
+        slider.on('mousedown touchstart',sliderStart);
+        if (showValue){slider.addClass('showValue');}
+        else {slider.removeClass('showValue');}
+    }
+    else if (type == "date"){
+        target = item.find("input");
+        target.on("focus",function(e){
+            e.preventDefault();
+        });
+        if (target.hasClass('is-datepick')){
+            target.removeClass('is-datepick');
+        }
+        options = (options.minDate != null) ? options : {yearRange:'1920:c+1'};
+        target.datepick(options);
+    }
+    else if (type == "text"){
+        target = item.find('input');
+        t = (options != undefined && options['placeholder'] != undefined) ? options['placeholder'] : "";
+        target.attr('placeholder',t);
+    }
+    else if (type == "text box"){
+        target = item.find('textarea');
+        t = (options != undefined && options['placeholder'] != undefined) ? options['placeholder'] : "";
+        target.attr('placeholder',t);
+    }
+    else if (type == "signature"){
+        target = item.find(".signature");
+        target.find(".jSignature").remove();
+        target.jSignature();
+        target.on("click",".clear",function(){
+            target.parent().jSignature("reset");
+        });
+        target.data('initialized',true);
+        if (options['typedName'] == 'yes'){item.find(".printed").show();}else{item.find(".printed").hide();}
+    }
+    else if (type == "time"){
+        target = item.find('input');
+        target.removeAttr('id').removeClass('ui-timepicker-input').val(options['setTime']);
+        target.timepicker(options);
+        // console.log(options);
+    }
+}
+function updateSections(){
+    var sections = $("#Sections").find(".section"), sectionHeight = $("#Sections").height();
+    var sectionCount = sections.length;
+    var names = $("#Sections").find(".section").find(".sectionName").find("span");
+    var nameArr = [], sectionLists, 
+        node = $('<li><span class="name"></span><span class="details">loading . . .</span><div class="UpDown"><div class="up"></div> <div class="down"></div></div>  </li>'), Qs, FUs, name, newNode, headerText;
+
+    $("#SectionOptions").find("li").remove();
+    sections.each(function(s, section){
+        name = $(section).find(".sectionName").find("span").text();
+        newNode = node.clone().data('key',s);
+        newNode.find(".name").text(name);
+        $("#SectionOptions").find("ul").append(newNode);
+    });
+    setTimeout(function(){
+        updateSecItemCount();
+    },100)
+
+    if (sectionCount == 0){
+        headerText = "No Sections Yet";
+        $("#SectionOptions").find("ul").hide();
+    }else{
+        headerText = "Sections";
+        $("#SectionOptions").find("ul").show();
+    }
+    var text = (sectionCount != 0) ? "Sections" : "No Sections Yet";
+    $("#SectionOptions").find("h3").text(text);
+}
+function updateSecItemCount(){
+    var Qs, FUs, sections = $(".section"), node, wName = 0, wDetails = 0;
+    sections.each(function(s,section){
+        Qs = $(section).find(".item").not(".narrative").length;
+        FUs = $(section).find(".itemFU").not(".narrative").length;
+        Qs = (Qs == 1) ? Qs + " question" : Qs + " questions";
+        FUs = (FUs == 1) ? FUs + " followup" : FUs + " followups";
+        
+        node = $("#SectionOptions").find("li").filter(function(){
+            wName = (wName < $(this).find(".name").width()) ? $(this).find(".name").width() : wName;
+            return $(this).find('.name').text().toLowerCase() == $(section).find(".sectionName").find(".value").text().toLowerCase();
+        }).find(".details").text(Qs + ", " + FUs);
+        
+        $(".details").each(function(){
+            wDetails = (wDetails < $(this).width()) ? $(this).width() : wDetails;
+        })
+    })
+    $("#SectionOptions").find(".name").width(wName);
+    $("#SectionOptions").find(".details").width(wDetails);
+}
+function updateSecOrder(){
+    var d, currentLI = $(this).closest("li"), name = currentLI.find(".name").text(), currentSec, changeSec, changeLI, sections = $(".section"), n = sections.length, currentSec, k = currentLI.data('key'), allLIs = $("#SectionOptions").find("li"), current, change;
+    if ($(this).hasClass('up')){
+        d = 'up';
+    }else if ($(this).hasClass("down")){
+        d = 'down';
+    }
+    currentSec = $(".section").filter(function(){
+        return $(this).find(".sectionName").find(".value").text() == name;
+    })
+
+    if ((k == 0 && d == "up") || (k == n -1 && d == "down")){
+        return false;
+    }
+
+    if (d == "up"){
+        changeSec = $(sections[k-1]);
+        currentSec.insertBefore(changeSec);            
+        changeLI = $(allLIs[k-1]);
+        currentLI.insertBefore(changeLI);            
+    }else if (d == "down"){
+        changeSec = $(sections[k+1])
+        currentSec.insertAfter(changeSec);
+        changeLI = $(allLIs[k+1]);
+        currentLI.insertAfter(changeLI);            
+    }
+    
+    current = currentSec.add(currentLI);
+    change = changeSec.add(changeLI);
+    currentSec.animate({
+        "height":"-=30px",
+        "opacity":0.2
+    },100,function(){
+        currentSec.animate({
+            "height":"+=30px",
+            "opacity":1
+        },400,function(){
+            currentSec.css("height","auto");
+        })
+    })
+    changeSec.animate({
+        "height":"+=30px",
+        "opacity":0.2
+    },100,function(){
+        changeSec.animate({
+            "height":"-=30px",
+            "opacity":1
+        },400,function(){
+            changeSec.css("height","auto");
+        })
+    })
+    currentLI.animate({
+        "height":"-=30px",
+        "opacity":0.2
+    },100,function(){
+        currentLI.animate({
+            "height":"+=30px",
+            "opacity":1
+        },400,function(){
+            currentLI.css("height","auto");
+        })
+    })
+    changeLI.animate({
+        "height":"+=30px",
+        "opacity":0.2
+    },100,function(){
+        changeLI.animate({
+            "height":"-=30px",
+            "opacity":1
+        },400,function(){
+            changeLI.css("height","auto");
+        })
+    })
+
+    allLIs = $("#SectionOptions").find("li");
+    allLIs.each(function(l,LI){
+        $(LI).data('key',l);
+    });
+    autoSave();         
+}
+function updatedInsertProxies(){
+    var insertNode = $("<div/>",{
+        class: "insertProxy",
+        html:"<div class='insertBtns'><div class='button white xxsmall insertQuestion'>insert question</div><div class='button white xxsmall insertText'>insert text</div></div><div class='plus'>+</div>"
+    });
+    $(".insertProxy").remove();
+    $(".target, .targetFUs").each(function(t, target){
+        var items = $(target).children().not($(target).children().last()), k;
+        items.each(function(){
+            // console.log($(this).children(".question").data('key'));
+            k = $(this).children(".question").data('key');
+            insertNode.clone().insertAfter($(this)).data('key',k);
+        })
+    })
+}
+function updateItemOrder(){
+    if ($(this).hasClass('up')){
+        var d = 'up';
+    }else if ($(this).hasClass("down")){
+        var d = 'down';
+    }
+    var items = $(this).closest(".section").find(".item");
+    var ItemArr = $(this).closest(".section").data("items");
+    var currentItem = $(this).closest(".item");
+    var n = items.length, k = Number($(this).closest(".item").find(".question").data("key"));
+    if ((k == 0 && d == "up") || (k == n -1 && d == "down")){
+        return false;
+    }
+    if (d == "up"){
+        var change = $(items[k-1]);
+        change.find(".question").data("key",k);
+        currentItem.find(".question").data("key",k-1);
+        ItemArr[k].key = k -1;
+        ItemArr[k-1].key = k;
+        currentItem.insertBefore(change);            
+    }else if (d == "down"){
+        var change = $(items[k+1]);
+        change.find(".question").data("key",k);
+        currentItem.find(".question").data("key",k+1);
+        ItemArr[k].key = k +1;
+        ItemArr[k+1].key = k;
+        currentItem.insertAfter(change);
+    }
+    ItemArr.sort(function(a,b){
+        return a.key-b.key;
+    });
+    updatedInsertProxies();
+
+    currentItem.animate({
+        "height":"-=30px",
+        "opacity":0.2
+    },100,function(){
+        currentItem.animate({
+            "height":"+=30px",
+            "opacity":1
+        },400,function(){
+            currentItem.css("height","auto");
+        })
+    })
+    change.animate({
+        "height":"+=30px",
+        "opacity":0.2
+    },100,function(){
+        change.animate({
+            "height":"-=30px",
+            "opacity":1
+        },400,function(){
+            change.css("height","auto");
+            updateItems($(this).closest('.section'));
+        })
+    })        
+
+    autoSave();
+}
+function updateOptionOrder(){
+    if ($(this).hasClass('up')){
+        var d = 'up';
+    }else if ($(this).hasClass("down")){
+        var d = 'down';
+    }
+    var options = $("#OptionsList").find(".option");
+    var currentOption = $(this).closest(".option");
+    var n = options.length;//, k = Number($(this).closest(".itemName").data("key"));
+    var f = options.first(), l = options.last();
+    if ((currentOption.is(f) && d == 'up') || (currentOption.is(l) && d == 'down')){
+        return false;
+    }
+    if (d == "up"){
+        var change = currentOption.prev();
+        currentOption.insertBefore(change);            
+    }else if (d == "down"){
+        var change = currentOption.next();
+        currentOption.insertAfter(change);
+    }
+    
+    currentOption.animate({
+        "height":"-=30px",
+        "opacity":0.2
+    },100,function(){
+        currentOption.animate({
+            "height":"+=30px",
+            "opacity":1
+        },400)
+    })
+    change.animate({
+        "height":"+=30px",
+        "opacity":0.2
+    },100,function(){
+        change.animate({
+            "height":"-=30px",
+            "opacity":1
+        },400)
+    })
+    
+    /*items = $(".itemName");
+    for (x=0;x<n;x++){
+        $(items[x]).data("key",x);
+    }*/
+}
+function updateItemFUOrder(){
+    if ($(this).hasClass('up')){
+        var d = 'up';
+    }else if ($(this).hasClass("down")){
+        var d = 'down';
+    }
+    
+    var itemsFU = $(this).closest(".item").find(".itemFU"), f = itemsFU.first(), l = itemsFU.last();
+    var currentItemFU = $(this).closest(".itemFU");
+    var nFU = itemsFU.length, kFU = Number($(this).closest(".itemFU").find(".question").data("key"));
+    var k = Number($(this).closest(".item").find(".question").data("key"));
+    var ItemArr = $(this).closest(".section").data("items");
+    var ItemFUArr = ItemArr[k]['followups'];
+
+    if ((currentItemFU.is(f) && d == "up") || (currentItemFU.is(l) && d == "down")){
+        return false;
+    }
+    if (d == "up"){
+        var change = $(itemsFU[kFU-1]);
+        change.find(".question").data("key",kFU);
+        currentItemFU.find(".question").data("key",kFU-1);
+        ItemFUArr[kFU].key = kFU -1;
+        ItemFUArr[kFU-1].key = kFU;
+        currentItemFU.insertBefore(change);            
+    }else if (d == "down"){
+        var change = $(itemsFU[kFU+1]);
+        change.find(".question").data("key",kFU);
+        currentItemFU.find(".question").data("key",kFU+1);
+        ItemFUArr[kFU].key = kFU +1;
+        ItemFUArr[kFU+1].key = kFU;
+        currentItemFU.insertAfter(change);
+    }
+    ItemFUArr.sort(function(a,b){
+        return a.key-b.key;
+    });
+    updatedInsertProxies();
+
+    currentItemFU.animate({
+        "height":"-=30px",
+        "opacity":0.2
+    },100,function(){
+        currentItemFU.animate({
+            "height":"+=30px",
+            "opacity":1
+        },400,function(){
+            currentItemFU.css("height","auto");
+        })
+    });
+    change.animate({
+        "height":"+=30px",
+        "opacity":0.2
+    },100,function(){
+        change.animate({
+            "height":"-=30px",
+            "opacity":1
+        },400,function(){
+            change.css("height","auto");
+            updateItems($(this).closest('.section'));
+        })
+    });
+    currentItemFU.add(change).css("height","auto");
+    
+    autoSave();
+}
+function showConditionOptions(item){
+    var k = item.find(".question").data('key');
+    var Items = item.closest(".section").data('items');
+    var currentItem = Items[k];
+    var o = currentItem.options, t = currentItem.type, q = currentItem.question;
+    var oStr = '';
+    
+    $("#condition").find(".answer").remove();
+    
+    if (t == "radio" || t == 'checkboxes' || t == 'dropdown'){
+        var oNode = $("<ul class='answer'></ul>");
+        oNode.prependTo($("#condition"));
+        oNode = $("#FollowUpList").find(".answer");
+        $("#DisplayQ").text(q);
+        $("#Conditionality").text("matches one of the following (select as many as you want)");
+        
+        for (x=0;x<o.length;x++){
+            var escapedStr = o[x].split("\"").join("&quot;");
+            escapedStr = escapedStr.split("'").join("&apos;");
+            oStr += "<li data-value='"+escapedStr+"'>"+escapedStr+"</li>";
+        }
+        oNode.addClass("checkboxes").html(oStr);
+        oNode.append("<input class='targetInput' name='condition' type='hidden'>");
+        oNode.on("click","li",checkbox);
+   }
+    else if (t == "number" || t == "scale"){
+        var oNode = $("<div class='answer'></div>");
+        oNode.prependTo($("#condition"));
+        oNode = $("#FollowUpList").find(".answer");
+        $("#DisplayQ").text(q);
+        $("#Conditionality").text("matches the following condition");
+        
+        var conditionNode = "<span>Response is </span><select><option value='less than'>less than</option><option value='equal to'>equal to</option><option value='greater than'>greater than</option></select><div class='answer number'><input size='10' type='text' data-min='1920' data-max='2028' value='2018' data-step='1'><span class='label'></span><div><div class='change up'></div><div class='change down'></div></div></div>";
+        
+        var min = o.min, max = o.max, initial = o.initial, step = o.step, units = o.units;
+        oNode.html(conditionNode);
+        $("#condition").find("input").data({
+            min: min,
+            max: max,
+            step: step
+        });
+        $("#condition").find('input').val(initial);
+        $("#condition").find(".label").text(units);
+        $("#condition").off("mousedown touchstart",".change",startChange);
+        $("#condition").off("mouseup touchend",".change",stopChange);
+        $("#condition").on("mousedown touchstart",".change",startChange);
+        $("#condition").on("mouseup touchend",".change",stopChange);
+    }
+    else if (t == "scale"){
+        //var oNode = $("<input type='slider'>")
+    }
+    
+    p = $("#AddItemProxy").parent();
+    if (p.is(".itemFU")){
+        c = p.find(".question").data("condition");
+        //c = c.split(", ");
+        for (x=0;x<c.length;x++){
+            p.find("li").filter(function(){
+                return $(this).data("value") == c[x];
+            }).click();
+        }            
+    }
+    $("#condition").find(".answer").addClass("flexbox");
+}
+function resetAddItem(){
+    var clear = $("#AddItem").find("#Options").find("input").add("#Text").add($("#FollowUpOptions").find("input"));
+    // clear = clear.add($("#NumberOptions").find("input"));
+    clear.val("");
+    $("#AddItem").find("h2").first().html("New Question");
+    $("#Text").css('border-color','rgba(210,210,210,0.8)');
+    $("#Type").val("text");
+    $("#Type").change();
+    $("#Required").val("true");
+    $("#textPlaceholder").val("");
+    $("#textAreaPlaceholder").val("");
+    $("#NumberOptions").find("#min").val("0");
+    $("#NumberOptions").find("#max").val("100");
+    $("#NumberOptions").find("#initial").val("5");
+    $("#NumberOptions").find("#step").val("1");
+    $("#NumberOptions").find("#units").val("");
+    console.log($("#AddItemProxy"));
+}
+function resetOptions(){
+    var o = $("#OptionsList").find(".option");
+    var n = o.length;
+    if (n>2){
+        for (x=2;x<n;x++){
+            $(o[x]).remove();
+        }
+    }
+    o.val("");
+}
+function resetAddText(){
+    var p = $("#AddText").parent();
+    if (p.hasClass("item") || p.hasClass("itemFU")){
+        p.children(".question").find(".toggle").filter(".cancel").click();
+    }
+    setTimeout(function(){
+        $("#NarrTitle, #NarrText").val("");
+    },500)
+}
+    
+function loadFormData(){
+    var data = $("#formdata").data("json");
+    var sections = data['sections'];
+    var formName = data['formName'];
+    var formID = data['formID'];
+    $("#formdata").data("formid",formID);
+    $("#FormName").find("input").val(formName);
+    $("#FormName").find(".save").click();
+    sections.forEach(function(section,i){
+        var name = section.sectionName, items = section.items, showByDefault = section.showByDefault;
+        $("#SectionName").val(name);
+        $("#AddSection").find(".add").click();
+        var newSec = $(".section").not("#examples").last();
+        newSec.data('items',items);
+        updateItems(newSec);
+        //console.log(newSec.data("items"));
+    })
+}
+var stickyCSS = {position:"sticky",top:"11em",right:"0",display:"inline-block",margin:"0 1em"}, 
+    notStickyCSS = {position:"relative",margin:"-1em 1em",top:"1em",right:"0"},
+    centerCSS = {position: "absolute",left:"50%",top:"50%",transform:"translate(-50%,-50%)"},
+    rightAlignCSS = {position: "absolute",right:'0',top:"50%",transform:"translateY(-50%)"};
+
+function multiItemOptions(){
+    var section = $(this).closest(".Items, .ItemsFU");
+    $(this).hide();
+    $(this).parent().css(stickyCSS);
+    $(".selectMultiple").find(".hide").filter(":visible").click();
+    $(this).parent().find(".hide").show();
+    if (section.is(".Items")){
+        var items = section.find(".target").children(".item");
+        items.each(function(i,item){
+            if ($(item).find(".targetFUs").is(":visible")){$(item).find(".hideFUs").click();}
+            $(item).find(".ItemsFU").find(".selectMultiple").fadeOut();
+        })
+    }
+    else if (section.is(".ItemsFU")){var items = section.find(".targetFUs").children(".itemFU");}
+    items.children('.question').find(".toggle").fadeOut();
+    items.children(".UpDown").html("<input class='selectChkBx' type='checkbox'>");
+    items.each(function(i,item){
+        $("<div/>",{class:"block multiItem"}).prependTo($(item))
+            .on("mouseenter",hoverItem)
+            .on("mouseleave",unhoverItem)
+            .on("click",selectItem);
+    })
+}
+function selectItem(){
+    $(this).addClass("selected");
+    var item = $(this).closest(".item, .itemFU");
+    item.find(".selectChkBx").attr("checked",true);
+    $(this).off("click",selectItem).on("click",unselectItem);
+    var section = $(this).closest(".Items, .ItemsFU");
+    section.children(".selectMultiple").find(".copy, .delete").css(stickyCSS);
+};
+function unselectItem(){
+    $(this).removeClass("selected");
+    var item = $(this).closest(".item, .itemFU");
+    item.find(".selectChkBx").attr("checked",false);
+    $(this).off("click",unselectItem).on("click",selectItem);
+    var section = item.closest(".Items, .ItemsFU");
+    if (section.find(".block").filter(".selected").length == 0){
+        section.children(".selectMultiple").find(".delete, .copy").fadeOut();
+    }
+};
+function hoverItem(){$(this).addClass("hover");};
+function unhoverItem(){$(this).removeClass("hover");};
+
+function copyMultiple(){
+    var optBox = $(this).closest(".selectMultiple"),
+        itemList = $(this).closest(".Items, .ItemsFU"),
+        section = $(this).closest(".section");
+
+    var Items = section.data("items"), selected = section.find(".block").filter(".selected").closest(".item, .itemFU"),
+        confirmText = (selected.length == 1) ? "Duplicating 1 item" : "Duplicating " + selected.length + " items";
+
+    $("#Confirm").clone().attr('id','MultiCopy').appendTo("#ModalHome");
+    $("#MultiCopy").find(".message").html("<h2>"+confirmText+"</h2><div>Where would you like to put the new copies?</div>");
+    $("#MultiCopy").find(".options").find(".submit").remove();
+    $("#MultiCopy").find(".options").find(".cancel").text("cancel").addClass('multiCopyOption');
+    $("<div/>",{
+        class:"multiCopyOption button small pink",
+        data:{
+            value:"asBlock"
+        },
+        text:"end of section"
+    }).prependTo($("#MultiCopy").find(".options"));
+    $("<div/>",{
+        class:"multiCopyOption button small pink",
+        data:{
+            value:"afterOriginal"
+        },
+        text:"after each original"
+    }).prependTo($("#MultiCopy").find(".options"));
+    blurElement($("body"),"#MultiCopy");
+
+    $(".multiCopyOption").on("click",function(){
+        var opt = $(this).data("value"), section = $("#FormBuilder").find(".section").filter(function(){
+                return $(this).find(".selectMultiple").find(".hide").is(":visible");
+            }), Items = section.data("items"), selected = section.find(".block").filter(".selected").closest(".item, .itemFU");
+        if (opt=="asBlock"){
+            selected.each(function(i,x){
+                var item = $(x), k = item.find('.question').data('key');
+                if (item.is(".itemFU")){
+                    Items = section.data("items");
+                    var kP = item.closest(".item").find(".question").data('key');
+                    Items = Items[kP].followups;
+                }
+                var copy = {};
+                $.extend(true,copy,Items[k]);
+                copy.question = copy.question + " COPY";
+                Items.push(copy);
+            })
+            updateItems(section);
+            autoSave();
+            $(".zeroWrap").remove();
+            optBox.find(".hide").click();
+            unblurElement($("body"));
+            $("#MultiCopy").removeAttr("id").remove();
+        }
+        else if (opt=="afterOriginal"){
+            var Items = section.data("items"), selected = section.find(".block").filter(".selected").closest(".item, .itemFU");
+            selected.each(function(i,x){
+                var item = $(x), k = item.find('.question').data('key');
+                if (item.is(".itemFU")){
+                    Items = section.data("items");
+                    var kP = item.closest(".item").find(".question").data('key');
+                    Items = Items[kP].followups;
+                }
+                var copy = {};
+                $.extend(true,copy,Items[k+i]);
+                copy.question = copy.question + " COPY";
+                Items.splice(k+1+i,0,copy);
+            })
+            updateItems(section);
+            autoSave();
+            optBox.find(".hide").click();
+            unblurElement($("body"));
+            $("#MultiCopy").removeAttr("id").remove();
+        }
+    })    
+}
+function deleteMultiple(){
+    var section = $(this).closest(".section"), optBox = $(this).closest(".selectMultiple");
+    var Items = section.data("items"), selected = section.find(".block").filter(".selected").closest(".item, .itemFU"),
+        warningText = (selected.length == 1) ? "DELETE 1 ITEM" : "DELETE " + selected.length + " ITEMS";
+
+    $("#Warn").find(".message").html("<h2 class='pink'>"+warningText+"?</h2><div>Are you sure you want to do this? It <u>cannot be undone.</u></div>");
+    $("#Warn").find(".submit").text(warningText);
+    blurElement($("body"),"#Warn");
+    var wait = setInterval(function(){
+        if (confirmBool!=undefined){
+            if (confirmBool==true){
+                selected.each(function(i,x){
+                    var item = $(x), k = item.find('.question').data('key');
+                    if (item.is(".itemFU")){
+                        Items = section.data("items");
+                        var kP = item.closest(".item").find(".question").data('key');
+                        Items = Items[kP].followups;
+                    }
+                    Items.splice(k-i,1);
+                })
+                updateItems(section);
+                optBox.find(".hide").click();
+                autoSave();
+                confirmBool=undefined;
+                unblurElement($("body"));
+                clearInterval(wait);
+            }
+            else if (confirmBool==false){
+                confirmBool=undefined;
+                clearInterval(wait);
+            }
+        }
+    },100);
+}
+function hideMultiItemOptions(){
+    var section = $(this).closest(".Items, .ItemsFU");
+    section.find(".block").remove();
+    $(this).parent().css(notStickyCSS);
+    $(this).parent().find(".show").show();
+    $(this).parent().find(".delete, .copy, .hide").hide();
+    if (section.is(".Items")){
+        var items = section.find(".target").children(".item");
+    }
+    else if (section.is(".ItemsFU")){var items = section.find(".targetFUs").children(".itemFU");}
+    items.children('.question').find(".toggle").filter(".edit, .copy, .delete").fadeIn();
+    items.children(".UpDown").html("<div class='up'></div><div class='down'></div>");
+    //items.find('.ItemsFU').find(".selectMultiple").fadeIn();
+    
+    if (section.is(".Items")){
+        items.children(".UpDown").find(".up, .down").on("click",updateItemOrder);
+    }else{
+        items.children(".UpDown").find(".up, .down").on("click",updateItemFUOrder);
+    }
+}
+var sectionNode = "<div class='section'><h2 class='sectionName editable'><div class='pair'><input type='text' class='input'> <span class='value'></span></div><div class='toggle edit'>(edit section name)</div><div class='toggle save'>(save)</div><div class='toggle cancel'>(cancel)</div></h2>  <div class='Items'>  <div class='selectMultiple'> <div class='show button xxsmall yellow70'>select multiple items</div><div class='hide button xxsmall'>cancel selection</div><div class='delete button pink70 xxsmall'>delete items</div><div class='copy button pink70 xxsmall'>duplicate items</div> </div>   <p class='hideTarget'><span class='down'></span>No questions yet</p><div class='target' data-contains='item'><div style='padding:0.5em 1em;'>Add some questions!</div></div><div class='requireSign'>* <i>required</i></div></div>  <div class='itemOptions'><div class='addQuestion button pink xsmall'>add question</div><div class='addText button pink xsmall'>add text</div><div class='button xsmall deleteSection'>delete section</div></div> </div>", itemNode = "<div class='item'><div class='question'></div><br><div class='answer'></div> <div class='ItemsFU'>  <div class='selectMultiple'> <div class='show button xxsmall yellow70'>select multiple followup items</div><div class='hide button xxsmall'>cancel selection</div><div class='delete button xxsmall pink70'>delete items</div><div class='copy button pink70 xxsmall'>duplicate items</div> </div>  <p class='hideFUs'><span class='right'></span>Follow up based on response</p><div class='targetFUs' data-contains='itemFU'></div></div>   <div class='newFollowUp'><div class='button pink70 xxsmall addFollowUp'>add followup question</div><div class='button pink70 xxsmall addFollowUpText'>add followup text</div></div> <div class='UpDown'><div class='up'></div><div class='down'></div></div> </div>", itemFUNode = "<div class='itemFU'><div class='question'></div><div class='condition'></div><div class='answer'></div> <div class='UpDown'><div class='up'></div><div class='down'></div></div> </div>";
