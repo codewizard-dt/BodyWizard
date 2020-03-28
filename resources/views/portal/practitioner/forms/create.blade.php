@@ -127,10 +127,10 @@ $requiredOptions = ['required','optional','ID*requiredbool'];
                 <span class="settingsLabel">Options</span>
                 <div id='NumberList'  class='optionsList'>
                     <?php
-                    $optionsMin = ["min"=>"-9999", "max"=>"9999", "initial"=>"0", "step"=>"1", "units"=>"","name"=>"min"];
-                    $optionsMax = ["min"=>"-9999", "max"=>"9999", "initial"=>"0", "step"=>"1", "units"=>"","name"=>"max"];
-                    $optionsInitial = ["min"=>"-9999", "max"=>"9999", "initial"=>"0", "step"=>"1", "units"=>"","name"=>"initial"];
-                    $optionsStep = ["min"=>"-9999", "max"=>"9999", "initial"=>"0", "step"=>"0.1", "units"=>"","name"=>"step"];
+                    $optionsMin = ["min"=>"-99999", "max"=>"99999", "initial"=>"0", "step"=>"1", "units"=>"","name"=>"min"];
+                    $optionsMax = ["min"=>"-99999", "max"=>"99999", "initial"=>"0", "step"=>"1", "units"=>"","name"=>"max"];
+                    $optionsInitial = ["min"=>"-99999", "max"=>"99999", "initial"=>"0", "step"=>"1", "units"=>"","name"=>"initial"];
+                    $optionsStep = ["min"=>"-99999", "max"=>"99999", "initial"=>"0", "step"=>"0.1", "units"=>"","name"=>"step"];
                     $optionsUnits = ['name'=>'units','placeholder'=>'eg days, weeks, times/day, meals, etc'];
                     ?>
                     <div><span>Minimum: </span> {{ $ctrl->answerDisp('number',$optionsMin) }}</div>
@@ -355,7 +355,5 @@ $requiredOptions = ['required','optional','ID*requiredbool'];
 </div>
 <div id="FormPreview" class="modalForm">
 </div>
-<div id="AutoSaveWrap" class="wrapper">
-    <div id="AutoConfirm"><span class='message'>form autosaved</span><span style="margin-left:10px" class="checkmark">✓</span></div>
-</div>
+@include ('layouts.forms.autosave-wrap')
 <script type="text/javascript" src="{{ asset('/js/launchpad/form-builder.js') }}"></script>

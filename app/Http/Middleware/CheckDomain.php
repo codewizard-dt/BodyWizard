@@ -19,9 +19,6 @@ class CheckDomain
      */
     public function handle($request, Closure $next)
     {
-        // Log::info($request->getHost(),['location'=>'checkdomain.php 21']);
-        // Log::info(session()->all(),['location'=>'checkdomain.php 22']);
-
         if (Auth::user() && session('practiceId') === null){
             if (session('practiceId') === null){
                 $practice = Practice::getFromRequest($request);
@@ -34,7 +31,6 @@ class CheckDomain
                 date_default_timezone_set($practice->contact_info['timezone']);
             }
         }
-        // Log::info($request->path());
         return $next($request);
     }
 }

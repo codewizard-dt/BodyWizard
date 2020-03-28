@@ -50,12 +50,16 @@
             }
         }
     }
-
-    if (!isset($collection)){
-        $collection = $class::all();
-    }else{
-        $collection = $collection->get();
+    try{
+        if (!isset($collection)){
+            $collection = $class::all();
+        }else{
+            $collection = $collection->get();
+        }
+    }catch(\Exception $e){
+        reportError($e,'table-modal.blade 60');
     }
+    if (!isset($collection)) dd($class);
 
     $tableOptions['collection'] = $collection;
     $modalId = $tableOptions['tableId']."Modal";

@@ -18,22 +18,33 @@ function initializeNewForms(){
     initializeSliders();
     initializeSubmitBtns();
     initializeDxFormBtns();
-
-    // var pointerEventToXY = function (e) {
-    //     var out = {x: 0, y: 0};
-    //     if (e.type === 'touchstart' || e.type === 'touchmove' || e.type === 'touchend' || e.type === 'touchcancel') {
-    //         var touch = e.originalEvent.touches[0] || e.originalEvent.changedTouches[0];
-    //         out.x = touch.pageX;
-    //         out.y = touch.pageY;
-    //     } else if (e.type === 'mousedown' || e.type === 'mouseup' || e.type === 'mousemove' || e.type === 'mouseover' || e.type === 'mouseout' || e.type === 'mouseenter' || e.type === 'mouseleave') {
-    //         out.x = e.pageX;
-    //         out.y = e.pageY;
-    //     }
-    //     return out;
-    // };    
     
     $(".clearTableFilters").off("click",clearTableFilters);
     $(".clearTableFilters").on("click",clearTableFilters);    
+}
+function initializeAdditionalNoteForm(){
+    var btn = filterByData('#AddNoteBtn','hasDynamicFx',false);
+    btn.on('click',addNote);
+    btn.data('hasDynamicFx',true);
+}
+function addNote(){
+    var form = $("#AddNote");
+    if (!checkForm(form)) return false;
+    var newNote = createNoteObj(), h4 = newNote.title ? "<h4>"+newNote.title+"</h4>" : "";
+    $("<div/>",{
+        class: 'note',
+        html: h4+"<div>"+newNote.text+"</div>",
+        data: newNote
+    }).appendTo("#NoteList");
+    $("#NoNotes").slideFadeOut();
+    resetForm(form);
+}
+function createNoteObj(){
+    var title = justResponse($("#AddNote").find('.note_title'));
+    return {
+        title: (title == '') ? null : title,
+        text: justResponse($("#AddNote").find('.note_details'))
+    };
 }
 function initializeInputs(target = null, options = null){
     var inputs = filterUninitialized('input');
@@ -126,14 +137,21 @@ function initializeDatepickers(target = null, options = null){
     datepickers.data("hasDatePicker",true);
 }
 function initializeSignatures(target = null, options = null){
-    var signatures = $(".signature").filter(function(){return $(this).find('.jSignature').length == 0;})
+    var signatures = $(".signature").filter(function(){
+        return $(this).is(":visible") && $(this).find('.jSignature').length == 0;
+    })
     signatures.each(function(){
+        var inSubmission = $(this).closest('.submission').length == 1;
         $(this).jSignature();
         $(this).on("click",".clear",function(){
             $(this).parent().jSignature("reset");
-        })
-    })
-    // signatures.attr('tabindex','0');
+        });
+        if ($(this).closest('.answer').data('response') != undefined){
+            fillAnswer($(this).closest('.item'),$(this).closest('.answer').data('response'));
+            $(this).closest('.answer').removeData('response');
+        }
+        if (inSubmission) $(this).jSignature('disable');
+    });
 }
 function initializeTimes(target = null, options = null){
     var times = filterUninitialized(".time");
@@ -151,6 +169,10 @@ function initializeNumbers(target = null, options = null){
     numbers.on("mousedown touchstart",".change",startChange);
     numbers.on("mouseup touchend",".change",stopChange);
     numbers.on('keyup',"input",inputNum);
+    currency = numbers.filter(function(){
+        return $.inArray($(this).find('.label').text().trim(),currencyLabels) > -1;
+    });
+    
     numbers.data("initialized",true);
 }
 function initializeScales(target = null, options = null){
@@ -224,12 +246,12 @@ var pointerEventToXY = function (ev) {
     }
     return out;
 };
-var circle = $("<div/>",{
+var imgClickCircle = $("<div/>",{
     class: 'indicatorWrap',
     html:"<div class='indicator'></div>"
 });
 function imageClick(ev){
-    var windowCoords = pointerEventToXY(ev), image = $(ev.target).closest('.imageClick'), imageRect = image[0].getBoundingClientRect(), newCircle = circle.clone(), imageCoords = {x:imageRect.left,y:imageRect.top},
+    var windowCoords = pointerEventToXY(ev), image = $(ev.target).closest('.imageClick'), imageRect = image[0].getBoundingClientRect(), newCircle = imgClickCircle.clone(), imageCoords = {x:imageRect.left,y:imageRect.top},
         absCoords = {
             x: windowCoords.x - imageCoords.x,
             y: windowCoords.y - imageCoords.y - window.scrollY
@@ -238,8 +260,8 @@ function imageClick(ev){
             x: absCoords.x / imageRect.width * 100,
             y: absCoords.y / imageRect.height * 100
         }, count, undo = image.find('.undo');
+    if (image.hasClass('disabled')) return false;
     if ($(ev.target).is('.undo')){
-        // console.log($(ev.target));
         var mostRecent = filterByData(image.find('.indicatorWrap'),'index','max');
         mostRecent.remove();
         count = image.find('.indicator').length;
@@ -247,7 +269,6 @@ function imageClick(ev){
         newCircle.appendTo(image).css({left:percentCoords.x + "%",top:percentCoords.y + "%"});
         count = image.find('.indicator').length;
         newCircle.data({index:count,coordinates:percentCoords});
-        // console.log(newCircle.data());
     }
     if (count > 0){undo.slideFadeIn();}
     else{undo.slideFadeOut();}
@@ -308,8 +329,14 @@ function inputNum(){
     }
 }
 var mag = 1;
-function Adj2(item,val,step,direction){
-    var newStep = step;
+function adjustNumber(item,val,step,direction){
+    // item is .number
+    var newStep = step, d = item.data('forceDecimals'), decimals;
+    if (d != undefined){
+        decimals = d;
+    }else{
+        decimals = (val.countDecimals() > step.countDecimals()) ? val.countDecimals() : step.countDecimals();
+    }
     
     while(newStep<1){
         mag *= 10;
@@ -323,7 +350,7 @@ function Adj2(item,val,step,direction){
     }else if (direction == "up"){
         val = val + step;
     }
-    item.find("input").val((val/mag).toString());
+    item.find("input").val((val/mag).toFixed(decimals));
     
     checkNum(item);
     var numInt = setInterval(function(){
@@ -332,7 +359,93 @@ function Adj2(item,val,step,direction){
         }else if (direction == "up"){
             val = val + step;
         }
-        item.find("input").val((val/mag).toString());
+        item.find("input").val((val/mag).toFixed(decimals));
+        var count = item.data('changeCount');
+        count++;
+        item.data('changeCount',count);
+        if (count > 20){
+            setTimeout(function(){
+                if (direction == "down"){
+                    val = val - step;
+                }else if (direction == "up"){
+                    val = val + step;
+                }
+                item.find("input").val((val/mag).toFixed(decimals));
+                var count = item.data('changeCount');
+                count++;
+                item.data('changeCount',count);
+            },31)
+            setTimeout(function(){
+                if (direction == "down"){
+                    val = val - step;
+                }else if (direction == "up"){
+                    val = val + step;
+                }
+                item.find("input").val((val/mag).toFixed(decimals));
+                var count = item.data('changeCount');
+                count++;
+                item.data('changeCount',count);
+            },93)
+            setTimeout(function(){
+                if (direction == "down"){
+                    val = val - step;
+                }else if (direction == "up"){
+                    val = val + step;
+                }
+                item.find("input").val((val/mag).toFixed(decimals));
+                var count = item.data('changeCount');
+                count++;
+                item.data('changeCount',count);
+            },156)
+            setTimeout(function(){
+                if (direction == "down"){
+                    val = val - step;
+                }else if (direction == "up"){
+                    val = val + step;
+                }
+                item.find("input").val((val/mag).toFixed(decimals));
+                var count = item.data('changeCount');
+                count++;
+                item.data('changeCount',count);
+            },218)
+        }
+        if (count > 10){
+            setTimeout(function(){
+                if (direction == "down"){
+                    val = val - step;
+                }else if (direction == "up"){
+                    val = val + step;
+                }
+                item.find("input").val((val/mag).toFixed(decimals));
+                var count = item.data('changeCount');
+                count++;
+                item.data('changeCount',count);
+            },62)
+            setTimeout(function(){
+                if (direction == "down"){
+                    val = val - step;
+                }else if (direction == "up"){
+                    val = val + step;
+                }
+                item.find("input").val((val/mag).toFixed(decimals));
+                var count = item.data('changeCount');
+                count++;
+                item.data('changeCount',count);
+            },188)
+        }
+        if (count > 4){
+            setTimeout(function(){
+                if (direction == "down"){
+                    val = val - step;
+                }else if (direction == "up"){
+                    val = val + step;
+                }
+                item.find("input").val((val/mag).toFixed(decimals));
+                var count = item.data('changeCount');
+                count++;
+                item.data('changeCount',count);
+            },125)
+        }
         checkNum(item);
     },250)
     
@@ -341,19 +454,19 @@ function Adj2(item,val,step,direction){
 function startChange(e){
     // alert(e.target);
     e.preventDefault();
-    var item = $(this).closest(".number");
-    var step = item.find("input").data("step");
-    var val = item.find("input").val(), direction;
+    mag = 1;
+    var item = $(this).closest(".number"), input = item.find('input'), step = input.data("step"), val = input.val(), direction;
+    val = (val != "") ? val : input.attr('placeholder');
+    item.data('changeCount',0);
     step = Number(step);
     val = Number(val);
     if ($(this).hasClass("down")){direction = "down"}
     else if ($(this).hasClass("up")){direction = "up"}
-    Adj2(item,val,step,direction);
+    adjustNumber(item,val,step,direction);
 }
 function stopChange(){
     var item = $(this).closest(".number");
     clearInterval(item.data("numAdj"));
-    mag = 1;
     var response = item.find("input").val();
     if ($(this).closest(".item, .itemFU").is('.item')){
         showFollowUps(response,$(this).closest(".item"));
@@ -392,29 +505,6 @@ function changeSliderValue(item){
     $(item).find(".SliderValue").text(val);
 }
         
-// function PainBox(xPos,yPos){
-//     var wrap = $('<div class="paincircle" data-left="'+xPos.toFixed(1)+'" data-top="'+yPos.toFixed(1)+'"></div>'),newBox;
-//     wrap.appendTo("#model");
-//     newBox = $("#model").find(".paincircle").last();
-//     newBox.css({
-//         "left": xPos+"px",
-//         "top": yPos+"px"            
-//     })
-//     updatePainBoxValue();
-// }
-// function updatePainBoxValue(){
-//     var paincircles = $(".paincircle"), values="", input = $("#painwrapper").closest(".item").find("#painLocation");
-//     paincircles.each(function(i,paincircle){
-//         var value = "X"+$(paincircle).data("left")+"_Y"+$(paincircle).data("top");
-//         if (values===""){
-//             values=value;
-//         }else{
-//             values= values +", "+ value;
-//         }
-//     })
-//     input.val(values);
-// }
-
 
 function loadDxForm(){
     var target = $("#dxFormLoadTarget"), type = $(this).data("value"), uri = "/loadDxForm/"+type;
@@ -468,7 +558,6 @@ function masterCheckbox(){
     }
 }
 function showFollowUps(responseStr,item){
-    console.log(responseStr,item);
     if (item.is(".itemFU, .itemFUList")){
         return false;
     }
@@ -547,8 +636,9 @@ function showFollowUps(responseStr,item){
     },550)
 }
 
-function checkForm(form, includeInvisible = false){
-    var obj = createSubmitObject(form, includeInvisible);
+function checkForm(form, includeInvisible = false, forceAutoSave = false){
+    var obj = createSubmitObject(form, includeInvisible, forceAutoSave);
+    // console.log(form);
     if (obj){
         return obj;
     }else{
@@ -606,7 +696,7 @@ function createSubmissionColumnObj(formId, form, dataObj){
     }
     return dataObj;
 }
-function createSubmitObject(form, includeInvisible = false){
+function createSubmitObject(form, includeInvisible = false, forceAutoSave = false){
     var SubmitObj = {};
     SubmitObj['Sections'] = [];
     SubmitObj['UID'] = form.data('uid');
@@ -618,13 +708,15 @@ function createSubmitObject(form, includeInvisible = false){
         var ItemsArr = [], items = includeInvisible ? section.find(".item") : section.find(".item").filter(":visible");
         items.each(function(i, item){
             item = $(item);
-            if (validateItem(item)){
+            if (!forceAutoSave && validateItem(item)){
+                ItemsArr.push(getResponse(item));
+                check = true;
+            }else if (forceAutoSave){
                 ItemsArr.push(getResponse(item));
                 check = true;
             }
             else {
                 check = false;
-                // console.log(item);
                 return false;
             }
         })
@@ -641,90 +733,82 @@ function createSubmitObject(form, includeInvisible = false){
         return false;
     }
 }
-function scrollToInvalidItem(target){
+function scrollToInvalidItem(item, type = null){
+    console.log(item);
+    var type = type ? type : item.data('type'), target, message = 'required', location = 'after';
+    if ($.inArray(type,['text','date','time','number']) > -1){
+        target = item.children('.answer').find('input');
+    }else if (type == 'text box'){
+        target = item.children('.answer').find('textarea');
+        location = 'ontop';
+    }else if ($.inArray(type,['radio','checkboxes']) > -1){
+        target = item.children('ul');
+        location = 'ontop';
+    }else if (type == 'dropdown'){
+        target = item.children('.answer').find('select');
+    }else if (type == 'bodyclick'){
+        target = item.children('.imageClick');
+        location = 'ontop';
+    }else if (type == 'signature'){
+        target = item.is('.answer') ? item.children('.signature') :item.children('.answer').find('.signature');
+        location = 'ontop';
+    }
+    alertBox(message,target,location,2500);
     var p = modalOrBody(target), m = parentModalOrBody(target),
         dif = Math.abs(p.outerHeight(true) - p[0].scrollHeight);
 
-    console.log(dif, target);
-    if (!p.is("body") && dif > 10){
-        p.scrollTo(target);
-    }else{
-        p.scrollTo(target);
-    }
+    p.scrollTo(target);
+    // console.log(target);
+    // if (!p.is("body") && dif > 10){
+    //     p.scrollTo(target);
+    // }else{
+    //     p.scrollTo(target);
+    // }
 }
-function validateItem(item){
-        var t = item.data("type"), pass = true;
+function validateItem(item, type = null){
+    var t = (!type) ? item.data("type") : type, pass = true;
 
-        if (item.data('required')){
-            if ($.inArray(t,['text','date','time','number']) > -1 && item.find("input").val().length==0){
-                    alertBox("required",item.find("input"),"after");
-                    scrollToInvalidItem(item.find('input'));
-                    return false;
-            }
-            else if (t==="text box" && item.find("textarea").val().length==0){
-                    alertBox("required",item.find("textarea"),"ontop","2em,-1em");
-                    scrollToInvalidItem(item.find('textarea'));
-                    return false;
-            }
-            else if (t==="date" && item.find("input").val().length==0){
-                    alertBox("required",item.find("input"),"after");
-                    scrollToInvalidItem(item.find('input'));
-                    return false;
-            }
-            else if (t==="number" && item.find("input").val().length==0){
-                    alertBox("required",item.find("input"),"after");
-                    scrollToInvalidItem(item.find('input'));
-                    return false;
-            }
-            else if (t==="radio" && item.find(".active").length==0){
-                    alertBox("required",item.find("ul"),"after");
-                    scrollToInvalidItem(item.find('ul'));
-                    return false;
-            }
-            else if (t==="checkboxes" && item.find(".active").length==0){
-                    alertBox("required",item.find("ul"),"after");
-                    scrollToInvalidItem(item.find('ul'));
-                    return false;
-            }
-            else if (t=='dropdown' && item.find("option:selected").val() == ""){
-                    // console.log(item.find("option:selected").val());
-                    alertBox("required",item.find("select"),"after");
-                    scrollToInvalidItem(item.find('select'));
-                    return false;
-            }
-            else if (t==="scale"){
-                // no real reason to ever return false;
-            }
-            else if (t==="signature"){
-                var sig = item.find(".signature"), sigData = sig.jSignature("getData","base30"), printedName = item.find(".printed").find("input") ;
-                
-                if (printedName.length>0 && printedName.val().length==0){
-                    // $.scrollTo(printedName);
-                    scrollToInvalidItem(printedName);
-                    alertBox("required",printedName,"after","fade","600%,-150%");
-                    return false;
-                }
-                if (sigData[1]==""){
-                    // $.scrollTo(sig);
-                    scrollToInvalidItem(sig);
-                    alertBox("required",sig,"ontop","fade","20%,-50%");
-                    return false;
-                }
-            }
+    if (item.data('required')){
+        if ($.inArray(t,['text','date','time','number']) > -1 && item.find("input").val().length==0){
+            scrollToInvalidItem(item);
+            return false;
+        }else if (t==="text box" && item.find("textarea").val().length==0){
+            scrollToInvalidItem(item);
+            return false;
+        }else if ($.inArray(t,['radio','checkboxes']) > -1 && item.find(".active").length==0){
+            scrollToInvalidItem(item);
+            return false;
+        }else if (t=='dropdown' && item.find("option:selected").val() == ""){
+            scrollToInvalidItem(item);
+            return false;
+        }else if (t==="scale"){
+            // no real reason to ever return false;
+        }else if (t==="signature"){
+            var sig = item.find(".signature"), sigData = sig.jSignature("getData","base30"), printedName = item.find(".printed").find("input") ;
             
-            var FUs = item.find(".itemFU").filter(":visible");
-            FUs.each(function(i,FU){
-                if (!validateItem($(FU))){
-                    pass = false;
-                }
-            })
+            if ((printedName.length>0 && printedName.val().length==0) || sigData[1] == ""){
+                scrollToInvalidItem(item,'signature');
+                return false;
+            }
+        }else if (t==='bodyclick' && getImageClickData(item).length == 0){
+            scrollToInvalidItem(item);
+            return false;
         }
-
-        if (!pass){return false;}
-        else{return true;}
+        
+        var FUs = item.find(".itemFU").filter(":visible");
+        FUs.each(function(i,FU){
+            if (!validateItem($(FU))){
+                pass = false;
+            }
+        })
     }
-function getResponse(item){
-    var t = item.data("type"), q = item.children(".question").find(".q").text(), r = [];
+
+    if (!pass){return false;}
+    else{return true;}
+}
+function getResponse(item, type = null){
+    var t = type ? type : item.data("type"), 
+        q = item.children(".question").find(".q").text(), r = [];
 
     if (t=="text" || t == 'time'){
         r.push($.sanitize(item.children('.answer').find("input").val()));
@@ -760,6 +844,10 @@ function getResponse(item){
             r.push(item.children('.answer').find(".printed").find("input").val());
         }
     }
+    else if (t=='bodyclick'){
+        r = getImageClickData(item);
+        // console.log(r);
+    }
 
     r = q.toLowerCase().includes("password") ? [] : r;
     // r = (r.length == 0) ? null : r;
@@ -779,12 +867,31 @@ function getResponse(item){
     }
     return ResponseObj;
 }
-function justResponse(input, asArray = false){
-    if (!input.is(":visible")){
+function getImageClickData(item){
+    // console.log(item,item.find(".indicatorWrap"));
+    var indicators = item.find('.indicatorWrap'), indicatorArr = [], image = item.find('.imageClick'), w = image.width(), h = image.height();
+    indicators.each(function(){
+        var l = Number($(this).css('left').replace("px","")), t = Number($(this).css('top').replace("px",""));
+        if (isNaN(l) || isNaN(t)) return false;
+        indicatorArr.push({
+            left: l / w * 100 + "%",
+            top: t / h * 100 + "%"
+        });
+    })
+    return indicatorArr;
+}
+function justResponse(input, asArray = false, type = null, allowInvisible = false){
+    if (!input.is(":visible") && !allowInvisible){
         console.log("invis");
         return null;
     }
-    var r = getResponse(input.closest(".item, .itemFU"))['response'];
+    var r;
+    if (type){
+        r = getResponse(input.parent(),type)['response'];
+    }else{
+        r = getResponse(input.closest(".item, .itemFU"))['response'];   
+    }
+    
     if (r.length == 0){
         console.log('none');
         return null;
@@ -804,6 +911,7 @@ function matchingLI(answer,response){
     return match;
 }
 function fillAnswer(item,response){
+    // console.log(item,response);
     var t = $(item).data("type"), answer = $(item).children('.answer');
     if (!$.isArray(response)){
         response = response.split("***");
@@ -829,37 +937,76 @@ function fillAnswer(item,response){
         answer.find("textarea").val(response);
     }
     else if (t == 'number'){
-        var r = response.split(" ")[0];
+        var array = response.split(' '), r = !Number.isNaN(array[0]) ? Number(array[0]) : null;
+        if (!r) return false;
         answer.find("input").val(r);
     }
-    else if (t == 'date'){
+    else if (t == 'date' || t == 'time'){
         answer.find('input').val(response);
     }
     else if (t == "dropdown"){
         answer.find('select').val(response);
     }
     else if (t == 'signature'){
-        // console.log(response);
-        if ($.isArray(response)){
+        var hasPrintedName = ($.isArray(response) && typeof response[0] == 'string' && !response[0].includes('image/jsignature'));
+        if (!hasPrintedName && response[1] == null) return;
+        if (hasPrintedName){
             // console.log(response[0]);
             answer.find(".signature").jSignature("setData", "data:"+response[0].join(","));
             answer.find(".printed").find("input").val(response[1]);
         }else{
-            answer.find(".signature").jSignature("setData",response);
+            answer.find(".signature").jSignature("setData","data:"+response.join(","));
         }
+        answer.data('response',response);
     }
     else if (t == 'scale'){
         answer.find("input").val(response);
+        answer.find('input').mouseup();
+    }
+    else if (t == 'bodyclick'){
+        if (response.length == 0) return false;
+        console.log(response);
+        var image = item.find('.imageClick'), undo = image.find('.undo');
+        $.each(response,function(c,circle){
+            var newCircle = imgClickCircle.clone();
+            newCircle.appendTo(image);
+            newCircle.data('index',c);
+            newCircle.css(circle);
+            // imgClickCircle.clone().appendTo(image).css(circle).data('index',c);
+        })
+        undo.slideFadeIn();
     }
 }
 function disableForm(form){
     form.find('input, textarea').attr('readonly',true);
-    form.find('.signature').each(function(){
+    form.find('.signature').filter(":visible").each(function(){
         $(this).jSignature('disable');
     });
-    form.find('.signature').find('.clear').remove();
-    form.find('.radio, .checkboxes').addClass('disabled');
+    form.find('.number').off("mousedown touchstart",".change",startChange);
+    form.find('.number').off("mouseup touchend",".change",stopChange);
+    form.find('.number').off('keyup',"input",inputNum);
+    form.find('.signature').find('.clear').hide();
+    form.find('.radio, .checkboxes, .imageClick').addClass('disabled');
     form.find('.button.cancel').text("close");
+    form.find('.slider, select').attr('disabled',true);
+    form.find('.datepicker').each(function(){
+        $(this).datepick('disable');
+    })
+}
+function enableForm(form){
+    alert('enableForm in forms.js......not used much');
+    // form.find('input, textarea').removeAttr('readonly');
+    // form.find('.signature').filter(":visible").each(function(){
+    //     $(this).jSignature();
+    // });
+    // form.find('.number').on("mousedown touchstart",".change",startChange);
+    // form.find('.number').on("mouseup touchend",".change",stopChange);
+    // form.find('.number').on('keyup',"input",inputNum);
+    // form.find('.signature').find('.clear').show();
+    // form.find('.radio, .checkboxes, .imageClick').removeClass('disabled');
+    // form.find('.button.cancel').text("cancel");
+    // form.find('.slider').removeAttr('disabled');
+
 }
 function unlockForm(){
     if ($("#UnlockForm").length==0){
@@ -907,6 +1054,7 @@ function checkPhrase(){
 
 
 function fillForm(json,form){
+    if (json == undefined) return false;
     var sections = json['Sections'];
     $.each(sections,function(s,savedSection){
         var sectionOnForm = form.find(".section").filter(function(){
@@ -922,16 +1070,20 @@ function fillForm(json,form){
             // if (savedItem.type !== 'narrative' && savedItem.type !== 'signature'){
             if (savedItem.type !== 'narrative'){
                 var itemOnForm = sectionOnForm.find(".item").filter(function(){return $(this).children(".question").find(".q").text().trim() == savedItem.question.trim();});
-                fillAnswer(itemOnForm,savedItem.response);
+                if (savedItem.response != undefined) fillAnswer(itemOnForm,savedItem.response);
                 if (savedItem.followups != undefined){
                     $.each(savedItem.followups,function(f,savedFU){
                         var fuOnForm = itemOnForm.find(".itemFU").filter(function(){return $(this).children(".question").find(".q").text().trim() == savedFU.question.trim();});
-                        fillAnswer(fuOnForm,savedFU.response);
+                        if (savedFU.response != undefined) fillAnswer(fuOnForm,savedFU.response);
                     })
                 }
             }
         })
     })
+}
+function minifyForm(form){
+    form.addClass('minified');
+    form.find('.item').children('br').remove();
 }
 function resetForm(form){
     form.find("input, textarea").val("");

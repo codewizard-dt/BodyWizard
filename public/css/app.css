@@ -1517,6 +1517,7 @@ select {
   --purple70: rgba(105, 12, 104, 0.7);
   --purple90: rgba(105, 12, 104, 0.9);
   --yellow: rgb(240, 154, 53);
+  --yellow5: rgba(240, 154, 53, 0.05);
   --yellow10: rgba(240, 154, 53, 0.1);
   --yellow20: rgba(240, 154, 53, 0.2);
   --yellow30: rgba(240, 154, 53, 0.3);
@@ -1892,6 +1893,11 @@ h5 span {
   width: auto;
 }
 
+.marginXBig {
+  margin-top: 2.5em;
+  margin-bottom: 2.5em;
+}
+
 .marginBig {
   margin-top: 1.5em;
   margin-bottom: 1.5em;
@@ -1902,11 +1908,13 @@ h5 span {
   margin-bottom: 0.5em;
 }
 
+.marginXBig.topOnly,
 .marginBig.topOnly,
 .marginSmall.topOnly {
   margin-bottom: 0;
 }
 
+.marginXBig.bottomOnly,
 .marginBig.bottomOnly,
 .marginSmall.bottomOnly {
   margin-top: 0;
@@ -3077,12 +3085,14 @@ a:hover {
 .modal,
 .modalForm {
   background-color: rgb(245, 245, 245);
-  max-height: 90%;
-  max-width: 90%;
+  height: auto;
+  width: 96%;
+  max-height: 96%;
   margin: 0;
   padding: 2em 0.5em;
   border-radius: 5px;
   box-shadow: 0 0 15px 3px rgba(245, 245, 245);
+  border: 1px solid var(--gray);
 }
 
 #Notification .details {
@@ -3180,27 +3190,40 @@ a:hover {
   text-align: left;
 }
 
-.hideTarget span,
-.hideFUs span {
+.hideTarget span.arrow,
+.hideFUs span.arrow {
   display: inline-block;
-  padding: 0 0.5em 0 0;
+  /*padding:0 0.5em 0 0;*/
   color: rgb(130, 130, 130);
   font-size: 0.8em;
   width: 1.5em;
   height: 1.5em;
   background-size: contain;
   background-repeat: no-repeat;
+  transition: -webkit-transform 500ms;
+  transition: transform 500ms;
+  transition: transform 500ms, -webkit-transform 500ms;
+  -webkit-transform-origin: top left;
+          transform-origin: top left;
+  background-image: url(/images/icons/arrow-right.png);
+}
+
+.hideTarget span.label,
+.hideFUs span.label {
+  margin-left: 0.3em;
 }
 
 .hideTarget span.right,
 .hideFUs span.right {
-  background-image: url(/images/icons/arrow-right.png);
+  -webkit-transform: rotate(0deg);
+          transform: rotate(0deg);
 }
 
 .hideTarget span.down,
 #scrollToBtm,
 .hideFUs span.down {
-  background-image: url(/images/icons/arrow-down.png);
+  -webkit-transform: rotate(-30deg) translate(-0.6em, 0px);
+          transform: rotate(-30deg) translate(-0.6em, 0px);
 }
 
 #scrollToBtm {
@@ -3211,6 +3234,7 @@ a:hover {
   height: 3em;
   background-size: contain;
   cursor: pointer;
+  background-image: url(/images/icons/arrow-down.png);
 }
 
 .wrapper {

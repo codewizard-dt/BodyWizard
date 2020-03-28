@@ -29,6 +29,14 @@ $.fn.resetActives = function (){
     this.find('.active').removeClass('active');
     return this;
 }
+$.fn.getHtml = function(){
+    return this.get().map(function(v){return v.outerHTML}).join('');
+}
+
+Number.prototype.countDecimals = function () {
+    if(Math.floor(this.valueOf()) === this.valueOf()) return 0;
+    return this.toString().split(".")[1].length || 0; 
+}
 
 function jsonIfValid(data){
     var val;
@@ -46,7 +54,7 @@ function jsonIfValid(data){
 }
 
 // Elements must have data-order attributes already set
-jQuery.fn.sortEle = function sortEle(eleStr = "div") {
+$.fn.sortEle = function sortEle(eleStr = "div") {
     $("> "+eleStr, this[0]).sort(dec_sort).appendTo(this[0]);
     function dec_sort(a, b){ return ($(b).data("order")) < ($(a).data("order")) ? 1 : -1; }
 }
@@ -68,7 +76,9 @@ function commaSeparated (arr, quotes = false) {
 }
 
 function getUsertype(){
-    return $("#uidList").data('usertype');
+    var userData = $("#UserInfo").data(), type = userData.usertype;
+    if (type == undefined) type = $("#uidList").data('usertype');
+    return type;
 }
 
 function filterUninitialized(selector,debug = false,msg = false){
@@ -152,6 +162,12 @@ function findObjKey(obj,value){
     }
     return null;
 }
+function toTitleCase(str) {
+    return str.replace(/(?:^|\s)\w/g, function(match) {
+        return match.toUpperCase();
+    });
+}
+
 var uidList, tabList, tabHeaderInfo = {};
 $.ajaxSetup({
         headers: {
@@ -163,9 +179,10 @@ $.ajaxSetup({
             // console.log(data);
             try{
                 var json = JSON.parse(data);
-                if (json.uidList != undefined){$("#uidList").text(JSON.stringify(json.uidList));}
-                if (json.tabList != undefined){$("#tabList").text(JSON.stringify(json.tabList));}
-                if (json.message != undefined){returnData = JSON.stringify(json.message);}
+                if (json.uidList != undefined) $("#uidList").text(JSON.stringify(json.uidList));
+                if (json.tabList != undefined) $("#tabList").text(JSON.stringify(json.tabList));
+                if (json.usertype != undefined) $("#UserInfo").data({usertype: json.usertype, isAdmin: json.is_admin, isSuper: json.is_superuser});
+                if (json.message != undefined) returnData = JSON.stringify(json.message);
             }catch(e){
                 // console.log(e);
             }
@@ -272,7 +289,28 @@ function getUids(model = null){
     }
 }
 
-
+$(document).on('click','.hideTarget',function(){
+    var target = $(this).data('target'), showNow = $(this).find('.arrow').hasClass('right'), time;
+    if ($(this).data('speed') != undefined){
+        time = $(this).data('speed');
+    }else{
+        time = 400;
+    }
+    if (target == undefined){
+        target = $(this).siblings('.target').first();
+    }else if (!target.includes("#")){
+        target = $("#"+target);
+    }
+    if (showNow){
+        target.slideFadeIn(time);
+        if (typeof initializeSignatures == 'function'){initializeSignatures();}
+        $(this).find('.arrow').toggleClass('right down');
+    }else{
+        target.slideFadeOut(time);
+        $(this).find('.arrow').toggleClass('right down');
+    }
+    $(this).removeData('speed');
+});
 $(document).on("mousedown",".button",function(e){
 //    console.log(e.target);
     if (e.target.tagName !== "SELECT"){
@@ -428,7 +466,9 @@ function feedback(header, message, delay = null){
         blurTopMost("#Feedback");   
     }
 }
-function confirm(header, message, yesText = null, noText = null, delay = null){
+var confirmInterval = null;
+function confirm(header, message, yesText = null, noText = null, delay = null, affirmative = null){
+    confirmBool = undefined;
     $("#Confirm").find('.message').html("<h2 class='purple'>"+header+"</h2><div>"+message+"</div>");
     if (yesText){$("#Confirm").find(".confirmY").text(yesText);}
     else{$("#Confirm").find(".confirmY").text("confirm");}
@@ -442,13 +482,28 @@ function confirm(header, message, yesText = null, noText = null, delay = null){
     }else{
         blurTopMost("#Confirm");   
     }
+    if (!affirmative || typeof affirmative != 'function') return;
+    confirmInterval = setInterval(function(){
+        if (confirmBool != undefined){
+            clearInterval(confirmInterval);
+            if (confirmBool === true){
+                affirmative();
+            }
+            confirmBool = undefined;
+        }
+    },100)
 }
 
 function alertBox(message, ele, where = 'below', time = 1500, offset = null){
     var hEle = ele.outerHeight(), wEle = ele.outerWidth(), wrap, wAlert, hAlert, readonly = ele.attr('readonly'), css;
+    if (ele.parent().is('.number')) hEle = ele.parent().outerHeight();
+    if (ele.is('.radio, .checkboxes')){
+        console.log(hEle);
+        // time = 'nofade';
+    }
     if (time=="nofade"){
         wrap = $('<span class="zeroWrap a"><span class="alert">'+message+'</span></span>');
-        time = 0;
+        time = 2000;
     }else{
         wrap = $('<span class="zeroWrap a f"><span class="alert f">'+message+'</span></span>');
     }
@@ -460,35 +515,37 @@ function alertBox(message, ele, where = 'below', time = 1500, offset = null){
     wAlert = wrap.find('.alert').outerWidth();
     hAlert = wrap.find('.alert').outerHeight();
     if (where=="after"){
-        wrap.appendTo(ele);
-        css = {top:0.5*hEle,right:-5};
+        wrap.insertBefore(ele);
+        css = {top:0.5*hEle,left:wEle+5};
     }else if (where=="ontop"){
         wrap.appendTo(ele);
-        css = {top:0.5*hEle,left:0.5*wEle};
+        css = {top:0.5*hEle,left:0.5*wEle-0.5*wAlert};
     }else if (where=="before"){
-        wrap.appendTo(ele);
-        css = {top:0,left:-wAlert-5};
+        wrap.insertBefore(ele);
+        css = {top:0.5*hEle,left:-wAlert-5};
     }else if (where=="above"){
-        wrap.appendTo(ele);
-        css = {left:0,top:-hAlert-5};
+        wrap.insertBefore(ele);
+        css = {left:0.5*wEle,top:-hAlert-5};
     }else if (where=="below"){
-        wrap.appendTo(ele);
-        css = {left:0,bottom:-hAlert};
+        wrap.insertBefore(ele);
+        css = {left:0.5*wEle,bottom:-1.05*hAlert};
     }
+    console.log(where,ele,css);
+
     wrap.css(css);
 
     if (offset!==null){
         $(".alert").css("transform","translate("+offset+")");
     }
     
-    if (ele.is('ul')){
-        var bgColor = (ele.data('bgColor') != undefined) ? ele.data('bgColor') : ele.css('background-color');
-        ele.data('bgColor',bgColor);
-        ele.css('background-color','rgb(234,78,80)');
-        setTimeout(function(){
-            ele.css("background-color",bgColor);
-        },time)
-    }else{
+    // if (ele.is('ul')){
+        // var bgColor = (ele.data('bgColor') != undefined) ? ele.data('bgColor') : ele.css('background-color');
+        // ele.data('bgColor',bgColor);
+        // ele.css('background-color','rgb(234,78,80)');
+        // setTimeout(function(){
+        //     ele.css("background-color",bgColor);
+        // },time)
+    // }else{
         var borderColor = (ele.data('borderColor') != undefined) ? ele.data('borderColor') : ele.css('border-color');
         ele.data('borderColor',borderColor);
         ele.css("border-color","rgb(234,78,80)").attr("readonly","true");
@@ -498,13 +555,13 @@ function alertBox(message, ele, where = 'below', time = 1500, offset = null){
                 ele.attr('readonly',readonly);
             }else{
                 ele.removeAttr("readonly");
+                ele.focus();
             }
         },time)
-
-    }
+    // }
 
     setTimeout(function(){
-        $(".zeroWrap.a.f, .alert.f").fadeOut(600,function(){$(this).remove();})        
+        $(".zeroWrap.a.f, .alert.f").slideFadeOut(600,function(){$(".zeroWrap.a.f, .alert.f").remove();})
     },time)
         
 }
@@ -586,32 +643,32 @@ $(document).on("click",".toggle",function(){
     })
 
 
-function setSessionVar(KeysValuesObj){
-    console.log('dont use this  setSessionVar!');
-    alert("fix me setSessionVar!");
-    // $.ajax({
-    //     url:"/setvar",
-    //     method:"POST",
-    //     data:KeysValuesObj,
-    //     success:function(data){
-    //         // console.log(data);
-    //     }
-    // })
-}
-var yourSessionVar = undefined;
-function getSessionVar(keyName){
-    $.ajax({
-        url:"/getvar",
-        method:"POST",
-        data:{"getVar":keyName},
-        success:function(data){
-            yourSessionVar = data;
-        },
-        error:function(e){
-            console.log(e);
-        }
-    })
-}
+// function setSessionVar(KeysValuesObj){
+//     console.log('dont use this  setSessionVar!');
+//     alert("fix me setSessionVar!");
+//     // $.ajax({
+//     //     url:"/setvar",
+//     //     method:"POST",
+//     //     data:KeysValuesObj,
+//     //     success:function(data){
+//     //         // console.log(data);
+//     //     }
+//     // })
+// }
+// var yourSessionVar = undefined;
+// function getSessionVar(keyName){
+//     $.ajax({
+//         url:"/getvar",
+//         method:"POST",
+//         data:{"getVar":keyName},
+//         success:function(data){
+//             yourSessionVar = data;
+//         },
+//         error:function(e){
+//             console.log(e);
+//         }
+//     })
+// }
 
 function slideFadeOut(elem,time = 400,callback = null) {
     var t = "opacity "+time+"ms";
@@ -632,12 +689,6 @@ function slideFadeIn(elem,time = 400,callback = null){
     var solid = {opacity: 1, transition: t};
     elem.css("opacity","0");
     elem.slideDown(time).delay(100).css(solid);
-    // setTimeout(function(){
-    //     if (elem.css('opacity') == 0){
-    //         alert('help!');
-    //         elem.animate({opacity:1},time);
-    //     }
-    // },101)
     if (callback){
         setTimeout(callback,time+101);
     }
@@ -694,11 +745,11 @@ function clearModalHome(){
 function saveSystemModals(){
     systemModals.appendTo("#ModalHome");
 }
-function blurElement(elem,modal,time,callback){
+function blurElement(elem,modal,time = 400,callback = null){
     if (modal == "#Feedback"){
         console.log(elem, modal, $(modal));
     }
-    time = (time != undefined) ? time : "400";
+    // time = (time != undefined) ? time : "400";
     var position = $(elem).css("position"),
         home = ($("#ModalHome").length > 0) ? $("#ModalHome") : $("body");
     $(modal).removeClass('expanded');
@@ -716,9 +767,10 @@ function blurElement(elem,modal,time,callback){
     }else{
         if (elem.is("body")){$(modal).css("box-shadow","0 0 15px 10px rgba(230,230,230,0.4)");}
         else {$(modal).css("box-shadow","0 0 15px 10px rgba(190,190,190,0.4)");} 
+        var classList = (modal === '#Confirm') ? 'cancel cancelX confirmN' : 'cancel cancelX';
         $("<div/>",{
             text: 'x',
-            class: 'cancel cancelX'
+            class: classList
         }).appendTo($(modal));
     }
     $("#loading").removeClass("dark");
@@ -782,7 +834,10 @@ function blurElement(elem,modal,time,callback){
         top:"50%",
         transform:"translate(-50%,-50%)",
     }
-
+    if ($(modal).length == 0) {
+        console.log(modal+ " modal not found");
+        return false;
+    }
     if (modal!=undefined){
         $(modal).css("opacity","1");
         if (modal=="#loading"){
@@ -804,6 +859,7 @@ function blurElement(elem,modal,time,callback){
             $(modal).fadeIn(time);
         }
 
+        // console.log(modal,$(modal));
         var eH = elem.innerHeight(), mH = $(modal)[0].scrollHeight, em = Number($("body").css('font-size').replace("px","")),
             eW = elem.innerWidth(), mW = $(modal)[0].scrollWidth;
             // console.log(eH);
@@ -824,9 +880,10 @@ function blurElement(elem,modal,time,callback){
             }            
         }
     }
-    if (callback!=undefined){
-        setTimeout(callback,time+101);
-    }
+    // if (callback!=undefined){
+    //     setTimeout(callback,time+101);
+    // }
+    if (callback) {setTimeout(callback,time+101)}
 }
 function unblurElement(elem, callback = null){
     var n = $(".blur").length,
@@ -850,7 +907,7 @@ function unblurElement(elem, callback = null){
     });
     elem.find(".cancelX").remove();
 }
-function blurTopMost(modal){
+function blurTopMost(modal,time = 400,callback = null){
     var ele = $(".blur").last().children().first();
     if (ele.length == 0){ele = $("body");}
     else if (ele.attr('id') == "loading"){ele = $(".blur").last().parent();}
@@ -863,7 +920,7 @@ function blurTopMost(modal){
         },100);
         return;
     }
-    blurElement(ele,modal);
+    blurElement(ele,modal,time,callback);
 }
 function unblurTopMost(callback = null){
     if (callback && typeof callback !== 'function'){callback = null;}
@@ -871,18 +928,19 @@ function unblurTopMost(callback = null){
     // console.log(ele);
     unblurElement(ele, callback);
 }
-function unblurAll(){
-    var clearBlurs = setInterval(function(){
-        // console.log($(".blur"));
+var clearBlurs = null;
+function unblurAll(callback = null){
+    clearBlurs = setInterval(function(){
         unblurTopMost();
         if ($(".blur").length == 0){
             clearInterval(clearBlurs);
+            if (callback) callback();
         }
     },100)
 }
-function delayedUnblurAll(time = 800){
+function delayedUnblurAll(time = 800, callback = null){
     setTimeout(function(){
-        unblurAll();
+        unblurAll(callback);
     },time);
 }
 
@@ -1341,7 +1399,11 @@ function optionsNavBtnClick(){
         link.click();
     }
     // things that aren't a menuBar item
-    else if (dest=='form-preview'){
+    else if (dest == 'view'){
+        if (model == 'ChartNote'){
+            viewNoteFromOptionsNav();
+        }
+    }else if (dest=='form-preview'){
         $("<div/>",{
             id: "FormPreview",
             class: "modalForm"
@@ -1350,8 +1412,7 @@ function optionsNavBtnClick(){
         $("#FormPreview").load("/forms/"+uid+"/preview",function(){
             blurElement($('body'),"#FormPreview");
         })
-    }
-    else if (dest=='schedule'){
+    }else if (dest=='schedule'){
         clearAllScheduleModals();
         $("<div/>",{
             id: "EditScheduleModal",
@@ -1367,19 +1428,20 @@ function optionsNavBtnClick(){
                 initializeNewContent();
             }
         })
-    }
-    else if (dest=='delete'){
+    }else if (dest=='delete'){
         model = model.replace(" ","");
         var modal = '#delete'+model;
         // console.log(modal);
         $(modal).find(".name").text(optionsNav.find(".name").text());
         blurElement($("body"),modal);
-    }
-    else if (dest=='create'){
+    }else if (dest=='create'){
         var modal = '#create'+model;
         blurElement($("body"),modal);
-    }
-    else if (dest=='edit'){
+    }else if (dest=='edit'){
+        if (model == 'ChartNote'){
+            editNoteFromOptionsNav();
+            return;
+        }
         var modal = '#edit'+model,
             json = optionsNav.find(".name").data('json'),
             form = $(modal).find(".formDisp"),
@@ -1417,8 +1479,7 @@ function optionsNavBtnClick(){
         }
         fillForm(json,form);
         blurElement($("body"),modal);
-    }
-    else if (dest=="settings"){
+    }else if (dest=="settings"){
         var id = model+"SettingsForm";
 
         $("#"+id).attr("id","xxx").remove();
@@ -1457,8 +1518,7 @@ function optionsNavBtnClick(){
             }
 
         })
-    }
-    else if (dest=='loadForm'){
+    }else if (dest=='loadForm'){
         var status = trimCellContents($("#FormList").find('tr').filter(function(){return $(this).data('uid') == uid;}).find(".status"));
         if (status == 'required'){
             blurTopMost("#loading");
@@ -1510,6 +1570,18 @@ function optionsNavBtnClick(){
                 })
             }
         })        
+    }else if (dest=='setAsActiveForm'){
+        blurTopMost('#loading');
+        $.ajax({
+            url: "/forms/"+uid+"/setAsActive",
+            method: 'get',
+            success: function(data){
+                if (data=='checkmark') {
+                    blurTopMost('#checkmark');
+                    delayedUnblurAll(800,reloadTab);
+                }
+            }
+        })
     }
 }
 function optionsNavOverflowCheck(){
@@ -1720,10 +1792,79 @@ function singular(model){
     return model;
 }
 
+function showAutosaveTime(){
+    var t = new Date(), timeStr = t.toLocaleTimeString(), wrap = $("#AutoSaveWrap");
+    $("#AutoConfirm").find(".message").text("Autosaved at " + timeStr);
+    wrap.slideFadeIn(400,setTimeout(function(){
+        wrap.slideFadeOut(1500);
+    },3000));
+}
+
+function initializeEditables(){
+    var newEditables = filterUninitialized(".editable");
+    newEditables.on('click','.toggle',function(){
+        editableToggleClick($(this));
+    });
+    newEditables.data('initialized',true);
+}
+function editableToggleClick(toggle){
+    var p = toggle.closest('.editable, .question');
+    if (toggle.hasClass("edit")){
+        var target = toggle.closest(".editable");
+        target.find(".value, .edit").hide();
+        target.find(".input").show();
+        target.find(".save, .cancel").css("display","inline");
+
+        var pairs = target.find(".pair");
+        pairs.each(function(i, pair){
+            var input = $(pair).find(".input"), text = $(pair).find(".value").text();
+            if (input.is("select")){
+                input.find("option").removeAttr("selected");
+                input.val(text);
+            }else{
+                input.val(text);
+            }
+            $(pair).find(".value").text(text);
+        })
+    }
+    else if (toggle.hasClass("save")){
+        var target = toggle.closest(".editable");
+        var pairs = target.find(".pair");
+        
+        for (x=0;x<pairs.length;x++){
+            var pair = pairs[x];
+            var input = $(pair).find(".input"), text;
+            if (input.is('.answer')) input = input.children('input, select').first();
+            if (input.is("select")){
+                text = input.find(":selected").val();
+            }else{
+                text = $.sanitize(input.val());
+                if (text == ""){
+                    alertBox("enter a value",target.find('.input'),"after","fade");
+                    return false;
+                }
+            }
+            $(pair).find(".value").text(text);
+        }
+        target.find(".value, .edit").css("display","inline");
+        target.find(".input, .save, .cancel").hide();
+        if (p.hasClass("sectionName")){
+            updateSections();
+        }
+        if (toggle.closest('h2').is("FormName")){autoSaveForm();}
+    }
+    else if (toggle.hasClass("cancel")){
+        var target = toggle.closest(".editable");
+        var pairs = target.find(".pair");
+        target.find(".value, .edit").css("display","inline");
+        target.find(".input, .save, .cancel").hide();
+    }
+}
+
 function initializeLinks(){
     var links = filterUninitialized('.link');
     links.on("click",followLink);
-    links.data('initialized');
+    links.data('initialized',true);
 }
 
 function initializeNewContent(){
@@ -1736,9 +1877,12 @@ function initializeNewContent(){
         initializeApptForms();
         initializeScheduleForms();
         checkNotifications();
-        activateServiceSelection();        
+        activateServiceSelection();
+        initializeChartNotePage();
+        initializeInvoicePage();
     }
     initializeNewMenus();
+    initializeEditables();
     initializeLinks();
     resizeElements();
     masterStyle();

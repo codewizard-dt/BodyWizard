@@ -4,7 +4,9 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Carbon;
 use App\Traits\Encryptable;
+
 
 class Submission extends Model
 {
@@ -13,6 +15,8 @@ class Submission extends Model
     public $tableValues;
     public $optionsNavValues;
     public $connectedModels;
+
+    protected $with = ['form'];
 
     public function __construct($attributes = []){
         parent::__construct($attributes);
@@ -83,6 +87,10 @@ class Submission extends Model
     public function getResponsesAttribute($value){
         return $this->decryptKms($value);
     }
+    public function getSubmittedAtAttribute(){
+        $created = Carbon::parse($this->created_at);
+        return $created->format('g:ia \o\n n/j/y');
+    }
     public function moreOptions(){
         $options = [
             'Submitted' => $this->created_at->format('g:ia \o\n n/j/Y'),
@@ -109,6 +117,9 @@ class Submission extends Model
     }
     public function appointment(){
         return $this->belongsTo('App\Appointment', 'appointment_id');
+    }
+    public function chartNotes(){
+        return $this->morphedByMany('App\ChartNote','submissionable');
     }
 
 }

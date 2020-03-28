@@ -35,7 +35,7 @@ class SendBugReport
         $bug->location = $event->location;
         $bug->category = title($event->category);
         $bug->user_id = $event->user ? $event->user : null;
-        $bug->status = ['opened' => Carbon::now()->timestamp];
+        $bug->status = 'open';
         $bug->save();
         $users = \App\User::admins();
         Notification::send($users, new BugReport($bug));

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
+use App\Practice;
 
 class ArtisanController extends Controller
 {
@@ -18,8 +19,13 @@ class ArtisanController extends Controller
     		]);
     		$message = 'Appointments cleared.';
     	}elseif($command == 'update-appointments'){
-            \App\Practice::updateEntireEventFeed();
+            $practice = Practice::getFromSession();
+            $practice->updateEntireEventFeed();
             $message = 'Appointment feed updated.';
+        }elseif($command == 'refresh-users'){
+            $practice = Practice::getFromSession();
+            $result = $practice->refreshUsers();
+            $message = ($result === true) ? 'Users refreshed.' : $result;
         }else{
     		$message = 'command not recognized';
     	}

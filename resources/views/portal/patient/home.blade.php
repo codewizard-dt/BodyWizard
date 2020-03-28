@@ -18,7 +18,6 @@ $patientInfo = [
     'menuName'=>'launchpadMenu',
     'items'=>['appointments-index','forms+submissions','settings-patient']
 ])
-
 @include('models.create-modal',['model' => 'Appointment'])
 @include('models.edit-modal',['model' => 'Appointment'])
 @include ('schedules.services')

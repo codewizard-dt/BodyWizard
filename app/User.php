@@ -120,6 +120,10 @@ class User extends Authenticatable implements MustVerifyEmail
     public function getLegalNameAttribute(){
         return $this->first_name." ".$this->middle_name." ".$this->last_name;
     }
+    public function getIsSuperuserAttribute(){
+        $supers = ['david@bodywizardmedicine.com'];
+        return in_array('david@bodywizardmedicine.com', $supers);
+    }
     public function patientInfo(){
         return $this->hasOne('App\Patient');
     }

@@ -30,74 +30,6 @@ class Form extends Model
 
     public function __construct(){
         $this->nameAttr = 'form_name';
-	    // $this->tableValues = array(
-	    // 	'tableId' => 'FormList',
-	    // 	'index' => 'form_id',
-	    // 	'columns' => array(
-     //                    array(
-     //                        "label" => 'Form Name',
-     //                        "className" => 'name',
-     //                        "attribute" => 'form_name'
-     //                    ),
-     //                    array(
-     //                        "label" => 'Version',
-     //                        "className" => 'version',
-     //                        "attribute" => 'version_id'
-     //                    ),
-     //                    array(
-     //                        "label" => 'Created On',
-     //                        "className" => 'created',
-     //                        "attribute" => 'created_at'
-     //                    ),
-     //                    array(
-     //                        "label" => 'Updated On',
-     //                        "className" => 'updated',
-     //                        "attribute" => 'updated_at'
-     //                    )
-     //                ),
-	    // 	'hideOrder' => "created,updated,version",
-	    // 	'filtersColumn' => array(),
-	    // 	'filtersOther' => array(
-     //                        array(
-     //                            "label" => 'Form Type',
-     //                            "filterName" => 'type',
-     //                            "attribute" => 'form_type',
-     //                            "markOptions" => null,
-     //                            "filterOptions" => array(
-     //                                array("label" => 'practitioner',"value" => 'practitioner'),
-     //                                array("label" => 'patient',"value" => 'patient'),
-     //                                array("label" => 'admin',"value" => 'admin'),
-     //                                array("label" => 'system',"value" => 'system')
-     //                            )
-     //                        ),
-     //                        [
-     //                            "label" => 'Hide',
-     //                            "filterName" => 'hide',
-     //                            'attribute' => null,
-     //                            'reverseFilter' => true,
-     //                            "markOptions" => null,
-     //                            "filterOptions" => [
-     //                                [
-     //                                    "label" => 'previous versions',
-     //                                    "value" => 'current:0',
-     //                                    'attribute'=>'current'
-     //                                ],
-     //                                ["label" => 'system forms',"value" => 'form_type:system','attribute'=>'form_type'],
-     //                                ["label" => 'locked forms',"value" => 'locked:1','attribute'=>'locked']
-     //                            ]
-     //                        ]
-     //                    ),
-     //        'destinations' => array("forms-settings","form-preview","forms-edit","forms-delete","forms-create"),
-     //        'btnText' => array("settings","preview","edit","delete","create new form"),
-     //        'orderBy' => [
-     //            ['form_name',"asc"],
-     //            ['version_id',"desc"]
-     //        ]
-	    // );
-        // $this->optionsNavValues = array(
-        //     'destinations' => array("settings","form-preview","forms-edit","delete","forms-create"),
-        //     'btnText' => array("settings","preview","edit","delete","create new form")
-        // );
         $this->connectedModels = [
             ['Service','many','morphToMany']
         ];
@@ -114,18 +46,18 @@ class Form extends Model
                         [
                             ["label" => 'Form Name',
                             "className" => 'name',
-                            "attribute" => 'form_name'],
-                            ["label" => 'Version',
-                            "className" => 'version',
-                            "attribute" => 'version_id'],
-                            ["label" => 'Created On',
-                            "className" => 'created',
-                            "attribute" => 'created_at'],
-                            ["label" => 'Updated On',
-                            "className" => 'updated',
-                            "attribute" => 'updated_at']
+                            "attribute" => 'name_with_version'],
+                            ["label" => 'Type',
+                            "className" => 'type',
+                            "attribute" => 'form_type'],
+                            ["label" => 'For',
+                            "className" => 'usertype',
+                            "attribute" => 'user_type'],
+                            ["label" => 'Chart Use',
+                            "className" => 'charting',
+                            "attribute" => 'charting_value_for_table'],
                         ],
-                        'hideOrder' => "created,updated,version",
+                        'hideOrder' => "type,usertype,charting",
                         'filtersColumn' => [],
                         'filtersOther' => [
                             [
@@ -197,63 +129,32 @@ class Form extends Model
         return array_merge($commonArr,$arr);
     }
     public static function alwaysAvailable(){
-        return Form::where([['settings->portal_listing','yes, for all patients'],['current','1'],['hidden','0']])->orderBy('display_order')->get();
+        return Form::where([['settings->default_patient_portal_access','for all patients'],['active','1'],['hidden','0']])->orderBy('display_order')->get();
     }
     public static function neededByAnyAppointment($patientId = null){
-        if (Auth::user()->user_type == 'patient'){
-            $patient = Auth::user()->patientInfo;
-            // $forms = Form::all()->filter(function($form, $f) use ($patient){
-            //     $appts = $patient->appointments->filter(function($appt, $a) use ($patient, $form){
-            //         $timeCheck = $appt->date_time->isAfter(Carbon::now()->subMonths(1));
-            //         if (!$timeCheck){return false;} // don't bother if appt over a month ago;
-            //         foreach($appt->services as $service){
-            //             if ($service->forms->count() > 0){
-            //                 foreach($service->forms as $reqForm){
-            //                     if ($reqForm->form_id == $form->form_id){
-            //                         $submission = Submission::where([['patient_id',$patient->id],['form_id',$form->form_id],['appointment_id',$appt->id]])->get();
-            //                         if ($submission->count() == 0){return true;}
-            //                     }
-            //                 }
-            //             }
-            //             return false;
-            //         }
-            //     });
-            //     // Log::info($appts);
-            //     return ($appts->count() != 0);
-            // });
-            // START FRESH
-            $appts = $patient->appointments->filter(function($appt,$a){
-                return $appt->date_time->isAfter(Carbon::now()->subMonths(1));
-            });
-            $formIds = [];
-            foreach ($appts as $appt){
-                foreach ($appt->services as $service){
-                    foreach ($service->forms as $form){
-                        $submissions = Submission::where([
-                            ['patient_id',$patient->id],
-                            ['form_id',$form->form_id],
-                            ['appointment_id',$appt->id]
-                        ])->get();
-                        if ($submissions->count() == 0){
-                            // Log::info($form->form_name,['appointment'=>$appt->id]);
-                            $formIds[] = $form->form_id;
-                        }
+        if (Auth::user()->user_type == 'patient') $patientId = Auth::user()->patientInfo->id;
+        if (!$patientId) return false;
+
+        $patient = Patient::find($patientId);
+        $appts = $patient->appointments->filter(function($appt,$a){
+            return $appt->date_time->isAfter(Carbon::now()->subMonths(1));
+        });
+        $formIds = [];
+        foreach ($appts as $appt){
+            $forms = $appt->forms('patient');
+                foreach ($forms as $form){
+                    $submissions = Submission::where([
+                        ['patient_id',$patientId],
+                        ['form_id',$form->form_id],
+                        ['appointment_id',$appt->id]
+                    ])->get();
+                    if ($submissions->count() == 0){
+                        $formIds[] = $form->form_id;
                     }
                 }
-            }
-            $forms = Form::whereIn('form_id',$formIds)->get();
-            return $forms;
-        }elseif (session('uidList') != null && session('uidList')['Patient'] != null){
-            Log::info("2");
-            // $patientId = session('uidList')['Patient'];
-            // $patient = Patient::with(['appointments.services.forms' => function ($query){
-            //     $query->where('date_time','>',Carbon::now()->subMonths(1));
-            // }])->where('id',$patientId);
-            // Log::info(\App\Appointment::where(where('date_time','>',Carbon::now()->subMonths(1))));
-            // Log::info($patient->appointments);
-        }elseif (!$patientId){
-            Log::info('1');
         }
+        $forms = Form::whereIn('form_id',$formIds)->where('active',true)->get();
+        return $forms;
     }
     public static function hasSubmissions($patientId = null){
         if (Auth::user()->user_type == 'patient'){
@@ -278,7 +179,30 @@ class Form extends Model
         }
     }
     public static function defaultSettings(){
-        return ["form_type" => "any user type", "admin_only" => "yes, admins only", "portal_listing" => "never"];
+        return [
+            "chart_inclusion" => false
+        ];
+    }
+    public static function createItemNameAttr($string){
+        return hyphentounderscore(replacespaces(removepunctuation(strtolower(cleaninput($string)))));
+    }
+    public static function periodicFormsRequiredNow(Patient $patient){
+        $forms = Form::where('settings->require_periodically',true)->get()->filter(function($form) use($patient){
+            $now = Carbon::now(); $period = $form->required_interval;
+            $then = $now->subMonths($period);
+            $submissions = Submission::where([['patient_id',$patient->id],['created_at','>',$then]])->get();
+            return $submissions->count() == 0;
+        });
+    }
+    public function getRequiredIntervalAttribute(){
+        if (!$this->settings['require_periodically']) return null;
+        $period = $this->settings['periodicity'];
+        if ($period == 'every month') {
+            return 1;
+        }else{
+            // returns number portion of 'every X months'
+            return explode(" ",$period)[2];
+        }
     }
     public function checkApptFormStatus(Appointment $appt, Patient $patient){
         // Log::info("Check Appt Form Status");
@@ -288,12 +212,28 @@ class Form extends Model
     public function newestVersion(){
         return Form::where('form_id',$this->form_id)->orderBy('version_id','desc')->limit(1)->get()->first();
     }
+    public static function getActiveVersion($formId){
+        return Form::where([['form_id',$formId],['active',1]])->limit(1)->get()->first();        
+    }
     public function activeVersion(){
         return Form::where([['form_id',$this->form_id],['active',1]])->limit(1)->get()->first();
     }
 
     public function getNameAttribute(){
         return $this->form_name;
+    }
+    public function getNameWithVersionAttribute(){
+        return $this->version_id === 1 ? $this->form_name : $this->form_name." (v".$this->version_id.")";
+    }
+    public function getChartingValueForTableAttribute(){
+        if (isset($this->settings['chart_inclusion'])){
+            return $this->settings['chart_inclusion'] ? "for charts" : "no";
+        }else{
+            return 'no';
+        }
+    }
+    public function getNameAbbrAttribute(){
+        return str_replace(" ", "", $this->name);
     }
     public function getLastSubmittedAttribute(){
         $submissions = $this->submissions();
@@ -400,7 +340,7 @@ class Form extends Model
     public function moreOptions(){
     }
     //form functionality
-        public function formDisplay($modal = false, $allowSubmit = true, $edit = false, $usertype = false){
+        public function formDisplay($modal = false, $allowSubmit = true, $edit = false, $usertype = false, $display = true){
             $form = json_decode($this->full_json,true);
             // $sections = json_decode($this->questions,true);
             $sections = $form['sections'];
@@ -416,7 +356,8 @@ class Form extends Model
             if ($usertype){$formNameAbbrReflectEdit = str_replace("User", $usertype, $formNameAbbrReflectEdit);}
             $settings = $this->settings;
             // var_dump($settings);
-            echo '<form id="'.$formNameAbbrReflectEdit.'" data-formname="'.$formNameAbbrOriginal.'" data-formid="'.$formID.'" data-uid="'.$uid.'" class="formDisp">';
+            $displayStr = $display ? "" : "style='display:none;'";
+            echo '<form id="'.$formNameAbbrReflectEdit.'" '.$displayStr.' data-formname="'.$formNameAbbrOriginal.'" data-formid="'.$formID.'" data-uid="'.$uid.'" class="formDisp">';
             for ($x=0;$x<count($sections);$x++){
                 $section = $sections[$x];
                 $name = $section['sectionName'];
@@ -475,7 +416,7 @@ class Form extends Model
                             echo "<div class='question'><p><span class='n'>$n.</span><span class='q'>$question</span><span class='requireSign'>$requireStar</span></p></div><br>";
                         }
                         // include_once app_path("/php/functions.php");
-                        $name = replacespaces(removepunctuation(strtolower(cleaninput($question))));
+                        $name = Form::createItemNameAttr($question);
                         if (in_array($type, ['radio','checkboxes','dropdown'])){
                             array_push($options,"ID*".$name);
                         }else{
@@ -503,7 +444,7 @@ class Form extends Model
                                     $condition = str_replace("'","&apos;",$condition);
                                     $condition = join("***",$condition);
                                     
-                                    $name = removepunctuation(replacespaces(strtolower(cleaninput($question))));
+                                    $name = Form::createItemNameAttr($question);
                                     if (in_array($type, ['radio','checkboxes','dropdown'])){
                                         array_push($options,"ID*".$name);
                                     }else{
@@ -595,7 +536,7 @@ class Form extends Model
             $label = isset($options['units']) ? $options['units'] : "";
             $initial = $options['initial'];
             $name = (isset($options['name'])) ? $options['name'] : "";
-            echo "<div class='answer number' ><input size='5' class='$name' name='$name' type='text' $dataStr value='$initial'><span class='label'>$label</span>
+            echo "<div class='answer number' ><input size='5' class='$name' name='$name' type='text' $dataStr placeholder='$initial'><span class='label'>$label</span>
             <div class='numberUpDown'><div class='change up'></div><div class='change down'></div></div></div>";
         }
         public function checkboxes($options){
@@ -657,8 +598,10 @@ class Form extends Model
             <span class='right'>$maxLabelStr</span><div class='SliderValue' style='display:none;'></div></div>";
         }
         public function signature($options){
+            // Log::info($options);
             $printed = ($options['typedName']=='yes') ? "<span class='printed'>Type your full legal name here: <span class='text'><input type='text'></span></span>":"";
-            echo "<div class='answer signHere'>$printed Sign your name in the box below
+            $name = (isset($options['name'])) ? $options['name'] : "";
+            echo "<div id='$name' data-name='$name' class='answer signHere'>$printed Sign your name in the box below
             <div class='signature'><div class='clear'>reset</div></div>
             </div>";
         }

@@ -106,19 +106,19 @@ class FormController extends Controller
     public function storeColumns($model, $uid, $columnObj, Request $request){
         $class = "App\\$model";
         $instance = $class::find($uid);
-        $trackChanges = usesTrait($instance,"TrackChanges");
+        // $trackChanges = usesTrait($instance,"TrackChanges");
 
-        if ($trackChanges){
-            $includeFullJson = isset($instance->auditOptions['includeFullJson']) ? $instance->auditOptions['includeFullJson'] : false;
-            $changes = $instance->checkForChanges($instance,$request,$includeFullJson);
-        }
+        // if ($trackChanges){
+        //     $includeFullJson = isset($instance->auditOptions['includeFullJson']) ? $instance->auditOptions['includeFullJson'] : false;
+        //     $changes = $instance->checkForChanges($instance,$request,$includeFullJson);
+        // }
         foreach ($columnObj as $column => $value){
             $instance->$column = $value;
         }
         $instance->save();
-        if ($trackChanges && $changes){
-            $instance->saveTrackingInfo($instance, $changes, $request->getClientIp());
-        }
+        // if ($trackChanges && $changes){
+        //     $instance->saveTrackingInfo($instance, $changes, $request->getClientIp());
+        // }
     }
 
     public function index()
@@ -141,7 +141,7 @@ class FormController extends Controller
 
     public function store(Request $request)
     {
-        Log::info($request);
+        // Log::info($request);
         if ($request->form_id == "none"){
             $maxFormId = Form::orderBy('form_id','desc')->take(1)->get();
             $formId = count($maxFormId) > 0 ? $maxFormId[0]->form_id + 1 : 1;
@@ -235,6 +235,19 @@ class FormController extends Controller
     public function checkNarrativeImgs(Request $request){
         $ctrl = new Form;
         return $ctrl->narrative($request);
+    }
+    public function setAsActive($uid){
+        try{
+            $form = Form::find($uid);
+            $activeVersion = Form::where([['form_id',$form->form_id],['active',true]])->get()->first();
+            $form->active = true;
+            $activeVersion->active = false;
+            $form->save();
+            $activeVersion->save();            
+        }catch(\Exception $e){
+            reportError($e,'FormController 248');
+        }
+        return isset($e) ? $e : listReturn('checkmark');
     }
 
     /**

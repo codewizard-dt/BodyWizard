@@ -49,9 +49,10 @@ class RefreshUserTables extends Command
     {
         $practiceId = $this->argument('practiceId');
         $populate = $this->option('factory');
-        $database = practiceConfig('practices')[$practiceId]['app']['database'];
-        config(['database.connections.mysql.database' => $database]);
-        DB::reconnect();
+
+        $practice = Practice::find($practiceId);
+        $practice->reconnectDB();
+        session(['amend_user_table_for_cashier'=>true]);
         RefreshTables::clearUserTables();
         $this->info("User tables cleared");
         RefreshTables::createDefaultUser();
@@ -62,5 +63,6 @@ class RefreshUserTables extends Command
         }else{
             $this->info("User table population skipped");
         }
+        session(['amend_user_table_for_cashier'=>null]);
     }
 }

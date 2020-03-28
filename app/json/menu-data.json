@@ -201,9 +201,16 @@
                 "update-appointments":
                 {
                     "id":"update-appointments",
-                    "text":"Refresh Appointments",
+                    "text":"Update Calendars",
                     "dropdown":false,
                     "uri":"/artisan/execute/update-appointments"
+                },
+                "refresh-users":
+                {
+                    "id":"refresh-users",
+                    "text":"Reset Users",
+                    "dropdown":false,
+                    "uri":"/artisan/execute/refresh-users"
                 }
             }
         },
@@ -399,7 +406,7 @@
         "new":
         {
             "id":"new",
-            "text":"New",
+            "text":"Quick",
             "dropdown":
             {
                 "patient-create":
@@ -414,6 +421,20 @@
                     "text":"Appointment",
                     "uri":"/create/Appointment",
                     "id":"createAppt",                    
+                    "dropdown":false
+                },
+                "chart-note-create":
+                {
+                    "text":"Chart Note",
+                    "uri":"/ChartNote/create",
+                    "id":"chart-note-create",
+                    "dropdown":false
+                },
+                "invoice-create":
+                {
+                    "text":"Invoice",
+                    "uri":"/Invoice/create",
+                    "id":"invoice-create",
                     "dropdown":false
                 },
                 "prescription-create":

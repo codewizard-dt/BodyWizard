@@ -1,6 +1,4 @@
 <?php
-    // include_once app_path("/php/functions.php");
-
     // called by GET /{model}/display/list
     $nospaces = removespaces($model);
     $class = "App\\$nospaces";
@@ -9,7 +7,6 @@
     $models = title(pluralSpaces($model));
 
     // setting table options and getting collection
-    // if ($model == 'Form'){
     if (method_exists($ctrl, 'tableValues')){
         $tableOptions = $class::tableValues();
     }else{
@@ -87,6 +84,7 @@
     }
 
     $tableOptions['collection'] = $collection;
+    // Log::info($collection,['location'=>'table with nav 87']);
 
     // setting optionsNav variables
     if (method_exists($ctrl, 'tableValues')){
@@ -108,6 +106,8 @@
         <h2 class='purple paddedSmall'>Current {{ucfirst(session('userType'))}}s</h2>
     @elseif ($model == 'Message')
         <h2 class='purple paddedSmall'>{{$model}} Center</h2>
+    @elseif ($model == 'ChartNote')
+        <h2 class='purple paddedSmall'>Recent {{$models}}</h2>
     @else
         <h2 class='purple paddedSmall'>Available {{$models}}</h2>
     @endif

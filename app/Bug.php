@@ -43,14 +43,17 @@ class Bug extends Model
                             "attribute" => 'location'],
                             ["label" => 'Reported At',
                             "className" => 'reported',
-                            "attribute" => 'created_at']
+                            "attribute" => 'created_at'],
+                            ["label" => 'Status',
+                            "className" => 'status',
+                            "attribute" => 'status']
                         ],
                         'hideOrder' => "category,location,reported",
                         'filtersColumn' => [],
                         'filtersOther' => [],
                         'optionsNavValues' => [
-                            'destinations' => ["details"],
-                            'btnText' => ["details"]
+                            'destinations' => ["markBugResolved"],
+                            'btnText' => ["mark as resolved"]
                         ],
                         'orderBy' => [
                             ['created_at',"desc"],

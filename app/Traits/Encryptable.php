@@ -6,19 +6,20 @@ use Illuminate\Support\Facades\Log;
 trait Encryptable
 {
     //
-	public $nullValues = ['','[]'];
+	public $otherNullValues = ['','[]'];
 
     public function encryptKms($value){
+        if ($value === null) return null;
     	$type = gettype($value);
     	if ($type == 'array'){
     		$value = json_encode($value);
     	}elseif ($type != 'string'){
-    		throw new Exception("Encryption -- expecting string or array... $type given");
+    		throw new \Exception("Encryption -- expecting string or array... $type given");
     	}
         $kms = app("GoogleKMS");
         $practice = \App\Practice::getFromSession();
         $cryptoKey = $practice->cryptokey;
-        if (in_array($value,$this->nullValues)){
+        if (in_array($value,$this->otherNullValues)){
         	$returnVal = null;
         }else{
 	        $encryptResponse = $kms->encrypt($cryptoKey, $value);
@@ -34,7 +35,8 @@ trait Encryptable
         	$returnVal = null;
         }else{
 			$decryptResponse = $kms->decrypt($cryptoKey,utf8_decode($value));
-			if (in_array($decryptResponse->getPlaintext(),$this->nullValues)){
+            // Log::info($decryptResponse->getPlaintext());
+			if (in_array($decryptResponse->getPlaintext(),$this->otherNullValues)){
 				$returnVal = null;
 			}else{
 				$json = json_decode($decryptResponse->getPlaintext(),true);

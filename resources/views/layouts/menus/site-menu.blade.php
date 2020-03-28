@@ -19,3 +19,4 @@
 
 <div id="tabList">{{$tabs}}</div>
 <div id="uidList" data-usertype='{{$type}}'>{{$uids}}</div>
+<div id="UserInfo"></div>

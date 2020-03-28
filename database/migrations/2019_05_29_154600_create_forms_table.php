@@ -18,6 +18,8 @@ class CreateFormsTable extends Migration
             $table->unsignedInteger('form_id');
             $table->unsignedInteger('version_id');
             $table->string('form_name');
+            $table->string('form_type');
+            $table->string('user_type');
             $table->json('settings')->nullable()->default(null);
             $table->json('settings_json')->nullable()->default(null);
             $table->json('full_json');
@@ -26,7 +28,6 @@ class CreateFormsTable extends Migration
             $table->boolean('active')->default(false);
             $table->boolean('locked')->default(false);
             // $table->boolean('current')->default(true);
-            $table->string('form_type')->default("patient");
             $table->timestampsTz();
         });
     }

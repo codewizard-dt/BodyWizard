@@ -79,6 +79,15 @@ function checkScrollMenus(){
         },500);
     }
 }
+function clickTab(id){
+    if (!id.includes("#")) id = "#"+id;
+    var title = $(id).find(".title");
+    if (title.hasClass('active')){
+        reloadTab();
+    }else{
+        title.click();
+    }
+}
 function ClickActiveTabsV2(){
     var menus = $(".menuBar").not(".siteMenu").filter(function(){
         return $(this).data('mode') != 'scroll' && $(this).find(".title.active").length == 0;
@@ -298,7 +307,7 @@ function delayedReloadTab(time = 800){
     },time)
 }
 var loadXHR = undefined, xhrWait = undefined;
-function LoadingContent(target,uri){
+function LoadingContent(target,uri,callback = null){
     if (target=="window"){
         alert("window");
     }
@@ -309,7 +318,9 @@ function LoadingContent(target,uri){
     
     if (loadXHR!=undefined){
         loadXHR.abort();
+        console.log('aborted xhr');
     }
+    if (autosaveNoteTimer) clearTimeout(autosaveNoteTimer);
 
     loadXHR = $.ajax({
         url:uri,
@@ -318,22 +329,27 @@ function LoadingContent(target,uri){
             'X-Current-Uids': $("#uidList").text()
         },
         success:function(data){
-            // console.log(uri);
             $(".toModalHome, .modalForm").appendTo("#ModalHome");
             $("#ModalHome").children().filter(function(){
                 return $.inArray($(this).attr('id'),systemModalList) === -1;
             }).remove();
             $(target).html(data);
-            // console.log('list updates',$(target).find(".listUpdate").length);
             if ($(target).find(".listUpdate").length != 0){
                 var lists = $(target).find(".listUpdate").data(), uids = lists.uids, tabs = lists.tabs;
-                // console.log('uids',uids,'tabs',tabs,'uri',uri);
                 uids = (uids && uids.length == 0) ? 'null' : JSON.stringify(uids);
                 tabs = (tabs && tabs.length == 0) ? 'null' : JSON.stringify(tabs);
                 $("#uidList").text(uids);
                 $("#tabList").text(tabs);
+                var userInfo = $(target).find(".userUpdate").data();
+                $("#UserInfo").data({
+                    usertype: userInfo.usertype, 
+                    isAdmin: (userInfo.isadmin == 1), 
+                    isSuper: (userInfo.issuperuser == 1)
+                });
             }
             initializeNewContent();
+            if (callback) callback();
+            loadXHR = undefined;
         },
         error: function(e){
             if (e.status == 404){

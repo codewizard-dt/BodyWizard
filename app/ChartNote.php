@@ -5,17 +5,27 @@ namespace App;
 use App\Traits\TrackChanges;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\Encryptable;
 
 class ChartNote extends Model
 {
     use TrackChanges;
+    use Encryptable;
+
 
     public $tableValues;
     public $optionsNavValues;
     public $connectedModels;
     public $nameAttr;
     public $auditOptions;
+
+    protected $casts = [
+        'signature' => 'array',
+        'signed_at' => 'datetime'
+    ];
+    protected $hidden = ['autosave'];
 
     public function __construct($attributes = []){
         parent::__construct($attributes);
@@ -37,21 +47,21 @@ class ChartNote extends Model
                         'columns' => 
                         [
                             ["label" => 'Patient',
-                            "className" => 'description',
-                            "attribute" => 'description'],
+                            "className" => 'patient',
+                            "attribute" => 'patient_name'],
                             ["label" => 'Appointment',
-                            "className" => 'category',
-                            "attribute" => 'category'],
+                            "className" => 'appointment',
+                            "attribute" => 'appointment_name'],
                             ["label" => 'Signed',
-                            "className" => 'location',
-                            "attribute" => 'location'],
+                            "className" => 'signedAt',
+                            "attribute" => 'signed_at'],
                         ],
                         'hideOrder' => "category,location,reported",
                         'filtersColumn' => [],
                         'filtersOther' => [],
                         'optionsNavValues' => [
-                            'destinations' => ["details"],
-                            'btnText' => ["details"]
+                            'destinations' => ["view"],
+                            'btnText' => ["view"]
                         ],
                         'orderBy' => [
                             ['created_at',"desc"],
@@ -88,8 +98,40 @@ class ChartNote extends Model
         }
         return array_merge($commonArr,$arr);
     }
+    static function moreOptions(){
 
+    }
+
+    public function getNameAttribute(){
+        return $this->patient_name . " (".$this->appointment_date.")";
+    }
+    public function getPatientNameAttribute(){
+        return $this->patient->name;
+    }
+    public function getAppointmentDateAttribute(){
+        return $this->appointment->date;
+    }
+    public function getAppointmentNameAttribute(){
+        return $this->appointment->name;
+    }
+    public function getSignedAtAttribute($value){
+        $date = $value ? new Carbon($value) : null;
+        return $date ? $date->format('n/j g:ia') : 'not signed';
+    }
+    public function setAutosaveAttribute($value){
+        $this->attributes['autosave'] = $this->encryptKms($value);
+    }
+    public function getAutosaveAttribute($value){
+        $val = $this->decryptKms($value);
+        return $val;
+    }
     public function patient(){
     	return $this->belongsTo('App\Patient','patient_id');
+    }
+    public function appointment(){
+        return $this->belongsTo('App\Appointment','appointment_id');
+    }
+    public function submissions(){
+        return $this->morphToMany('App\Submission','submissionable');
     }
 }

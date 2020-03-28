@@ -73,7 +73,7 @@ class SettingsController extends Controller
 	    		return "checkmark";
     		}catch(\Exception $e){
     			// Log::info($e);
-                reportError($e);
+                reportError($e, 'SettingsController 76');
     			return $e;
     		}
     	}
@@ -113,7 +113,7 @@ class SettingsController extends Controller
                 return "checkmark";
             }catch(\Exception $e){
                 // Log::info($e);
-                reportError($e);
+                reportError($e,'SettingsController 116');
                 return $e;
             }
         }

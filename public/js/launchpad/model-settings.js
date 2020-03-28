@@ -1,6 +1,108 @@
-$(document).ready(function(){
-
-})
+var settingsMap = {
+	Form: 
+	{
+		form_type: 
+		{
+			name: "form_type",
+			column: "form_type",
+			valueType: "literal"
+		},
+		user_type:
+		{
+			name: "user_type",
+			column: "user_type",
+			valueType: "literal"
+		},
+		allow_as_part_of_chart_note:
+		{
+			name: "chart_inclusion",
+			column: "settings",
+			valueType: "boolean"
+		},
+		require_practice_admin_privileges:
+		{
+			name: "require_admin",
+			column: "settings",
+			valueType: "boolean"
+		},
+		default_patient_portal_access:
+		{
+			name: "default_access",
+			column: "settings",
+			valueType: "literal"
+		},
+		require_completion_at_registration:
+		{
+			name: "require_at_registration",
+			column: "settings",
+			valueType: "boolean"
+		},
+		require_this_form_to_be_completed_periodically:
+		{
+			name: "require_periodically",
+			column: "settings",
+			valueType: "boolean"
+		},
+		how_often_is_it_required:
+		{
+			name: "periodicity",
+			column: "settings",
+			valueType: "literal"
+		},
+		lock_this_form:
+		{
+			name: "locked",
+			column: "locked",
+			valueType: "boolean"
+		},
+	},
+	Service:
+	{
+		is_this_service_allowed_as_an_add_on:
+		{
+			name: "is_addon",
+			column: "is_addon",
+			valueType: "boolean"
+		},
+		only_available_as_add_on:
+		{
+			name: "addon_only",
+			column: "addon_only",
+			valueType: "boolean"
+		},
+		available_for_new_patients:
+		{
+			name: "new_patients_ok",
+			column: "new_patients_ok",
+			valueType: "boolean"
+		},
+		only_available_for_new_patients:
+		{
+			name: "new_patients_only",
+			column: "new_patients_only",
+			valueType: "boolean"
+		},
+		duration_as_add_on:
+		{
+			name: "add_on_duration",
+			column: "settings",
+			valueType: "literal"
+		},
+		price_as_add_on:
+		{
+			name: "add_on_price",
+			column: "settings",
+			valueType: "literal"
+		},
+		combine_with_which_services:
+		{
+			name: "addon_services",
+			column: "addon_services",
+			valueType: "function",
+			function: getAddOnServiceIdsFromNames
+		},
+	}
+};
 function initializeSettingsForm(){
 	var settingsBtns = $(".settingsForm").find(".submitForm").filter(function(){
 		return $(this).data('updated') != true;
@@ -8,149 +110,35 @@ function initializeSettingsForm(){
 	settingsBtns.off("click",submitForm);
 	settingsBtns.on("click",saveSettings);
 	settingsBtns.data('updated',true);
+	initializeAddOnServiceItem();
 
-	var settingsForm = filterUninitialized('.settingsForm');
-	if (settingsForm.length > 0){
-		var model = $(".settingsForm").data('model'), json = $(".settingsForm").data('settingsjson'), form = $("#ModelSettings");
-
-		if (model == 'Form'){
-			var target, sections;
-			$(".submitForm").first().remove();
-			target = $("#"+$(".settingsForm").data('target'));
-			sections = target.find(".section");
-
-	        var template = $(".template").filter("[data-type='section']"), 
-	        	blockCss = {
-	        		backgroundColor: "rgba(130,130,130,0.2)",
-	        		opacity: '1'
-	        	}, dynamicBtns = template.find("#dynamic").find("li");
-	        
-	        template.find(".plzselect").remove();
-	        template.find("#complaint_types").hide().css("font-size","0.9em");
-	        template.on('click','li',updateSectionOptions);
-	        dynamicBtns.on('click',function(){
-	        	var p = $(this).closest(".displayOptions"), t = p.find("#complaint_types"), v = $(this).data('value');
-
-	       		var h4 = t.prev().is("h4");
-	        	if (v == 'display based on complaint type'){
-	        		if (!h4){
-		        		$("<h4/>",{
-		        			text: "Section will only display when treating one of the selected complaint types"
-		        		}).insertBefore(t);
-		        		$("<h4/>").insertAfter(t);        			
-	        		}
-	        		slideFadeIn(t);
-	        	}else{
-	        		if (h4){
-		        		t.prev().remove();
-		        		t.next().remove();
-	        		}
-	        		slideFadeOut(t);
-	        		t.find('.active').removeClass('active');
-	        	}        		
-	        })
-	        sections.each(function(){
-	        	$("<div class='block'/>").css(blockCss).appendTo($(this));
-	            template.clone(true).appendTo($(this).find(".block")).removeClass("template").show();
-	            $(this).children(".requireSign").remove();
-	        });
-	        $(".showOptions").on('click',showOptions);
-		}else if (model == 'Service'){
-			$("#ServiceMap").insertAfter($("#to_which_other_services_can_this_service_be_added").closest(".itemFU")).hide();
-			$("#to_which_other_services_can_this_service_be_added").on('click',"li",function(){
-				var value = $(this).data('value');
-				if (value == "select which service(s)"){
-					slideFadeIn($("#ServiceMap"));
-				}else{
-					slideFadeOut($("#ServiceMap"));
-				}
-			})
-			// console.log($("#ServiceMap").data('currentaddonservices'));
-		}
-
-		if (json != undefined){
-		    fillForm(json,form);
-		}
-
-	    $(".settingsForm").on("mousedown touchstart",function(e){
-	        var btn = $(".displayOptions").filter(function(){return $(this).find(".options").is(":visible");}).find(".showOptions"), t = $(e.target);
-	        if (btn.length > 0 && t.closest(".options").length == 0 && !t.hasClass("showOptions")){btn.click();}
-	    })	
-	}
-	settingsForm.data('initialized',true);
-}
-var defaultSectionOptions = {
-	"dynamic":["always display"],
-	"complaint_types":[]
-}
-
-function showOptions(){
-    var p = $(this).parent(), t = $(this), 
-    	sectionOptions = ($(this).closest(".section").data('settings') != undefined) ? $(this).closest(".section").data('settings') : defaultSectionOptions, 
-    	item;
-    $(".showOptions").filter(function(){return $(this).text() == 'close';}).click();
-    $.each(sectionOptions,function(name,value){
-        item = p.find("#"+name);
-        if (item.is(".radio")){
-        	item.find("li[data-value='"+value[0]+"']").addClass('active');
-        }else if (item.is(".checkboxes")){
-        	item.find("li").filter(function(){
-        		return $.inArray($(this).data('value'),value) > -1;
-        	}).addClass('active');
-        }
-    })
-    slideFadeIn(p.find(".options"));
-    p.addClass('active');
-    $(this).text('close');
-    $(this).off('click',showOptions).on('click',hideOptions);
-}
-function updateSectionOptions(){
-	var section = $(this).closest(".section"), p = $(this).closest(".displayOptions"), settings = p.find("ul"), name, value = [], active, settingsObj = {};
-	settings.each(function(s,setting){
-		value = [];
-		name = $(setting).data("name");
-		active = $(setting).find('.active');
-		active.each(function(){
-			value.push($(this).data('value'));
-		});
-		settingsObj[name] = value;
+	var settingsForm = filterByData(".settingsForm",'hasCurrentSettings',false);
+	settingsForm.each(function(){
+		var json = $(this).data('settingsjson');
+		if(json !== ""){
+			fillForm(json,$(this));
+		}		
 	})
-	section.data('settings',settingsObj);
-	// console.log(section.data('settings'));
+	settingsForm.data('hasCurrentSettings',true);
+	initializeSuperUserOptions();
 }
-function saveSectionSettings(){
-	var sections = $("#SectionSettings").find(".section"), json = $("#SectionSettings").data('json'), 
-		uid = $("#SectionSettings").find(".formDisp").data('uid'), obj, sectionsObj = json['sections'], section;
-
-	for (x = 0; x < sections.length; x++){
-		section = $(sections[x]);
-		obj = section.data('settings');
-		json['sections'][x]['settings'] = obj;
+function initializeAddOnServiceItem(){
+	var ul = $('#ServiceSettingsForm').find('.combine_with_which_services'), item = filterByData(ul,'hasAddOnFx',false), serviceLIs = $("#ServiceMap").find('li');
+	item.find('li').last().replaceWith(serviceLIs);
+	item.find('li').filter('[data-value="ALL Services"]').on('click',masterCheckbox);
+	item.data('hasAddOnFx',true);
+}
+function initializeSuperUserOptions(){
+	var model = $(".settingsForm").data('model');
+	if (model == 'Form'){
+		$(".answer.form_type").append("<li data-value='system'>system</li>");
 	}
-	obj = JSON.stringify(json);
-	$.ajax({
-		method:"PATCH",
-		url: "/save/Form/" + uid,
-		data: {
-			full_json: obj
-		}
-	})
-}
-function hideOptions(){
-    var p = $(this).parent(), t = $(this);
-    p.removeClass('active');
-    slideFadeOut(p.find(".options"),400,function(){t.text('dynamic display settings');});
-    $(this).off('click',hideOptions).on('click',showOptions);
 }
 function saveSettings(){
 	var form = $("#ModelSettings"), formWrap = form.closest(".settingsForm"), model = formWrap.data('model'),
 		obj = checkForm(form), connectedModelArr = checkConnectedModels(model), uid = formWrap.data('uid'),
-		url = "/save/settings/" + model + "/" + uid, columnObj = constructColumnSettingsObj(model, form),
-		settings = constructEasyAccessList(model, form);
+		url = "/save/settings/" + model + "/" + uid, columnObj = constructSettingsObj(model, form);
 
-	if (model == 'Form'){
-		saveSectionSettings();
-	}
 	if (obj){
 		blurTopMost("#loading");
 		var data = {
@@ -158,10 +146,7 @@ function saveSettings(){
 			connectedModels: JSON.stringify(connectedModelArr),
 			columnObj: JSON.stringify(columnObj)
 		};
-		if (settings){
-			data['settings'] = JSON.stringify(settings);
-		}
-
+		console.log(data);
 		$.ajax({
 			url: url,
 			method: "PATCH",
@@ -173,10 +158,6 @@ function saveSettings(){
 					setTimeout(function(){
 						reloadTab();
 					},800)
-				}else if (data != 'no changes'){
-					console.log(data);
-					$("#Error").find(".message").text("Error saving settings");
-					blurTopMost("#Error");
 				}
 			}
 		})
@@ -184,7 +165,7 @@ function saveSettings(){
 		return false;
 	}
 }
-function constructColumnSettingsObj(model,form){
+function constructColumnAttributesObj(model,form){
 	var obj = {};
 	if (model == 'Service'){
 		obj = {
@@ -227,26 +208,60 @@ function constructColumnSettingsObj(model,form){
 	// console.log(obj);
 	return obj;
 }
-function constructEasyAccessList(model, form){
-	var obj = {};
-	if (model == 'Service'){
-	}
-	else if (model == 'Code'){
-	}
-	else if (model == 'ServiceCategory'){
-	}
-	else if (model == 'Form'){ 
-		var requirement = form.find(".how_often").is(":visible") ? justResponse(form.find(".how_often")) : form.find(".require_this_form_for_all_new_patients_at_registration");
-		obj['form_type'] = justResponse(form.find(".select_form_type"));
-		obj['admin_only'] = (justResponse(form.find(".require_admin_privileges_to_use_this_form"))!==null) ? justResponse(form.find(".require_admin_privileges_to_use_this_form")) : "no restriction";
-		obj['portal_listing'] = (justResponse(form.find(".add_this_form_to_patient_portal"))!==null) ? justResponse(form.find(".add_this_form_to_patient_portal")) : "never";
-		obj['in_office'] = (justResponse(form.find(".will_patients_complete_this_form_in-office_only"))!==null) ? justResponse(form.find(".will_patients_complete_this_form_in-office_only")) : "never";
-		// obj['required_every'] = justResponse(form.find(".require_this_form_to_be_completed_periodically").closest(".item").find("#how_often"));
-		if (form.find(".how_often").is(":visible")){
-			obj['required'] = justResponse(form.find(".how_often"));
-		}else{
-			obj['required'] = justResponse(form.find(".require_once_at_registration")) == 'yes' ? 'at registration only' : 'never';
+function constructSettingsObj(model, form){
+	var settingsList = settingsMap[model], input, obj = {settings:{}};
+	$.each(settingsList,function(inputName,details){
+		input = form.find('input, ul, select').filter('[data-name="'+inputName+'"]');
+		if (input.is(":visible") && details.column == 'settings'){
+			obj['settings'][details.name] = interpretSettingResponse(details,input);
+		}else if (input.is(":visible")){
+			obj[details.column] = interpretSettingResponse(details,input);
+		}else if (!input.is(":visible") && details.column == 'settings'){
+			console.log(input,inputName);
+			obj['settings'][details.name] = settingsNullResponse(details);
+		}else if (!input.is(":visible")){
+			console.log(input,inputName);
+			obj[details.column] = settingsNullResponse(details);
 		}
+	})
+	// if ($.isEmptyObject(obj['settings'])) obj['settings'] = null;
+	return obj;
+}
+function interpretSettingResponse(settingDetails,input){
+	var type = settingDetails.valueType;
+	if (type == 'literal'){return justResponse(input);}
+	else if (type == 'boolean'){return turnToBoolean(justResponse(input));}
+	else if (type == 'function'){
+		var fx = settingDetails.function;
+		// console.log(fx);
+		return fx(input);
+	}
+}
+function settingsNullResponse(settingDetails){
+	var type = settingDetails.valueType;
+	if (type == 'literal'){return null;}
+	else if (type == 'boolean'){return false;}
+	else if (type == 'function'){return null;}
+}
+function constructSettingsAttribute(model, form){
+	var obj = {};
+	if (model == 'Form'){
+		// var requirement = form.find(".how_often").is(":visible") ? justResponse(form.find(".how_often")) : form.find(".require_this_form_for_all_new_patients_at_registration");
+		// obj['form_type'] = justResponse(form.find(".select_form_type"));
+		// obj['admin_only'] = (justResponse(form.find(".require_admin_privileges_to_use_this_form"))!==null) ? justResponse(form.find(".require_admin_privileges_to_use_this_form")) : "no restriction";
+		// obj['portal_listing'] = (justResponse(form.find(".add_this_form_to_patient_portal"))!==null) ? justResponse(form.find(".add_this_form_to_patient_portal")) : "never";
+		// obj['in_office'] = (justResponse(form.find(".will_patients_complete_this_form_in-office_only"))!==null) ? justResponse(form.find(".will_patients_complete_this_form_in-office_only")) : "never";
+		// if (form.find(".how_often").is(":visible")){
+		// 	obj['required'] = justResponse(form.find(".how_often"));
+		// }else{
+		// 	obj['required'] = justResponse(form.find(".require_once_at_registration")) == 'yes' ? 'at registration only' : 'never';
+		// }
+		var settingsInputs = form.find(".answer").filter(":visible");
+		settingsInputs.each(function(){
+
+		})
+		console.log(form.find(".answer").filter(":visible"));
+		obj = null;
 	}
 	else if (model == 'Patient'){
 		var appts = turnToBoolean(justResponse(form.find(".appointment_reminders"))), 
@@ -281,4 +296,15 @@ function constructEasyAccessList(model, form){
 	if ($.isEmptyObject(obj)){obj = null;}
 	console.log(obj);
 	return obj;	
+}
+function getAddOnServiceIdsFromNames(input){
+	var response = justResponse(input, true), returnArr = [], map = $("#ServiceMap").data('map');
+	if (response == "ALL Services"){
+		return null;
+	}else{
+		$.each(response,function(r,resp){
+			returnArr.push(map[resp]);
+		})
+		return returnArr;
+	}
 }

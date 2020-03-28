@@ -23,7 +23,6 @@
         "laravel/framework": "^6.0",
         "laravel/tinker": "^1.0",
         "moontoast/math": "^1.1",
-        "predis/predis": "^1.1",
         "twilio/sdk": "^5.34"
     },
     "require-dev": {
@@ -61,10 +60,6 @@
     "minimum-stability": "dev",
     "prefer-stable": true,
     "scripts": {
-        "post-autoload-dump": [
-            "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
-            "@php artisan package:discover --ansi"
-        ],
         "post-root-package-install": [
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
         ],
@@ -73,7 +68,11 @@
         ],
         "post-install-cmd": [
             "chmod -R 755 bootstrap\/cache",
-            "php artisan optimize:clear"
+            "php artisan cache:clear"
+        ],
+        "post-autoload-dump": [
+            "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
+            "@php artisan package:discover --ansi"
         ]
     }
 }

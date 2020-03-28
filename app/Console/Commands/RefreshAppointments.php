@@ -44,15 +44,9 @@ class RefreshAppointments extends Command
         $service = app('GoogleCalendar');
         $practiceId = $this->argument('practiceId');
         $apptCount = $this->option('factory');
-        // $calendarId = practiceConfig('practices')[$practiceId]['app']['calendarId'];
-        // $database = practiceConfig('practices')[$practiceId]['app']['database'];
-        // $appt = new Appointment;
         $practice = Practice::find($practiceId);
         $practice->reconnectDB();
         $calendarId = $practice->calendar_id;
-        // $database = $practice->dbname;
-        // config(['database.connections.mysql.database' => $database]);
-
 
         $result = $practice->clearCalendar();
         if ($result){
@@ -84,10 +78,8 @@ class RefreshAppointments extends Command
         }
         RefreshTables::clearSubmissionTables();
         $this->info('Submission table cleared.');
-
-        // Practice::updateEntireEventFeed($practiceId);
-        // $active = Storage::disk('local')->get('active.json');
-        // $active = json_decode($active,true);
+        RefreshTables::clearChartNoteTables();
+        $this->info('Chart Note table cleared.');
 
         setActiveStorage('Practice',$practice->practice_id);
         $practice->updateEntireEventFeed();

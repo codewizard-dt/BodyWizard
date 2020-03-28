@@ -4,6 +4,7 @@ function initializeApptForms(){
     $("#createAppointment, #editAppointment").find(".item").hide();
  	$("#editAppointment").find("h1").first().text("Edit Appointment");
     $(".ChangeTitle").attr('id','ChangeTitle');
+    $("#ChangeTitle").addClass('purple');
 
     var uninitialized = filterUninitialized('#EditApptBtn, #DeleteApptBtn, #ApptDetails, #FormInfo, .selector, .selectPractitioner, #SelectTime, #PractitionerSelector, #SelectOrRandom, #booknow, #SelectServices, #ChartNoteBtn');
 	uninitialized.filter("#EditApptBtn").on('click',function(){
@@ -148,7 +149,7 @@ function activateServiceSelection(){
 	removeServiceBtn.on('click',removeService);
 	// removeServiceBtn.on('click',goForward);
 	
-	var dateSelect = filterUninitialized('.DateSelector');
+	var dateSelect = filterByData('.DateSelector','hasUpdateFx',false);
 	dateSelect.each(function(){
 		$(this).datepick('destroy');
 		var options = {
@@ -169,7 +170,7 @@ function activateServiceSelection(){
 	durationItems.data('initialized',true);
 	patientItems.data('initialized',true);
 	timepicker.data('initialized',true);
-	dateSelect.data('initialized',true);
+	dateSelect.data('hasUpdateFx',true);
 	serviceBtn.data('initialized',true);
 	removeServiceBtn.data('initialized',true);	
 }
@@ -277,6 +278,7 @@ function resetEntireAppt(){
 	};
 }
 function updateDate(date){
+	console.log(activeForm,date);
     updateAppointment({date:date,time:null,datetime:null});
     updateAvailableTimes(activeForm);
     addDetail('date',date);
@@ -804,6 +806,9 @@ function updateFormInfo(forms){
     	$("#FormInfo").append("<div>none</div>");
     }
 }
+function updateChartNoteBtn(noteInfo){
+	$("#ChartNoteBtn").data('info',noteInfo);
+}
 
 function selectCategory(){
 	// console.log($(this).data());
@@ -826,14 +831,14 @@ function confirmApptDelete(){
 		dateStr = apptTime.format("h:mma [on] dddd MMMM Do, YYYY");
 	if (usertype != 'patient'){
 		var name = $("#PatientName").text();
-		text = "<h3 class='purple'>"+name+"<br>"+dateStr+"</h3><label><input id='DoNotSendEmail' type='checkbox'>do not send cancellation email</label>";
+		text = "<h3 class='purple flexbox'><span>"+name+"</span><span>"+dateStr+"</span></h3><label><input id='DoNotSendEmail' type='checkbox'>do not send cancellation email</label>";
 		if (feeIncursion){text+="<br><label><input id='AutoChargeCancelFee' type='checkbox'>auto-charge cancellation fee</label>";}
 	}else{
 		text = "<div>You are about to cancel your appointment on "+dateStr+".</div>";
 		if (feeIncursion){text += "<div class='paddedSmall'>Cancelling now will incur a cancellation fee because it is within 24hrs of your appointment.</div>";}
 		text += "<label><input id='DoNotSendEmail' type='checkbox'>do not send cancellation email</label>";
 	}
-	confirm('Cancelling Appointment',text+'<h3 class="pink">Are you sure?</h3>','yes, cancel it','no, do not cancel');
+	confirm('Cancelling Appointment',text+'<h3 class="pink paddedSmall topOnly">Are you sure?</h3>','yes, cancel it','no, do not cancel');
 	var wait = setInterval(function(){
 		if (confirmBool != undefined){
 			var obj = {};
@@ -1100,6 +1105,7 @@ function loadPatientCal(target){
         },
         eventClick: function(info){
             var ev = info.event, details = $.extend(true, {}, ev.extendedProps), patients = details.patients, practitioner = details.practitioner, services = details.services, patientIds = details.patientIds, practitionerId = details.practitionerId, serviceIds = details.serviceIds, forms = details.forms, dateTime = moment(ev.start), uid = details.bodywizardUid, type = details.type, ele = $(info.el), title = ev.title;
+            // console.log(ev,details);
             resetEntireAppt();
             if (ele.hasClass('appointment')){
                 activeForm = $("#editAppointment");
@@ -1184,7 +1190,7 @@ function loadPractitionerCal(target){
                 moveServiceSelect("#editAppointment",false);
                 movePracTimeSelect("#editAppointment",false);
                 moveDetails('#editAppointment');
-                console.log(serviceIds);
+                console.log(details);
                 updateAppointment({
                     patient:patientIds[0],
                     practitioner:practitionerId,
@@ -1199,6 +1205,7 @@ function loadPractitionerCal(target){
                 $("#ApptDateTime").data('dateTime',dateTime);
                 $("#ServiceInfo").text(services);
                 updateFormInfo(forms);
+                updateChartNoteBtn(details.noteInfo);
                 // loadApptInfo(patientIds,practitionerId,serviceIds,dateTime,$("#editAppointment"));
                 blurElement($("body"),"#ApptInfo");                
             }
@@ -1265,5 +1272,21 @@ function overrideService(){
     $("#CategoryDetails").find(".active").removeClass('active');
     $("#CategoryDetails").fadeIn();
 }
-function checkForChartNote(){   
+function checkForChartNote(){
+	var info = $("#ChartNoteBtn").data('info');
+	console.log(info);
+	if (info === null){
+		confirm('No Chart Note',"There is no chart note for this appointment yet. <h3 class='pink'>Create chart note now?</h3>", 'yes, create','not now', null, loadChartNoteInEditor);
+	}
+	else if (info.status == 'not signed'){
+		confirm('Unsigned Chart Note',"There's an unsigned chart note for this appointment. <h3 class='pink'>Do you want to edit it?</h3>",'yes, edit','not now',null,loadChartNoteInEditor);
+	}else{
+		confirm('Chart Note Complete',"The chart note for this appointment is already signed. <h3 class='pink'>View chart note?</h3>",'yes, view','not now',null,function(){alert('hi')});
+	}
+	return false;
+}
+function loadChartNoteInEditor(){
+	// console.log('hey');
+	unblurAll();
+	clickTab("chart-note-create");
 }

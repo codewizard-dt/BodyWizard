@@ -3,16 +3,34 @@
 namespace App;
 
 use App\Traits\TrackChanges;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\Encryptable;
 
 class Invoice extends Model
 {
+    use TrackChanges;
+    use Encryptable;
+
+    protected $casts = [
+        'status' => 'array',
+        'notes' => 'array',
+        'payments' => 'array',
+        'line_items' => 'array',
+        'paid_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'created_at' => 'datetime'
+    ];
+    protected $hidden = ['autosave'];
+    public $auditOptions;
+
+
     public function __construct($attributes = []){
         parent::__construct($attributes);
         $this->auditOptions = [
-            'audit_table' => 'patients_audit',
+            'audit_table' => 'invoices_audit',
             'includeFullJson' => false
         ];
     }
@@ -26,14 +44,14 @@ class Invoice extends Model
             $arr = [
                         'columns' => 
                         [
-                            ["label" => 'Patient',
-                            "className" => 'patient',
-                            "attribute" => 'patient_name'],
+                            ["label" => 'Invoice',
+                            "className" => 'name',
+                            "attribute" => 'name'],
                             ["label" => 'Date',
                             "className" => 'date',
                             "attribute" => 'date'],
-                            ["label" => 'Charges',
-                            "className" => 'charges',
+                            ["label" => 'Total',
+                            "className" => 'total',
                             "attribute" => 'amount'],
                             ["label" => 'Status',
                             "className" => 'status',
@@ -48,7 +66,6 @@ class Invoice extends Model
                         ],
                         'orderBy' => [
                             ['updated_at',"desc"],
-                            // ['version_id',"desc"]
                         ]
             ];
         }elseif ($usertype == 'patient'){
@@ -82,4 +99,44 @@ class Invoice extends Model
         }
         return array_merge($commonArr,$arr);
     }
+    public static function moreOptions(){
+
+    }
+    public function invoicee(){
+        return $this->belongsTo('App\User','invoiced_to_user_id');
+    }
+    public function appointment(){
+        return $this->hasOne('App\Appointment');
+    }
+    public function getNameAttribute(){
+        return $this->invoicee->name.' '.$this->created_at;
+    }
+    public function getCreatedAtAttribute($value){
+        $date = new Carbon($value);
+        return $date->format('n/j g:ia');
+    }    
+    public function getPaidAtAttribute($value){
+        $date = $value ? new Carbon($value) : null;
+        return $date ? $date->format('n/j g:ia') : 'not paid';
+    }    
+    public function getLineItemsAttribute($value){
+        return $this->decryptKMS($value);
+    }
+    public function setLineItemsAttribute($value){
+        $this->attributes['line_items'] = $this->encryptKms($value);
+    }
+    public function getNotesAttribute($value){
+        return $this->decryptKMS($value);
+    }
+    public function setNotesAttribute($value){
+        $this->attributes['notes'] = $this->encryptKms($value);
+    }
+    public function getAutosaveAttribute($value){
+        return $this->decryptKMS($value);
+    }
+    public function setAutosaveAttribute($value){
+        $this->attributes['autosave'] = $this->encryptKms($value);
+    }
+
+
 }

@@ -46,17 +46,19 @@ class Practice extends Model
         $host = $request->getHost();
         $practices = Practice::where('host',$host)->get();
         $practice = ($practices->count() == 0) ? Practice::find('body_wizard_medicine_8f935c6718b4402') : $practices->first();
+        if ($practices->count() > 1) reportError('Multiple practices with the same host: '.$practice->host,['location'=>'Practice.php 49']);
         return $practice ? $practice : null;
     }
     public static function getFromSession(){
         if (app()->runningInConsole()){
             $practiceId = getActiveStorage('Practice');
-            return Practice::find($practiceId);
+            $practice = Practice::find($practiceId);
         }elseif (session('practiceId') !== null){
-            return Practice::find(session('practiceId'));
+            $practice = Practice::find(session('practiceId'));
         }else{
-            return null;
+            $practice = null;
         }
+        return $practice;
     }
 
     public function setAppointmentsEncAttribute($value){
@@ -162,7 +164,33 @@ class Practice extends Model
             return $array;
         }
     }
-
+    public function getAvailablePaymentMethodsAttribute(){
+        $settings = $this->settings;
+        return ($settings && isset($settings['paymentMethods'])) ? $settings['paymentMethods'] : ['cash','check'];
+    }
+    public function getCurrencyAttribute(){
+        $settings = $this->settings;
+        $abbr = ($settings && isset($settings['currency'])) ? $settings['currency'] : 'usd';
+        $symbolMap = [
+            'dollars' => '$'
+        ];
+        $map = [
+            'usd' => ['currency'=>'dollars','symbol'=>'$','abbr'=>'usd']
+        ];
+        try{
+            if (!isset($map[$abbr])) throw new \Exception("Currency abbreviation not found: 'abbr'");
+            $currency = $map[$abbr];
+        }catch(\Exception $e){
+            reportError($e, 'Practice.php 184');
+            $currency = $map['usd'];
+        }
+        return $currency;
+    }
+    public function getTaxOptionsAttribute(){
+        $settings = $this->settings;
+        $taxOptions = ($settings && isset($settings['taxOptions'])) ? $settings['taxOptions'] : [];
+        return $taxOptions;
+    }
 
     public function reconnectDB(){
         $dbname = $this->dbname;
@@ -192,7 +220,7 @@ class Practice extends Model
             }
         }
         catch(\Exception $e){
-            reportError($e);
+            reportError($e, 'Practice.php 223');
             $events = null;
         }
 
@@ -283,20 +311,8 @@ class Practice extends Model
                 }
             }
 
-            $appointmentData = Appointment::whereIn('uuid',$apptIds)->with('services','patients','practitioner')->get()->map(function($appt){
-                $arr = [
-                    'services' => $appt->service_list,
-                    'patients' => $appt->patient_list,
-                    'serviceIds' => $appt->services->modelKeys(),
-                    'patientIds' => $appt->patients->modelKeys(),
-                    'status' => $appt->status,
-                    'bodywizardUid' => $appt->id,
-                    'googleUuid' => $appt->uuid,
-                    'practitioner' => $appt->practitioner->name,
-                    'practitionerId' => $appt->practitioner->id,
-                    'type' => "EHR:appointment"
-                ];
-                return $arr;
+            $appointmentData = Appointment::whereIn('uuid',$apptIds)->with('services','patients','practitioner','chartNote')->get()->map(function($appt){
+                return $appt->getDetailsForFullCal();
             });
             foreach ($appointmentData as $apptDetails){
                 $uuid = $apptDetails['googleUuid'];
@@ -322,7 +338,7 @@ class Practice extends Model
             // Log::info($this);
             $this->save();
         }catch(Exception $e){
-            reportError($e);
+            reportError($e,'practice.php 341');
         }
 
         return isset($e) ? $e : true;
@@ -362,7 +378,7 @@ class Practice extends Model
     	      $createdCalendar = $service->calendars->insert($calendar);
     	      $calendarId = $createdCalendar->getId();
     	    }catch(\Exception $e){
-              reportError($e);
+              reportError($e,'Practice.php 381');
     	    }
 
     	    return isset($e) ? $e : $calendarId;
@@ -382,7 +398,7 @@ class Practice extends Model
             try{
     	      $createdRule = $service->acl->insert($calId, $rule);
     	    }catch(\Exception $e){
-                reportError($e);
+                reportError($e,'Practice.php 401');
     	    }
     	    return isset($e) ? $e : $calId;
     	}
@@ -398,7 +414,7 @@ class Practice extends Model
     	      $watch = $service->events->watch($calendarId, $channel);
               $newConfig = ["id" => $watch->getId(), "expires" => $watch->getExpiration()];
     	    }catch (\Exception $e){
-              reportError($e);
+              reportError($e,'Practice.php 417');
     	    }
     	    return isset($e) ? $e : $newConfig;
     	}
@@ -428,7 +444,7 @@ class Practice extends Model
                 config(['database.connections.mysql.database' => $dbname]);
                 Artisan::call("migrate");
     	    }catch(\Exception $e){
-              reportError($e);
+              reportError($e,'Practice.php 447');
     	    }
 
     	    return isset($e) ? $e : true;
@@ -438,7 +454,7 @@ class Practice extends Model
             try{
                 Artisan::call("refresh:users $practiceId --factory");
             }catch(\Exception $e){
-                reportError($e);
+                reportError($e,'Practice.php 457');
             }
             return isset($e) ? $e : true;
         }
@@ -462,7 +478,7 @@ class Practice extends Model
     	    try{
     	      $key = $kms->createCryptoKey($keyRing, $keyName, $key);  
     	    }catch(\Exception $e){
-                reportError($e);
+                reportError($e,'Practice.php 481');
     	    }
     	    
     	    return isset($e) ? false : $key->getName();
@@ -473,7 +489,7 @@ class Practice extends Model
     	      $forms = json_decode(Storage::get('/basicEhr/forms.json'),true);
     	      DB::table('forms')->insert($forms);
     	    }catch(\Exception $e){
-                reportError($e);
+                reportError($e,'Practice.php 492');
     	    }
     	    return isset($e) ? $e : true;
     	}

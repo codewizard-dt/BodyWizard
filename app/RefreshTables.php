@@ -9,21 +9,35 @@ use App\Practitioner;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
-
+use Illuminate\Support\Facades\DB;
 
 class RefreshTables extends Model
 {
     //
+    public static function clearAuditTables($modelsArr){
+        try{
+            $tableNames = collect($modelsArr)->map(function($modelName){
+                return snake(plural($modelName)).'_audit';
+            })->toArray();
+            foreach ($tableNames as $table){
+                DB::table($table)->truncate();
+            }
+            return true;
+        }catch(\Exception $e){
+            return $e;
+        }
+    }
     public static function clearUserTables(){
     	try{
 			Artisan::call("migrate:refresh --path database/migrations/2014_10_12_000000_create_users_table.php");
-			Artisan::call("migrate:refresh --path database/migrations/2019_08_15_103817_create_users_audit_table.php");
+			// Artisan::call("migrate:refresh --path database/migrations/2019_08_15_103817_create_users_audit_table.php");
 			Artisan::call("migrate:refresh --path database/migrations/2019_08_14_203443_create_practitioners_table.php");
-			Artisan::call("migrate:refresh --path database/migrations/2019_08_20_095146_create_practitioners_audit_table.php");
+			// Artisan::call("migrate:refresh --path database/migrations/2019_08_20_095146_create_practitioners_audit_table.php");
 			Artisan::call("migrate:refresh --path database/migrations/2019_08_14_132627_create_staff_members_table.php");
-			Artisan::call("migrate:refresh --path database/migrations/2019_08_20_095244_create_staff_members_audit_table.php");
+			// Artisan::call("migrate:refresh --path database/migrations/2019_08_20_095244_create_staff_members_audit_table.php");
 			Artisan::call("migrate:refresh --path database/migrations/2019_08_14_132458_create_patients_table.php");
-			Artisan::call("migrate:refresh --path database/migrations/2019_08_20_095220_create_patients_audit_table.php");
+			// Artisan::call("migrate:refresh --path database/migrations/2019_08_20_095220_create_patients_audit_table.php");
+            RefreshTables::clearAuditTables(['user','practitioner','staff member','patient']);
 			return true;
     	}catch(\Exception $e){
     		return $e;
@@ -31,9 +45,11 @@ class RefreshTables extends Model
     }
     public static function clearApptTables(){
         try{
+            Invoice::where('appointment_id','!=',null)->delete();
             Artisan::call("migrate:refresh --path database/migrations/2019_05_29_164721_create_appointments_table.php");
-            Artisan::call("migrate:refresh --path database/migrations/2019_09_16_163133_create_appointments_audit_table.php");
+            // Artisan::call("migrate:refresh --path database/migrations/2019_09_16_163133_create_appointments_audit_table.php");
             Artisan::call("migrate:refresh --path database/migrations/2019_09_18_132210_create_appointmentables_table.php");
+            RefreshTables::clearAuditTables(['appointment']);
             return true;
         }catch(\Exception $e){
             return $e;
@@ -42,6 +58,17 @@ class RefreshTables extends Model
     public static function clearSubmissionTables(){
         try{
             Artisan::call("migrate:refresh --path database/migrations/2019_05_29_154608_create_submissions_table.php");
+            Artisan::call("migrate:refresh --path database/migrations/2020_02_17_231953_create_submissionables_table.php");
+            return true;
+        }catch(\Exception $e){
+            return $e;
+        }        
+    }
+    public static function clearChartNoteTables(){
+        try{
+            Artisan::call("migrate:refresh --path database/migrations/2019_07_10_173634_create_chart_notes_table.php");
+            // Artisan::call("migrate:refresh --path database/migrations/2020_01_02_183757_create_chart_notes_audit_table.php");
+            RefreshTables::clearAuditTables(['chart note']);            
             return true;
         }catch(\Exception $e){
             return $e;
@@ -116,7 +143,7 @@ class RefreshTables extends Model
                      ->create();
             return true;
         }catch(\Exception $e){
-            reportError($e);
+            reportError($e,'RefreshTables 145');
             return false;
         }
     }

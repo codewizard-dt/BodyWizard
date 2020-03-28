@@ -27,7 +27,6 @@
 		$noPW = "";
 		$user = false;
 	}
-	// $noPW = (in_array($model,['User','Patient','Practitioner','StaffMember']) && Auth::check()) ? "noPW" : "";
 	$admin = (Auth::user()->is_admin) ? "admin" : "";
 ?>
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Appointment;
+use App\ChartNote;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -30,69 +31,30 @@ class AppointmentController extends Controller
         return view("portal.$usertype.appointments.display");        
     }
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
-    {
-        //
+    public function getChartNote($uid, Request $request){
+        try{
+            $appt = Appointment::findOrFail($uid);
+            $chartNote = $appt->chartNote;
+            return $chartNote ? $chartNote : 'null';
+        }catch(\Exception $e){
+            reportError($e,'AppointmentController 40');
+            return 'null';
+        }
     }
-
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
-    public function store(Request $request)
-    {
-        //
+    public function editChartNote($uid, Request $request){
+        return view('portal.practitioner.chart_notes.edit',['apptId'=>$uid]);
     }
-
-    /**
-     * Display the specified resource.
-     *
-     * @param  \App\Appointment  $appointment
-     * @return \Illuminate\Http\Response
-     */
-    public function show(Appointment $appointment)
-    {
-        //
+    public function getInvoice($uid, Request $request){
+        try{
+            $appt = Appointment::findOrFail($uid);
+            $invoice = $appt->invoice;
+            return $invoice ? $invoice : 'null';
+        }catch(\Exception $e){
+            reportError($e,'AppointmentController 53');
+            return 'null';
+        }
     }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  \App\Appointment  $appointment
-     * @return \Illuminate\Http\Response
-     */
-    public function edit(Appointment $appointment)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Appointment  $appointment
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, Appointment $appointment)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  \App\Appointment  $appointment
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy(Appointment $appointment)
-    {
-        //
+    public function editInvoice($uid, Request $request){
+        return view('portal.practitioner.invoices.edit',['apptId'=>$uid]);
     }
 }

@@ -120,11 +120,13 @@
             <script type="text/javascript" src="{{asset('/js/mark/jquery.mark.js')}}"></script>
             <script type='text/javascript' src="{{asset('/js/summernote-lite.min.js')}}"></script>
             <script type='text/javascript' src='{{asset("/js/launchpad/forms.js")}}'></script>
+            <script type='text/javascript' src='{{asset("/js/launchpad/chartnotes.js")}}'></script>
+            <script type='text/javascript' src='{{asset("/js/launchpad/invoices.js")}}'></script>
             <script type='text/javascript' src="{{asset('/js/launchpad/save-model.js')}}"></script>
             <script type='text/javascript' src="{{asset('/js/launchpad/model-table.js')}}"></script>
             <script type='text/javascript' src="{{asset('/js/launchpad/model-settings.js')}}"></script>
             <script type='text/javascript' src="{{asset('/js/jSignature.min.js')}}"></script>
-
+            <script src="https://js.stripe.com/v3/"></script>
             @include ('schedules.scripts')
         @yield('scripts')
 

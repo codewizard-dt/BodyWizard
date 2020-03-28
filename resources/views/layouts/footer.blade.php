@@ -13,7 +13,7 @@
             <div class='icons'>
                 <a href='http://facebook.com/bodywizardmedicine' target="_blank"><div id='fb'></div></a>
                 <a href='http://instagram.com/spiritwizardry' target='_blank'><div id='ig'></div></a>
-                <a href='http://youtube.com/spiritwizardry'><div id='youtube'></div></a>
+                <a href='http://youtube.com/spiritwizardry' target='_blank'><div id='youtube'></div></a>
             </div>
             <br>
             <div class='button booknow pink small'>BOOK AN APPOINTMENT</div>

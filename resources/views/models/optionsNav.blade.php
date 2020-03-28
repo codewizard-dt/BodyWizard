@@ -17,7 +17,7 @@
 		}
 		if ($model == 'Diagnosis' && $uid != null){
 			$instanceType = $class::find($uid)->medicine_type;
-			$uid = ($instanceType != $type) ? null : $uid;
+			$uid = (isset($type) && $instanceType != $type) ? null : $uid;
 		}
 
 		if ($uid===null and $count > 0){
@@ -56,9 +56,6 @@
 				$userId = $instance->user_id;
 			}else{
 				$jsonStr = isset($instance->full_json) ?  str_replace("'","\u0027",$instance->full_json) : null;
-				$userType = isset($instance->user_type) ? $instance->user_type : null;
-				$isAdmin = isset($instance->is_admin) ? $instance->is_admin : null;
-				$userId = isset($instance->user_id) ? $instance->userInfo->user_id : null;
 				$markupStr = isset($instance->markup) ?  $instance->markup : null;
 			}
 			if ($model == "Form" && Auth::user()->user_type == "patient"){
@@ -66,11 +63,25 @@
 				if ($submission){$extraData[] = ['lastsubmission',$submission->id];}
 			}
 
+			// ADDING OPTIONSNAV BUTTONS BASED ON ATTRIBUTES
+				if ($model == 'ChartNote'){
+					if ($instance->signed_at == 'not signed'){
+						$destinations = ['edit'];
+						$btnText = ['continue note'];
+					}else {
+						$destinations = ['view','addNote'];
+						$btnText = ['view','add addendum'];
+					}
+				}
+				if ($model == 'Form'){
+					if (!$instance->active) {
+						$destinations[] = 'setAsActiveForm';
+						$btnText[] = 'use this version';
+					}
+				}
+
 			if ($markupStr){$extraData[] = ['markup',$markupStr];}
 			if ($jsonStr){$extraData[] = ['json',$jsonStr];}
-			if ($userType){$extraData[] = ['usertype',$userType];}
-			if ($isAdmin){$extraData[] = ['isadmin',$isAdmin];}
-			if ($userId){$extraData[] = ['userid',$userId];}
 
 			$modelArr = null;
 			if (isset($instance->connectedModels)){
@@ -102,7 +113,7 @@
 						}
 					}
 					catch(\Exception $e){
-						dd($e);
+						reportError($e,'optionsNav 109');
 					}
 				}
 			}
@@ -114,19 +125,17 @@
 	catch(\Exception $e){
 		reportError($e,'optionsNav 120');
 	}
-	$currentTabs = (session('CurrentTabs') !== null) ? session('CurrentTabs') : null;
-	$uids = (session('uidList') !== null) ? session('uidList') : null;
 ?>
 
 <div class="optionsNavWrapper">
 	@if (!isset($e))
-		<h3 class="optionsNavHeader purple paddedSmall topOnly">Currently Selected {{$model}}</h3>
+		<h3 class="optionsNavHeader purple paddedSmall topOnly">{{$nameText}}</h3>
 		<div id="Current{{$nospaces}}" class="optionsNav {{implode(' ', $extraClasses)}}" data-model="{{$model}}" data-uid="{{$uid}}">
 			<div class="navHead">
 				<span class="optionsBar">
 					<span class="name" data-uid="{{$uid}}" 
 					@foreach ($extraData as $data) data-{{$data[0]}}='{{$data[1]}}'@endforeach
-					>{{$nameText}}</span>
+					></span>
 				</span>
 			</div>
 			<div class="navDetails">

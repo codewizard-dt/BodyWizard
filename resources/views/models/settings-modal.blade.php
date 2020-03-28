@@ -42,48 +42,51 @@ if ($model == 'Form'){
 	$formJson = str_replace("'","\u0027",$instance->full_json);
 }elseif ($model == 'Service'){
 	$services = App\Service::orderBy('service_category_id','asc')->orderBy('display_order','asc')->get();
-	$serviceNames = ["ID*ServiceNames"];
-	$serviceMap = [];
-	foreach ($services as $service){
-		$new = [
-			"id" => $service->id,
-			"name" => $service->name,
-		];
+	$serviceNames = $services->map(function($service){return $service->name;})->toArray();
+	$serviceNames[] = "ID*ServiceNames"; $serviceMap = [];
+	$services->each(function($service) use (&$serviceMap){
 		$serviceMap[$service->name] = $service->id;
-		$serviceNames[] = $service->name;
+	});
+
+	$addOnServiceMap = [];
+	if ($instance->addon_services){
+		$addonServices = App\Service::whereIn('id',$instance->addon_services)->get();
+		$addonServices->each(function($service) use (&$addOnServiceMap){
+			$addOnServiceMap[$service->name] = $service->id;
+		});		
 	}
-	$addonServices = json_decode($instance->addon_services);
-	$addonServiceNames = [];
-	if ($addonServices){
-		foreach ($addonServices as $serviceId){
-			$addonServiceNames[] = getNameFromUid("Service",$serviceId);
-		}
-		$addonServiceNames = json_encode($addonaddonServiceNames);
-		unset($serviceId);		
-	}else{
-		$addonServiceNames = null;
-	}
+
+	// $addonServiceNames = [];
+	// if ($addonServices){
+	// 	foreach ($addonServices as $serviceId){
+	// 		$addonServiceNames[] = getNameFromUid("Service",$serviceId);
+	// 	}
+	// 	$addonServiceNames = json_encode($addonaddonServiceNames);
+	// 	unset($serviceId);		
+	// }else{
+	// 	$addonServiceNames = null;
+	// }
 }
 
 ?>
 
 @if ($model == 'Form')
-	<div id='{{ $model }}SettingsForm' class='central large settingsForm modalForm {{ $admin }}' data-target='{{ removespaces($instance->$nameAttr) }}' data-model='{{ $model }}' data-uid='{{ $uid }}' data-settings='{{ json_encode($settings) }}'>
+	<div id='{{$model}}SettingsForm' class='central large settingsForm modalForm {{$admin}}' data-target='{{removespaces($instance->$nameAttr)}}' data-model='{{$model}}' data-uid='{{$uid}}' data-settings='{{json_encode($settings)}}'>
 		<h1 class='purple paddedSmall'>'{{ $instance->$nameAttr }}' Settings</h1>
 		<div id="ModelSettings" data-settingsJson='{{ $settingsJson }}'>
 			{{ $settingsForm->formDisplay(false) }}
 		</div>
-		<div id="SectionSettings" data-json='{{ $formJson }}'>
+		<!-- <div id="SectionSettings" data-json='{{ $formJson }}'>
 			{{ $instance->formDisplay(true) }}
-		</div>
+		</div> -->
 	</div>
-	<div class='template displayOptions' data-type='section'>
+	<!-- <div class='template displayOptions' data-type='section'>
 		<div class='showOptions'>dynamic display settings</div>
 		<div class='options'>
 			{{ $instance->answerDisp('radio',$dynamicOptions) }}
 			{{ $instance->answerDisp('checkboxes',$complaintArr) }}
 		</div>
-	</div>
+	</div> -->
 @else
 	@if ($modal)
 	<div id='{{$model}}SettingsForm' class='central large settingsForm modalForm {{$autosave." ".$admin}}' data-model='{{$model}}' data-uid='{{$uid}}' data-settings='{{json_encode($settings)}}' data-settingsjson='{{$settingsJson}}'>
@@ -102,7 +105,7 @@ if ($model == 'Form'){
 @endif
 
 @if ($model == 'Service')
-	<div id="ServiceMap" data-map='{{json_encode($serviceMap)}}' data-currentaddonservices="{{$addonServiceNames}}">
+	<div id="ServiceMap" data-map='{{json_encode($serviceMap)}}' data-currentaddonservices="">
 		{{$settingsForm->answerDisp('checkboxes',$serviceNames)}}	
 	</div>
 @endif

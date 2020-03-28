@@ -448,5 +448,6 @@ function constructColumnObj(model, form){
 	return obj;
 }
 function turnToBoolean(value){
-	return (value == "yes") ? true : false;
+	if (value == undefined) return null;
+	return value == 'yes' || value.includes('yes');
 }

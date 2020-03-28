@@ -15,9 +15,17 @@ class CreateInvoicesTable extends Migration
     {
         Schema::create('invoices', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->unsignedInteger('patient_id');
-            $table->unsignedInteger('practitioner_id');
+            $table->string('stripe_id')->nullable()->collation('utf8mb4_bin');
+            $table->unsignedInteger('invoiced_to_user_id');
+            $table->unsignedInteger('created_by_user_id');
             $table->unsignedInteger('appointment_id')->nullable();
+            $table->unsignedInteger('total_charge');
+            $table->datetime('paid_at')->nullable();
+            $table->json('status')->nullable();
+            $table->json('payments')->nullable();
+            $table->longtext('line_items')->nullable();
+            $table->longtext('notes')->nullable();
+            $table->longtext('autosave')->nullable();
             $table->timestamps();
         });
     }

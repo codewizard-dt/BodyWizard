@@ -100,58 +100,57 @@ class ScriptController extends Controller
                 'btnText' => $options['btnText']
             ]);
         }
-        public function ResourceTable($model){
-            include_once app_path("php/functions.php");
-            unset($collection);
-            $class = "App\\$model";
-            $ctrl = new $class;
-            $models = plural($model);
+        // public function ResourceTable($model){
+        //     unset($collection);
+        //     $class = "App\\$model";
+        //     $ctrl = new $class;
+        //     $models = plural($model);
 
-            // setting table options and getting collection
-            if (method_exists($ctrl,'tableValues')){
-                $tableOptions = $class::tableValues();
-            }else{
-                $tableOptions = $ctrl->tableValues;
-            }
-            $tableOptions = $ctrl->tableValues;
-            if (!isset($orderBy)){
-                $orderBy = isset($tableOptions['orderBy']) ? $tableOptions['orderBy'] : null;
-            }
-            if (!isset($where)){
-                $where = isset($tableOptions['where']) ? $tableOptions['where'] : null;
-            }
+        //     // setting table options and getting collection
+        //     if (method_exists($ctrl,'tableValues')){
+        //         $tableOptions = $class::tableValues();
+        //     }else{
+        //         $tableOptions = $ctrl->tableValues;
+        //     }
+        //     // $tableOptions = $ctrl->tableValues;
+        //     if (!isset($orderBy)){
+        //         $orderBy = isset($tableOptions['orderBy']) ? $tableOptions['orderBy'] : null;
+        //     }
+        //     if (!isset($where)){
+        //         $where = isset($tableOptions['where']) ? $tableOptions['where'] : null;
+        //     }
 
-            if ($where){
-                $collection = $class::where($where);
-            }
-            if ($orderBy){
-                foreach ($orderBy as $method){
-                    $attr = $method[0];
-                    $dir = $method[1];
-                    if (!isset($collection)){
-                        $collection = $class::orderBy($attr, $dir);
-                    }else{
-                        $collection->orderBy($attr, $dir);
-                    }
-                }
-            }
+        //     if ($where){
+        //         $collection = $class::where($where);
+        //     }
+        //     if ($orderBy){
+        //         foreach ($orderBy as $method){
+        //             $attr = $method[0];
+        //             $dir = $method[1];
+        //             if (!isset($collection)){
+        //                 $collection = $class::orderBy($attr, $dir);
+        //             }else{
+        //                 $collection->orderBy($attr, $dir);
+        //             }
+        //         }
+        //     }
 
-            if (!isset($collection)){
-                $collection = $class::all();
-            }else{
-                $collection = $collection->get();
-            }
+        //     if (!isset($collection)){
+        //         $collection = $class::all();
+        //     }else{
+        //         $collection = $collection->get();
+        //     }
 
-            $tableOptions['collection'] = $collection;
-            $modalId = $tableOptions['tableId']."Modal";
+        //     $tableOptions['collection'] = $collection;
+        //     $modalId = $tableOptions['tableId']."Modal";
 
-            $tableOptions['modal'] = true;
-            return view('models.table',$tableOptions);
-        }
+        //     $tableOptions['modal'] = true;
+        //     return view('models.table',$tableOptions);
+        // }
         public function ListWithNav($model, Request $request, $uid = null){
-            // Log::info("\n\n".$request->path()." uid:". $uid);
             if ($uid){setUid($model,$uid);}
-            return view('models.table-with-nav',['model'=>$model,'request'=>$request]);
+            $data = ['model'=>$model,'request'=>$request];
+            return view('models.table-with-nav',$data);
         }
         public function ListAsModal($model, Request $request){
             $data = [
@@ -214,7 +213,8 @@ class ScriptController extends Controller
             }elseif ($result === true){
                 return listReturn("checkmark",$request->path());
             }else{
-                Log::error($result,['location'=>'ScriptController 214']);
+                // Log::error($result,['location'=>'ScriptController 216']);
+                reportError($result,'ScriptController 217');
                 return listReturn("error",$request->path());
             }
         }
@@ -246,11 +246,11 @@ class ScriptController extends Controller
             // Log::info($instance);
             $trackChanges = usesTrait($instance,"TrackChanges");
 
-            if ($trackChanges && $request->isMethod('patch')){
-                $includeFullJson = isset($instance->auditOptions['includeFullJson']) ? $instance->auditOptions['includeFullJson'] : false;
-                $changes = $instance->checkForChanges($instance,$request,$includeFullJson);
-                if (!$changes){return "no changes";}
-            }
+            // if ($trackChanges && $request->isMethod('patch')){
+            //     $includeFullJson = isset($instance->auditOptions['includeFullJson']) ? $instance->auditOptions['includeFullJson'] : false;
+            //     $changes = $instance->checkForChanges($instance,$request,$includeFullJson);
+            //     if (!$changes){return "no changes";}
+            // }
 
             // SPECIAL STEP FOR USER / MESSAGE
                 if ($model == "User" && $request->isMethod('post')){
@@ -319,20 +319,15 @@ class ScriptController extends Controller
                     $user->save();
                 }
 
-                if ($trackChanges && $request->isMethod('patch')){
-                    $instance->saveTrackingInfo($instance, $changes, $request->getClientIp());
-                }
+                // if ($trackChanges && $request->isMethod('patch')){
+                //     $instance->saveTrackingInfo($instance, $changes, $request->getClientIp());
+                // }
 
                 if ($model == 'Appointment'){
                     $method = $request->method();
                     $result = $instance->saveToGoogleCal($method);
                     if ($result !== true){return $result;}
                     $result = $instance->saveToFullCal();
-                    // if ($request->isMethod('post')){
-                    // $returnMe = Practice::AppointmentEventFeed();
-                    // if ($method == 'post'){
-                    //     $changes = null;
-                    // }
                     $changes = isset($changes) ? $changes : null;
                     event(new AppointmentSaved($instance, $changes, session('practiceId'), Auth::user()->user_type));
                 }
@@ -374,7 +369,11 @@ class ScriptController extends Controller
                 
                 // SAVES EMBEDDED IMAGES SYNC INSTANCE
                 if (isset($embeddedImgs) && $embeddedImgs != false){
-                    $instance->images()->sync($embeddedImgs);
+                    if ($trackChanges){
+                        $instance->trackableSync('images',$embeddedImgs);
+                    }else{
+                        $instance->images()->sync($embeddedImgs);
+                    }
                 }
 
             }
@@ -457,16 +456,15 @@ class ScriptController extends Controller
             ]);
         }
         public function SaveSettings($model, $uid, Request $request){
-            include_once app_path("php/functions.php");
             $class = "App\\$model";
             $existingInstance = $class::find($uid);
             
-            $trackChanges = usesTrait($existingInstance,"TrackChanges");
-            if ($trackChanges){
-                $includeFullJson = isset($existingInstance->auditOptions['includeFullJson']) ? $existingInstance->auditOptions['includeFullJson'] : false;
-                $changes = $existingInstance->checkForChanges($existingInstance,$request,$includeFullJson);
-                if (!$changes){return "no changes";}
-            }
+            // $trackChanges = usesTrait($existingInstance,"TrackChanges");
+            // if ($trackChanges){
+            //     $includeFullJson = isset($existingInstance->auditOptions['includeFullJson']) ? $existingInstance->auditOptions['includeFullJson'] : false;
+            //     $changes = $existingInstance->checkForChanges($existingInstance,$request,$includeFullJson);
+            //     if (!$changes){return "no changes";}
+            // }
 
             $columns = isset($request->columnObj) ? json_decode($request->columnObj,true) : null;
             if ($columns) {
@@ -477,9 +475,9 @@ class ScriptController extends Controller
 
             try{
                 $existingInstance->settings_json = $request->settings_json;
-                if (isset($request->settings)){
-                    $existingInstance->settings = json_decode($request->settings,true);
-                }
+                // if (isset($request->settings)){
+                //     $existingInstance->settings = json_decode($request->settings,true);
+                // }
                 $existingInstance->save();
             }catch(\Exception $e){
                 return $e;
@@ -493,15 +491,14 @@ class ScriptController extends Controller
                 }
             }
 
-            if ($trackChanges){
-                $existingInstance->saveTrackingInfo($existingInstance, $changes, $request->getClientIp());
-            }
+            // if ($trackChanges){
+            //     $existingInstance->saveTrackingInfo($existingInstance, $changes, $request->getClientIp());
+            // }
 
             return 'checkmark';
         }
 
     public function fetchModel($model, $uid, Request $request){
-        include_once app_path("php/functions.php");
         $class = "App\\$model";
         if ($uid == 'default'){
             $existingInstance = $class::where('name','default')->first();
@@ -523,6 +520,7 @@ class ScriptController extends Controller
 
     public function updateRelationships($instance, $connectedModels){
         // return $connectedModels;
+        $trackChanges = usesTrait($instance,"TrackChanges");
         foreach($connectedModels as $connectedModel){
             $rel = $connectedModel['relationship'];
             $connectedModelName = $connectedModel['model'];
@@ -540,16 +538,28 @@ class ScriptController extends Controller
                         $connectedInstance = $class::find($uid);
                         $instance->$method()->associate($connectedInstance);
                         $instance->save();
-                    }elseif ($rel == 'morphToMany'){
+                    // }elseif ($rel == 'morphToMany'){
+                    }elseif (in_array($rel,['morphToMany','morphedByMany'])){
                         $method = checkAliases($instance, strtolower(plural($connectedModelName)));
-                        $instance->$method()->sync($uids);
-                    }elseif ($rel == 'morphedByMany'){
-                        $method = checkAliases($instance, strtolower(plural($connectedModelName)));
-                        $instance->$method()->sync($uids);
+                        if ($trackChanges){
+                            $instance->trackableSync($method,$uids);
+                        }else{
+                            $instance->$method()->sync($uids);
+                        }
+                        // $instance->$method()->sync($uids);
                     }
+                    // elseif ($rel == 'morphedByMany'){
+                    //     $method = checkAliases($instance, strtolower(plural($connectedModelName)));
+                    //     if ($trackChanges){
+                    //         $instance->trackableSync($method,$uids);
+                    //     }else{
+                    //         $instance->$method()->sync($uids);
+                    //     }
+                        // $instance->$method()->sync($uids);
+                    // }
                 }
                 catch(\Exception $e){
-                    return $e;
+                    reportError($e,'ScriptController 561');
                 }
             }
         }

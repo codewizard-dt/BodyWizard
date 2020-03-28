@@ -5,13 +5,18 @@ if (!isset($destinations)){
 	$destinations = $optionsNavValues['destinations'];
 	$btnText = $optionsNavValues['btnText'];
 }
+if ($model == 'Form' && !Auth::user()->is_superuser){
+	$collection = $collection->filter(function($form){
+		return $form->form_type != 'system';
+	});
+}
 ?>
 
 <div class='wrapMe marginBig bottomOnly' style='display:inline-block'>
     @forelse ($filtersColumn as $filter)
-	    <div class='filterType' data-target='#{{ $tableId }}' data-type='column'>{{ $filter['label'] }}: 
+	    <div class='filterType' data-target='#{{$tableId}}' data-type='column'>{{$filter['label']}}: 
 	    	@foreach ($filter['filterOptions'] as $option)
-		    	<label><input type='checkbox' class='tableFilter' data-filter='{{ $filter["filterName"] }}:{{ $option["value"] }}'>{{ $option["label"] }}</label>
+		    	<label><input type='checkbox' class='tableFilter' data-filter='{{$filter["filterName"]}}:{{$option["value"]}}'>{{$option["label"]}}</label>
 	    	@endforeach
 		</div>
     @empty
@@ -19,17 +24,17 @@ if (!isset($destinations)){
 
     @forelse ($filtersOther as $filter)
     	@if (!isset($filter['showFilter']) || $filter['showFilter'] !== false)
-	    <div class='filterType' data-target='#{{ $tableId }}' data-filter='{{ $filter["filterName"] }}' data-type='data'>{{ $filter['label'] }}: 
+	    <div class='filterType' data-target='#{{$tableId}}' data-filter='{{$filter["filterName"]}}' data-type='data'>{{$filter['label']}}: 
 	    	@foreach ($filter['filterOptions'] as $option)
 
-		    	<label><input type='checkbox' class='tableFilter' data-filter='{{ $filter["filterName"] }}:{{ $option["value"] }}'>{{ $option["label"] }}</label>
+		    	<label><input type='checkbox' class='tableFilter' data-filter='{{$filter["filterName"]}}:{{$option["value"]}}'>{{$option["label"]}}</label>
 	    	@endforeach
 		</div>
 		@endif
     @empty
     @endforelse
 
-    <div class='filterType' data-target='#{{ $tableId }}' data-options='{"wholeWords":"false","separateWords":"true"}'><input class='tableSearch' type='text' data-filter='all' placeholder='Search'></div>
+    <div class='filterType' data-target='#{{$tableId}}' data-options='{"wholeWords":"false","separateWords":"true"}'><input class='tableSearch' type='text' data-filter='all' placeholder='Search'></div>
 	<?php 
 		$nospaces = str_replace(" ", "", $model); 
 		$modal = isset($modal) ? $modal : false;
@@ -47,34 +52,34 @@ if (!isset($destinations)){
 	?>
 
 	@if (Auth::user()->is_admin && findFormId($model))
-    	<div class='button xsmall createNew pink70' data-model='{{$nospaces}}' data-target='#{{$tableId}}'>{{ $btnDispText }}</div>    
+    	<div class='button xsmall createNew pink70' data-model='{{$nospaces}}' data-target='#{{$tableId}}'>{{$btnDispText}}</div>    
     @endif
 
     @if ($modal)
-    <div class='button xsmall selectData pink disabled'>update {{ $connectedTo }}</div>
+    <div class='button xsmall selectData pink disabled'>update {{$connectedTo}}</div>
     @elseif (isset($extraBtns))
     	@foreach ($extraBtns as $btn)
-			<div class='button xsmall yellow loadInTab' data-uri='{{ $btn[1] }}'>{{ $btn[0] }}</div>
+			<div class='button xsmall yellow loadInTab' data-uri='{{$btn[1]}}'>{{$btn[0]}}</div>
     	@endforeach
     @endif
 	<br>
 
 	@if ($modal)
-	    <table id='{{ $tableId }}' class='styledTable clickable modelTable' data-index="{{ $index }}" data-display='{{$displayName}}' data-model='{{ $nospaces }}' data-hideOrder='{{ $hideOrder }}'>
+	    <table id='{{$tableId}}' class='styledTable clickable modelTable' data-index="{{$index}}" data-display='{{$displayName}}' data-model='{{$nospaces}}' data-hideOrder='{{$hideOrder}}'>
 	@else
-	    <table id='{{ $tableId }}' class='styledTable clickable modelTable' data-index="{{ $index }}" data-display='{{$displayName}}' data-target="#Current{{ $nospaces }}" data-model='{{ $nospaces }}' data-hideOrder='{{ $hideOrder }}' data-destinations="{{ implode(',',$destinations) }}" data-btnText="{{ implode(',',$btnText) }}">
+	    <table id='{{$tableId}}' class='styledTable clickable modelTable' data-index="{{$index}}" data-display='{{$displayName}}' data-target="#Current{{$nospaces}}" data-model='{{$nospaces}}' data-hideOrder='{{$hideOrder}}' data-destinations="{{implode(',',$destinations)}}" data-btnText="{{implode(',',$btnText)}}">
 	@endif
 
         <tr class='head'>
         	@foreach ($columns as $column)
-	            <th class='{{ $column["className"] }}'>{{ $column['label'] }}</th>
+	            <th class='{{$column["className"]}}'>{{$column['label']}}</th>
             @endforeach
         </tr>
         @foreach ($collection as $instance)
         	<?php 
         	$hiddenFiltersAdded = false;
         	?>
-            <tr data-uid='{{ $instance->getKey() }}' data-{{ $index }}='{{ $instance->$index }}'>
+            <tr data-uid='{{$instance->getKey()}}' data-{{$index}}='{{$instance->$index}}'>
 
 				@foreach ($columns as $column)
 				<?php 
@@ -129,7 +134,7 @@ if (!isset($destinations)){
 					$val = ($attr !== 'duration') ? $val : $val." min";
 					$val = ($attr !== 'price') ? $val : '$'.$val;
 				?>
-	            <td class='{{ $column["className"] }} all'><div class='tdSizeControl'>{{ $val }}<div class='indicator'>...</div></div>
+	            <td class='{{$column["className"]}} all'><div class='tdSizeControl'>{{$val}}<div class='indicator'>...</div></div>
 	            	@if ($column["className"] != 'name' && !$hiddenFiltersAdded)
 		            	@forelse ($filtersOther as $filter)
 		            		<?php 
@@ -157,7 +162,7 @@ if (!isset($destinations)){
 		            		}
 		            		?>
 	
-			            	<div class='filter {{ $filter["filterName"] }}'>{{ implode(", ",$valArr) }}</div>
+			            	<div class='filter {{$filter["filterName"]}}'>{{implode(", ",$valArr)}}</div>
 			            @empty
 			            @endforelse
 			            <?php $hiddenFiltersAdded = true; ?>
@@ -170,15 +175,15 @@ if (!isset($destinations)){
 		<tr>
     	@foreach ($columns as $column)
            	@if ($loop->first)
-	            <td class='{{ $column["className"] }} all'>No matches</td>
+	            <td class='{{$column["className"]}} all'>No matches</td>
            	@else
-	            <td class='{{ $column["className"] }} all'></td>
+	            <td class='{{$column["className"]}} all'></td>
            	@endif
         @endforeach
 		</tr>
 	</table>
 	<br>
-    <div class='button xsmall clearTableFilters' data-target='#{{ $tableId }}'>Show All</div>
+    <div class='button xsmall clearTableFilters' data-target='#{{$tableId}}'>Show All</div>
 
 	@if ($modal)
     <div class='button xsmall cancel'>dismiss</div>

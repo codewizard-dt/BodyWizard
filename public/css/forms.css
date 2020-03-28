@@ -1,4 +1,4 @@
-
+    
 input, select, textarea {
     vertical-align: top;
     font-size: 1em;
@@ -40,34 +40,36 @@ textarea[data-followup]{
 .value.little{
     font-size: 0.7em;
 }
-.split50KeyValues .label, .split3366KeyValues .label {
+.split50KeyValues > .label, .split3366KeyValues > .label {
     text-transform: capitalize;
 }
-.split50KeyValues .label{
+.split50KeyValues > .label{
     display: inline-block;
-    width: calc(50% - 1em);
+    width: 50%;
     text-align: right;
-    margin-right: 1em;
+    padding-right: 1em;
     color: var(--purple);
     font-weight: bold;
+    box-sizing: border-box;
 }
-.split50KeyValues .value{
+.split50KeyValues > .value{
     display: inline-block;
     text-align: left;
-    width: calc(50% - 2em);
+    width: 50%;
 }
-.split3366KeyValues .label{
+.split3366KeyValues > .label{
     display: inline-block;
-    width: calc(33% - 1em);
+    width: 33%;
     text-align: right;
-    margin-right: 1em;
+    padding-right: 1em;
     color: var(--purple);
     font-weight: bold;
+    box-sizing: border-box;
 }
-.split3366KeyValues .value{
+.split3366KeyValues > .value{
     display: inline-block;
     text-align: left;
-    width: calc(66% - 2em);
+    width: 66%;
 }
 .miniCal {
     margin:auto auto 2em auto;
@@ -403,7 +405,55 @@ form, .indent, .report, .w95 {
 .formDisp p, #FormBuilder p{
     margin: 0;
 }
+#ChartNote .formWrap, .dottedSideBorders{
+    border-style: dotted;
+    border-color: var(--yellow40);
+    border-width: 0 2px;
+}
+#ChartFormsModal, #LineItemsModal {
+    display: none;
+}
+#UnsignedNotes {
+    display: none;
+}
+#ChartSignature{
+    text-align: left;
+}
+.availableChartForm .up, .availableChartForm .down, .availableChartForm .removeForm, #AvailableChartingForms .availableChartForm, .removePayment{
+    cursor: pointer;
+    transition: border-color 500ms, color 500ms;
+}
+#AvailableChartingForms .availableChartForm:hover{
+    border-color: var(--black50);
+}
+.removeForm, .removePayment{
+    margin-left: 3px;
+    color: var(--black50);
+    width:1em;
+    transition: color 1s;
+    font-size: 1.2em;
+}
+.removeForm:hover, .removePayment:hover{
+    color: black;
+}
+#LoadedForms{
+    display: inline-block;
+    border: 1px solid var(--purple50);
+    border-radius: 5px;
+    overflow: hidden;
+}
+#LoadedForms .UpDown {
+    font-size: 0.8em;
+    margin: 2px 0 2px 7px;
+}
 
+#LoadedForms h3{padding:0 2em;}
+#LoadedForms .availableChartForm{
+    border-width: 0 !important;
+}
+#LoadedForms .availableChartForm .label{
+    margin-left: 1em;
+}
 #LoginForm {
     width: auto;
 }
@@ -426,12 +476,98 @@ form, .indent, .report, .w95 {
     border-style: dotted;
     border-width: 2px;
 }
+.formDisp.minified{
+    width:100%;
+    font-size: 0.9em;
+}
+.formDisp.minified .section{
+    border-width: 0;
+    padding: 0;
+    margin:0;
+}
+.formDisp.minified .item {
+    margin:0;
+}
+.formDisp.minified .item > .question, .formDisp.minified .requireSign, .formDisp.minified h2{
+    display:none;
+}
+.formDisp.minified .question {
+    font-size: 0.9em;
+}
+.formDisp.minified .numberUpDown{
+    font-size: 0.8em;
+}
+.partialPayment{
+    position: relative;
+}
+
+.chartNoteTitle, .invoiceTitle{
+    text-align: left;
+    border-width: 2px 0 0 0;
+    border-color: var(--yellow);
+    border-style: solid;
+    padding: 0.5em;
+    background-color: var(--yellow10);
+}
+.chartNoteHeader, .invoiceHeader{
+    text-align: left;
+    border-width: 2px 0 0 0;
+    border-color: var(--purple);
+    border-style: solid;
+    padding: 0.5em;
+    background-color: var(--purple10);
+}
+
+#ChartNote, #Invoice{
+    margin-bottom: 1em;
+}
+
+#payment-form {
+    background-color: white;
+    width: 400px;
+    max-width: 95%;
+    border-radius: 5px;
+    border: 1px solid var(--purple);
+    padding: 1em;
+}
+#payment-form #submit{
+    margin: 0;
+    font-size: 1.2em;
+}
+#payment-form input {
+    font-size: 1.5em !important;
+}
+.CardBrandIcon{
+    font-size: 1.5em;
+}
+
+#ApptLegend .appt {
+    font-size: 0.8em;
+    cursor: default;
+}
+.lineItem {
+    padding: 0.5em 0.75em;
+    /*background-color: var(--yellow5);*/
+}
+.lineItem.header {
+    background-color: var(--yellow10);
+    color: var(--yellow);
+    margin-top: 0.5em;
+}
+
+
+.appt {
+    border-color: var(--yellow) !important;
+}
+.appt.hasNote {
+    border-color: var(--pink) !important;
+}
 
 .section {
     border-style: solid;
     border-width: 1px;
     border-radius: 5px;
-    border-color: var(--purple); 
+    border-color: var(--purple30); 
     margin: 1em 0 0 0;
     background-color: rgb(255,255,255);
     padding:1em;
@@ -478,6 +614,24 @@ form, .indent, .report, .w95 {
 
 .detail {
     margin:0 !important;
+}
+#ApptSummary{
+    font-size: 1.2em;
+    margin: 10px 0;
+}
+#ApptsWithoutNotes, #ApptLegend{
+    display: none;
+}
+#ApptsWithoutNotes > div{
+    border-color: var(--yellow);
+    cursor: pointer;
+    transition: background-color 500ms;
+}
+#ApptsWithoutNotes > div:hover{
+    background-color: var(--yellow10);
+}
+#ApptsWithoutNotes > div.active{
+    background-color: var(--yellow30);
 }
 #ApptDetails{
     display: none;
@@ -537,15 +691,12 @@ form, .indent, .report, .w95 {
 #ChangeTitle li{
     margin: 1px;
     background-color: transparent;
-    color: var(--purple);
-}
-#ChangeTitle li:hover{
-    border-color: var(--purple10);
 }
 #ChangeTitle li.active{
     background-color: var(--purple70);
     color: white;
     border-color: transparent !important;
+    font-size: 0.9em;
 }
 
 .errorreport {
@@ -767,21 +918,31 @@ form, .indent, .report, .w95 {
 #HerbList, #CategoryList, #SymptomList, #ActionList, #CurrentFormula, #FormulaDesc, #NewHerb, .FormulaDisplay, #PrevFormulas{
     padding:1em;
 }
-
+#PaymentMethod .answer {font-size: 0.9em;}
 .answer li{
     list-style: none;
     display:inline-block;
-    background-color: var(--yellow);
-    color: white;
+    background-color: white;
+    color: black;
     border-radius: 3px;
     margin: 5px;
     padding:0.2em 0.5em;
     border-width: 2px;
     border-style: solid;
-    border-color: transparent;
+    border-color: var(--yellow40);
     cursor: pointer;
     opacity: 1;
-    transition: color 1000ms, background-color 1000ms;
+    transition: border-color 500ms, font-size 500ms;
+    font-size: 0.9em;
+}
+.answer.radio.purple, .answer.checkboxes.purple{
+    border-color: var(--purple30);
+}
+.answer.purple li {
+    border-color: transparent;
+}
+.answer.purple:not(.blurred) li:hover{
+    border-color: var(--purple30);
 }
 
 .answer li.disabled {
@@ -844,21 +1005,18 @@ li[data-response='no response']{
     opacity: 0.5;
 }
 
-.answer li {
-    font-size: 0.9em;
-}
-
 .answer:not(.blurred) li:hover{
-    background-color: white;
-    border-color: var(--yellow30);
-    color: var(--yellow);
+    /*background-color: white;*/
+    border-color: var(--yellow70);
+    /*color: var(--yellow);*/
 }
 .answer.disabled li{
     cursor: default;
 }
+.imageClick.disabled .undo{display:none !important;}
 .answer.disabled li:not(.active){
-    background-color: var(--yellow) !important;
-    color: white !important;
+    /*background-color: var(--yellow) !important;*/
+    /*color: white !important;*/
 }
 
 .answer:focus, .signature:focus{
@@ -868,7 +1026,8 @@ li[data-response='no response']{
 .answer li.active{
     background-color: white;
     border-color: var(--yellow) !important;
-    color: var(--yellow);
+    font-size: 1em;
+    /*color: var(--yellow);*/
 }
 
 .question {
@@ -905,7 +1064,6 @@ li[data-response='no response']{
 [data-followup="followup"]{
     display: none;
 }
-
 .item, .itemFU {
     position: relative;
     margin:0.25em 0 1em 0;
@@ -928,6 +1086,9 @@ li[data-response='no response']{
     width: calc(100% - 0.4em);
     max-width:450px;
     height:5em;
+}
+.ownLine textarea{
+    max-width: unset;
 }
 .number input{
     width:4em;
@@ -975,8 +1136,9 @@ li[data-response='no response']{
 }
 
 .answer.checkboxes, .answer.radio {
-    background-color: var(--yellow30);
+    background-color: var(--yellow20);
     width: auto;
+    border: 1px solid var(--yellow30);    
 }
 
 .answer.signHere{
@@ -1498,7 +1660,7 @@ input#PatientName {
 }
 
 .optionsNav .navHead{
-    /*padding: 1em;*/
+    display: none;
 }
 .imageClick.bodyClickSample{
     margin-top:10px;
@@ -1510,11 +1672,15 @@ input#PatientName {
   background-position: center;
   background-size: contain;
   background-repeat: no-repeat;
+  border: 1px solid transparent;
   /*width: 100%;*/
   max-width: 100%;
   max-height: 90vh;
   cursor: crosshair;
   transition: height 500ms, width 500ms;
+}
+.imageClick.disabled{
+    cursor: default;
 }
 
 .imageClick .undo {
@@ -1577,6 +1743,9 @@ input#PatientName {
     vertical-align: middle;
     text-align: right;
     touch-action: manipulate;
+}
+.number input::placeholder{
+    opacity: 0.3;
 }
 .text input{
     width:20em;
@@ -1732,8 +1901,8 @@ input#PatientName {
     vertical-align: middle;
 }
 .prompt.large {
-    /*min-width: 70%;*/
-    /*max-width: 90%;*/
+    min-width: 70%;
+    max-width: 90%;
 }
 .prompt > div {
     padding: 1.5em;
@@ -1746,6 +1915,14 @@ input#PatientName {
     border-style: solid;
     border-color: rgb(190,190,190);
     transition: background-color 400ms;
+}
+.prompt .message > .flexbox > * {
+    display: inline-block;
+    padding: 0.1em 0.3em;
+    margin: 0.2em 0;
+    border-radius: 5px;
+    border: 1px solid var(--purple);
+    background-color: var(--purple5);
 }
 .optionsNav.hide{
     height: 0;
@@ -2197,6 +2374,15 @@ input#PatientName {
 .editable .pair {
     display: inline;
 }
+.lineItem .pair {
+    display: block;
+}
+.lineItem .input{
+    width:100%;
+}
+.lineItem .dropdown {
+    margin: 0;
+}
 
 .item .save, .item .cancel{
     display: none;
@@ -2284,12 +2470,65 @@ input#PatientName {
     justify-content: center;
     align-items: center;
 }
+.flexbox.lineItem {
+    justify-content: space-between;
+    flex-wrap: nowrap;
+    text-align: left;
+}
+.flexbox.lineItem .description{
+    flex-grow: 1;
+}
+.flexbox.lineItem .price{
+    margin: 0 8px;
+    text-align: right;
+    min-width: 5em;
+}
+.flexbox.lineItem .price .numberUpDown{
+    font-size: 0.8em;
+}
+.flexbox.lineItem .lineTotal{
+    min-width: 5em;
+    text-align: right;
+    color: var(--pink);
+}
+.flexbox.lineItem .discount{
+    margin: 0 5px;
+    text-align: right;
+    min-width: 3.5em;
+}
+.flexbox.lineItem .tax{
+    margin: 0 5px;
+    text-align: right;
+    min-width: 3.5em;
+}
+.flexbox.lineItem .total{
+    margin: 0 5px;
+}
+.flexbox.lineItem.header {
+    font-size: 1.1em;
+}
+.flexbox.lineItem.header > div {
+    margin:0 2px 0 0;
+}
+.flexbox.rightSided{
+    justify-content: flex-end;
+}
+.flexbox.leftSided{
+    justify-content: flex-start;
+}
 .flexbox > .flexbox{
     display: inline-flex;
 }
 .flexbox > * {
     /*flex: auto;*/
     display: inline-block;
+}
+.flexbox.styled > * {
+    margin: 5px 5px 0 5px;
+    padding: 0.2em 0.5em;
+    border: 1px solid var(--gray80);
+    background-color: var(--gray10);
+    border-radius: 0.3em;
 }
 
 .optionsList{
@@ -2323,6 +2562,11 @@ input#PatientName {
 }
 #OptionsList > div {
     display: block;
+}
+#NarrativeList > div {
+    display: block;
+    padding: 0;
+    border-radius: 0;
 }
 #OptionsList {
     display: block;
@@ -2653,7 +2897,7 @@ input#PatientName {
 
 .tdSizeControl {
     max-height: 4em;
-    max-width: 250px;
+    max-width: 400px;
     position: relative;
     overflow: hidden;
     padding-right: 1em;
@@ -2736,8 +2980,8 @@ table .indicator {
     position: relative;
 }
 .progressiveSelection ul{
-    font-size: 1.2em;
-    background-color: transparent !important;
+    font-size: 1.1em;
+    /*background-color: transparent !important;*/
 }
 .progressiveSelection li{
     padding: 0.5em 0.7em;
@@ -2791,7 +3035,7 @@ table .indicator {
     background-size: contain;
     background-repeat: no-repeat;
 }
-.styledTable tr, .displayOrder li {
+.styledTable tr, .displayOrder li, #LoadedForms .availableChartForm {
     border-style: solid;
     border-width: 1px 0px;
     border-color: var(--purple30);
@@ -2802,9 +3046,7 @@ table .indicator {
 }
 
 .styledTable tr.hover{
-    background-color: var(--yellow30);
-    border-color: var(--yellow50);
-    z-index: 3;
+    background-color: var(--purple10);
 }
 .styledTable tr.hide {
     display:none !important;
@@ -2824,16 +3066,14 @@ table .indicator {
 .styledTable tr.a {
     background-color: rgb(255,255,255);
 }
-.styledTable tr.b, .displayOrder li:nth-child(even){
-    background-color: var(--purple10);
+.styledTable tr.b, .displayOrder li:nth-child(even), #LoadedForms .availableChartForm:nth-child(even){
+    background-color: var(--purple5);
 }
 .styledTable tr.a.hover, .displayOrder li:nth-child(odd):hover {
-    background-color: var(--yellow10);
-    border-color: var(--yellow30);
+    background-color: var(--purple15);
 }
 .styledTable tr.b.hover, .displayOrder li:nth-child(even):hover {
-    background-color: var(--yellow10);
-    border-color: var(--yellow30);
+    background-color: var(--purple15);
 }
 
 .styledTable.clickable tr{
@@ -2885,13 +3125,13 @@ table .indicator {
 }
 
 .styledTable.clickable tr.active{
-    border-color: var(--yellow) !important;
-    background-color: var(--yellow50) !important;
+    background-color: var(--purple70) !important;
+    color: white;
     z-index: 4;
 }
 .displayOrder li.active{
-    border-color: var(--yellow) !important;
-    background-color: var(--yellow30) !important;
+    background-color: var(--purple70) !important;
+    color: white;
     z-index: 4;
 }
 
@@ -2911,7 +3151,7 @@ table .indicator {
 .modalForm {
     display:none;
     max-height: 96%;
-    width: 700px;
+    width: 96%;
     max-width: 96%;
     box-sizing: border-box;
     overflow-y: auto;

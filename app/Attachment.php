@@ -81,7 +81,7 @@ class Attachment extends Model
     public function messages(){
         return $this->morphedByMany('App\Message','attachmentable');
     }
-    public function chartnotes(){
+    public function chartNotes(){
         return $this->morphedByMany('App\ChartNote','attachmentable');
     }
 }

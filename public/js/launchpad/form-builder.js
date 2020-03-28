@@ -7,102 +7,10 @@ $(document).ready(function(){
     $("#FormName").find(".input").show();
     $("#FormName").find(".save").css("display","inline-block");
     $("#FormName").find(".edit").hide();
-
-
-    $("#PreviewFormBtn").on('click',function(){
-        var uid = $("#formdata").data('formuid');
-        blurElement($("body"),"#loading");
-        $("#FormPreview").load("/forms/"+uid+"/preview",function(){
-            initializeNewForms();
-            blurElement($('body'),"#FormPreview");
-            $("#FormPreview").find(".cancel").text("close");
-        })
-    })
-    
-    $("#AddSection").on("click",".add",function(){
-        var name = $.sanitize($("#SectionName").val());
-        var names = $("#Sections").find(".section").find(".sectionName").find("span");
-        var nameArray = [];
-        names.each(function(){
-            nameArray.push($(this).text().toLowerCase());
-        })        
-        
-        if (name==""){
-            alertBox("type in section name",$("#SectionName"),"after","fade","-4em,-50%");
-            return false;
-        }else if ($.inArray(name.toLowerCase(),nameArray)>-1){
-            alertBox("name already in use",$("#SectionName"),"after","fade","-4em,-50%");
-            return false;
-        }
-        var sections = $("#Sections").find(".section");
-        if (sections.length==0){
-            $(sectionNode).appendTo("#Sections");
-        }else{
-            $(sectionNode).insertAfter(sections.last());
-        }
-        var sections = $("#Sections").find(".section");
-        var num = sections.length;
-        var secStr = "";
-        
-        // if (num>1){
-            section = sections.last();
-        // }
-
-        section.find(".sectionName").find('span').text(name);
-        // section.find(".showByDefault").find('span').text(show);
-        section.find(".selectMultiple").find(".show").on("click",multiItemOptions);
-        section.find(".selectMultiple").find(".hide").on("click",hideMultiItemOptions);
-        section.find(".selectMultiple").find(".copy").on("click",copyMultiple);
-        section.find(".selectMultiple").find(".delete").on("click",deleteMultiple);
-
-        slideFadeIn(section);
-        
-        var Items = [];
-        section.data("items",Items);
-        
-        $("#SectionName").val("");
-        // slideFadeOut($("#AddSection"));
-        unblurElement($("body"));
-        
-        updateSections();
-        // autoSave();
-    })
-    $("#AddSection").on("click",".clear",function(){
-        slideFadeOut($("#AddSection"));
-    })
-    $("#Sections").on('click',".addQuestion",function(){
-        var t = $(this).closest(".section").find(".itemOptions");
-        $("#FollowUpOptions").hide();
-        resetAddItem();
-        $("#AddItemProxy").insertBefore(t);
-        blurElement($("body"),"#AddItem");
-    })
-    $("#Sections").on("click",'.addText',function(){
-        var t = $(this).closest(".section").find(".itemOptions");
-        $("#AddItemProxy").insertBefore(t);
-        $("#NarrativeOptions").show();
-        blurElement($("body"),"#AddText");
-    })
-    $("#Sections").on('click','.insertQuestion, .insertText',function(){
-        var addNode = $(this).is(".insertQuestion") ? "#AddItem" : "#AddText";
-        var t = $(this).closest(".insertProxy"), item;
-        if (t.parent().data('contains') == 'item'){
-            $("#FollowUpOptions").hide();
-        }else{
-            $("#FollowUpOptions").appendTo($(addNode).find(".message")).show();
-            item = $(this).closest('.item');
-            showConditionOptions(item);
-            if (!item.find(".targetFUs").is(":visible")){
-                item.find(".hideFUs").click();
-            }
-        }
-        $("#AddItemProxy").appendTo(t);
-        resetAddItem();
-        blurElement($("body"),addNode);
-    })
-    $("#Sections").on('click','.insertText',function(){
-        
-    })
+    $("#PreviewFormBtn").on('click',liveFormPreview);
+    $("#AddSection").on("click",".add",addSection);
+    $("#Sections").on("click",'.addQuestion, .addText',showAddItem);
+    $("#Sections").on('click','.insertQuestion, .insertText',showInsertItem);
     $(".summernote").summernote({
         height: 200,
         placeholder: 'Enter your text here',
@@ -117,387 +25,19 @@ $(document).ready(function(){
           ['view', ['fullscreen', 'codeview', 'undo', 'redo', 'help']],
         ],
     });
-
-    $("#Sections").on("click",".deleteSection",function(){
-        // var targetType = $(this).data('target');
-        var target = $(this).closest(".section"), name = target.find('.sectionName').find(".value").text();
-        // confirm(target.find(".sectionName"),"ontop","115%,-70%");
-        $("#Warn").find(".message").html('<h2>Warning!</h2><div>Are you sure you want to delete "'+name+'"? This will delete all of the questions and followups it contains.</div>');
-        $("#Warn").find(".submit").text("Delete section and its questions");
-        blurElement($("body"),"#Warn");
-        var check = setInterval(function(){
-            if (confirmBool == true){
-                slideFadeOut(target)
-                setTimeout(function(){
-                    $(target).remove();
-                    updateSections();
-                    autoSave();
-                },600);
-                confirmBool = undefined;
-                clearInterval(check);
-                unblurElement($("body"));
-            }else if (confirmBool == false){
-                confirmBool = undefined;
-                clearInterval(check);                
-            }
-        },100)
-    })
-    
-    $("#FormBuilder").on("click",".toggle",function(){
-        var p = $(this).closest('.editable, .question');
-                
-        if (p.hasClass("editable")){
-            if ($(this).hasClass("edit")){
-                var target = $(this).closest(".editable");
-                target.find(".value, .edit").hide();
-                target.find(".input").show();
-                target.find(".save, .cancel").css("display","inline");
-
-                var pairs = target.find(".pair");
-                pairs.each(function(i, pair){
-                    var input = $(pair).find(".input"), text = $(pair).find(".value").text();
-                    if (input.is("select")){
-                        input.find("option").removeAttr("selected");
-                        input.val(text);
-                    }else{
-                        input.val(text);
-                    }
-                    $(pair).find(".value").text(text);
-                })
-            }
-            else if ($(this).hasClass("save")){
-                var target = $(this).closest(".editable");
-                var pairs = target.find(".pair");
-                
-                for (x=0;x<pairs.length;x++){
-                    var pair = pairs[x];
-                    var input = $(pair).find(".input"), text;
-                    if (input.is("select")){
-                        text = input.find(":selected").val();
-                    }else{
-                        text = $.sanitize(input.val());
-                        if (text == ""){
-                            alertBox("enter a value",target.find('.input'),"after","fade");
-                            return false;
-                        }
-                    }
-                    $(pair).find(".value").text(text);
-                }
-                target.find(".value, .edit").css("display","inline");
-                target.find(".input, .save, .cancel").hide();
-                if (p.hasClass("sectionName")){
-                    updateSections();
-                }
-                if ($(this).closest('h2').is("FormName")){autoSave();}
-            }
-            else if ($(this).hasClass("cancel")){
-                var target = $(this).closest(".editable");
-                var pairs = target.find(".pair");
-                target.find(".value, .edit").css("display","inline");
-                target.find(".input, .save, .cancel").hide();
-            }  
-        }
-        else if (p.hasClass("question")){
-
-            var question = p.data("question"), k = p.data("key"), type = p.data("type"), options = p.data("options"), condition = p.data("condition"), required =p.data('required'), section = $(this).closest(".section"), item = p.closest(".item, .itemFU");
-
-            // console.log(p.data());
-            if (required === undefined){required = "true"}
-            else{required = (required === true) ? "true" : "false";}
-
-            if ($(this).hasClass("edit")){
-                var proxy = $("#AddItemProxy"), addNode = (type == 'narrative') ? "#AddText" : "#AddItem";
-
-                if (item.is(".itemFU")){
-                    addNode = (item.find(".question").data('type') == 'narrative') ? "#AddText" : "#AddItem";
-
-                    proxy.appendTo(item);
-                    blurElement($("body"),addNode);
-                    showConditionOptions($(item).closest(".item"));
-                    $("#FollowUpOptions").appendTo($(addNode).find(".message")).show();
-                }else if (item.is(".item")){
-                    $("#FollowUpOptions").hide();
-                    item = item.find(".ItemsFU");
-                    proxy.insertBefore(item);
-                    blurElement($("body"),addNode);
-                }
-
-                // console.log(type);
-                if (type != 'narrative'){
-                    $("#Text").val(question);
-                    $("#Type").val(type);
-                    $("#Type").change();
-                    $("#Required").val(required);          
-                    if (options.placeholder != undefined){
-                        $("#textPlaceholder, #textAreaPlaceholder").val(options.placeholder);
-                    }
-                }else{
-                    // console.log("uhhuh");
-                    slideFadeIn($("#NarrativeOptions"));
-                    // o = target.is(".item") ? o : target.find(".question").data('options');
-                    // console.log(options);
-                    var markup = options.markupStr;
-                    $("#NarrativeOptions").find(".note-placeholder").hide();
-                    $("#NarrativeOptions").find(".note-editable").html(markup);
-                }
-                
-                t = $(this).closest(".item").find(".question").data('type');
-                
-                if (condition != undefined && (t == "number" || t == "scale")){
-                    condition = condition[0];
-                    condition = condition.split("less than ").join("");
-                    condition = condition.split("greater than ").join("");
-                    condition = condition.split("equal to ").join("");
-                    $("#FollowUpOptions").find("input").val(condition);
-                }else{
-                    $("#FollowUpOptions").find(".active").removeClass('active');
-                    $("#FollowUpOptions").find("li").each(function(){
-                        var active = ($.inArray($(this).data('value'),condition) > -1);
-                        if (active){$(this).addClass('active')} 
-                    })
-                }
-
-                if ($.isPlainObject(options)){
-                    var items = $("#AddItem").find("input").filter(":visible");
-                    items = items.add($("#AddItem").find("select").filter(":visible"));
-                    if (t == "time"){
-                        $("#TimeList").find("li").each(function(){
-                            if ($(this).hasClass("active")){$(this).click();}
-                        })
-                        $.each(options,function(key, val){
-                            var obj = {
-                                all:"allow any time",
-                                minTime:"set range",
-                                step:"set interval",
-                                setTime:"set initial value"
-                            }
-                            $("#TimeOptions").find("#"+key).val(val);
-                            $("#TimeOptions").find("li").filter("[data-value='"+obj[key]+"']").click();
-                        })
-                    }else if(t == 'date'){
-                        // var beginYear = options.yearRange.split(':')[0], endYear = options.yearRange.split(':')[1],
-                        var minDate = options.minDate, maxDate = options.maxDate, minNum, minType, maxNum, maxType, minDir, maxDir;
-                        if (minDate != null){
-                            minNum = options.minDate.substring(1,options.minDate.length - 1);
-                            maxNum = options.maxDate.substring(1,options.maxDate.length - 1);
-                            minType = options.minDate.substring(options.minDate.length - 1,options.minDate.length);
-                            maxType = options.maxDate.substring(options.maxDate.length - 1,options.maxDate.length);
-                            minDir = options.minDate.charAt[0] == '-' ? 'before' : 'after';
-                            maxDir = options.maxDate.charAt[0] == '-' ? 'before' : 'after';
-                            var guide = {"m":"months","d":"days","w":"weeks","y":"years"};
-                            minType = guide[minType];
-                            maxType = guide[maxType];
-                            $("#DateOptions").find(".minNum").val(minNum);
-                            $("#DateOptions").find(".maxNum").val(maxNum);
-                            $("#DateOptions").find(".minType").val(minType).change();
-                            $("#DateOptions").find(".maxType").val(maxType).change();
-                            $("#DateOptions").find(".minDir").val(minDir).change();
-                            $("#DateOptions").find(".maxDir").val(maxDir).change();
-                            if ($("#NoRestriction").is(":checked")){$("#NoRestriction").click();}                            
-                        }else{
-                            if (!$("#NoRestriction").is(":checked")){$("#NoRestriction").click();}
-                        }
-                    }else if (t == 'scale'){
-                        $("#scalemin").val(options['min']);
-                        $("#scalemax").val(options['max']);
-                        $("#initial").val(options['initial']);
-                        $("select").filter('[name="dispVal"]').val(options['displayValue']).change();
-                        $("select").filter('[name="dispLabel"]').val(options['displayLabels']).change();
-                        for (var prop in options){
-                            var val = options[prop];
-                            items.filter(function(){
-                                return $(this).attr("name") == prop;
-                            }).val(val);
-                        }
-                    }else if (t == 'text'){
-                        var placeholder = (options != undefined && options['placeholder'] != undefined) ? options['placeholder'] : "";
-                        $("#textPlaceholder").val(placeholder);
-                    }else if (t == 'text box'){
-                        var placeholder = (options != undefined && options['placeholder'] != undefined) ? options['placeholder'] : "";
-                        $("#textAreaPlaceholder").val(placeholder);
-                    }else if (t == 'bodyclick'){
-                        var size = findObjKey(imageSizeDecode, options.height);
-                        size = size.split("x").join("x-");
-                        $("#BodyClickList").find("li").filter("[data-value='"+size+"']").click();
-                    }
-                    else{
-                        // if (t == 'number'){console.log(options)}
-                        for (var prop in options){
-                            var val = options[prop];
-                            items.filter(function(){
-                                return $(this).attr("name") == prop;
-                            }).val(val);
-                        }
-                    }
-                }
-                else if ($.isArray(options)){
-                    var optionCount = options.length, 
-                        inputCount = $("#OptionsList").find(".option").length,
-                        dif = optionCount - inputCount,
-                        extraCount = -dif;
-                    for (x = 0; x < dif; x++){$("#OptionsList").find(".add").click();}
-                    for (x = 0; x < extraCount; x++){$("#OptionsList").find(".option").last().remove();}
-                    var inputs = $("#OptionsList").find("input");
-                    for (x = 0; x < optionCount; x++){
-                        var val = options[x];
-                        $(inputs[x]).val(val);
-                    }
-                }
-            }
-            else if ($(this).hasClass("delete")){
-                var target = p, itemOrFU = $(this).closest(".itemFU, .item"), countFUs = itemOrFU.find(".itemFU").length,
-                    warningText = (countFUs == 1) ? "There is currently <u>1 followup</u> under this question." : "There are currently <u>"+countFUs+" followups</u> under this question.";
-                if (itemOrFU.is(".item") && countFUs > 0){
-                    $("#Warn").find(".message").html("<h2>ATTENTION</h2><div>Deleting this question will also delete all of the followup questions attached to it. "+warningText+" This cannot be undone.</div>");
-                    $("#Warn").find(".confirmY").text("delete question and followups");
-                    blurElement($("body"),"#Warn");
-                }else{
-                    $("#Warn").find(".message").html("<h2>ATTENTION</h2><div>Are you sure you want to delete this question?</div>");
-                    $("#Warn").find(".confirmY").text("delete question");
-                    blurElement($("body"),"#Warn");
-                }
-                var check = setInterval(function(){
-                    if (confirmBool == true){
-                        slideFadeOut(item);
-                        setTimeout(function(){
-                            $("#AddItem").appendTo("#FormBuilder").hide();
-                            var Items = section.data("items");
-                            if (item.is(".itemFU")){
-                                var kP = p.closest(".item").find(".question").data('key');
-                                Items = Items[kP].followups;
-                            }
-                            Items.splice(k,1);
-                            updateItems(section);
-                            autoSave();
-                        },500);
-                        $(".zeroWrap.a").remove();
-                        confirmBool = undefined;
-                        unblurAll();
-                        clearInterval(check);
-                    }else if (confirmBool == false){
-                        unblurElement(item);
-                        // $(".zeroWrap.a").remove();
-                        confirmBool = undefined;
-                        clearInterval(check);                
-                    }
-                },100)
-            }
-            else if ($(this).hasClass("copy")){
-                var Items = section.data("items");
-                if (item.is(".itemFU")){
-                    var kP = p.closest(".item").find(".question").data('key');
-                    Items = Items[kP].followups;
-                }
-                var copy = {};
-                $.extend(true,copy,Items[k]);
-                copy.question = copy.question + " COPY";
-                // console.log(copy);
-                Items.splice(k+1,0,copy);
-                updateItems(section);
-                autoSave();
-            }  
-        }
-    })
-    $("#FormBuilder").on("click",".addFollowUp",function(){
-        $("#AddItemProxy").insertBefore($(this));
-        $("#Type").val("text");
-        $("#Type").change();
-        $("#FollowUpOptions").show();
-        blurElement($("body"),"#AddItem");
-        var item = $(this).closest(".item"), question = item.find(".q").text();
-        console.log(question);
-        $("#AddItem").find("h2").first().html('"'+question+'" - ' + "<span class='pink'>Follow Up Question</span>");
-        $("#FollowUpOptions").appendTo($("#AddItem").find(".message"));
-        $("#FollowUpOptions").find(".switch").text("When To Ask This Question");
-        showConditionOptions(item);
-        if (!item.find(".targetFUs").is(":visible")){
-            item.find(".hideFUs").click();
-        }
-    });
-    $("#FormBuilder").on('click',".addFollowUpText",function(){
-        $("#AddItemProxy").insertBefore($(this));
-        resetAddText();
-        blurElement($("body"),"#AddText");
-        var item = $(this).closest(".item");
-        $("#FollowUpOptions").insertAfter($("#NarrativeOptions")).show();
-        $("#FollowUpOptions").find(".switch").text("When To Display This Text");
-        showConditionOptions(item);
-        if (!item.find(".targetFUs").is(":visible")){
-            item.find(".hideFUs").click();
-        }
-    })
+    $("#Sections").on("click",".deleteSection",deleteSection);
+    $("#FormBuilder").on("click",".toggle",toggleClick);
+    $("#FormBuilder").on("click",".addFollowUp",showAddFollowUp);
+    $("#FormBuilder").on('click',".addFollowUpText",showAddFollowUpText);
     $("#FormBuilder").on("click",".addSectionBtn",function(){
-        // $("#FormName").find(".save").click();
         blurElement($("body"),"#AddSection");
     });
-
-    
-    $("#Type").on("change",function(){
-        var needOptions = ['radio','checkboxes','dropdown'], value = $(this).val();
-        if ($.inArray(value,needOptions)>-1){slideFadeIn($("#Options"));}else{slideFadeOut($("#Options"));}
-        if (value == "number"){slideFadeIn($("#NumberOptions"));}else{slideFadeOut($("#NumberOptions"));}
-        if (value == "date"){slideFadeIn($("#DateOptions"));}else{slideFadeOut($("#DateOptions"));}
-        if (value == "text"){slideFadeIn($("#TextOptions"));}else{slideFadeOut($("#TextOptions"));}
-        if (value == "bodyclick"){slideFadeIn($("#BodyClickOptions"));}else{slideFadeOut($("#BodyClickOptions"));}
-        if (value == "text box"){slideFadeIn($("#TextBoxOptions"));}else{slideFadeOut($("#TextBoxOptions"));}
-        if (value == 'time'){slideFadeIn($("#TimeOptions"));}else{slideFadeOut($("#TimeOptions"));}
-        if (value == "scale"){slideFadeIn($("#ScaleOptions"));}else{slideFadeOut($("#ScaleOptions"));}
-        if (value == "signature"){slideFadeIn($("#SignatureOptions"));}else{slideFadeOut($("#SignatureOptions"));}
-    })
+    $("#Type").on("change",resetType);
     $("#Type").change();
-    $("#Text").on("keyup",function(){
-        var text = $(this).val();
-        if (text!=''){
-            $("#examples").find(".question").text(text);
-        }else{
-            $("#examples").find(".question").text("What is your question?");
-        }
-    })    
-    $("#Options").on("click",".add",function(){
-        var newOpt = "<div class='option'><input type='text'><div class='UpDown'><div class='up'></div><div class='down'></div></div></div>";
-        $(newOpt).insertBefore($(this));
-        $(".option").off("click",".up",updateOptionOrder);
-        $(".option").off("click",".down",updateOptionOrder);
-        $(".option").on("click",".up",updateOptionOrder);
-        $(".option").on("click",".down",updateOptionOrder);
-        $("#Options").find("input").last().focus();
-    })
-    $("#Options").on("keyup","input",function(ev){
-        if (ev.keyCode == 13){
-            var options = $("#Options").find(".option"), current = $(this).closest(".option");
-            var l = options.last();
-            if (current.is(l)==false){
-                current.next().find("input").focus();
-            }else{
-                $("#OptionsList").find(".add").click();
-            }
-        }
-    })
-    $("#NumberOptions").on("keyup","input",function(){
-        var numeric = ["min","max","initial","step"];
-        var id = $(this).attr("name");
-        
-        if ($.inArray(id,numeric)>-1){
-            var v = $(this).val(), r = v.replace(/[^0-9.]/g, "");
-            if (v != r){
-                alertBox("numbers only",$(this),"after","fade");
-                $(this).val(r);
-            }
-        }
-    })
-        
+    $("#Options").on("click",".add",addOption);
+    $("#Options").on("keyup","input",optionsEnterKey); 
     $("#AddItem, #AddText").on("click",".save",saveItem);
-    $("#AddItem").on("click",".cancel",function(){
-        var p = $("#AddItem").parent();
-        if (p.hasClass("item") || p.hasClass("itemFU")){
-            p.children(".question").find(".toggle").filter(".cancel").click();
-        }
-        if (modalOrBody($(this)).is("#AddItem")){
-            setTimeout(function(){
-                resetAddItem();
-            },500)            
-        }
-    })
+    $("#AddItem").on("click",".cancel",addItemCancel)
 
     $("#AddText").on("click",".cancel",resetAddText);
     $(".TimeRestrict").find("li").filter("[data-value='allow any time']").on("click",masterCheckbox);
@@ -519,6 +59,394 @@ $(document).ready(function(){
         
     if ($("#formdata").data("json")!=undefined){loadFormData();}
 })
+function liveFormPreview(){
+    var uid = $("#formdata").data('formuid');
+    blurElement($("body"),"#loading");
+    $("#FormPreview").load("/forms/"+uid+"/preview",function(){
+        initializeNewForms();
+        blurElement($('body'),"#FormPreview");
+        $("#FormPreview").find(".cancel").text("close");
+    })
+}
+function addSection(){
+    var name = $.sanitize($("#SectionName").val());
+    var names = $("#Sections").find(".section").find(".sectionName").find("span");
+    var nameArray = [];
+    names.each(function(){
+        nameArray.push($(this).text().toLowerCase());
+    })        
+    
+    if (name==""){
+        alertBox("type in section name",$("#SectionName"),"after","fade","-4em,-50%");
+        return false;
+    }else if ($.inArray(name.toLowerCase(),nameArray)>-1){
+        alertBox("name already in use",$("#SectionName"),"after","fade","-4em,-50%");
+        return false;
+    }
+    var sections = $("#Sections").find(".section");
+    if (sections.length==0){
+        $(sectionNode).appendTo("#Sections");
+    }else{
+        $(sectionNode).insertAfter(sections.last());
+    }
+    var sections = $("#Sections").find(".section");
+    var num = sections.length;
+    var secStr = "";
+    
+    // if (num>1){
+        section = sections.last();
+    // }
+
+    section.find(".sectionName").find('span').text(name);
+    // section.find(".showByDefault").find('span').text(show);
+    section.find(".selectMultiple").find(".show").on("click",multiItemOptions);
+    section.find(".selectMultiple").find(".hide").on("click",hideMultiItemOptions);
+    section.find(".selectMultiple").find(".copy").on("click",copyMultiple);
+    section.find(".selectMultiple").find(".delete").on("click",deleteMultiple);
+
+    slideFadeIn(section);
+    
+    var Items = [];
+    section.data("items",Items);
+    
+    $("#SectionName").val("");
+    // slideFadeOut($("#AddSection"));
+    unblurElement($("body"));
+    
+    updateSections();
+}
+function showAddItem(){
+    var addNode = $(this).is(".addQuestion") ? "#AddItem" : "#AddText",
+        t = $(this).closest(".section").find(".itemOptions");
+    $("#AddItemProxy").insertBefore(t);
+    // $("#NarrativeOptions").show();
+    if (addNode == '#AddText'){
+        $("#NarrativeOptions").show();
+    }else{
+        $("#NarrativeOptions").hide();
+        $("#FollowUpOptions").hide();
+        resetAddItem();
+    }
+    blurElement($("body"),addNode);
+}
+function showInsertItem(){
+    var addNode = $(this).is(".insertQuestion") ? "#AddItem" : "#AddText";
+    var t = $(this).closest(".insertProxy"), item;
+    if (t.parent().data('contains') == 'item'){
+        $("#FollowUpOptions").hide();
+    }else{
+        $("#FollowUpOptions").appendTo($(addNode).find(".message")).show();
+        item = $(this).closest('.item');
+        showConditionOptions(item);
+        if (!item.find(".targetFUs").is(":visible")){
+            item.find(".hideFUs").click();
+        }
+    }
+    if (addNode == '#AddText'){$("#NarrativeOptions").show();}else{$("#NarrativeOptions").hide();}
+    $("#AddItemProxy").appendTo(t);
+    resetAddItem();
+    blurElement($("body"),addNode);
+}
+function deleteSection(){
+    var target = $(this).closest(".section"), name = target.find('.sectionName').find(".value").text();
+    $("#Warn").find(".message").html('<h2>Warning!</h2><div>Are you sure you want to delete "'+name+'"? This will delete all of the questions and followups it contains.</div>');
+    $("#Warn").find(".submit").text("Delete section and its questions");
+    blurElement($("body"),"#Warn");
+    var check = setInterval(function(){
+        if (confirmBool == true){
+            slideFadeOut(target)
+            setTimeout(function(){
+                $(target).remove();
+                updateSections();
+                autoSaveForm();
+            },600);
+            confirmBool = undefined;
+            clearInterval(check);
+            unblurElement($("body"));
+        }else if (confirmBool == false){
+            confirmBool = undefined;
+            clearInterval(check);                
+        }
+    },100)
+}
+function toggleClick(){
+    var toggle = $(this), p = toggle.closest('.editable, .question');
+    if (p.hasClass("editable")){
+        editableToggleClick(toggle);
+    }
+    else if (p.hasClass("question")){
+        questionToggleClick(toggle);
+    }
+}
+function questionToggleClick(toggle){
+    var p = toggle.closest('.editable, .question');
+    var question = p.data("question"), k = p.data("key"), type = p.data("type"), options = p.data("options"), condition = p.data("condition"), required =p.data('required'), section = toggle.closest(".section"), item = p.closest(".item, .itemFU");
+
+    if (required === undefined){required = "true"}
+    else{required = (required === true) ? "true" : "false";}
+
+    if (toggle.hasClass("edit")){
+        var proxy = $("#AddItemProxy"), addNode = (type == 'narrative') ? "#AddText" : "#AddItem";
+
+        if (item.is(".itemFU")){
+            addNode = (item.find(".question").data('type') == 'narrative') ? "#AddText" : "#AddItem";
+
+            proxy.appendTo(item);
+            blurElement($("body"),addNode);
+            showConditionOptions($(item).closest(".item"));
+            $("#FollowUpOptions").appendTo($(addNode).find(".message")).show();
+        }else if (item.is(".item")){
+            $("#FollowUpOptions").hide();
+            item = item.find(".ItemsFU");
+            proxy.insertBefore(item);
+            blurElement($("body"),addNode);
+        }
+
+        if (type != 'narrative'){
+            $("#Text").val(question);
+            $("#Type").val(type);
+            $("#Type").change();
+            $("#Required").val(required);          
+            if (options.placeholder != undefined){
+                $(".textPlaceholder, .textAreaPlaceholder").val(options.placeholder);
+            }
+        }else{
+            slideFadeIn($("#NarrativeOptions"));
+            var markup = options.markupStr;
+            $("#NarrativeOptions").find(".note-placeholder").hide();
+            $("#NarrativeOptions").find(".note-editable").html(markup);
+        }
+        
+        t = toggle.closest(".item").find(".question").data('type');
+        
+        if (condition != undefined && (t == "number" || t == "scale")){
+            condition = condition[0]
+            var arr = condition.split(" "), num = arr[2], dir = arr[0]+" "+arr[1];
+            $("#FollowUpOptions").find("input").val(num);
+            $("#FollowUpOptions").find("select").val(dir);
+        }else{
+            $("#FollowUpOptions").resetActives();
+            var matches = $("#FollowUpOptions").find("li").filter(function(){
+                return ($.inArray($(this).data('value'),condition) > -1);
+            });
+            matches.addClass('active');
+        }
+
+        if ($.isPlainObject(options)){
+            var items = $("#AddItem").find("input").filter(":visible");
+            items = items.add($("#AddItem").find("select").filter(":visible"));
+            if (t == "time"){
+                $("#TimeList").find("li").each(function(){
+                    if (toggle.hasClass("active")){toggle.click();}
+                })
+                $.each(options,function(key, val){
+                    var obj = {
+                        all:"allow any time",
+                        minTime:"set range",
+                        step:"set interval",
+                        setTime:"set initial value"
+                    }
+                    $("#TimeOptions").find("#"+key).val(val);
+                    $("#TimeOptions").find("li").filter("[data-value='"+obj[key]+"']").click();
+                })
+            }else if(t == 'date'){
+                // var beginYear = options.yearRange.split(':')[0], endYear = options.yearRange.split(':')[1],
+                var minDate = options.minDate, maxDate = options.maxDate, minNum, minType, maxNum, maxType, minDir, maxDir;
+                if (minDate != null){
+                    minNum = options.minDate.substring(1,options.minDate.length - 1);
+                    maxNum = options.maxDate.substring(1,options.maxDate.length - 1);
+                    minType = options.minDate.substring(options.minDate.length - 1,options.minDate.length);
+                    maxType = options.maxDate.substring(options.maxDate.length - 1,options.maxDate.length);
+                    minDir = options.minDate.charAt[0] == '-' ? 'before' : 'after';
+                    maxDir = options.maxDate.charAt[0] == '-' ? 'before' : 'after';
+                    var guide = {"m":"months","d":"days","w":"weeks","y":"years"};
+                    minType = guide[minType];
+                    maxType = guide[maxType];
+                    $("#DateOptions").find(".minNum").val(minNum);
+                    $("#DateOptions").find(".maxNum").val(maxNum);
+                    $("#DateOptions").find(".minType").val(minType).change();
+                    $("#DateOptions").find(".maxType").val(maxType).change();
+                    $("#DateOptions").find(".minDir").val(minDir).change();
+                    $("#DateOptions").find(".maxDir").val(maxDir).change();
+                    if ($("#NoRestriction").is(":checked")){$("#NoRestriction").click();}                            
+                }else{
+                    if (!$("#NoRestriction").is(":checked")){$("#NoRestriction").click();}
+                }
+            }else if (t == 'scale'){
+                $("#scalemin").val(options['min']);
+                $("#scalemax").val(options['max']);
+                $("#initial").val(options['initial']);
+                $("select").filter('[name="dispVal"]').val(options['displayValue']).change();
+                $("select").filter('[name="dispLabel"]').val(options['displayLabels']).change();
+                for (var prop in options){
+                    var val = options[prop];
+                    items.filter(function(){
+                        return $(this).attr("name") == prop;
+                    }).val(val);
+                }
+            }else if (t == 'text'){
+                var placeholder = (options != undefined && options['placeholder'] != undefined) ? options['placeholder'] : "";
+                $(".textPlaceholder").val(placeholder);
+            }else if (t == 'text box'){
+                var placeholder = (options != undefined && options['placeholder'] != undefined) ? options['placeholder'] : "";
+                $(".textAreaPlaceholder").val(placeholder);
+            }else if (t == 'bodyclick'){
+                var size = findObjKey(imageSizeDecode, options.height);
+                size = size.split("x").join("x-");
+                $("#BodyClickList").find("li").filter("[data-value='"+size+"']").click();
+            }
+            else{
+                // if (t == 'number'){console.log(options)}
+                for (var prop in options){
+                    var val = options[prop];
+                    items.filter(function(){
+                        return $(this).attr("name") == prop;
+                    }).val(val);
+                }
+            }
+        }
+        else if ($.isArray(options)){
+            var optionCount = options.length, 
+                inputCount = $("#OptionsList").find(".option").length,
+                dif = optionCount - inputCount,
+                extraCount = -dif;
+            for (x = 0; x < dif; x++){$("#OptionsList").find(".add").click();}
+            for (x = 0; x < extraCount; x++){$("#OptionsList").find(".option").last().remove();}
+            var inputs = $("#OptionsList").find("input");
+            for (x = 0; x < optionCount; x++){
+                var val = options[x];
+                $(inputs[x]).val(val);
+            }
+        }
+    }
+    else if (toggle.hasClass("delete")){
+        var target = p, itemOrFU = toggle.closest(".itemFU, .item"), countFUs = itemOrFU.find(".itemFU").length,
+            warningText = (countFUs == 1) ? "There is currently <u>1 followup</u> under this question." : "There are currently <u>"+countFUs+" followups</u> under this question.";
+        if (itemOrFU.is(".item") && countFUs > 0){
+            $("#Warn").find(".message").html("<h2>ATTENTION</h2><div>Deleting this question will also delete all of the followup questions attached to it. "+warningText+" This cannot be undone.</div>");
+            $("#Warn").find(".confirmY").text("delete question and followups");
+            blurElement($("body"),"#Warn");
+        }else{
+            $("#Warn").find(".message").html("<h2>ATTENTION</h2><div>Are you sure you want to delete this question?</div>");
+            $("#Warn").find(".confirmY").text("delete question");
+            blurElement($("body"),"#Warn");
+        }
+        var check = setInterval(function(){
+            if (confirmBool == true){
+                slideFadeOut(item);
+                setTimeout(function(){
+                    $("#AddItem").appendTo("#FormBuilder").hide();
+                    var Items = section.data("items");
+                    if (item.is(".itemFU")){
+                        var kP = p.closest(".item").find(".question").data('key');
+                        Items = Items[kP].followups;
+                    }
+                    Items.splice(k,1);
+                    updateItems(section);
+                    autoSaveForm();
+                },500);
+                $(".zeroWrap.a").remove();
+                confirmBool = undefined;
+                unblurAll();
+                clearInterval(check);
+            }else if (confirmBool == false){
+                unblurElement(item);
+                // $(".zeroWrap.a").remove();
+                confirmBool = undefined;
+                clearInterval(check);                
+            }
+        },100)
+    }
+    else if (toggle.hasClass("copy")){
+        var Items = section.data("items");
+        if (item.is(".itemFU")){
+            var kP = p.closest(".item").find(".question").data('key');
+            Items = Items[kP].followups;
+        }
+        var copy = {};
+        $.extend(true,copy,Items[k]);
+        copy.question = copy.question + " COPY";
+        // console.log(copy);
+        Items.splice(k+1,0,copy);
+        updateItems(section);
+        autoSaveForm();
+    }  
+}
+function showAddFollowUp(){
+    $("#AddItemProxy").insertBefore($(this));
+    $("#Type").val("text");
+    $("#Type").change();
+    $("#FollowUpOptions").show();
+    blurElement($("body"),"#AddItem");
+    var item = $(this).closest(".item"), question = item.find(".q").text();
+    // console.log(question);
+    $("#AddItem").find("h2").first().html('"'+question+'" - ' + "<span class='pink'>Follow Up Question</span>");
+    $("#FollowUpOptions").appendTo($("#AddItem").find(".message"));
+    $("#FollowUpOptions").find(".switch").text("When To Ask This Question");
+    showConditionOptions(item);
+    if (!item.find(".targetFUs").is(":visible")){
+        item.find(".hideFUs").click();
+    }
+}
+function showAddFollowUpText(){
+    $("#AddItemProxy").insertBefore($(this));
+    resetAddText();
+    blurElement($("body"),"#AddText");
+    var item = $(this).closest(".item");
+    $("#FollowUpOptions").insertAfter($("#NarrativeOptions")).show();
+    $("#FollowUpOptions").find(".switch").text("When To Display This Text");
+    showConditionOptions(item);
+    if (!item.find(".targetFUs").is(":visible")){
+        item.find(".hideFUs").click();
+    }
+}
+function resetType(){
+    var needOptions = ['radio','checkboxes','dropdown'], value = $(this).val();
+    if ($.inArray(value,needOptions)>-1){slideFadeIn($("#Options"));}else{slideFadeOut($("#Options"));}
+    if (value == "number"){slideFadeIn($("#NumberOptions"));}else{slideFadeOut($("#NumberOptions"));}
+    if (value == "date"){slideFadeIn($("#DateOptions"));}else{slideFadeOut($("#DateOptions"));}
+    if (value == "text"){slideFadeIn($("#TextOptions"));}else{slideFadeOut($("#TextOptions"));}
+    if (value == "bodyclick"){slideFadeIn($("#BodyClickOptions"));}else{slideFadeOut($("#BodyClickOptions"));}
+    if (value == "text box"){slideFadeIn($("#TextBoxOptions"));}else{slideFadeOut($("#TextBoxOptions"));}
+    if (value == 'time'){slideFadeIn($("#TimeOptions"));}else{slideFadeOut($("#TimeOptions"));}
+    if (value == "scale"){slideFadeIn($("#ScaleOptions"));}else{slideFadeOut($("#ScaleOptions"));}
+    if (value == "signature"){slideFadeIn($("#SignatureOptions"));}else{slideFadeOut($("#SignatureOptions"));}
+}
+function addOption(){
+    var newOpt = "<div class='option'><input type='text'><div class='UpDown'><div class='up'></div><div class='down'></div></div></div>";
+    $(newOpt).insertBefore($(this));
+    resetOptionOrderBtns();
+    $("#Options").find("input").last().focus();
+}
+function resetOptionOrderBtns(){
+    $(".option").off("click",".up",updateOptionOrder);
+    $(".option").off("click",".down",updateOptionOrder);
+    $(".option").on("click",".up",updateOptionOrder);
+    $(".option").on("click",".down",updateOptionOrder);
+}
+function optionsEnterKey(ev){
+    if (ev.keyCode == 13){
+        var options = $("#Options").find(".option"), current = $(this).closest(".option");
+        var l = options.last();
+        if (current.is(l)==false){
+            current.next().find("input").focus();
+        }else{
+            $("#OptionsList").find(".add").click();
+        }
+    }
+}
+function addItemCancel(){
+    var p = $("#AddItem").parent();
+    if (p.hasClass("item") || p.hasClass("itemFU")){
+        p.children(".question").find(".toggle").filter(".cancel").click();
+    }
+    if (modalOrBody($(this)).is("#AddItem")){
+        setTimeout(function(){
+            resetAddItem();
+        },500)            
+    }
+}
+
 var imageSizeDecode = {small:'20em',medium:'27.5em',large:'35em',xlarge:'50em'};
 function toggleImageClickSize(){
     var size = $(this).parent().find(".active"), key = size.data('value').split("-").join(""), newSize = imageSizeDecode[key], target = $(this).data('target');
@@ -613,62 +541,58 @@ function saveItem(){
 
         $("#AddItemProxy").appendTo('#modalHome');
         $("#FormBuilder").find(".section").each(function(){updateItems($(this));});
-        autoSave();
+        autoSaveForm();
         unblurElement($("body"));
     }
 }
-var autoSaveCount;
-function autoSave(){
-    var form = createFormObj();
-    if (!form){return false;}
-    var jsonStr = JSON.stringify(form);
-    // var mode = $("#formdata").data("mode");
-    var formId = $("#formdata").data("formid") === undefined ? "none" : $("#formdata").data("formid"),
-        uid = $("#formdata").data("formuid") === undefined ? "none" : $("#formdata").data("formuid");
-    var dataObj = {
-        form_id: formId,
-        form_uid: uid,
-        form_name: form["formName"],
-        // questions: JSON.stringify(form['sections']),
-        full_json: jsonStr
-    };
-    $.ajax({
-        method:"POST",
-        url:"/forms",
-        data: dataObj,
-        success:function(data){
-            if (data!=false){
-                // console.log(data);
-                var arr = JSON.parse(data);
-                clearTimeout(autoSaveCount);
-                var formUID = arr[0], formID = arr[1], wrap = $("#AutoSaveWrap");
-                $("#formdata").data("formuid",formUID);
-                $("#formdata").data("formid",formID);
-                var t = new Date();
-                var timeStr = t.toLocaleTimeString();
-                $("#formdata").text("Autosaved at "+timeStr);
-                if (wrap.is(":visible")){
-                    wrap.fadeOut(400);
-                    setTimeout(function(){
-                        $("#AutoConfirm").find(".message").text("Autosaved at " + timeStr);
-                        wrap.fadeIn();
-                    },1000)
-                    autoSaveCount = setTimeout(function(){
-                        slideFadeOut(wrap);
-                    },2500);
-                }else{
-                    $("#AutoConfirm").find(".message").text("Autosaved at " + timeStr);
-                    slideFadeIn(wrap);
-                    autoSaveCount = setTimeout(function(){
-                            slideFadeOut(wrap);
-                    },2500);
+var autoSaveFormCount;
+var autosaveFormTimer = null, autosaveFormXHR = null;
+function autoSaveForm(){
+    clearTimeout(autosaveFormTimer);
+    autosaveFormTimer = setTimeout(function(){
+        var form = createFormObj();
+        if (!form){return false;}
+        var jsonStr = JSON.stringify(form);
+        // var mode = $("#formdata").data("mode");
+        var formId = $("#formdata").data("formid") === undefined ? "none" : $("#formdata").data("formid"),
+            uid = $("#formdata").data("formuid") === undefined ? "none" : $("#formdata").data("formuid");
+        var dataObj = {
+            form_id: formId,
+            form_uid: uid,
+            form_name: form["formName"],
+            // questions: JSON.stringify(form['sections']),
+            full_json: jsonStr
+        };
+        autosaveFormXHR = $.ajax({
+            method:"POST",
+            url:"/forms",
+            data: dataObj,
+            success:function(data){
+                if (data!=false){
+                    // console.log(data);
+                    var arr = JSON.parse(data);
+                    clearTimeout(autoSaveFormCount);
+                    var formUID = arr[0], formID = arr[1];
+                    $("#formdata").data("formuid",formUID);
+                    $("#formdata").data("formid",formID);
+
+                    var t = new Date();
+                    var timeStr = t.toLocaleTimeString();
+                    $("#formdata").text("Autosaved at "+timeStr);
+
+                    showAutosaveTime();
+                    // $("#formdata").text("Autosaved at "+timeStr);
+                    // $("#AutoConfirm").find(".message").text("Autosaved at " + timeStr);
+                    // wrap.slideFadeIn(400,setTimeout(function(){
+                    //     wrap.slideFadeOut(1500);
+                    // },3000));
+                }
+                else{
+                    alert("There was an error saving the form. Your changes have NOT been saved.");
                 }
             }
-            else{
-                alert("There was an error saving the form. Your changes have NOT been saved.");
-            }
-        }
-    })
+        })
+    },5000);
 }
 function createFormObj(){
     var sections = $("#FormBuilder").find(".section");
@@ -841,13 +765,13 @@ function createItemObj(){
         var textOptions = $("#TextOptions").is(":visible");
         if (textOptions){
             textOptions = {
-                'placeholder':$("#textPlaceholder").val()
+                'placeholder':$(".textPlaceholder").val()
             }
         }else{textOptions=undefined}
         var textBoxOptions = $("#TextBoxOptions").is(":visible");
         if (textBoxOptions){
             textBoxOptions = {
-                'placeholder':$("#textAreaPlaceholder").val()
+                'placeholder':$(".textAreaPlaceholder").val()
             }
         }else{textBoxOptions=undefined}
 
@@ -1120,7 +1044,7 @@ function updateItems(section){
             rStr = ((r === false) || (t == 'narrative')) ? "" : "<span class='requireSign'>*</span>";
         $(itemNode).appendTo(ItemsList);
         var newItem = ItemsList.find(".item").last();
-        if (t == "narrative"){q = "Rich Text Block";}
+        if (t == "narrative"){q = "<span style='opacity:0.8'>Your Text (as displayed below)</span>";}
         newItem.find(".question").html("<span class='q'>" + q + "</span>" + rStr + "<div style='display:inline-block'><div class='toggle edit'>(edit)</div><div class='toggle copy'>(duplicate)</div><div class='toggle delete'>(delete)</div><div class='toggle save'>(save)</div><div class='toggle cancel'>(cancel edit)</div></div>").data({"question":q, "key":x, "type":t, "options":o, "toggleFUs":tFUs, 'required':r});
         
         var target = (t == "narrative") ? ".narrative" : ".answer",
@@ -1141,8 +1065,8 @@ function updateItems(section){
                 var tFU = f.type, qFU = f.question, oFU = f.options, cFU = f.condition, cStr = "is <span class='bold underline pink'>", rFU = (f.required == undefined) ? true : f.required, rFUStr = ((rFU === false) || (tFU == 'narrative')) ? "" : "<span class='requireSign'>*</span>";
                 $(itemFUNode).appendTo(ItemsFUList);
                 var newItemFU = ItemsFUList.find(".itemFU").last();
-                if (tFU == "narrative"){qFU = "Rich Text Block";}
-                newItemFU.find(".question").html(qFU + rFUStr + "<div style='display:inline-block'><div class='toggle edit'>(edit)</div><div class='toggle copy'>(duplicate)</div><div class='toggle delete'>(delete)</div><div class='toggle save'>(save)</div><div class='toggle cancel'>(cancel edit)</div></div>").data({"question":qFU, "key":xFU, "type":tFU, "options":oFU, "condition":cFU, 'required':rFU});
+                if (tFU == "narrative"){qFU = "<span style='opacity:0.8'>Your Text (as displayed below)</span>";}
+                newItemFU.find(".question").html("<span class='q'>" + qFU + "</span>" + rFUStr + "<div style='display:inline-block'><div class='toggle edit'>(edit)</div><div class='toggle copy'>(duplicate)</div><div class='toggle delete'>(delete)</div><div class='toggle save'>(save)</div><div class='toggle cancel'>(cancel edit)</div></div>").data({"question":qFU, "key":xFU, "type":tFU, "options":oFU, "condition":cFU, 'required':rFU});
                 
                 var rFU = (tFU == "narrative") ? ".narrative" : ".answer",
                     template = $(".template").filter("[data-type='"+tFU+"']").find(rFU).clone();
@@ -1250,6 +1174,7 @@ function activateItem(item,type,options){
     if (type == "radio"){
         target = item.find("ul");
         target.find("li").remove();
+
         $.each(options,function(i,value){
             $("<li data-value='"+value+"'>"+value+"</li>").appendTo(target).on("click",radio);
         });
@@ -1294,8 +1219,8 @@ function activateItem(item,type,options){
         });
     }
     else if (type == 'bodyclick'){
-        var img = item.find('.imageClick');
-        img.data('height',options.height);
+        var target = item.find('.imageClick');
+        target.data('height',options.height);
         initializeImageClicks();
         resizeImageClicks();
     }
@@ -1497,7 +1422,7 @@ function updateSecOrder(){
     allLIs.each(function(l,LI){
         $(LI).data('key',l);
     });
-    autoSave();         
+    autoSaveForm();         
 }
 function updatedInsertProxies(){
     var insertNode = $("<div/>",{
@@ -1571,7 +1496,7 @@ function updateItemOrder(){
         })
     })        
 
-    autoSave();
+    autoSaveForm();
 }
 function updateOptionOrder(){
     if ($(this).hasClass('up')){
@@ -1680,7 +1605,7 @@ function updateItemFUOrder(){
     });
     currentItemFU.add(change).css("height","auto");
     
-    autoSave();
+    autoSaveForm();
 }
 function showConditionOptions(item){
     var k = item.find(".question").data('key');
@@ -1730,39 +1655,33 @@ function showConditionOptions(item){
         $("#condition").on("mousedown touchstart",".change",startChange);
         $("#condition").on("mouseup touchend",".change",stopChange);
     }
-    else if (t == "scale"){
-        //var oNode = $("<input type='slider'>")
-    }
     
     p = $("#AddItemProxy").parent();
     if (p.is(".itemFU")){
-        c = p.find(".question").data("condition");
-        //c = c.split(", ");
-        for (x=0;x<c.length;x++){
-            p.find("li").filter(function(){
-                return $(this).data("value") == c[x];
-            }).click();
-        }            
+        var conditionArr = p.find(".question").data("condition"), conditionLIs = $("#condition").find("li");
+        var matches = conditionLIs.filter(function(){
+            var v = $(this).data('value');
+            return ($.inArray(v, conditionArr) > -1);
+        }).addClass('active');
+        console.log(matches);
     }
     $("#condition").find(".answer").addClass("flexbox");
 }
 function resetAddItem(){
     var clear = $("#AddItem").find("#Options").find("input").add("#Text").add($("#FollowUpOptions").find("input"));
-    // clear = clear.add($("#NumberOptions").find("input"));
     clear.val("");
     $("#AddItem").find("h2").first().html("New Question");
     $("#Text").css('border-color','rgba(210,210,210,0.8)');
     $("#Type").val("text");
     $("#Type").change();
     $("#Required").val("true");
-    $("#textPlaceholder").val("");
-    $("#textAreaPlaceholder").val("");
+    $(".textPlaceholder").val("");
+    $(".textAreaPlaceholder").val("");
     $("#NumberOptions").find("#min").val("0");
     $("#NumberOptions").find("#max").val("100");
     $("#NumberOptions").find("#initial").val("5");
     $("#NumberOptions").find("#step").val("1");
     $("#NumberOptions").find("#units").val("");
-    console.log($("#AddItemProxy"));
 }
 function resetOptions(){
     var o = $("#OptionsList").find(".option");
@@ -1897,7 +1816,7 @@ function copyMultiple(){
                 Items.push(copy);
             })
             updateItems(section);
-            autoSave();
+            autoSaveForm();
             $(".zeroWrap").remove();
             optBox.find(".hide").click();
             unblurElement($("body"));
@@ -1918,7 +1837,7 @@ function copyMultiple(){
                 Items.splice(k+1+i,0,copy);
             })
             updateItems(section);
-            autoSave();
+            autoSaveForm();
             optBox.find(".hide").click();
             unblurElement($("body"));
             $("#MultiCopy").removeAttr("id").remove();
@@ -1947,7 +1866,7 @@ function deleteMultiple(){
                 })
                 updateItems(section);
                 optBox.find(".hide").click();
-                autoSave();
+                autoSaveForm();
                 confirmBool=undefined;
                 unblurElement($("body"));
                 clearInterval(wait);
@@ -1979,4 +1898,4 @@ function hideMultiItemOptions(){
         items.children(".UpDown").find(".up, .down").on("click",updateItemFUOrder);
     }
 }
-var sectionNode = "<div class='section'><h2 class='sectionName editable'><div class='pair'><input type='text' class='input'> <span class='value'></span></div><div class='toggle edit'>(edit section name)</div><div class='toggle save'>(save)</div><div class='toggle cancel'>(cancel)</div></h2>  <div class='Items'>  <div class='selectMultiple'> <div class='show button xxsmall yellow70'>select multiple items</div><div class='hide button xxsmall'>cancel selection</div><div class='delete button pink70 xxsmall'>delete items</div><div class='copy button pink70 xxsmall'>duplicate items</div> </div>   <p class='hideTarget'><span class='down'></span>No questions yet</p><div class='target' data-contains='item'><div style='padding:0.5em 1em;'>Add some questions!</div></div><div class='requireSign'>* <i>required</i></div></div>  <div class='itemOptions'><div class='addQuestion button pink xsmall'>add question</div><div class='addText button pink xsmall'>add text</div><div class='button xsmall deleteSection'>delete section</div></div> </div>", itemNode = "<div class='item'><div class='question'></div><br><div class='answer'></div> <div class='ItemsFU'>  <div class='selectMultiple'> <div class='show button xxsmall yellow70'>select multiple followup items</div><div class='hide button xxsmall'>cancel selection</div><div class='delete button xxsmall pink70'>delete items</div><div class='copy button pink70 xxsmall'>duplicate items</div> </div>  <p class='hideFUs'><span class='right'></span>Follow up based on response</p><div class='targetFUs' data-contains='itemFU'></div></div>   <div class='newFollowUp'><div class='button pink70 xxsmall addFollowUp'>add followup question</div><div class='button pink70 xxsmall addFollowUpText'>add followup text</div></div> <div class='UpDown'><div class='up'></div><div class='down'></div></div> </div>", itemFUNode = "<div class='itemFU'><div class='question'></div><div class='condition'></div><div class='answer'></div> <div class='UpDown'><div class='up'></div><div class='down'></div></div> </div>";
+var sectionNode = "<div class='section'><h2 class='sectionName editable'><div class='pair'><input type='text' class='input'> <span class='value'></span></div><div class='toggle edit'>(edit section name)</div><div class='toggle save'>(save)</div><div class='toggle cancel'>(cancel)</div></h2>  <div class='Items'>  <div class='selectMultiple'> <div class='show button xxsmall yellow70'>select multiple items</div><div class='hide button xxsmall'>cancel selection</div><div class='delete button pink70 xxsmall'>delete items</div><div class='copy button pink70 xxsmall'>duplicate items</div> </div>   <p class='hideTarget'><span class='arrow down'></span>No questions yet</p><div class='target' data-contains='item'><div style='padding:0.5em 1em;'>Add some questions!</div></div><div class='requireSign'>* <i>required</i></div></div>  <div class='itemOptions'><div class='addQuestion button pink xsmall'>add question</div><div class='addText button pink xsmall'>add text</div><div class='button xsmall deleteSection'>delete section</div></div> </div>", itemNode = "<div class='item'><div class='question'></div><br><div class='answer'></div> <div class='ItemsFU'>  <div class='selectMultiple'> <div class='show button xxsmall yellow70'>select multiple followup items</div><div class='hide button xxsmall'>cancel selection</div><div class='delete button xxsmall pink70'>delete items</div><div class='copy button pink70 xxsmall'>duplicate items</div> </div>  <p class='hideFUs'><span class='right'></span>Follow up based on response</p><div class='targetFUs' data-contains='itemFU'></div></div>   <div class='newFollowUp'><div class='button pink70 xxsmall addFollowUp'>add followup question</div><div class='button pink70 xxsmall addFollowUpText'>add followup text</div></div> <div class='UpDown'><div class='up'></div><div class='down'></div></div> </div>", itemFUNode = "<div class='itemFU'><div class='question'></div><div class='condition'></div><div class='answer'></div> <div class='UpDown'><div class='up'></div><div class='down'></div></div> </div>";

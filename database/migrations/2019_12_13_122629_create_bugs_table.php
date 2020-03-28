@@ -19,7 +19,7 @@ class CreateBugsTable extends Migration
             $table->string('description');
             $table->string('location')->nullable();
             $table->json('details')->nullable();
-            $table->json('status')->nullable();
+            $table->string('status');
             $table->unsignedInteger('user_id')->nullable();
             $table->timestamps();
         });

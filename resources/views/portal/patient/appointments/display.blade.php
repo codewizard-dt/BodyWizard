@@ -41,22 +41,14 @@
     <div class="message">
         <h1 class='purple'>Appointment Details</h1>
         <div class='split3366KeyValues'>
-            <div>
-                <span class="label">Practitioner:</span>
-                <span class='value' id="PractitionerName"></span>
-            </div>
-            <div>
-                <span class="label">Date + Time:</span>
-                <span class='value' id="ApptDateTime"></span>
-            </div>
-            <div>
-                <span class="label">Services:</span>
-                <span class='value' id="ServiceInfo"></span>
-            </div>
-            <div>
-                <span class="label">Required Forms:</span>
-                <span class='value' id="FormInfo"></span>
-            </div>
+            <span class="label">Practitioner:</span>
+            <span class='value' id="PractitionerName"></span>
+            <span class="label">Date + Time:</span>
+            <span class='value' id="ApptDateTime"></span>
+            <span class="label">Services:</span>
+            <span class='value' id="ServiceInfo"></span>
+            <span class="label">Required Forms:</span>
+            <span class='value' id="FormInfo"></span>
         </div>
     </div>
     <div class="options">

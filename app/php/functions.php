@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Google\Cloud\ErrorReporting\V1beta1\ReportedErrorEvent;
 use Google\Cloud\ErrorReporting\V1beta1\ErrorContext;
 use Google\Cloud\ErrorReporting\V1beta1\SourceLocation;
+use App\Events\BugReported;
 
 use App\Bug;
 use App\Image;
@@ -22,12 +23,22 @@ function listReturn($requestStatus, $url='not given'){
   if (is_array($requestStatus)){
     $requestStatus = json_encode($requestStatus);
   }
+  $usertype = Auth::user()->user_type;
   $withLists = [
     'message'=> $requestStatus,
     'url'=> $url,
     'uidList' => session('uidList'),
-    'tabList' => session('CurrentTabs')
+    'tabList' => session('CurrentTabs'),
+    'usertype' => Auth::user()->user_type,
+    'is_admin' => Auth::user()->is_admin,
+    'is_superuser' => Auth::user()->is_superuser
   ];
+  if ($usertype == 'patient'){
+    $patient = Auth::user()->patientInfo;
+    $withLists['id'] = $patient->id;
+    $withLists['isNewPatient'] = ($patient->isNewPatient() == 'true');
+    $withLists['name'] = $patient->name;
+  }
   return $withLists;
 }
 function getPractice($practiceId){
@@ -50,11 +61,22 @@ function reportError($exception,$location=null){
     $project = app('GoogleErrors')->projectName('bodywizard');
     app('GoogleErrors')->reportErrorEvent($project,$event);
   }else{
-    if ($location){
-      Log::error($exception,['location'=>$location]);
-    }else{
-      Log::error($exception);
-    }
+    // if ($location){
+
+    //   Log::error($exception,['location'=>$location]);
+    // }else{
+    // }
+    Log::error($exception);
+    event(new BugReported(
+      [
+        'description' => "Error", 
+        'details' => $exception, 
+        'category' => 'Caught Exceptions', 
+        'location' => $location,
+        'user' => null
+      ]
+    ));
+
   }
 }
 
@@ -133,8 +155,14 @@ function reportError($exception,$location=null){
         $data = str_replace('!', '', $data);
         $data = str_replace(':', '', $data);
         $data = str_replace('+', '', $data);
+        $data = str_replace('#', '', $data);
         $data = str_replace('  ', ' ', $data);
+        $data = trim($data);
         return $data;
+  }
+  function hyphentounderscore($data){
+      $data = str_replace("-","_",$data);
+      return $data;
   }
   function stripquotes($data){
       $data = str_replace("\"","",$data);
