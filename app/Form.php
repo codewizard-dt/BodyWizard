@@ -357,7 +357,7 @@ class Form extends Model
             $settings = $this->settings;
             // var_dump($settings);
             $displayStr = $display ? "" : "style='display:none;'";
-            echo '<form id="'.$formNameAbbrReflectEdit.'" '.$displayStr.' data-formname="'.$formNameAbbrOriginal.'" data-formid="'.$formID.'" data-uid="'.$uid.'" class="formDisp">';
+            echo '<form id="'.$formNameAbbrReflectEdit.'" '.$displayStr.' data-formname="'.$formNameAbbrOriginal.'" data-formid="'.$formID.'" data-uid="'.$uid.'" data-filled="false" class="formDisp">';
             for ($x=0;$x<count($sections);$x++){
                 $section = $sections[$x];
                 $name = $section['sectionName'];
@@ -487,7 +487,7 @@ class Form extends Model
             // echo "<ul class='answer radio' id='$name' data-name='$name'>";
             echo "<ul class='answer radio $name' data-name='$name'>";
             for ($i=0;$i<count($options);$i++){
-                echo '<li data-value="'.$options[$i].'">'.$options[$i].'</li>';
+                echo '<li tabindex="0" data-value="'.$options[$i].'">'.$options[$i].'</li>';
             }
             echo '</ul>';
         }

@@ -42,6 +42,8 @@ class InvoiceController extends Controller
             $invoice->notes = $request->notes;
             $invoice->line_items = $request->line_items;
             $invoice->payments = $request->payments;
+            $invoice->status = 'settled';
+            $invoice->settled_at = Carbon::now();
             // $invoice->autosave = ['notes' => $request->notes, 'line_items' => $request->line_items, 'payments' => $request->payments];
             $invoice->save();
             $appt->saveToFullCal();
@@ -53,6 +55,7 @@ class InvoiceController extends Controller
     }
 
     public function autosave($id, Request $request){
+        Log::info($request);
         $invoice = ($id == 'new') ? new Invoice : Invoice::find($id);
         $apptId = $request->appointment_id;
         try{
@@ -62,6 +65,7 @@ class InvoiceController extends Controller
             $invoice->created_by_user_id = Auth::user()->id;
             $invoice->appointment_id = $apptId;
             $invoice->total_charge = $request->total_charge;
+            $invoice->status = [time()=>'pending'];
             // $invoice->notes = $request->notes;
             // $invoice->line_items = $request->line_items;
             // $invoice->payments = $request->payments;

@@ -9,8 +9,7 @@ function initializeInvoicePage(){
 	initializeLineItems();
 	initializePayments();
 	initializeSaveInvoiceBtn();
-	initializeAdditionalNoteForm();
-	// initializeInvoiceAutoSave();
+	initializeAdditionalNoteForm('Invoice');
 	minifyForm($("#AddNote"));
 	invoiceAutosaveFill();
 	clearTimeout(autosaveInvoiceTimer);
@@ -99,7 +98,7 @@ function attachStripe(){
 		}
 	});
 	var submitBtn = filterByData($("#submit-stripe"),'hasStripeFx',false);
-	submitBtn.on('click',function(){
+	submitBtn.on('click',function(ev){
 		var intent = $("#StripePaymentDetails").data('paymentIntent');
 		blurTopMost("#loading");
 		ev.preventDefault();
@@ -133,9 +132,8 @@ function attachStripe(){
 			        $.extend(details,paymentDetails);
 			        info.details = details;
 			        payment.data(info);
-			        console.log(payment,info,details,paymentDetails,info,payment.data());
+			        // console.log(payment,info,details,paymentDetails,info,payment.data());
 					blurTopMost("#checkmark",400,unblurAll);
-
 		        }
 		    }
 		});
@@ -149,6 +147,7 @@ function submit(){
 function invoiceAutosaveFill(){
 	var info = $("#ApptInfo").data('autosave');
 	if (info == '""' || info == undefined || $("#Invoice").length == 0) return false;
+	console.log(info);
 	$.each(info.notes,function(n, note){
 		$(".note_title").val(note.title);
 		$('.note_details').val(note.text);
@@ -165,13 +164,14 @@ function invoiceAutosaveFill(){
 function paymentAutosaveFill(autosavedPayments){
 	$.each(autosavedPayments,function(p, payment){
 		console.log(payment);
-		var form = $("#AddPayment"), t = payment.payment_method, cardType = (t == 'card' && payment.details != undefined) ? payment.details.card_type : null;
-		form.find('li').filter('[data-value="'+t+'"]').click();
-		if (cardType){
-			form.find('.card_type').find('li').filter('[data-value="'+cardType+'"]').addClass('active');
-		}
-		form.find('.amount').val(payment.amount);
-		$("#AddPaymentBtn").click();
+		addPayment(payment);
+		// var form = $("#AddPayment"), t = payment.payment_method, cardType = (t == 'card' && payment.details != undefined) ? payment.details.card_type : null;
+		// form.find('li').filter('[data-value="'+t+'"]').click();
+		// if (cardType){
+		// 	form.find('.card_type').find('li').filter('[data-value="'+cardType+'"]').addClass('active');
+		// }
+		// form.find('.amount').val(payment.amount);
+		// $("#AddPaymentBtn").click();
 	})
 }
 function lineItemAutosaveFill(autosavedLines){
@@ -248,6 +248,7 @@ function createInvoiceObj(autosave = false){
 	}else{
 		partialPayments.each(function(){
 			payments.push($(this).data());
+			console.log($(this).data());
 		})
 	}
 
@@ -275,8 +276,10 @@ function autoSaveInvoice(){
 		clearTimeout(autosaveInvoiceTimer);
 	}
 	autosaveInvoiceTimer = setTimeout(function(){
+		// console.log('autosave trigger');
 		var postObj = createInvoiceObj(true);
 		if (postObj.line_items == null) return;
+		console.log(postObj);
 		autosaveInvoiceXHR = $.ajax({
 			url:'/Invoice/'+$("#ApptInfo").data('invoiceid')+'/autosave',
 			method: 'POST',
@@ -288,12 +291,18 @@ function autoSaveInvoice(){
 				console.log(data);
 			}
 		})
-	},5000);
+	},4000);
 }
 function saveInvoice(invoiceObj){
 	clearTimeout(autosaveInvoiceTimer);
-	autosaveInvoiceTimer = null;
-	if (autosaveInvoiceXHR) autosaveInvoiceXHR.abort();
+	if (autosaveInvoiceXHR) {
+		// console.log(autosaveInvoiceXHR);
+		setTimeout(function(){
+			saveInvoice(invoiceObj);
+		},300);
+		return false;
+	}
+	console.log('sending invoice obj:',invoiceObj);
 	blurTopMost('#loading');
 	$.ajax({
 		url:'/Invoice/'+$("#ApptInfo").data('invoiceid')+'/save',
@@ -361,15 +370,23 @@ function updatePaymentAmount(){
 		$("#SaveInvoiceBtn").removeClass('disabled');
 	}
 }
-function addPayment(){
-	var form = $("#AddPayment"), obj = checkForm(form);
-	if (!obj) return false;
-	var payments = $(".partialPayment"), paymentCount = payments.length, addBtn = $("#AddPaymentBtn"), newPayment = createPaymentObj(), total = $("#TotalCharge").data('value'), remainder = total, amountInput = form.find('.amount'), t = newPayment.payment_method, cardType = (t == 'card') ? newPayment.details.card_type : null;
+function addPayment(savedPayment = null){
+	console.log('savedPayment',savedPayment);
+	var paymentObj, form = $("#AddPayment");
+	if (savedPayment && savedPayment['payment_method'] != undefined){
+		paymentObj = savedPayment;
+	}else{
+		var obj = checkForm(form);
+		if (!obj) return false;
+		paymentObj = createPaymentObj()
+	}
+	var payments = $(".partialPayment"), paymentCount = payments.length, addBtn = $("#AddPaymentBtn"), total = $("#TotalCharge").data('value'), remainder = total, amountInput = form.find('.amount'), t = paymentObj.payment_method, cardType = (t == 'card') ? paymentObj.details.card_type : null;
+	console.log(paymentObj);
 	if (paymentCount == 0){
 		$('<div class="label">Payments</div><div class="value" id="PartialPayments"><div id="Remainder" class="little pink"></div></div>').insertAfter("#TotalCharge");
 	}
 	var title = (cardType ? cardType : "") + " " + t, 
-		amountText = newPayment.currency.symbol+newPayment.amount,
+		amountText = paymentObj.currency.symbol+paymentObj.amount,
 		newEleHtml = '<div>'+toTitleCase(title) + " - " + amountText + '</div>';
 	if (cardType){
 		newEleHtml += '<div class="cardOptions flexbox"><span class="checkmark">✓</span></div>';
@@ -379,7 +396,7 @@ function addPayment(){
 	$("<div/>",{
 		class: 'partialPayment flexbox leftSided',
 		html: newEleHtml,
-		data: newPayment
+		data: paymentObj
 	}).insertBefore("#Remainder").on('click','.removePayment',removePayment);
 
 	resetForm(form);

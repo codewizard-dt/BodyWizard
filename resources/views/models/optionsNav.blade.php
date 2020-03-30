@@ -145,7 +145,7 @@
 				@endif
 			</div>
 			<div class="toggleDetails down">
-				<span class="label">details + options</span>
+				<span class="label">more</span>
 				<div class="arrow"></div>
 			</div>
 		</div>

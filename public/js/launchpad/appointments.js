@@ -6,7 +6,7 @@ function initializeApptForms(){
     $(".ChangeTitle").attr('id','ChangeTitle');
     $("#ChangeTitle").addClass('purple');
 
-    var uninitialized = filterUninitialized('#EditApptBtn, #DeleteApptBtn, #ApptDetails, #FormInfo, .selector, .selectPractitioner, #SelectTime, #PractitionerSelector, #SelectOrRandom, #booknow, #SelectServices, #ChartNoteBtn');
+    var uninitialized = filterUninitialized('#EditApptBtn, #DeleteApptBtn, #ApptDetails, #FormInfo, .selector, .selectPractitioner, #SelectTime, #PractitionerSelector, #SelectOrRandom, #booknow, #SelectServices, #ChartNoteBtn, #InvoiceBtn');
 	uninitialized.filter("#EditApptBtn").on('click',function(){
 		blurElement($("body"),"#editAppointment");
 	})
@@ -40,25 +40,22 @@ function initializeApptForms(){
 	    var newBtns = filterByData("#booknow, #EditApptBtn",'hasFx',false);
 	    newBtns.on('click',showAppointmentDetails);
 	    newBtns.data('hasFx',true);
-	    if ($("#PatientCalendar").length == 1){
-		    // $("#ScheduleFeedTarget").load("/schedule/feed",function(){
-		        $("#PatientCalendar").html("");
-		     	loadPatientCal($("#PatientCalendar"));
-	     	    activateServiceSelection();
-		    // });
+	    if ($("#PatientCalendar").exists()){
+	        $("#PatientCalendar").html("");
+	     	loadPatientCal($("#PatientCalendar"));
+     	    activateServiceSelection();
 	    }
 	    $("#createAppointment").on('click','.cancel',function(){$("#booknow").find('.active').removeClass('active');})
 	}else if (usertype == 'practitioner'){
 		allowOverride = true;
-	     uninitialized.filter("#SelectServices").on('click', '.override',overrideService);
-	     uninitialized.filter("#ChartNoteBtn").on('click',checkForChartNote);
-	     if ($("#PractitionerCalendar").length == 1){
-		     // $("#ScheduleFeedTarget").load("/schedule/feed",function(){
-		        $("#PractitionerCalendar").html("");
-		     	loadPractitionerCal($("#PractitionerCalendar"));
-				activateServiceSelection();
-		     // });	     	
-	     }
+	    uninitialized.filter("#SelectServices").on('click', '.override',overrideService);
+	    uninitialized.filter("#ChartNoteBtn").on('click',checkForChartNote);
+	    uninitialized.filter("#InvoiceBtn").on('click',checkForInvoice);
+	    if ($("#PractitionerCalendar").exists()){
+	       	$("#PractitionerCalendar").html("");
+	    	loadPractitionerCal($("#PractitionerCalendar"));
+			activateServiceSelection();
+	    }
 	}
 }
 function activateServiceSelection(){
@@ -472,15 +469,17 @@ function checkFormStatus(){
 			confirm('Form Completed',"You've already completed this form!",'see your submission','go back');
 			setUid('Submission',formInfo.data('completed'));
 			var callback = function(){
-				unblurAll();
-				$("#submissions-index").find(".title").click();					
+				unblurAll(function(){
+					$("#submissions-index").find(".title").click();					
+				});
 			}
 		}else{
 			confirm('Required Form Status','You haven\'t completed this form yet. Would you like to go to the forms page now?','go to forms','not right now');
 			setUid('Form',formInfo.data('form_id'));
 			var callback = function(){
-				unblurAll();
-				$("#forms-home").find(".title").click();					
+				unblurAll(function(){
+					$("#forms-home").find(".title").click();
+				});
 			}
 		}
 	}else if (usertype == 'practitioner'){
@@ -488,8 +487,9 @@ function checkFormStatus(){
 			confirm('Form Completed',"Patient has already submitted this form",'view submission','go back');
 			setUid('Submission',formInfo.data('completed'));
 			var callback = function(){
-				unblurAll();
-				$("#submission-index").find(".title").click();					
+				unblurAll(function(){
+					$("#submission-index").find(".title").click();
+				});
 			}
 		}else{
 			confirm('Required Form Status','Patient has not completed this form.<h3 class="pink">Send reminder?</h3>','yes send reminder','not right now');
@@ -808,6 +808,9 @@ function updateFormInfo(forms){
 }
 function updateChartNoteBtn(noteInfo){
 	$("#ChartNoteBtn").data('info',noteInfo);
+}
+function updateInvoiceBtn(invoiceInfo){
+	$("#InvoiceBtn").data('info',invoiceInfo);
 }
 
 function selectCategory(){
@@ -1206,6 +1209,7 @@ function loadPractitionerCal(target){
                 $("#ServiceInfo").text(services);
                 updateFormInfo(forms);
                 updateChartNoteBtn(details.noteInfo);
+                updateInvoiceBtn(details.invoiceInfo);
                 // loadApptInfo(patientIds,practitionerId,serviceIds,dateTime,$("#editAppointment"));
                 blurElement($("body"),"#ApptInfo");                
             }
@@ -1274,19 +1278,33 @@ function overrideService(){
 }
 function checkForChartNote(){
 	var info = $("#ChartNoteBtn").data('info');
-	console.log(info);
 	if (info === null){
 		confirm('No Chart Note',"There is no chart note for this appointment yet. <h3 class='pink'>Create chart note now?</h3>", 'yes, create','not now', null, loadChartNoteInEditor);
 	}
 	else if (info.status == 'not signed'){
 		confirm('Unsigned Chart Note',"There's an unsigned chart note for this appointment. <h3 class='pink'>Do you want to edit it?</h3>",'yes, edit','not now',null,loadChartNoteInEditor);
 	}else{
-		confirm('Chart Note Complete',"The chart note for this appointment is already signed. <h3 class='pink'>View chart note?</h3>",'yes, view','not now',null,function(){alert('hi')});
+		console.log("confirming");
+		confirm('Chart Note Complete',"The chart note for this appointment is already signed. <h3 class='pink'>View chart note?</h3>",'yes, view','not now',null,viewNoteFromApptInfo);
+	}
+	return false;
+}
+function checkForInvoice(){
+	var info = $("#InvoiceBtn").data('info');
+	console.log(info);
+	if (info === null){
+		confirm('No Invoice',"There is no invoice for this appointment yet. <h3 class='pink'>Create invoice now?</h3>", 'yes, create','not now', null, loadInvoiceInEditor);
+	}
+	else if (info.status == 'unsettled'){
+		confirm('Unpaid Invoice',"There's an unsettled invoice for this appointment. <h3 class='pink'>Do you want to edit it?</h3>",'yes, edit','not now',null,loadInvoiceInEditor);
+	}else{
+		confirm('Invoice Settled',"The invoice for this appointment is already settled. <h3 class='pink'>View invoice?</h3>",'yes, view','not now',null,function(){alert('hi')});
 	}
 	return false;
 }
 function loadChartNoteInEditor(){
-	// console.log('hey');
-	unblurAll();
-	clickTab("chart-note-create");
+	unblurAll(function(){clickTab("chart-note-create");});
+}
+function loadInvoiceInEditor(){
+	unblurAll(function(){clickTab("invoice-create");});
 }

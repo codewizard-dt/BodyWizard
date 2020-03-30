@@ -5,14 +5,14 @@ $apptId = getUid('Appointment');
 if ($apptId){
 	$appt = Appointment::find($apptId);
 	// Log::info($appt->invoice,['create invoice'=>7]);
-	$appt = (!$appt->invoice || $appt->invoice->paid_at == 'not paid') ? $appt : null;
+	$appt = (!$appt->invoice || $appt->invoice->settled_at == 'pending') ? $appt : null;
 }else{
 	$appt = null;
 }
 if ($appt){
 	$btnText = ($appt->invoice && $appt->invoice->autosave) ? 'edit invoice' : 'create invoice';
 }else{
-	$btnText = 'start note';
+	$btnText = 'create invoice';
 }
 $apptsWithoutInvoices = Appointment::recentAppointmentsWithoutInvoices();
 $apptsWithUnpaidInvoices = Appointment::recentAppointmentsWithUnpaidInvoices();
@@ -32,13 +32,13 @@ $allAppts = $apptsWithoutInvoices->merge($apptsWithUnpaidInvoices)->sortBy('date
 		@endif
 		<div class="button small pink confirmApptBtn">{{$btnText}}</div>
 		<div class="button small pink70 selectNewAppt">select different appointment</div>
-		<div id="ApptLegend" class='flexbox styled'><div class="appt hasNote">unsigned note</div><div class="appt noNote">no note</div></div>
+		<div id="ApptLegend" class='flexbox styled'><div class="appt hasInvoice">open invoice</div><div class="appt noInvoice">no invoice</div></div>
 		<div id="ApptsWithoutNotes" class='flexbox styled'>
 			@forelse ($allAppts as $appt)
-				<?php $paidIndicator = $appt->invoice ? 'hasInvoice' : 'noInvoice'; ?>
-				<div class="appt {{$paidIndicator}}" data-uid='{{$appt->id}}' data-services='{{$appt->service_list}}'>{{$appt->patient_list}}<br>{{$appt->date}}</div>
+				<?php $invoiceIndicator = $appt->invoice ? 'hasInvoice' : 'noInvoice'; ?>
+				<div class="appt {{$invoiceIndicator}}" data-uid='{{$appt->id}}' data-services='{{$appt->service_list}}'>{{$appt->patient_list}}<br>{{$appt->date}}</div>
 			@empty
-				<div id="NoEligibleApptsBtn">no eligible appointments</div>
+				<div id="NoEligibleApptsBtn" data-text='All of your appointments from the last 30 days are invoiced and settled.'>no eligible appointments</div>
 			@endforelse
 		</div>
 		<h2 class='purple' id="ApptSummary"></h2>		

@@ -127,18 +127,32 @@ function editNoteFromOptionsNav(){
 	})
 }
 function viewNoteFromOptionsNav(){
-	blurTopMost("#loading");
 	var uid = $("#CurrentChartNote").data('uid');
+	viewNote(uid);
+}
+function viewNoteFromApptInfo(){
+	var uid = $("#ChartNoteBtn").data('info').id;
+	unblurAll(500,function(){
+		viewNote(uid);
+	});
+}
+function viewNote(uid){
+	blurTopMost("#loading");
 	$.ajax({
 		url:'/ChartNote/'+uid+'/view',
 		method: "GET",
 		success: function(data){
-			$("<div/>",{id:"ChartNote",class:'modalForm signed',html:data}).appendTo('body');
+			console.log('"viewNote" load');
+			if ($("#ChartNote").exists()){
+				$("#ChartNote").html(data);
+			}else{
+				$("<div/>",{id:"ChartNote",class:'modalForm signed',html:data}).appendTo('body');
+			}
 			blurTopMost('#ChartNote');
 			initializeNewForms();
 			initializeChartNotePage();
 		}
-	})
+	})	
 }
 function disableChartSignature(){
 	var sig = $("#ChartSignature");
@@ -195,24 +209,29 @@ function autoSaveNote(){
 	},5000);
 }
 function signChart(){
+
 	var formsObj = createChartFormsObj(), pass = true;
 	if (!formsObj) return false;
+	clearInterval(autosaveNoteTimer);
+	blurTopMost('#loading');
+	if (autosaveNoteXHR) {
+		console.log(autosaveNoteXHR);
+		setTimeout(signChart,300);
+		return false;
+	}
 	var sig = $("#PractitionerSignature");
 	sig.data('required',true);
 	if (!validateItem(sig,'signature')){return false;}
-	clearTimeout(autosaveNoteTimer);
-	autosaveNoteTimer = null;
-	if (autosaveNoteXHR) {
-		console.log(autosaveNoteXHR)
-		setTimeout(signChart,300);
-		// autosaveNoteXHR.abort();
-	}
+	// if (autosaveNoteXHR) {
+	// 	console.log(autosaveNoteXHR)
+	// 	setTimeout(signChart,300);
+	// 	// autosaveNoteXHR.abort();
+	// }
 	var postObj = {
 		submissions: formsObj,
 		signature: justResponse(sig,false,'signature'),
 		appointment_id: $("#ApptInfo").data('id')
 	}
-	blurTopMost('#loading');
 	$.ajax({
 		url:'/ChartNote/'+$("#ApptInfo").data('noteid')+'/sign',
 		method: 'POST',
@@ -280,6 +299,10 @@ function selectThisAppt(){
 			$(".confirmApptBtn").text('finish note');
 		}else if ($(this).hasClass('noNote')){
 			$(".confirmApptBtn").text('start note');
+		}if ($(this).hasClass('hasInvoice')){
+			$(".confirmApptBtn").text('finish invoice');
+		}else if ($(this).hasClass('noInvoice')){
+			$(".confirmApptBtn").text('create invoice');
 		}
 	}
 }

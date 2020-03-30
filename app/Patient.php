@@ -30,34 +30,138 @@ class Patient extends Model
             'audit_table' => 'patients_audit',
             'includeFullJson' => false
         ];
-	    $this->tableValues = array(
-	    	'tableId' => 'PatientList',
-	    	'index' => 'id',
+	    // $this->tableValues = array(
+	    // 	'tableId' => 'PatientList',
+	    // 	'index' => 'id',
+     //        'model' => "Patient",
+     //        'with' => 'appointments',
+	    // 	'columns' => array(
+     //                    [
+     //                        'label' => "Name",
+     //                        'className' => 'name',
+     //                        'attribute' => 'name'
+     //                    ],
+     //                    [
+     //                        'label' => 'Phone',
+     //                        'className' => 'phone',
+     //                        'attribute' => 'phone',
+     //                    ],
+     //                    [
+     //                        'label' => 'Email',
+     //                        'className' => 'email',
+     //                        'attribute' => 'email',
+     //                    ]
+     //                ),
+     //        // 'displayName' => "%name% %LName%",
+	    // 	'hideOrder' => "",
+	    // 	'filtersColumn' => array(),
+	    // 	'filtersOther' => 
+     //        [
+     //            [
+     //                'label' => 'New Patient',
+     //                'filterName' => 'patientInfo',
+     //                'showFilter' => false,
+     //                'attribute' => null,
+     //                'method' => 'isNewPatient',
+     //                'markOptions' => null,
+     //                'filterOptions' => [
+     //                    [
+     //                        'label' => 'newPatient',
+     //                        'value' => "isNewPatient:true",
+     //                        'attribute' => 'method',
+     //                        'method' => 'isNewPatient'
+     //                    ]
+     //                    //, [
+     //                    //     'label' => 'newPatient',
+     //                    //     'value' => "isNewPatient:true",
+     //                    //     'attribute' => 'method',
+     //                    //     'method' => 'lastPractitioner'
+     //                    // ]
+     //                ]
+     //            ],
+     //            [
+     //                'label' => 'Appointments',
+     //                'filterName' => 'appts',
+     //                'attribute' => null,
+     //                'markOptions' => null,
+     //                'filterOptions' => [
+     //                    [
+     //                        'label' => 'today',
+     //                        'value' => "hasApptsToday:true",
+     //                        'attribute' => 'method',
+     //                        'method' => 'hasApptsToday'
+     //                    ],
+     //                    [
+     //                        'label' => 'this week',
+     //                        'value' => "hasApptsThisWeek:true",
+     //                        'attribute' => 'method',
+     //                        'method' => 'hasApptsThisWeek'
+     //                    ]
+     //                ]
+     //            ]
+     //        ],
+     //        'destinations' => array(
+     //            'edit','delete'
+     //        ),
+     //        'btnText' => array(
+     //            'edit','delete'
+     //        ),
+     //        'extraBtns' => []
+	    // );
+     //    $this->optionsNavValues = array(
+     //        'model' => "Patient",
+     //        'destinations' => array(
+     //            'edit','settings','delete'
+     //        ),
+     //        'btnText' => array(
+     //            'edit','settings','delete'
+     //        )
+     //    );
+
+
+
+        // This will load a resource table for each connected model
+        // into the create.blade view for THIS model, creating modals that
+        // automatically popped up when required.
+        // [Model, relationship]
+        $this->connectedModels = array(
+            // ['Service','many','morphToMany'],
+            // ['Patient','one','belongsTo']
+        );
+    }
+
+    public static function returnUserIds($array){
+        $userIds = Patient::find($array)->map(function($patient){
+            return $patient->userInfo->id;
+        })->toArray();
+        return $userIds;
+    }
+    public static function tableValues(){
+        return array(
+            'tableId' => 'PatientList',
+            'index' => 'id',
             'model' => "Patient",
             'with' => 'appointments',
-	    	'columns' => array(
-                        [
-                            'label' => "Name",
-                            'className' => 'name',
-                            'attribute' => 'name'
-                        ],
-                        [
-                            'label' => 'Phone',
-                            'className' => 'phone',
-                            'attribute' => 'phone',
-                            'hasThrough' => 'userInfo'
-                        ],
-                        [
-                            'label' => 'Email',
-                            'className' => 'email',
-                            'attribute' => 'email',
-                            'hasThrough' => 'userInfo'
-                        ]
-                    ),
-            // 'displayName' => "%name% %LName%",
-	    	'hideOrder' => "",
-	    	'filtersColumn' => array(),
-	    	'filtersOther' => 
+            'columns' => array(
+                [
+                    'label' => "Name",
+                    'className' => 'name',
+                    'attribute' => 'name'
+                ],
+                [
+                    'label' => 'Phone',
+                    'className' => 'phone',
+                    'attribute' => 'phone',
+                ],
+                [
+                    'label' => 'Email',
+                    'className' => 'email',
+                    'attribute' => 'email',
+                ]
+            ),
+            'hideOrder' => "",
+            'filtersColumn' => array(),
+            'filtersOther' => 
             [
                 [
                     'label' => 'New Patient',
@@ -102,41 +206,32 @@ class Patient extends Model
                     ]
                 ]
             ],
-            'destinations' => array(
-                'edit','delete'
-            ),
-            'btnText' => array(
-                'edit','delete'
-            ),
-            'extraBtns' => []
-	    );
-        $this->optionsNavValues = array(
-            'model' => "Patient",
-            'destinations' => array(
-                'edit','settings','delete'
-            ),
-            'btnText' => array(
-                'edit','settings','delete'
+            // 'destinations' => array(
+            //     'edit','delete'
+            // ),
+            // 'btnText' => array(
+            //     'edit','delete'
+            // ),
+            'extraBtns' => [],
+            'optionsNavValues' => array(
+                'model' => "Patient",
+                'destinations' => array(
+                    'edit','settings','delete'
+                ),
+                'btnText' => array(
+                    'edit','settings','delete'
+                )
             )
         );
-
-
-
-        // This will load a resource table for each connected model
-        // into the create.blade view for THIS model, creating modals that
-        // automatically popped up when required.
-        // [Model, relationship]
-        $this->connectedModels = array(
-            // ['Service','many','morphToMany'],
-            // ['Patient','one','belongsTo']
-        );
-    }
-
-    public static function returnUserIds($array){
-        $userIds = Patient::find($array)->map(function($patient){
-            return $patient->userInfo->id;
-        })->toArray();
-        return $userIds;
+        // $this->optionsNavValues = array(
+        //     'model' => "Patient",
+        //     'destinations' => array(
+        //         'edit','settings','delete'
+        //     ),
+        //     'btnText' => array(
+        //         'edit','settings','delete'
+        //     )
+        // );        
     }
     public function userInfo(){
         return $this->belongsTo('App\User','user_id');

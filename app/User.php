@@ -3,6 +3,7 @@
 namespace App;
 use App\Traits\TrackChanges;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -105,6 +106,47 @@ class User extends Authenticatable implements MustVerifyEmail
     public static function admins(){
         return User::where('is_admin','1')->get();
     }
+    public static function tableValues(){
+        $usertype = Auth::user()->user_type;
+        if ($usertype == 'practitioner'){
+            return 
+            [
+                'tableId' => 'UserList',
+                'index' => 'id',
+                'columns' => array(
+                            array(
+                                "label" => 'Name',
+                                "className" => 'name',
+                                "attribute" => 'name'
+                            ),
+                            [
+                                'label' => 'User Type',
+                                'className' => 'userType',
+                                'attribute' => 'user_type'
+                            ],
+                            array(
+                                "label" => 'Email',
+                                "className" => 'email',
+                                "attribute" => 'email'
+                            )
+                        ),
+                'hideOrder' => "email",
+                'filtersColumn' => array(),
+                'filtersOther' => array(),
+                'destinations' => array("settings","edit","delete","create"),
+                'btnText' => array("settings","edit","delete","add new patient"),
+                'orderBy' => [
+                    ['user_type','asc'],
+                    ['last_name',"asc"],
+                    ['first_name',"asc"]
+                ],
+                'optionsNavValues' => array(
+                    'destinations' => array("settings","edit","delete"),
+                    'btnText' => array("settings","edit","delete"),
+                )
+            ];
+        }
+    }
     public function moreOptions(){
         // Log::info("optionsNav");
     }
@@ -122,7 +164,7 @@ class User extends Authenticatable implements MustVerifyEmail
     }
     public function getIsSuperuserAttribute(){
         $supers = ['david@bodywizardmedicine.com'];
-        return in_array('david@bodywizardmedicine.com', $supers);
+        return in_array($this->email, $supers);
     }
     public function patientInfo(){
         return $this->hasOne('App\Patient');

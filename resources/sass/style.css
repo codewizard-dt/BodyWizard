@@ -4,9 +4,11 @@
     --purple5:rgba(105,12,104,0.05);
     --purple10:rgba(105,12,104,0.1);
     --purple15:rgba(105,12,104,0.15);
+    --purple20:rgba(105,12,104,0.2);
     --purple30:rgba(105,12,104,0.3);
     --purple50:rgba(105,12,104,0.5);
     --purple70:rgba(105,12,104,0.7);
+    --purple80:rgba(105,12,104,0.8);
     --purple90:rgba(105,12,104,0.90);
     --yellow:rgb(240,154,53);
     --yellow5:rgba(240,154,53,0.05);
@@ -114,7 +116,7 @@ body {
     font-weight: normal;
     line-height: 1.5;
     text-align: center;
-    min-height: 100vh;
+    min-height: 100vh !important;
     position: relative;
     padding-bottom: 4em;
     overflow-x: hidden;
@@ -248,7 +250,7 @@ h5 span {font-size: 0.9em;}
 .nowrap{white-space: nowrap;}
 .central{
     width:600px;
-    max-width: 90%;
+    max-width: 96%;
     margin: auto;
 }
 .central.xs{width:200px;}

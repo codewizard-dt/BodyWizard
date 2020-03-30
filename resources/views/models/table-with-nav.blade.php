@@ -95,24 +95,21 @@
 
     $uid = getUid($nospaces);
     $navOptions['uid'] = $uid;
+
+    if ($model == 'User' && session('userType') !== null){
+        $headerText = title(pluralSpaces(session('userType')));
+    }else{
+        $headerText = $models;
+    }
 ?>
 
-@include('models.optionsNav',$navOptions)
+<h1 class="purple paddedXSmall">{{$headerText}}</h1>
 
+@include('models.optionsNav',$navOptions)
 <div class="central large">
-    @if ($model == 'Diagnosis' && session('diagnosisType') !== null)
-        <h2 class='purple paddedSmall'>{{session('diagnosisType')}} {{$models}}</h2>
-    @elseif ($model == 'User' && session('userType') !== null)
-        <h2 class='purple paddedSmall'>Current {{ucfirst(session('userType'))}}s</h2>
-    @elseif ($model == 'Message')
-        <h2 class='purple paddedSmall'>{{$model}} Center</h2>
-    @elseif ($model == 'ChartNote')
-        <h2 class='purple paddedSmall'>Recent {{$models}}</h2>
-    @else
-        <h2 class='purple paddedSmall'>Available {{$models}}</h2>
-    @endif
     @include('models.table',$tableOptions)
 </div>
+
 
 @if (findFormId($nospaces))
     @include('models.create-modal',['model'=>$nospaces,'request'=>$request])

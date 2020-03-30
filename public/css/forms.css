@@ -559,7 +559,7 @@ form, .indent, .report, .w95 {
 .appt {
     border-color: var(--yellow) !important;
 }
-.appt.hasNote {
+.appt.hasNote, .appt.hasInvoice {
     border-color: var(--pink) !important;
 }
 
@@ -1015,8 +1015,7 @@ li[data-response='no response']{
 }
 .imageClick.disabled .undo{display:none !important;}
 .answer.disabled li:not(.active){
-    /*background-color: var(--yellow) !important;*/
-    /*color: white !important;*/
+    border-color: var(--yellow10) !important;
 }
 
 .answer:focus, .signature:focus{
@@ -1785,6 +1784,9 @@ input#PatientName {
     position: relative;
     right: 0;
 }
+.number.disabled .numberUpDown{
+    display: none;
+}
 
 .UpDown .selectChkBx{
     font-size: 1.2em;
@@ -1930,6 +1932,8 @@ input#PatientName {
 }
 .optionsNavWrapper{
     position: relative;
+    border-top: 1px solid var(--purple10);
+    margin-bottom: 1.5em;    
 }
 .optionsNav .navDetails{
     /*max-width: 500px;*/
@@ -2464,6 +2468,40 @@ input#PatientName {
     border-bottom: 2px solid var(--yellow);
     margin: 10px 0 0 0;
 }
+#TableNav {
+    border-radius: 5px;
+    border: 1px solid var(--purple);
+    background-color: var(--purple10);
+    color: var(--purple);
+    margin: 0.5em 0;
+    min-width: 70vw;
+}
+#TableNav .label{flex-grow: 1;}
+#Filters{
+    margin: 0.5em 0;
+    padding: 0.5em 0;
+}
+#TableButtons > .button {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+.tableArrow{
+    padding: 0.2em 0.6em;
+    background-color: var(--purple80);
+    color: white;
+    transition: background-color 400ms;
+    cursor: pointer;
+}
+.tableArrow.disabled{
+    cursor: default;
+    opacity: 0.65;
+}
+.tableArrow.left{border-right: 1px solid var(--purple);}
+.tableArrow.right{border-left: 1px solid var(--purple);}
+.tableArrow:hover{background-color: var(--purple);}
+.tableArrow.disabled:hover{background-color: var(--purple80);}
+.tableArrow.left::before{content: "\003c";}
+.tableArrow.right::before{content: "\003e";}
 .flexbox{
     display: flex;
     flex-wrap: wrap;
@@ -3092,7 +3130,7 @@ table .indicator {
 
 .filterType {
     padding: 0.2em 0.5em;
-    margin:0.1em 1em;
+    margin:0.1em;
     border-width: 0 3px;
     border-color: transparent;
     box-sizing: border-box;

@@ -20,7 +20,7 @@ class CreateInvoicesTable extends Migration
             $table->unsignedInteger('created_by_user_id');
             $table->unsignedInteger('appointment_id')->nullable();
             $table->unsignedInteger('total_charge');
-            $table->datetime('paid_at')->nullable();
+            $table->datetime('settled_at')->nullable();
             $table->json('status')->nullable();
             $table->json('payments')->nullable();
             $table->longtext('line_items')->nullable();

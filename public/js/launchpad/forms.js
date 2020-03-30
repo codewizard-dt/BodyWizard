@@ -22,12 +22,14 @@ function initializeNewForms(){
     $(".clearTableFilters").off("click",clearTableFilters);
     $(".clearTableFilters").on("click",clearTableFilters);    
 }
-function initializeAdditionalNoteForm(){
+function initializeAdditionalNoteForm(autosaveType = null){
     var btn = filterByData('#AddNoteBtn','hasDynamicFx',false);
-    btn.on('click',addNote);
+    btn.on('click',function(){
+        addNote(autosaveType);
+    });
     btn.data('hasDynamicFx',true);
 }
-function addNote(){
+function addNote(autosaveType = null){
     var form = $("#AddNote");
     if (!checkForm(form)) return false;
     var newNote = createNoteObj(), h4 = newNote.title ? "<h4>"+newNote.title+"</h4>" : "";
@@ -38,6 +40,10 @@ function addNote(){
     }).appendTo("#NoteList");
     $("#NoNotes").slideFadeOut();
     resetForm(form);
+    if (autosaveType){
+        if (autosaveType == 'Invoice') autoSaveInvoice();
+        if (autosaveType == 'Note') autoSaveNote();
+    }
 }
 function createNoteObj(){
     var title = justResponse($("#AddNote").find('.note_title'));
@@ -91,7 +97,8 @@ function initializeCheckboxes(target = null, options = null){
 }
 function initializeRadios(target = null, options = null){
     var radios = filterUninitialized(".radio");
-    radios.attr('tabindex','0').on("click","li",radio);
+    // radios.attr('tabindex','0').on("click","li",radio);
+    radios.on('click','li',radio);
     radios.data("initialized",true);
 }
 function initializeDropdowns(target = null, options = null){
@@ -878,6 +885,7 @@ function getImageClickData(item){
             top: t / h * 100 + "%"
         });
     })
+    console.log(indicatorArr);
     return indicatorArr;
 }
 function justResponse(input, asArray = false, type = null, allowInvisible = false){
@@ -965,12 +973,14 @@ function fillAnswer(item,response){
     }
     else if (t == 'bodyclick'){
         if (response.length == 0) return false;
-        console.log(response);
+        console.log("fill", response);
         var image = item.find('.imageClick'), undo = image.find('.undo');
+        image.data('response',response);
+        if (!image.is(":visible")) image.data('refresh',true);
         $.each(response,function(c,circle){
             var newCircle = imgClickCircle.clone();
             newCircle.appendTo(image);
-            newCircle.data('index',c);
+            newCircle.data({index:c, css:circle});
             newCircle.css(circle);
             // imgClickCircle.clone().appendTo(image).css(circle).data('index',c);
         })
@@ -986,7 +996,7 @@ function disableForm(form){
     form.find('.number').off("mouseup touchend",".change",stopChange);
     form.find('.number').off('keyup',"input",inputNum);
     form.find('.signature').find('.clear').hide();
-    form.find('.radio, .checkboxes, .imageClick').addClass('disabled');
+    form.find('.radio, .checkboxes, .imageClick, .number').addClass('disabled');
     form.find('.button.cancel').text("close");
     form.find('.slider, select').attr('disabled',true);
     form.find('.datepicker').each(function(){
@@ -1054,7 +1064,7 @@ function checkPhrase(){
 
 
 function fillForm(json,form){
-    if (json == undefined) return false;
+    if (json == undefined || form.data('filled')) return false;
     var sections = json['Sections'];
     $.each(sections,function(s,savedSection){
         var sectionOnForm = form.find(".section").filter(function(){
@@ -1070,6 +1080,7 @@ function fillForm(json,form){
             // if (savedItem.type !== 'narrative' && savedItem.type !== 'signature'){
             if (savedItem.type !== 'narrative'){
                 var itemOnForm = sectionOnForm.find(".item").filter(function(){return $(this).children(".question").find(".q").text().trim() == savedItem.question.trim();});
+                if (savedItem.type == 'bodyClick') console.log(savedItem.response);
                 if (savedItem.response != undefined) fillAnswer(itemOnForm,savedItem.response);
                 if (savedItem.followups != undefined){
                     $.each(savedItem.followups,function(f,savedFU){
@@ -1080,6 +1091,7 @@ function fillForm(json,form){
             }
         })
     })
+    form.data('filled',true);
 }
 function minifyForm(form){
     form.addClass('minified');

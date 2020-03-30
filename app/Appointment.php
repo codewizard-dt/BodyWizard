@@ -170,7 +170,7 @@ class Appointment extends Model
     static function recentAppointmentsWithUnpaidInvoices($daysBack = 30){
         $midnight = Carbon::now()->setTime(23,59,0);  $start = Carbon::now()->subDays($daysBack);
         $appts = Appointment::allApptsStartingBetween($start, $midnight, 'invoice')->filter(function($appt){
-            return $appt->invoice && $appt->invoice->paid_at === 'not paid';
+            return $appt->invoice && $appt->invoice->settled_at !== 'pending';
         });
         return $appts;
     }

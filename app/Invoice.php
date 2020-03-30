@@ -19,20 +19,15 @@ class Invoice extends Model
         'notes' => 'array',
         'payments' => 'array',
         'line_items' => 'array',
-        'paid_at' => 'datetime',
+        'settled_at' => 'datetime',
         'updated_at' => 'datetime',
         'created_at' => 'datetime'
     ];
     protected $hidden = ['autosave'];
-    public $auditOptions;
 
 
     public function __construct($attributes = []){
         parent::__construct($attributes);
-        $this->auditOptions = [
-            'audit_table' => 'invoices_audit',
-            'includeFullJson' => false
-        ];
     }
     public static function tableValues(){
         $usertype = Auth::user()->user_type;
@@ -44,15 +39,15 @@ class Invoice extends Model
             $arr = [
                         'columns' => 
                         [
-                            ["label" => 'Invoice',
+                            ["label" => 'Invoicee',
                             "className" => 'name',
-                            "attribute" => 'name'],
+                            "attribute" => 'invoicee_name'],
                             ["label" => 'Date',
                             "className" => 'date',
-                            "attribute" => 'date'],
+                            "attribute" => 'created_at'],
                             ["label" => 'Total',
                             "className" => 'total',
-                            "attribute" => 'amount'],
+                            "attribute" => 'total_charge'],
                             ["label" => 'Status',
                             "className" => 'status',
                             "attribute" => 'status'],
@@ -111,14 +106,24 @@ class Invoice extends Model
     public function getNameAttribute(){
         return $this->invoicee->name.' '.$this->created_at;
     }
+    public function getInvoiceeNameAttribute(){
+        return $this->invoicee->name;
+    }
     public function getCreatedAtAttribute($value){
         $date = new Carbon($value);
         return $date->format('n/j g:ia');
     }    
-    public function getPaidAtAttribute($value){
+    public function getSettledAtAttribute($value){
         $date = $value ? new Carbon($value) : null;
-        return $date ? $date->format('n/j g:ia') : 'not paid';
-    }    
+        return $date ? $date->format('n/j g:ia') : 'pending';
+    }
+    public function getStatusAttribute($value){
+        if ($this->settled_at !== 'pending') return 'settled';
+        return 'status';
+    }
+    public function getCurrentStatusAttribute(){
+        
+    }
     public function getLineItemsAttribute($value){
         return $this->decryptKMS($value);
     }
