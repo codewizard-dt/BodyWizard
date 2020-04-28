@@ -41,8 +41,9 @@ class SendApptCancellation
         $template = Template::where('name','like','%Appointment Cancel%')->first();
         $changes = null;
 
-        $patients = $appt->patients;
-        foreach ($patients as $patient){
+        // $patients = $appt->patients;
+        // foreach ($patients as $patient){
+            $patient = $appt->patient;
             $settings = $patient->settings;
             $msg = new Message;
             $msg->recipient_id = $patient->userInfo->id;
@@ -65,7 +66,8 @@ class SendApptCancellation
             
             try{
                 $msg->save();
-                $users = ($cancelledBy == 'patient') ? $appt->practitioner->userInfo : $appt->patient_user_models;
+                // $users = ($cancelledBy == 'patient') ? $appt->practitioner->userInfo : $appt->patient_user_models;
+                $users = ($cancelledBy == 'patient') ? $appt->practitioner->userInfo : $appt->patient->userInfo;
                 Notification::send($users, new CancelledAppointment($appt));
                 
                 // event(new OutgoingMessage($msg, $practiceId));
@@ -82,7 +84,7 @@ class SendApptCancellation
                 ));
                 // reportBug('Saving and Sending', ['error'=>$e], 'Messages', 'SendApptConfirmation.php');
             }
-        }
+        // }
         //
     }
 }

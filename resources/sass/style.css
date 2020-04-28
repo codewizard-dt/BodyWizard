@@ -47,6 +47,9 @@
     --black30:rgba(0,0,0,0.3);
     --black50:rgba(0,0,0,0.5);
     --black70:rgba(0,0,0,0.7);
+    --green:rgb(46, 107, 53);
+    --green10:rgba(46, 107, 53, 0.1);
+    --green70:rgba(46, 107, 53, 0.7);
 }
 
 @font-face{
@@ -197,9 +200,6 @@ footer .copyright{
     padding: 1em;
 }
 
-#tabList, #uidList {
-    display: none;
-}
 h1, h2, h3, h4, h5 {
     position: relative;
     font-family: Roboto, sans-serif;
@@ -222,6 +222,7 @@ h4 {
 }
 h5 {font-weight: normal;color:var(--purple);}
 h5 span {font-size: 0.9em;}
+.nodisplay{display: none;}
 .inline{display: inline;}
 .little{
     font-size: 0.85em;
@@ -232,6 +233,7 @@ h5 span {font-size: 0.9em;}
 .caps{text-transform: uppercase;}
 .black{color:black;}
 .pink{color: var(--pink);}
+.green{color: var(--green);}
 .purple{color: var(--purple);}
 .yellow{color: var(--yellow);}
 .white{color: white;}
@@ -274,6 +276,7 @@ h5 span {font-size: 0.9em;}
 .paddedSmall.bottomOnly{padding-top: 0em;}
 .paddedSmall.topOnly{padding-bottom: 0em;}
 .paddedSides{padding-left:2.5em;padding-right: 2.5em;box-sizing: border-box;}
+.paddedSides.xsmall{padding-left:0.25em;padding-right: 0.25em;}
 .paddedSides.small{padding-left:1em;padding-right: 1em;}
 .paddedSides.leftOnly{padding-right:0;}
 .paddedSides.rightOnly{padding-left:0;}
@@ -648,6 +651,7 @@ a:hover {color:var(--pink);}
     text-decoration: underline;
     cursor: pointer;
     transition: color 500ms;
+    position: relative;
 }
 .button.link{
     text-decoration: none;
@@ -1441,6 +1445,7 @@ a:hover {color:var(--pink);}
 .menuBar .dropDown .tab:hover{
     border-left-color: var(--yellow30);
     border-right-color: var(--yellow30);
+    background-color: var(--yellow5);
 }
 .dropDown .divide{
     height: 1px !important;
@@ -1452,35 +1457,36 @@ a:hover {color:var(--pink);}
     position: relative;
     padding:0.4em 0.8em;
     border-radius: 4px;
+    border: 2px solid transparent;
     top:50%;
     transform:translateY(-50%);
+    transition: background-color 400ms, border-color 400ms, color 400ms, font-size 400ms;
 }
 .menuBar > .tab > .title.active{
-    background-color: var(--yellow) !important;
-    color: white;
+    background-color: var(--yellow20) !important;
+    border-color: var(--yellow30);
+    /*color: white;*/
 }
 .menuBar .title.showingDD {
-    color: var(--yellow);
+    background-color: var(--yellow10) !important;
+    color: black !important;
 }
 .menuBar .title:hover{
-    color: var(--yellow);
+    border-color: var(--yellow30);
 }
 .menuBar .dropDown .title{
     top:auto;
     transform: unset;
-    padding: 0; 
+    padding: 4px; 
+    margin-left: -6px;
     width: 100%;
+    border-color: transparent;
 }
 .menuBar .dropDown .title.active{
-    background-color: var(--yellow);
-    color:white;
+    background-color: var(--yellow30);
+    /*color:white;*/
 }
 
-/*.menuBar li.active{
-    color: var(--yellow);
-    font-weight: bold;
-}
-*/
 .menuBar .underline{
     position: absolute;
     width: 0;
@@ -1505,25 +1511,27 @@ a:hover {color:var(--pink);}
     left:50%;
     top:100%;
     transform: translateX(-50%) scaleX(0);
-    padding:10px;
+    padding: 0 10px;
     text-align: center;
     white-space: nowrap;
     border-radius: 0 0 5px 5px;
     transition: transform 400ms;
     box-sizing: border-box;
+    border: 4px solid var(--gray80);
+    border-top-style: dotted;
 }
 .menuBar > .tab > .dropDown.active{
     transform: translateX(-50%) scaleX(1);
 }
 .menuBar .dropDown .dropDown.active{
     transform: translateX(-100%) scaleX(1);
-    border-top-color: var(--yellow30);
-    border-right-color: var(--yellow30);
+    border-top-color: var(--yellow70);
+    border-right-color: var(--gray80);
     border-right-style: dotted;
 }
 .menuBar .dropDown .dropDown{
-    left: 0;
-    top: calc(100% - 1.75em);
+    left: -4px;
+    top: calc(100% - 2.5em);
 }
 
 #Block{
@@ -1666,9 +1674,21 @@ body > .blur {
   animation: lds-ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
   border-color: #fff transparent transparent transparent;
 }
+.lds-ring.insideBtn{
+    padding: 3px 6px;
+    width: 1.75em;
+    height: 1.75em;
+    top: 50%;
+    transform: translate(-50%,-50%);
+}
+.lds-ring.insideBtn div{
+    width: 1.5em;
+    height: 1.5em;
+    margin: 2px;
+    border-width: 2px;
+}
 .lds-ring.dark div{
-  border: 6px solid rgb(120,120,120);
-  border-color: rgb(120,120,120) transparent transparent transparent;
+    border-color: rgb(120,120,120) transparent transparent transparent;
 }
 .lds-ring div:nth-child(1) {
   animation-delay: -0.45s;
@@ -1678,6 +1698,9 @@ body > .blur {
 }
 .lds-ring div:nth-child(3) {
   animation-delay: -0.15s;
+}
+.opacityFlash {
+  animation: opacityFlash 0.8s cubic-bezier(0.5, 0, 0.5, 1) infinite;
 }
 @keyframes lds-ring {
   0% {
@@ -1694,6 +1717,15 @@ body > .blur {
     }
     100% {
         background-color: var(--pink);
+    }
+}
+
+@keyframes opacityFlash {
+    0% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0.5;
     }
 }
 

@@ -77,6 +77,11 @@ class Submission extends Model
         }
         return array_merge($commonArr,$arr);
     }
+    public function detailClick(){
+        $model = getModel($this);
+        $uid = $this->getKey();
+        return "<span class='link' data-model='$model' data-uid='$uid'>" . $this->form_name . "</span>";
+    }
 
     public function getNameAttribute(){
     	return "{$this->form->form_name} ({$this->patient->name}, {$this->created_at->format("M j")})";
@@ -85,6 +90,12 @@ class Submission extends Model
         $this->attributes['responses'] = $this->encryptKms($value);
     }
     public function getResponsesAttribute($value){
+        return $this->decryptKms($value);
+    }
+    public function setAutosaveAttribute($value){
+        $this->attributes['autosave'] = $this->encryptKms($value);
+    }
+    public function getAutosaveAttribute($value){
         return $this->decryptKms($value);
     }
     public function getSubmittedAtAttribute(){

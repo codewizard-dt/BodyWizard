@@ -1,10 +1,10 @@
 <?php 
 use Illuminate\Support\Facades\Auth;
 
-if (!isset($destinations)){
-	$destinations = $optionsNavValues['destinations'];
-	$btnText = $optionsNavValues['btnText'];
-}
+// if (!isset($destinations)){
+// 	$destinations = $optionsNavValues['destinations'];
+// 	$btnText = $optionsNavValues['btnText'];
+// }
 if ($model == 'Form' && !Auth::user()->is_superuser){
 	$collection = $collection->filter(function($form){
 		return $form->form_type != 'system';
@@ -14,22 +14,25 @@ $nospaces = str_replace(" ", "", $model);
 $modal = isset($modal) ? $modal : false;
 if (session('subCollection') !== null){
 	if ($model == 'User'){
-		$btnDispText = "Add New ".ucfirst(session('subCollection'));
+		$createBtnText = "Add New ".ucfirst(session('subCollection'));
 	}
 }elseif($model == "Message"){
-	$btnDispText = "Send New Message";
+	$createBtnText = "Send New Message";
 }else{
-	$btnDispText = "Add New ".proper($model);
+	$createBtnText = "Add New ".proper($model);
 }
-$btnDispText = isset($btnDispText) ? $btnDispText : "Add New ".proper($model);
+$createBtnText = isset($createBtnText) ? $createBtnText : "Add New ".proper($model);
 $displayName = isset($displayName) ? $displayName : "";
 
 ?>
 
 <div class='wrapMe marginBig bottomOnly' style='display:inline-block'>
-	<div id='TableButtons'>
-		@if (Auth::user()->is_admin && findFormId($model))
-	    	<div class='button xsmall createNew pink70' data-model='{{$nospaces}}' data-target='#{{$tableId}}'>{{$btnDispText}}</div>    
+	@if ($modal)
+   		<div class="NewValue {{$model}}"></div>
+   	@endif
+	<div class='TableButtons'>
+		@if (Auth::user()->is_admin && findFormId($model) && !$modal)
+	    	<div class='button xsmall createNew pink70' data-model='{{$nospaces}}' data-target='#{{$tableId}}'>{{$createBtnText}}</div>    
 	    @endif
 	    @if ($modal)
 	    	<div class='button xsmall selectData pink disabled'>update {{$connectedTo}}</div>
@@ -40,9 +43,9 @@ $displayName = isset($displayName) ? $displayName : "";
 	    @endif		
 	</div>
 
-	<div id="Filters">
+	<div class="Filters">
 	    @forelse ($filtersColumn as $filter)
-		    <div class='filterType' data-target='#{{$tableId}}' data-type='column'>{{$filter['label']}}: 
+		    <div class='filter' data-target='#{{$tableId}}' data-type='column'>{{$filter['label']}}: 
 		    	@foreach ($filter['filterOptions'] as $option)
 			    	<label><input type='checkbox' class='tableFilter' data-filter='{{$filter["filterName"]}}:{{$option["value"]}}'>{{$option["label"]}}</label>
 		    	@endforeach
@@ -52,7 +55,7 @@ $displayName = isset($displayName) ? $displayName : "";
 
 	    @forelse ($filtersOther as $filter)
 	    	@if (!isset($filter['showFilter']) || $filter['showFilter'] !== false)
-		    <div class='filterType' data-target='#{{$tableId}}' data-filter='{{$filter["filterName"]}}' data-type='data'>{{$filter['label']}}: 
+		    <div class='filter' data-target='#{{$tableId}}' data-filter='{{$filter["filterName"]}}' data-type='data'>{{$filter['label']}}: 
 		    	@foreach ($filter['filterOptions'] as $option)
 
 			    	<label><input type='checkbox' class='tableFilter' data-filter='{{$filter["filterName"]}}:{{$option["value"]}}'>{{$option["label"]}}</label>
@@ -62,21 +65,21 @@ $displayName = isset($displayName) ? $displayName : "";
 	    @empty
 	    @endforelse
 
-	    <div class='filterType' data-target='#{{$tableId}}' data-options='{"wholeWords":"false","separateWords":"true"}'><input class='tableSearch' type='text' data-filter='all' placeholder='Search'></div>
+	    <div class='filter' data-target='#{{$tableId}}' data-options='{"wholeWords":"false","separateWords":"true"}'><input class='tableSearch' type='text' data-filter='all' placeholder='Search'></div>
 	</div>
 	
 
-    <div id="TableNav" class="flexbox">
+    <div class="TableNav flexbox">
     	<div class="tableArrow left disabled"></div>
     	<div class='label'>Most Recent {{title(pluralSpaces($model))}}</div>
     	<div class="tableArrow right disabled"></div>
     </div>
 
-	<div id="Table">
+	<div class="Table">
 		@if ($modal)
 		    <table id='{{$tableId}}' class='styledTable clickable modelTable' data-index="{{$index}}" data-display='{{$displayName}}' data-model='{{$nospaces}}' data-hideOrder='{{$hideOrder}}'>
 		@else
-		    <table id='{{$tableId}}' class='styledTable clickable modelTable' data-index="{{$index}}" data-display='{{$displayName}}' data-target="#Current{{$nospaces}}" data-model='{{$nospaces}}' data-hideOrder='{{$hideOrder}}' data-destinations="{{implode(',',$destinations)}}" data-btnText="{{implode(',',$btnText)}}">
+		    <table id='{{$tableId}}' class='styledTable clickable modelTable' data-index="{{$index}}" data-display='{{$displayName}}' data-target="#Current{{$nospaces}}" data-model='{{$nospaces}}' data-hideOrder='{{$hideOrder}}' >
 		@endif
 
 	        <tr class='head'>

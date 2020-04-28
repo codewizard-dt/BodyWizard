@@ -16,11 +16,11 @@ class CreateAppointmentsTable extends Migration
         Schema::create('appointments', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('uuid');
+            $table->unsignedInteger('patient_id')->nullable();
             $table->unsignedInteger('practitioner_id')->nullable();
             $table->dateTimeTz('date_time');
             $table->unsignedInteger('duration');
-            $table->text('staff_member_note')->nullable();
-            $table->text('practitioner_note')->nullable();
+            $table->mediumtext('notes')->nullable();
             $table->json('status');
             $table->string('appt_link')->nullable();
             $table->json('full_json')->nullable();

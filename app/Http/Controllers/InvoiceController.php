@@ -42,7 +42,6 @@ class InvoiceController extends Controller
             $invoice->notes = $request->notes;
             $invoice->line_items = $request->line_items;
             $invoice->payments = $request->payments;
-            $invoice->status = 'settled';
             $invoice->settled_at = Carbon::now();
             // $invoice->autosave = ['notes' => $request->notes, 'line_items' => $request->line_items, 'payments' => $request->payments];
             $invoice->save();
@@ -65,8 +64,7 @@ class InvoiceController extends Controller
             $invoice->created_by_user_id = Auth::user()->id;
             $invoice->appointment_id = $apptId;
             $invoice->total_charge = $request->total_charge;
-            $invoice->status = [time()=>'pending'];
-            // $invoice->notes = $request->notes;
+            $invoice->notes = $request->notes;
             // $invoice->line_items = $request->line_items;
             // $invoice->payments = $request->payments;
             $invoice->autosave = ['notes' => $request->notes, 'line_items' => $request->line_items, 'payments' => $request->payments];
@@ -76,12 +74,18 @@ class InvoiceController extends Controller
         }catch(\Exception $e){
             reportError($e, 'InvoiceController 73');
         }
-        return isset($e) ? $e : listReturn('checkmark');        
+        return isset($e) ? listReturn($e) : listReturn('checkmark');        
     }
 
     public function view($id)
     {
-        //
+        try{
+            $invoice = Invoice::findOrFail($id);
+            $usertype = Auth::user()->user_type;
+        }catch(\Exception $e){
+            reportError($e,'InvoiceController 86');
+        }
+        return isset($e) ? listReturn($e) : view("portal.$usertype.invoices.view",compact("invoice"));
     }
 
     public function edit($id)

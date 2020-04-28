@@ -75,7 +75,7 @@ class AppointmentChange extends Notification
                 'type' => 'Appointment Change',
                 'description' => "This appointment has been changed!",
                 'details' => [
-                    'Patient' => $appt->patient_list,
+                    'Patient' => $appt->patient->name,
                     'Date + Time' => $appt->long_date_time,
                     'Services' => $appt->service_list
                 ],

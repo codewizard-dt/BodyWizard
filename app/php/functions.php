@@ -23,22 +23,35 @@ function listReturn($requestStatus, $url='not given'){
   if (is_array($requestStatus)){
     $requestStatus = json_encode($requestStatus);
   }
-  $usertype = Auth::user()->user_type;
+  $user = Auth::user();
+  $usertype = $user->user_type;
+  if ($usertype == 'patient'){
+    $userInfo = [
+      'id' => $user->id,
+      'type' => $user->user_type,
+      'patient_id' => $user->patientInfo->id,
+      'is_new_patient' => $user->patientInfo->isNewPatient(),
+      'name' => $user->name
+    ];
+  }elseif ($usertype == 'practitioner'){
+    $userInfo = [
+      'id' => $user->id,
+      'type' => $user->user_type,
+      'is_admin' => $user->is_admin,
+      'is_superuser' => $user->is_superuser,
+      'practitioner_id' => $user->practitionerInfo->id,
+      'name' => $user->name
+    ];
+  }
+
   $withLists = [
     'message'=> $requestStatus,
     'url'=> $url,
     'uidList' => session('uidList'),
     'tabList' => session('CurrentTabs'),
-    'usertype' => Auth::user()->user_type,
-    'is_admin' => Auth::user()->is_admin,
-    'is_superuser' => Auth::user()->is_superuser
+    'user' => $userInfo,
+    'notifications' => view('portal.user.notifications')->render()
   ];
-  if ($usertype == 'patient'){
-    $patient = Auth::user()->patientInfo;
-    $withLists['id'] = $patient->id;
-    $withLists['isNewPatient'] = ($patient->isNewPatient() == 'true');
-    $withLists['name'] = $patient->name;
-  }
   return $withLists;
 }
 function getPractice($practiceId){
@@ -61,46 +74,86 @@ function reportError($exception,$location=null){
     $project = app('GoogleErrors')->projectName('bodywizard');
     app('GoogleErrors')->reportErrorEvent($project,$event);
   }else{
-    // if ($location){
-
-    //   Log::error($exception,['location'=>$location]);
-    // }else{
-    // }
     Log::error($exception);
+    $desc = (is_a($exception, 'Exception')) ? explode("Stack", $exception)[0] : 'Error';
+    $user = Auth::user();
     event(new BugReported(
       [
-        'description' => "Error", 
+        'description' => $desc, 
         'details' => $exception, 
         'category' => 'Caught Exceptions', 
         'location' => $location,
-        'user' => null
+        'user' => $user ? $user->id : null
       ]
     ));
-
   }
 }
 
 // String related functions
-  function plural($str){return Str::plural($str);}
-  function singular($str){return Str::singular($str);}
-  function snake($str){return Str::snake($str);}
-  function camel($str){return Str::camel($str);}
-  function title($str){return Str::title($str);}
+  function plural($str){
+    if (is_array($str)){
+      return collect($str)->map(function($ele){return plural($ele);})->toArray();
+    }else{
+      return Str::plural($str);
+    }
+  }
+  function singular($str){
+    if (is_array($str)){
+      return collect($str)->map(function($ele){return singular($ele);})->toArray();
+    }else{
+      return Str::singular($str);
+    }
+  }
+  function snake($str){
+    if (is_array($str)){
+      return collect($str)->map(function($ele){return snake($ele);})->toArray();
+    }else{
+      return Str::snake($str);
+    }
+  }
+  function camel($str){
+    if (is_array($str)){
+      return collect($str)->map(function($ele){return camel($ele);})->toArray();
+    }else{
+      return Str::camel($str);
+    }
+  }
+  function title($str){
+    if (is_array($str)){
+      return collect($str)->map(function($ele){return title($ele);})->toArray();
+    }else{
+      return Str::title($str);
+    }
+  }
+  function proper($str){
+    if (is_array($str)){
+      return collect($str)->map(function($ele){return proper($ele);})->toArray();
+    }else{
+      return Str::title(str_replace("_"," ",snake($str)));
+    }
+  }
   function contains($str,$search){return Str::contains($str,$search);}
   function uuid(){return Str::orderedUuid()->toString();}
   function uuidNoDash(){return str_replace("-","",Str::orderedUuid()->toString());}
-  function proper($str){return Str::title(str_replace("_"," ",snake($str)));}
   function pluralSpaces($str){
-    $str = plural($str);
-    $str = Str::snake($str);
-    $str = unreplacespaces($str);
-    return $str;
+    if (is_array($str)){
+      return collect($str)->map(function($ele){return pluralSpaces($ele);})->toArray();      
+    }else{
+      $str = plural($str);
+      $str = Str::snake($str);
+      $str = unreplacespaces($str);
+      return $str;      
+    }
   }
   function singularSpaces($str){
-    $str = singular($str);
-    $str = Str::snake($str);
-    $str = unreplacespaces($str);
-    return $str;
+    if (is_array($str)){
+      return collect($str)->map(function($ele){return singularSpaces($ele);})->toArray();      
+    }else{
+      $str = singular($str);
+      $str = Str::snake($str);
+      $str = unreplacespaces($str);
+      return $str;
+    }
   }
 
   function revertJsonBool($array){
@@ -496,16 +549,25 @@ function reportError($exception,$location=null){
     session(['uidList' => $uidList]);
     // Log::info(session('uidList'));
   }
+  function unsetAllUids(){
+    session(['uidList' => null]);
+  }
   function setUid($model, $uid){
     $uidList = (session('uidList') !== null) ? session('uidList') : [];
     $uidList[$model]  = $uid;
     session(['uidList' => $uidList]);
-    // Log::info(session("uidList"));
   }
   function getUid($model){
     if (session('uidList')===null){return null;}
     elseif (!isset(session('uidList')[$model])){return null;}
     else{return session('uidList')[$model];}
+  }
+  function getModel($instance, $spaces = false){
+    $name = substr(strrchr(get_class($instance), "\\"), 1); 
+    return $spaces ? title(unreplacespaces(snake($name))) : $name;
+  }
+  function checkOrX($condition){
+    return $condition ? "<span class='checkmark'>✓</span>" : "<span class='xMark'>x</span>";
   }
   function dateFieldsArray(){return ['date_of_birth'];}
   function dateTimeFieldsArray(){return ['date_time'];}
@@ -548,7 +610,7 @@ function reportError($exception,$location=null){
     else {return "none";}
   }
   function findFormId($model){
-    $id = "";
+    // $id = "";
     if ($model == 'Service'){$id = '2';}
     // elseif ($model == 'User'){$id = '1';}
     elseif (in_array($model,['User','Patient','Practitioner','StaffMember'])){$id = '1';}
@@ -556,11 +618,9 @@ function reportError($exception,$location=null){
     elseif ($model == 'Code'){$id = '4';}
     elseif ($model == 'Message'){$id = '12';}
     elseif ($model == 'Template'){$id = '15';}
-    elseif ($model == 'Appointment'){
-      // $id = (Auth::user()->user_type == "patient") ? '22' : '18';
-      $id = "18";
-    }
+    elseif ($model == 'Appointment'){$id = "18";}
     elseif ($model == 'Complaint'){$id = '17';}
+    elseif ($model == 'ComplaintCategory'){$id = '31';}
     elseif ($model == 'Diagnosis'){
       $id = (session('diagnosisType')=='Western') ? '5' : "11";
     }else{

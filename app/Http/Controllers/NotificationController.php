@@ -39,6 +39,6 @@ class NotificationController extends Controller
     	}catch(\Exception $e){
             reportError($e,'NotificationController 40');
     	}
-    	return view('portal.user.notifications');
+    	return isset($e) ? listReturn($e) : listReturn('checkmark');
     }
 }

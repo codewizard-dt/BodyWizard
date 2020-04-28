@@ -19,6 +19,18 @@ input, textarea {
     box-sizing: border-box;
     max-width: calc(100% - 2px);
 }
+form.disabled input, form.disabled textarea{
+    /*border-color: transparent;*/
+    background-color: var(--yellow10);
+    border: 1px solid var(--yellow50);
+}
+form.disabled select:disabled, form.disabled input:disabled{
+    color: black;
+    background-color: var(--yellow10);
+    border: 1px solid var(--yellow50);
+}
+form.disabled .answer li:not(.active) {opacity:0.75;}
+form.disabled .plzselect {display: none;}
 
 textarea[data-followup]{
     margin:1.5em 0 0 0;
@@ -42,6 +54,7 @@ textarea[data-followup]{
 }
 .split50KeyValues > .label, .split3366KeyValues > .label {
     text-transform: capitalize;
+    position: relative;
 }
 .split50KeyValues > .label{
     display: inline-block;
@@ -56,6 +69,7 @@ textarea[data-followup]{
     display: inline-block;
     text-align: left;
     width: 50%;
+    position: relative;
 }
 .split3366KeyValues > .label{
     display: inline-block;
@@ -70,6 +84,7 @@ textarea[data-followup]{
     display: inline-block;
     text-align: left;
     width: 66%;
+    position: relative;
 }
 .miniCal {
     margin:auto auto 2em auto;
@@ -500,6 +515,26 @@ form, .indent, .report, .w95 {
 .partialPayment{
     position: relative;
 }
+.partialPayment .checkmark {
+    margin-left: 0.5em;
+}
+.note{
+    position: relative;
+}
+.note div{position: relative;}
+.note .delete{
+    font-size: 1.4em;
+    margin-left: 2em;
+    color: rgb(190,190,190);
+    position: absolute;
+    cursor: pointer;
+    top: 50%;
+    transform: translateY(-50%);
+    transition: color 400ms;
+}
+.note .delete:hover{
+    color: rgb(140, 140, 140);
+}
 
 .chartNoteTitle, .invoiceTitle{
     text-align: left;
@@ -619,18 +654,18 @@ form, .indent, .report, .w95 {
     font-size: 1.2em;
     margin: 10px 0;
 }
-#ApptsWithoutNotes, #ApptLegend{
+#ApptsWithoutNotes, #ApptsWithoutInvoices, #ApptLegend{
     display: none;
 }
-#ApptsWithoutNotes > div{
+#ApptsWithoutNotes > div, #ApptsWithoutInvoices > div{
     border-color: var(--yellow);
     cursor: pointer;
     transition: background-color 500ms;
 }
-#ApptsWithoutNotes > div:hover{
+#ApptsWithoutNotes > div:hover, #ApptsWithoutInvoices > div:hover{
     background-color: var(--yellow10);
 }
-#ApptsWithoutNotes > div.active{
+#ApptsWithoutNotes > div.active, #ApptsWithoutInvoices > div.active{
     background-color: var(--yellow30);
 }
 #ApptDetails{
@@ -698,7 +733,7 @@ form, .indent, .report, .w95 {
     border-color: transparent !important;
     font-size: 0.9em;
 }
-
+/*
 .errorreport {
     display: inline-block;
     border-style: solid;
@@ -711,9 +746,9 @@ form, .indent, .report, .w95 {
 .errorreport span {
     padding:1em;
     margin:0.5em;
-}
+}*/
 
-#model {
+/*#model {
     position: relative;
     width:600px;
     height: 500px;
@@ -774,7 +809,7 @@ form, .indent, .report, .w95 {
 #exitreview .scaleoption {
     font-size: 0.9em;
 }
-
+*/
 /*#CaseReview .Answer {
     padding: 0.5em;
     margin:0 0 0 1em;
@@ -1108,6 +1143,12 @@ li[data-response='no response']{
     width: calc(100% - 0.5em);
     /*overflow: hidden;*/
 }
+form.disabled .answer{
+    margin-top:0;
+}
+form.disabled .plzCheck{
+    display: none;
+}
 .narrative{
     position: relative;
 }
@@ -1184,20 +1225,6 @@ li[data-response='no response']{
 
 .formReport .answer {
     margin: 0.5em 0;
-}
-
-.answer.CC {
-    display: block;
-    border-color: rgb(170,170,170);
-}
-
-.question.CC{
-    display: block;
-    background-color: rgb(190,190,190);
-}
-
-.closed .answer{
-    display: none;
 }
 
 .plzselect {
@@ -1943,7 +1970,7 @@ input#PatientName {
     /*border-width: 1px 0 0 0;*/
     font-size: 0.9em;
 }
-.optionsNav .toggleDetails{
+.optionsNav .navOptionsToggle{
     padding: 0.4em;
     cursor: pointer;
     font-size: 0.8em;
@@ -1955,7 +1982,7 @@ input#PatientName {
     color: var(--purple);
     /*transition: background-color 400ms;*/
 }
-.optionsNav .toggleDetails .arrow{
+.optionsNav .navOptionsToggle .arrow{
     height: 1.2em;
     background-size: contain;
     background-position: center;
@@ -1963,13 +1990,13 @@ input#PatientName {
     opacity: 0.5;
     transition: opacity 0.5s;
 }
-.optionsNav .toggleDetails.down .arrow{
+.optionsNav .navOptionsToggle.down .arrow{
     background-image: url(/images/icons/arrow-down.png);
 }
-.optionsNav .toggleDetails.up .arrow{
+.optionsNav .navOptionsToggle.up .arrow{
     background-image: url(/images/icons/arrow-up.png);
 }
-.optionsNav .toggleDetails:hover .arrow{
+.optionsNav .navOptionsToggle:hover .arrow{
     opacity: 1;
 }
 .optionsNav .name {
@@ -1988,7 +2015,7 @@ input#PatientName {
     /*border-color: var(--purple);*/
 }
 .optionsNavHeader{
-    display: none;
+    /*display: none;*/
     /*margin-bottom: -1em;*/
 }
 .optionsNavHeader .hide{
@@ -2180,21 +2207,37 @@ input#PatientName {
     display:none;
     opacity: 0;
     z-index: 9999;
+    background-color: white;
+    box-shadow: 0 0 2px 1px var(--green);    
+}
+#AutoStatus {
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    transform: translate(-50%,100%);
+}
+#AutoStatus .checkmark {
+    margin-right:-0.2em;
+}
+.autosaveSpan{
+    position: relative;
+    display: inline-block;
 }
 #AutoConfirm {
     position:relative;
     font-family: Roboto, sans serif;
     font-weight: normal;
-    background-color: rgb(46, 107, 53);
-    border-radius: 5px;
+    background-color: var(--green10);
+    border-radius: 3px;
     top:50%;
     display:inline-block;
     font-size:1.2em;
     z-index:9999;
     transform: translateY(-50%);
-    box-shadow: 0 0 10px 5px rgba(220,220,220);
+    /*box-shadow: 0 0 10px 5px var(--green);*/
     padding: 0.1em 0.3em;
-    color:white;
+    color:green;
+    border: 2px solid var(--green70);
 }
 
 #FormBuilder {
@@ -2468,7 +2511,7 @@ input#PatientName {
     border-bottom: 2px solid var(--yellow);
     margin: 10px 0 0 0;
 }
-#TableNav {
+.TableNav {
     border-radius: 5px;
     border: 1px solid var(--purple);
     background-color: var(--purple10);
@@ -2476,12 +2519,12 @@ input#PatientName {
     margin: 0.5em 0;
     min-width: 70vw;
 }
-#TableNav .label{flex-grow: 1;}
-#Filters{
+.TableNav .label{flex-grow: 1;}
+.Filters{
     margin: 0.5em 0;
     padding: 0.5em 0;
 }
-#TableButtons > .button {
+.TableButtons > .button {
     margin-top: 0;
     margin-bottom: 0;
 }
@@ -2502,11 +2545,20 @@ input#PatientName {
 .tableArrow.disabled:hover{background-color: var(--purple80);}
 .tableArrow.left::before{content: "\003c";}
 .tableArrow.right::before{content: "\003e";}
+.flexbox .checkmark {
+    position: relative;
+    top: 0;
+    transform: unset;
+    margin: -0.4em 0;    
+}
 .flexbox{
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
     align-items: center;
+}
+.flexbox.nowrap{
+    flex-wrap: nowrap;
 }
 .flexbox.lineItem {
     justify-content: space-between;
@@ -2992,7 +3044,7 @@ table .indicator {
     text-align: center;
     padding: 0.25em 0.5em;
 }
-#SelectServices, #SelectPractitioner, #WhichFirst, #SelectDateTime {
+#SelectServices, #SelectPractitioner, #SelectDate, #SelectTime {
     position: relative;
     display:none;
     text-align: center;
@@ -3128,28 +3180,28 @@ table .indicator {
     vertical-align: middle;
 }
 
-.filterType {
+.filter {
     padding: 0.2em 0.5em;
     margin:0.1em;
     border-width: 0 3px;
     border-color: transparent;
     box-sizing: border-box;
 }
-.filterType.active {
+.filter.active {
     background-color: var(--yellow10);
     border-style: solid;
     border-color: var(--yellow);
 }
-.filterType .switch{
+.filter .switch{
     font-size: 0.8em;
 }
-.filterType .list{
+.filter .list{
     display:none;
 }
-.filterType[data-condition] {
+.filter[data-condition] {
     display:none;
 }
-.filterType label {
+.filter label {
     margin: 0 6px;
 }
 

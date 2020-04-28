@@ -7,11 +7,16 @@
     $models = title(pluralSpaces($model));
 
     // setting table options and getting collection
-    if (method_exists($ctrl, 'tableValues')){
+    try{
         $tableOptions = $class::tableValues();
-    }else{
-        $tableOptions = $ctrl->tableValues;
-    }
+    }catch(\Exception $e){
+        reportError($e, 'table with nav 13');
+        dd($e);
+    } 
+
+    $tableOptions['createBtnText'] = isset($tableOptions['createBtnText']) ? $tableOptions['createBtnText'] : "Add New $model";
+    $tableOptions['displayName'] = isset($tableOptions['displayName']) ? $tableOptions['displayName'] : "$model";
+    $tableOptions['modal'] = false;
 
     if (!isset($collection)){
         $orderBy = isset($tableOptions['orderBy']) ? $tableOptions['orderBy'] : [];
@@ -84,18 +89,17 @@
     }
 
     $tableOptions['collection'] = $collection;
-    // Log::info($collection,['location'=>'table with nav 87']);
-
-    // setting optionsNav variables
-    if (method_exists($ctrl, 'tableValues')){
-        $navOptions = $tableOptions['optionsNavValues'];
-    }else{
-        $navOptions = $ctrl->optionsNavValues;
-    }
+    $tableOptions['tableType'] = 'primary';
 
     $uid = getUid($nospaces);
     $navOptions['uid'] = $uid;
 
+    try{
+        $instance = $class::findOrFail($uid);
+        $navOptions = $instance->navOptions();
+    }catch(\Exception $e){
+        $navOptions = ['uid'=>null];
+    }
     if ($model == 'User' && session('userType') !== null){
         $headerText = title(pluralSpaces(session('userType')));
     }else{
@@ -105,9 +109,9 @@
 
 <h1 class="purple paddedXSmall">{{$headerText}}</h1>
 
-@include('models.optionsNav',$navOptions)
+@include('models.navOptions.options-nav',$navOptions)
 <div class="central large">
-    @include('models.table',$tableOptions)
+    @include('models.table-new',$tableOptions)
 </div>
 
 

@@ -1,10 +1,13 @@
 <?php 
 	use App\Appointment;
 	use App\Submission;
+	use App\ChartNote;
 	use App\Form;
 	if (!isset($apptId)){dd('no appointment selected');}
 
-	$appt = Appointment::find($apptId);
+	// $appt = Appointment::find($apptId);
+	$appt = Appointment::with(['patients','services.forms','chartNote'])->where('id',$apptId)->first();
+
 	$patient = $appt->patient();
 	$forms = $appt->forms();
 	$patientForms = $forms->filter(function($form){return $form->user_type == 'patient';});
@@ -23,22 +26,35 @@
 	$signOptions = ['typedName'=>'no','name'=>'PractitionerSignature'];
 	if ($appt->chartNote){
 		$missingSubmissionFormIds = collect($missingSubmissions)->map(function($form){return $form->form_id;})->toArray();
-		$noteAutoSave = $appt->chartNote->autosave;
+		$autosavedForms = $appt->chartNote->autosave;
 		$noteId = $appt->chartNote->id;
+		$notes = $appt->chartNote->notes;
 		$practitionerFormIds = $practitionerForms->map(function($form){return $form->form_id;})->toArray();
-		foreach ($noteAutoSave as $formuid => $info){
-			if (!in_array($info['FormID'], $practitionerFormIds)
-				&& !in_array($info['FormID'], $missingSubmissionFormIds)){
-				$practitionerForms->push(Form::find($formuid));
-			}
+		if ($autosavedForms){
+			foreach ($autosavedForms as $formuid => $info){
+				if (!in_array($info['FormID'], $practitionerFormIds)
+					&& !in_array($info['FormID'], $missingSubmissionFormIds)){
+					$practitionerForms->push(Form::find($formuid));
+				}
+			}			
 		}
+		$lastChartNote = ChartNote::where([['patient_id',$patient->id],['id','!=',$noteId]])->orderBy('created_at','desc')->first();
 	}else{
-		$noteAutoSave = "";
+		$autosavedForms = "";
 		$noteId = "new";
+		$notes = "";
+		$lastChartNote = ChartNote::where('patient_id',$patient->id)->orderBy('created_at','desc')->first();
+	}
+	if ($lastChartNote){
+		$notesFromLastChartNote = $lastChartNote->notes;
+		$lastNoteDate = $lastChartNote->signed_on ?: $lastChartNote->created_at;
+		$lastNoteDate = $lastNoteDate;
+	}else{
+		$notesFromLastChartNote = '';
 	}
 ?>
 
-<h3 id='ApptInfo' class='pink' data-id='{{$apptId}}' data-noteid='{{$noteId}}' data-autosave='{{json_encode($noteAutoSave)}}'>{{$patient->name}}<br>{{$appt->name}}</h3>
+<h3 id='ApptInfo' class='pink' data-id='{{$apptId}}' data-noteid='{{$noteId}}' data-notes='{{json_encode($notes)}}' data-autosave='{{json_encode($autosavedForms)}}'>{{$patient->name}}<br>{{$appt->name}}</h3>
 <div id="ChartFormsModal" class='prompt'>
 	<div class="message">
 		<h2 class='purple'>Charting Forms</h2>
@@ -61,7 +77,19 @@
 		<div class="button xsmall cancel">close</div>
 	</div>
 </div>
-
+@if ($lastChartNote)
+	<div id="NotesFromLastTime" class='left'>
+		<h3 class="chartNoteHeader marginXBig topOnly purple">Pinned Notes From {{$lastNoteDate}}</h3>
+		@forelse ($notesFromLastChartNote as $note)
+			<div class='left paddedSides small paddedSmall'>
+				@if (isset($note['title']))<h4>{{$note['title']}}</h4>@endif
+				<div>{{$note['text']}}</div>
+			</div>
+		@empty
+			<h4 class='left paddedSides small paddedSmall'>None</h4>
+		@endforelse
+	</div>
+@endif
 <div id="Submissions">
 	<h3 class="chartNoteHeader marginXBig topOnly purple">Patient Submissions</h3>
 	@foreach ($submissions as $completed)
@@ -79,13 +107,18 @@
 	@forelse ($practitionerForms as $form)
 		@include('portal.practitioner.chart_notes.chart-form',['form'=>$form])
 	@empty
-		<div class='pink' id="NoDefaultForms">No default forms set for the following services: {{$appt->service_list}}<br>You can change this in the settings for these services</div>
+		<div class='pink left' id="NoDefaultForms">No default forms set for the following services: {{$appt->service_list}}<br>You can change this in the settings for these services</div>
 	@endforelse
 	<div class="button xsmall yellow70" id="ChartFormsModalBtn">add/remove forms</div>
+</div>
+<div id="PinnedNotes">
+	@include ('layouts.forms.additional-notes',[
+		'header'=>'Notes for Next Time',
+		'context'=>'these will be pinned to the top of the next chart note for this patient'
+	])
 </div>
 <div id="ChartSignature">
 	<h3 class="chartNoteHeader marginXBig topOnly purple">Practitioner Signature</h3>
 	{{$ctrl->signature($signOptions)}}
 </div>
-@include ('layouts.forms.autosave-wrap')
 <div class="button pink" id="SignChartBtn">sign chart</div>

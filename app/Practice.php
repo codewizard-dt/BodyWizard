@@ -61,6 +61,12 @@ class Practice extends Model
         return $practice;
     }
 
+    public function navBarInfo(){
+        return [
+            'currency' => $this->currency,
+        ];
+    }
+
     public function setAppointmentsEncAttribute($value){
         $this->attributes['appointments_enc'] = $this->encryptKms($value);
     }
@@ -137,8 +143,9 @@ class Practice extends Model
         return $times;
     }
     public function getAppointmentsAttribute(){
-        $usertype = Auth::user()->user_type;
-        $userId = Auth::user()->id;
+        $user = Auth::user();
+        $usertype = $user->user_type;
+        $userId = $user->id;
         $practice = Practice::getFromSession();
         $appointments = $practice->appointments_enc;
         if (!$appointments || empty($appointments) || $appointments == '[]'){
@@ -153,11 +160,12 @@ class Practice extends Model
         }
         elseif ($usertype == 'patient'){
             $array = [];
+            $userPatientId = $user->patientInfo->id;
             foreach($appointments as $id => $event){
                 // RETURNS ONLY THIS PATIENT'S APPOINTMENTS
-                $patientIds = $event['extendedProps']['patientIds'];
-                $patientUserIds = Patient::returnUserIds($patientIds);
-                if (in_array($userId, $patientUserIds)){
+                $apptPatientId = $event['extendedProps']['patient']['id'];
+                // $patientUserIds = Patient::returnUserIds($patientIds);
+                if ($userPatientId == $apptPatientId){
                     $array[] = $event;
                 }
             }
@@ -178,7 +186,7 @@ class Practice extends Model
             'usd' => ['currency'=>'dollars','symbol'=>'$','abbr'=>'usd']
         ];
         try{
-            if (!isset($map[$abbr])) throw new \Exception("Currency abbreviation not found: 'abbr'");
+            if (!isset($map[$abbr])) throw new \Exception("Currency abbreviation not found: '$abbr'");
             $currency = $map[$abbr];
         }catch(\Exception $e){
             reportError($e, 'Practice.php 184');
@@ -311,7 +319,7 @@ class Practice extends Model
                 }
             }
 
-            $appointmentData = Appointment::whereIn('uuid',$apptIds)->with('services','patients','practitioner','chartNote')->get()->map(function($appt){
+            $appointmentData = Appointment::whereIn('uuid',$apptIds)->with('services','patient','practitioner','chartNote')->get()->map(function($appt){
                 return $appt->getDetailsForFullCal();
             });
             foreach ($appointmentData as $apptDetails){
@@ -322,11 +330,11 @@ class Practice extends Model
         }
         $anonArr = [];
         foreach($ehrArr as $id => $event){
-            $anonArr[] = 
+            $anonArr[$id] = 
                 [
                     'start' => $event['start'],
                     'end' => $event['end'],
-                    'practitionerId' => $event['extendedProps']['practitionerId'],
+                    'practitionerId' => $event['extendedProps']['practitioner']['id'],
                     'overlap' => null,
                     'uuid' => $id
                 ];

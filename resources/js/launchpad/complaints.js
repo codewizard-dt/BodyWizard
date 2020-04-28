@@ -64,7 +64,7 @@ $(document).ready(function(){
         "wholeWords":"true"
     };
     
-    $(".filterType").each(function(){
+    $(".filter").each(function(){
         if ($(this).data('options')==undefined){
             $(this).data('options',defaultFilterOptions);
         }else{
@@ -77,7 +77,7 @@ $(document).ready(function(){
             $(this).data("options",optObj);
         }
     }).on("click",".switch",function(){
-        var list = $(this).closest(".filterType").find(".list"), showing = list.is(":visible");
+        var list = $(this).closest(".filter").find(".list"), showing = list.is(":visible");
         if (showing){
             $(this).text("show filters");
             slideFadeOut(list);
@@ -91,9 +91,9 @@ $(document).ready(function(){
         }
     })
     $(".tableFilter").on("change",function(){
-        table = $(this).closest(".filterType").data("target");
+        table = $(this).closest(".filter").data("target");
         table = $(table);
-        var f = $(this).data('filter'), fT = $(".filterType").filter("[data-condition='"+f+"']");
+        var f = $(this).data('filter'), fT = $(".filter").filter("[data-condition='"+f+"']");
         if ($(this).is(":checked")){
             slideFadeIn(fT);
         }else{
@@ -105,7 +105,7 @@ $(document).ready(function(){
         filterTableList(table);
     });
     $(".tableSearch").on("keyup",function(){
-        table = $(this).closest(".filterType").data('target');
+        table = $(this).closest(".filter").data('target');
         table = $(table);
         filterTableList(table);
     })

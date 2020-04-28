@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use App\Practice;
+use App\RefreshTables;
 
 class ArtisanController extends Controller
 {
@@ -18,6 +19,7 @@ class ArtisanController extends Controller
     			'practiceId' => session('practiceId'),
     		]);
     		$message = 'Appointments cleared.';
+            session()->forget('uidList');
     	}elseif($command == 'update-appointments'){
             $practice = Practice::getFromSession();
             $practice->updateEntireEventFeed();
@@ -26,9 +28,18 @@ class ArtisanController extends Controller
             $practice = Practice::getFromSession();
             $result = $practice->refreshUsers();
             $message = ($result === true) ? 'Users refreshed.' : $result;
+        }elseif($command == 'refresh-complaints'){
+            $result = RefreshTables::clearComplaintTables();
+            $message = ($result === true) ? 'Complaints + categories refreshed.' : $result;
+        }elseif($command == 'refresh-bugs'){
+            $result = RefreshTables::clearBugTables();
+            $message = ($result === true) ? 'Bugs refreshed.' : $result;
+        }elseif($command == 'reset-uids'){
+            unsetAllUids();
+            $message = 'UIDs reset.';
         }else{
     		$message = 'command not recognized';
     	}
-    	return $message;
+    	return listReturn($message);
     }
 }

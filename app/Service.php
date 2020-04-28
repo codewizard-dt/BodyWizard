@@ -19,55 +19,6 @@ class Service extends Model
     ];
 
     public function __construct(){
-	    $this->tableValues = array(
-	    	'tableId' => 'ServiceList',
-	    	'index' => 'id',
-            'model' => "Service",
-	    	'columns' => array(
-                        array(
-                            "label" => 'Service Name',
-                            "className" => 'name',
-                            "attribute" => 'name'
-                        ),
-                        array(
-                            "label" => 'Category',
-                            "className" => 'group',
-                            "attribute" => 'service_category_id',
-                            "fetchNamesFrom" => 'ServiceCategory'
-                        ),
-                        array(
-                            "label" => 'Duration',
-                            "className" => 'duration',
-                            "attribute" => 'duration'
-                        ),
-                        array(
-                            "label" => 'Price',
-                            "className" => 'price',
-                            "attribute" => 'price'
-                        )
-                    ),
-	    	'hideOrder' => "price,category,duration",
-	    	'filtersColumn' => array(),
-	    	'filtersOther' => array(),
-            'destinations' => array(
-                'edit','settings','delete'
-            ),
-            'btnText' => array(
-                'edit','delete','settings', 'delete'
-            ),
-            'extraBtns' => [
-                ['manage categories','/ServiceCategory/index']
-            ]
-	    );
-        $this->optionsNavValues = array(
-            'model' => "Service",
-            'destinations' => array(
-                'edit','settings','delete'
-            ),
-            'btnText' => array(
-                'edit','settings', 'delete'
-            )
-        );
 
         // This will load a resource table for each connected model
         // into the create.blade view for THIS model, creating modals that
@@ -79,6 +30,40 @@ class Service extends Model
             ['Form','many','morphToMany']
             // ['Service','many','morphToMany']
         );
+    }
+    public static function tableValues(){
+        return [
+            'tableId' => 'ServiceList',
+            'index' => 'id',
+            'model' => "Service",
+            'columns' => [
+                'Service Name' => 'name',
+                'Category' => 'category',
+                'Duration' => 'duration',
+                'Price' => 'display_price',
+            ],
+            'hideOrder' => ['Price','Category','Duration'],
+            'filters' => [],
+            'extraBtns' => [
+                'manage categories' => '/ServiceCategory/index'
+            ],
+        ];
+    }
+    public function navOptions(){
+        return 'nothing';
+    }
+    public function modelDetails(){
+        return 'nothing';
+    }
+    public function detailClick(){
+        return 'nothing';
+    }
+    public function getCategoryAttribute(){
+        return $this->servicecategory->name;
+    }
+    public function getDisplayPriceAttribute(){
+        $practice = Practice::getFromSession();
+        return $practice->currency['symbol'].$this->price;
     }
 
     public function moreOptions(){

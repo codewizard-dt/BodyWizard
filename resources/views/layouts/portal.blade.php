@@ -38,7 +38,7 @@
         </form>
 
         @include('portal.user.notification-nav')
-        
+        @include('layouts.forms.autosave-wrap')
         @yield("content")
         
         <div id='ModalHome'>

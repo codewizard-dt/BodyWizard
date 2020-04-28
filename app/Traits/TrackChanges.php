@@ -17,7 +17,6 @@ trait TrackChanges
     {
         // parent::boot();
         static::updating(function ($model) {
-            Log::info("\n\n\n");            
             $model->trackChanges();
         });
     }
@@ -82,7 +81,14 @@ trait TrackChanges
                 ]);
         }
     }
-
+    public function getAllChangesAttribute(){
+        $entries = DB::table($this->getTable().'_audit')->where('affected_record',$this->getKey())->orderBy('changed_at','desc')->get();
+        // Log::info($entries);
+        return $entries;
+    }
+    public function getLastChangeAttribute(){
+        return $this->all_changes->first();
+    }
 
     public function getAuditTableName(){
         $table = $this->getTable().'_audit';

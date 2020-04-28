@@ -1,23 +1,16 @@
 <?php
-    // requires $model such that App\model resolves
-    // retrieves all other necessary variables from App\model
-    // called by http GET /{model}/display/modal
-    // called by include('models.modal', ['model' => 'Example'])
-
-    // include_once app_path("/php/functions.php");
-
-    // dd($model);
     unset($collection);
     $class = "App\\$model";
     $ctrl = new $class;
     $models = title(pluralSpaces($model));
 
     // setting table options and getting collection
-    if (method_exists($ctrl,'tableValues')){
+    try{
         $tableOptions = $class::tableValues();
-    }else{
-        $tableOptions = $ctrl->tableValues;
-    }
+    }catch(\Exception $e){
+        reportError($e, 'table modal 19');
+        dd($e);
+    } 
 	$orderBy = isset($tableOptions['orderBy']) ? $tableOptions['orderBy'] : null;
 	$where = isset($tableOptions['where']) ? $tableOptions['where'] : null;
 
@@ -63,9 +56,13 @@
 
     $tableOptions['collection'] = $collection;
     $modalId = $tableOptions['tableId']."Modal";
-
+    $tableOptions['createBtnText'] = isset($tableOptions['createBtnText']) ? $tableOptions['createBtnText'] : "Add New $model";
+    $tableOptions['displayName'] = isset($tableOptions['displayName']) ? $tableOptions['displayName'] : "$model";
     $tableOptions['modal'] = true;
     $tableOptions['connectedTo'] = $connectedTo;
+    $tableOptions['nospaces'] = removespaces($model);
+    $tableOptions['tableType'] = 'secondary';
+
 
     $skip = false;
     if ($connectedTo == $model){
@@ -76,11 +73,8 @@
 
 ?>
 @if (!$skip)
-<div id='{{ $modalId }}' class='modalForm connectedModel' data-model='{{ $model }}' data-relationship='{{ $relationship }}' data-connectedto='{{ $connectedTo }}' data-number='{{ $number }}'>
-    <h2>Available {{ $models }}</h2>
-    @include('models.table',$tableOptions)
-</div>
-
-<!-- <script src="{{ asset('/js/launchpad/forms.js') }}"></script> -->
-
+    <div id='{{ $modalId }}' class='modalForm connectedModel' data-model='{{ $model }}' data-relationship='{{ $relationship }}' data-connectedto='{{ $connectedTo }}' data-number='{{ $number }}'>
+        <h2>Available {{ $models }}</h2>
+        @include('models.table-new',$tableOptions)
+    </div>
 @endif

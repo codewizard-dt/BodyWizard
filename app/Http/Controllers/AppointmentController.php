@@ -28,32 +28,32 @@ class AppointmentController extends Controller
     {
         //
         $usertype = Auth::user()->user_type;
-        return view("portal.$usertype.appointments.display");        
+        return listReturn(view("portal.$usertype.appointments.display")->render());        
     }
 
-    public function getChartNote($uid, Request $request){
-        try{
-            $appt = Appointment::findOrFail($uid);
-            $chartNote = $appt->chartNote;
-            return $chartNote ? $chartNote : 'null';
-        }catch(\Exception $e){
-            reportError($e,'AppointmentController 40');
-            return 'null';
-        }
-    }
+    // public function getChartNote($uid, Request $request){
+    //     try{
+    //         $appt = Appointment::findOrFail($uid);
+    //         $chartNote = $appt->chartNote;
+    //         return $chartNote ? $chartNote : 'null';
+    //     }catch(\Exception $e){
+    //         reportError($e,'AppointmentController 40');
+    //         return 'null';
+    //     }
+    // }
     public function editChartNote($uid, Request $request){
         return view('portal.practitioner.chart_notes.edit',['apptId'=>$uid]);
     }
-    public function getInvoice($uid, Request $request){
-        try{
-            $appt = Appointment::findOrFail($uid);
-            $invoice = $appt->invoice;
-            return $invoice ? $invoice : 'null';
-        }catch(\Exception $e){
-            reportError($e,'AppointmentController 53');
-            return 'null';
-        }
-    }
+    // public function getInvoice($uid, Request $request){
+    //     try{
+    //         $appt = Appointment::findOrFail($uid);
+    //         $invoice = $appt->invoice;
+    //         return $invoice ? $invoice : 'null';
+    //     }catch(\Exception $e){
+    //         reportError($e,'AppointmentController 53');
+    //         return 'null';
+    //     }
+    // }
     public function editInvoice($uid, Request $request){
         return view('portal.practitioner.invoices.edit',['apptId'=>$uid]);
     }

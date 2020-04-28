@@ -45,10 +45,10 @@ function filterFormList(){
         return $(this).find(".name").text() == "No matching forms";
     });
 
-    $(".filterType").filter(function(){
+    $(".filter").filter(function(){
         return $(this).find("input").filter(":checked").length>0;
     }).addClass("active");
-    $(".filterType").filter(function(){
+    $(".filter").filter(function(){
         return $(this).find("input").filter(":checked").length==0;
     }).removeClass("active");
     

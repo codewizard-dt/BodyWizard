@@ -1,13 +1,15 @@
 <?php 
+	use App\Practice;
 	$type = Auth::user()->user_type;
 	if ($type == 'patient'){
 		setUid('Patient', Auth::user()->patientInfo->id);
 	}
 	$tabs = json_encode(session('CurrentTabs'));
-	$uids = json_encode(session('uidList'));
+	$practice = Practice::getFromSession();
+	$practiceInfo = $practice ? $practice->navBarInfo() : null;
 ?>
 
-<div id='NavBar'>
+<div id='NavBar' data-initialtabs="{{$tabs}}" data-practiceinfo='{{json_encode($practiceInfo)}}'>
     <a href="/"><div class='logo'></div></a>
 	@include('layouts.menus.menu-bar',[
 	    "menu_name" => $menuName,
@@ -16,7 +18,3 @@
 	    'type' => 'site'
 	])
 </div>
-
-<div id="tabList">{{$tabs}}</div>
-<div id="uidList" data-usertype='{{$type}}'>{{$uids}}</div>
-<div id="UserInfo"></div>

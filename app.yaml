@@ -22,6 +22,15 @@ env_variables:
   SESSION_DRIVER: database
   SESSION_LIFETIME: 30
   APP_BOOTSTRAP_CACHE: /tmp
+  PUSHER_APP_ID: 975191
+  PUSHER_APP_KEY: 5ffc0c92650faf3d8afd
+  PUSHER_APP_SECRET: 76a3a8932dd475ae7dae
+  BROADCAST_DRIVER: pusher
+  STRIPE_KEY: pk_test_kmcewhdhAU5eVmRdauVQm76y00eDfxXBUG
+  STRIPE_SECRET: sk_test_VO8cEI3MbKfcxeHOLlpjBOfa009mq5Zrze
+  TWILIO_SID: ACa92309230eb92edec1b86837aca5cd4b
+  TWILIO_TOKEN: d52deab2c8e7b9683c52cd67a0a45b54
+  TWILIO_FROM: 15125808399
 
 beta_settings:
   cloud_sql_instances: 'bodywizard:us-central1:ehr-data'

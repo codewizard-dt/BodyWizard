@@ -355,5 +355,4 @@ $requiredOptions = ['required','optional','ID*requiredbool'];
 </div>
 <div id="FormPreview" class="modalForm">
 </div>
-@include ('layouts.forms.autosave-wrap')
 <script type="text/javascript" src="{{ asset('/js/launchpad/form-builder.js') }}"></script>

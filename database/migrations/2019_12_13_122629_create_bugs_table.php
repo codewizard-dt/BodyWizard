@@ -16,8 +16,9 @@ class CreateBugsTable extends Migration
         Schema::create('bugs', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('category')->nullable();
-            $table->string('description');
+            $table->text('description');
             $table->string('location')->nullable();
+            $table->json('request')->nullable();
             $table->json('details')->nullable();
             $table->string('status');
             $table->unsignedInteger('user_id')->nullable();

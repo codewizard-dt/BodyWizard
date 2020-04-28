@@ -200,10 +200,15 @@ function saveModel(includeInvisible = false){
 	// CONSTRUCT DATA OBJECT
 		var form = $(this).closest('.formDisp'), modal = $(this).closest('.createNew, .editExisting');
 		if (modal.data('model') == 'Appointment'){includeInvisible = true;}
-		var	obj = checkForm(form, includeInvisible); 
+		var	obj = forms.retrieve(form, includeInvisible); 
 		if (!obj){return false;}
 		var model = modal.data('model'), connectedModelArr = checkConnectedModels(model), dataObj, columnObj, url, uid = null;
 		if (!connectedModelArr){return false;}
+
+		if (model == 'Appointment'){
+			saveCurrent('Appointment');
+			return false;
+		}
 
 		if ($.inArray(model,['Patient','User','Practitioner','StaffMember']) > -1){
 			var u = modal.find(".username"), e = modal.find(".email_address"), p = modal.find(".phone_number");
@@ -282,6 +287,13 @@ function saveModel(includeInvisible = false){
 		},
 		headers: {"X-Current-Uids":JSON.stringify(uidList)}
 	})
+}
+function saveCurrent(model){
+	var obj;
+	if (model == 'Appointment'){
+		obj = appointments.current;
+		console.log(obj);
+	}
 }
 function deleteModel(){
     var model = $(this).data('model'),
@@ -432,16 +444,26 @@ function constructColumnObj(model, form){
 	}
 	else if (model == 'Complaint'){
 		obj = {
-			name: justResponse(form.find(".complaint_name")),
-			complaint_type: justResponse(form.find(".complaint_category"))
+			name: justResponse(form.find(".complaint_name"))
+		}
+	}
+	else if (model == 'ComplaintCategory'){
+		obj = {
+			name: justResponse(form.find(".category_name")),
+			description: justResponse(form.find(".description"))
 		}
 	}
 	else if (model == "Appointment"){
 		var dateTime = moment(form.find(".date").val() + " " + form.find(".time").val(), "MM/DD/YYYY hh:mmA");
 		dateTime = dateTime.format("YYYY-MM-DD kk:mm:ss");
+		var patientModal = $(".connectedModel").filter(function(){
+			return $(this).data('model') == 'Patient';
+		});
+		// console.log(patientModal);
 		obj = {
 			date_time: dateTime,
-			duration: form.find(".duration").val()
+			duration: form.find(".duration").val(),
+			patient_id: patientModal.data('uidArr')[0]
 		}
 	}
 	// console.log(obj);

@@ -21,22 +21,19 @@ if (Auth::user()->user_type == 'patient'){
 }
 ?>
 
-<div id="SelectDateTime" class='progressiveSelection selector toModalHome'>
+<div id="SelectDate" class='progressiveSelection selector toModalHome'>
+	<h3 data-default='Select Date'>Select Date</h3>
+	{{$ctrl->answerDisp('date',$dateOptions)}}
+</div>
+
+<div id="SelectTime" class='progressiveSelection selector toModalHome'>
 	<div class="progressBar">
 		<div class='back'></div>
 	</div>
-	<div id="SelectDate" class='step' data-order='1' data-details="">
-		<h3 data-default='Select Date'>Select Date</h3>
-		{{$ctrl->answerDisp('date',$dateOptions)}}
-		<br><div class="button small pink disabled next" data-target='#DateSelector' data-targettype='input' data-defaulttext='Availability For %VAL%'>next ></div>
-	</div>
-	<div id="SelectTime" class='step' data-order='2' data-details="">
-		<h3 data-default='Times'>Times</h3>
-		<ul id='TimeSelector' class='answer radio'>
-			@foreach ($times as $time)
-				<li data-value="{{$time['carbon']}}">{{$time['display']}}</li>
-			@endforeach
-		</ul>
-		<br><div class="button small pink disabled next" data-target='#TimeSelector' data-targettype='ul' data-defaulttext='%PrevVAL% at %VAL%'>next ></div>
-	</div>
+	<h3 data-default='Times'>Times</h3>
+	<ul id='TimeSelector' class='answer radio'>
+		@foreach ($times as $time)
+			<li data-value="{{$time['carbon']}}">{{$time['display']}}</li>
+		@endforeach
+	</ul>
 </div>

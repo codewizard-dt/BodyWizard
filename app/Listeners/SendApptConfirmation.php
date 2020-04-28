@@ -47,8 +47,9 @@ class SendApptConfirmation
             $template = Template::where('name','like','Appointment Booked')->first();
         }
 
-        $patients = $appt->patients;
-        foreach ($patients as $patient){
+        // $patients = $appt->patients;
+        $patient = $appt->patient;
+        // foreach ($patients as $patient){
             $msg = new Message;
             $msg->recipient_id = $patient->userInfo->id;
             $msg->message_id = uuid();
@@ -70,21 +71,23 @@ class SendApptConfirmation
             
             try{
                 $msg->save();
-                $users = ($savedBy == 'patient') ? $appt->practitioner->userInfo : $appt->patient_user_models;
+                // $users = ($savedBy == 'patient') ? $appt->practitioner->userInfo : $appt->patient_user_models;
+                $users = ($savedBy == 'patient') ? $appt->practitioner->userInfo : $appt->patient->userInfo;
                 if ($changes){
                     Notification::send($users, new AppointmentChange($appt, $changes));
                 }else{
                     Notification::send($users, new NewAppointment($appt));
                     $forms = $appt->forms('patient');
-                    foreach ($appt->patients as $patient){
+                    // foreach ($appt->patients as $patient){
                         foreach($forms as $form){
+                            $patient = $appt->patient;
                             $submitted = $form->checkApptFormStatus($appt,$patient);
                             // Log::info($form->name." ".$submitted);
                             if (!$submitted){
                                 $patient->userInfo->notify(new NewRequiredForm($form, $appt));
                             }
                         }
-                    }
+                    // }
                 }
                 // event(new OutgoingMessage($msg, $practiceId));
             }
@@ -100,7 +103,7 @@ class SendApptConfirmation
                 ));
                 // reportBug('Saving and Sending', ['error'=>$e], 'Messages', 'SendApptConfirmation.php');
             }
-        }
+        // }
         //
     }
 

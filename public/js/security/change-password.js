@@ -15,7 +15,7 @@ $(document).ready(function(){
 });
 
 function submitPassword(){
-	var obj = checkForm($("#ChangePassword"));
+	var obj = forms.retrieve($("#ChangePassword"));
 
 	if (!obj){return false;}
 

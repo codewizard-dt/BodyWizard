@@ -96,7 +96,7 @@ function unhighlightTimeBlock(){
 	$(".timeBlock").removeClass("hover");
 }
 function createTimeBlockObj(form){
-	if (checkForm(form)){
+	if (forms.retrieve(form)){
 		var services = form.find("#services_offered").data('uidArr');
 		if (services != undefined && services.length == 0){services = undefined;}
 		var days = {

@@ -4,14 +4,19 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Model;
 use App\Message;
 use App\Patient;
 use App\Practice;
 use App\User;
+use App\Invoice;
+use App\ChartNote;
 use App\Form;
 use App\Appointment;
 use App\Events\BugReported;
+use App\Events\AppointmentSaved;
 use App\Notifications\NewRequiredForm;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Log;
@@ -54,6 +59,23 @@ class AppServiceProvider extends ServiceProvider
                 $model->removeFromGoogleCal();
                 $model->removeFromFullCal();
             });
+            Appointment::saved(function($model){
+                // try{
+                //     $method = request()->method();
+                //     $model->saveToGoogleCal($method);
+                //     $model->saveToFullCal();
+                //     $lastChange = DB::table('appointments_audit')->where('affected_record',$model->id)->orderBy('changed_at','desc')->first();
+                //     $changes = $lastChange ? json_decode($lastChange->changes,true) : null;
+                //     $practice = Practice::getFromSession();
+                //     event(new AppointmentSaved($model, $changes, $practice->practice_id, Auth::user()->user_type));
+                // }catch(\Exception $e){
+                //     reportError($e,'AppServiceProvider 69');
+                // }
+            });
+            ChartNote::saved(function($model){
+                if ($model->appointment) $model->appointment->saveToFullCal();
+                setUid('Appointment',$model->appointment->id);
+            });
             User::created(function($model){
                 $practice = Practice::getFromSession();
                 $options = [
@@ -64,6 +86,14 @@ class AppServiceProvider extends ServiceProvider
                     ]
                 ];
                 $stripeCustomer = $model->createAsStripeCustomer($options);
+            });
+            Invoice::saving(function($model){
+                Log::info("\nSAVING");
+                Log::info($model->notes);
+            });
+            Invoice::saved(function($model){
+                Log::info("\nSAVED");
+                Log::info($model->notes);
             });
     }
 }

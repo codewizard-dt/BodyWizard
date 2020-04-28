@@ -49,9 +49,10 @@ class AppointmentReminders implements ShouldQueue
 
                 $appts24 = Appointment::allApptsNeedingReminder();
                 foreach($appts24 as $appt){
-                    $patients = $appt->patients;
-                    if (count($patients) == 1){
-                        $patient = $patients->first();
+                    // $patients = $appt->patients;
+                    // if (count($patients) == 1){
+                        // $patient = $patients->first();
+                        $patient = $appt->patient;
                         $date = $appt->date_time->format('D M jS \a\t g:ia');
                         if ($patient->settings['reminders']['appointments']['text']){
                             $sms = new Message;
@@ -94,7 +95,7 @@ class AppointmentReminders implements ShouldQueue
                         $status['reminders']['sentAt'][] = Carbon::now()->toDateTimeString();
                         $appt->status = $status;
                         $appt->save();
-                    }
+                    // }
                 }
             }
         }

@@ -32,7 +32,7 @@
     <div class='lds-ring dark'><div></div><div></div><div></div><div></div></div>
 </div>
 <div id='ScheduleFeedTarget'></div>
-<div id="ApptInfo" class="modalForm prompt">
+<div id="Appointment" class="modalForm prompt">
     <div class="message">
         <h1 class='purple'>Appointment Details</h1>
         <div class='split3366KeyValues'>

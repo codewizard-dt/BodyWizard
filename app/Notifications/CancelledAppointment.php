@@ -73,7 +73,7 @@ class CancelledAppointment extends Notification
                 'type' => 'Appointment Cancelled',
                 'description' => "This appointment has been cancelled!",
                 'details' => [
-                    'Patient' => $appt->patient_list,
+                    'Patient' => $appt->patient->name,
                     'Date + Time' => $appt->long_date_time,
                     'Services' => $appt->service_list
                 ],

@@ -9,7 +9,7 @@ $(document).ready(function(){
     })
     allowButtonFocus();
     
-    //$(".filterType").css("display","inline-block");
+    //$(".filter").css("display","inline-block");
         
     $("#EditFormSettingsBtn").on('click',function(){
         if ($("#EditFormSettings").is(":visible")){

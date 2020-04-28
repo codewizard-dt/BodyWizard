@@ -1,7 +1,237 @@
-$(document).ready(function () {
-    masterStyle();
-})
+var forms = {
+    retrieve: function(form, includeInvisible = false, forceAutoSave = false){
+        var formResponse = {
+            Sections: [],
+            UID: form.data('uid'),
+            FormID: form.data('formid'),
+            FormName: form.data('formname')
+        };
+        var sections = includeInvisible ? form.find(".section") : form.find(".section").filter(":visible"), uid = form.data("uid"), check = false;
+        sections.each(function(s, section){
+            section = $(section), secName = section.find("h2").first().text();
+            var ItemsArr = [], items = includeInvisible ? section.find(".item") : section.find(".item").filter(":visible");
+            items.each(function(i, item){
+                item = $(item);
+                if (!forceAutoSave && validateItem(item)){
+                    ItemsArr.push(getResponse(item));
+                    check = true;
+                }else if (forceAutoSave){
+                    ItemsArr.push(getResponse(item));
+                    check = true;
+                }
+                else {
+                    check = false;
+                    return false;
+                }
+            })
+            if (check==false){return false;}
+            var secObj = {
+                Name: secName,
+                Items: ItemsArr
+            }
+            formResponse['Sections'].push(secObj);
+        })
+        return check ? formResponse : false;
+    },
+    fill: function(form, json){
+        if (json == undefined || form.data('filled')) return false;
+        console.log(form,form.data(),json);
+        var sections = json['Sections'];
+        $.each(sections,function(s,savedSection){
+            var sectionOnForm = form.find(".section").filter(function(){
+                var t = $(this).find("h2").first().text(), ot = t, otsplice = t;
+                if ($(this).find("h2").first().data('originaltext') != undefined){
+                    ot = $(this).find("h2").first().data('originaltext');
+                    otsplice = $(this).find("h2").first().data('originalsplice')
+                }
+                return ((t == savedSection.Name) || (ot == savedSection.Name) || savedSection.Name.includes(otsplice)) ; 
+            });
+            $.each(savedSection['Items'],function(i,savedItem){
+                // if (savedItem.type !== 'narrative' && savedItem.type !== 'signature'){
+                if (savedItem.type !== 'narrative'){
+                    var itemOnForm = sectionOnForm.find(".item").filter(function(){return $(this).children(".question").find(".q").text().trim() == savedItem.question.trim();});
+                    if (savedItem.type == 'bodyClick') console.log(savedItem.response);
+                    if (savedItem.response != undefined) fillAnswer(itemOnForm,savedItem.response);
+                    if (savedItem.followups != undefined){
+                        $.each(savedItem.followups,function(f,savedFU){
+                            var fuOnForm = itemOnForm.find(".itemFU").filter(function(){return $(this).children(".question").find(".q").text().trim() == savedFU.question.trim();});
+                            if (savedFU.response != undefined) fillAnswer(fuOnForm,savedFU.response);
+                        })
+                    }
+                }
+            })
+        })
+        form.data('filled',true);
+    },
+    disable: function(form){
+        form.find('input, textarea').attr('readonly',true);
+        form.find('.signature').filter(":visible").each(function(){
+            $(this).jSignature('disable');
+        });
+        form.find('.number').off("mousedown touchstart",".change",startChange);
+        form.find('.number').off("mouseup touchend",".change",stopChange);
+        form.find('.number').off('keyup',"input",inputNum);
+        form.find('.signature').find('.clear').hide();
+        form.find('.radio, .checkboxes, .imageClick, .number').addClass('disabled');
+        form.find('.button.cancel').text("close");
+        form.find('.slider, select').attr('disabled',true);
+        form.find('.datepicker').each(function(){
+            $(this).datepick('disable');
+        })
+        form.addClass('disabled');
+    }
+};
+var notes = {
+    targetObj: null,
+    callback: null,
+    allowRemoval: true,
+    initialize: {
+        soloModal: function(){
+            var noteForm = filterByData($("#AddNote"),'hasNoteFx',false);
+            notes.initialize.basicFx();
 
+            autosave.reset();
+            autosave.initialize({
+                saveBtn: $("#AddNoteBtn"),
+                ajaxCall: notes.autosave,
+                callback: notes.updateOptionsNav,
+                delay: 2000
+            })
+            var modelInfo = $("#AddNoteModal").find('.instance').data();
+            
+            notes.allowRemoval = (modelInfo.allowRemoval === 'true');
+            notes.autofill(modelInfo.notes);
+
+            $("#AddNoteBtn").on('click', autosave.trigger);
+            notes.targetObj = null;
+            noteForm.data('hasNoteFx',true);
+
+        },
+        withModel: function(objectWithNotes = null, autosaveFx = null){
+            if (objectWithNotes) notes.targetObj = objectWithNotes;
+            if (autosaveFx && typeof autosaveFx == 'function') notes.callback = autosaveFx;
+            notes.initialize.basicFx();
+        },
+        basicFx: function(){
+            var form = filterByData('#AddNote','hasDynamicFx',false), addBtn = $('#AddNoteBtn');
+            if (form.dne()) return;
+            $("#NoteList").on('click','.delete', notes.remove);
+            addBtn.on('click', notes.add);
+            form.data('hasDynamicFx',true);
+        }
+    },
+    resetForm: function(){
+        $("#AddNote").data('hasDynamicFx',false);
+        notes.targetObj = null;
+        notes.callback = null;
+    },
+    getModelNotes: function(model,uid){
+        blurTopMost('#loading');
+        $.ajax({
+            url:'/addNote/'+model+"/"+uid,
+            method: "GET",
+            success: function(data){
+                if ($("#AddNoteModal").exists()){
+                    $("#AddNoteModal").html(data).data({model:model,uid,uid});
+                }else{
+                    $("<div/>",{
+                        id: 'AddNoteModal',
+                        class: 'modalForm',
+                        data: {model:model,uid:uid},
+                        html: data
+                    }).appendTo("body");
+                }
+                notes.initialize.soloModal();
+                minifyForm($("#AddNote"));
+                var modelInfo = $("#AddNoteModal").find('.instance').data();
+                // initializeAdditionalNoteForm(autoSavePinnedNotes);
+                blurTopMost('#AddNoteModal');
+                notes.autofill(modelInfo.notes);
+            }
+        })
+    },
+    updateOptionsNav: function(){
+        var pinnedNotes = $(".optionsNav").find(".value.pinnedNotes");
+        if (pinnedNotes.dne()) return;
+        pinnedNotes.html("");
+        var currentNotes = notes.retrieve();
+        if (currentNotes){
+            $.each(currentNotes,function(n,note){
+                if (note.title) pinnedNotes.append("<div><span><span class='bold'>"+note.title+"</span>: "+note.text+"</span></div>");
+                else pinnedNotes.append("<div><span>"+note.text+"</span></div>");
+            });
+        }else{
+            if (pinnedNotes.html() == "") pinnedNotes.html("<div class='bold'>None</div>");
+        }
+    },
+    add: function(){
+        var form = $("#AddNote");
+        if (!forms.retrieve(form)) return false;
+        var newNote = notes.create(), h4 = newNote.title ? "<h4 class='unsaved'>"+newNote.title+"</h4>" : "",
+            newHtml = h4 + "<div class='unsaved'>" + newNote.text + (notes.allowRemoval ? "<span class='delete'>x</span>" : "") + "</div>";
+        $("<div/>",{
+            class: 'note',
+            html: newHtml,
+            data: newNote
+        }).appendTo("#NoteList");
+        $("#NoNotes").slideFadeOut();
+        resetForm(form);
+        if (notes.callback) notes.callback();
+        if (notes.targetObj) notes.targetObj.current.notes = notes.retrieve();
+    },
+    create: function(){
+        var title = justResponse($("#AddNote").find('.note_title'));
+        return {
+            title: (title == '') ? null : title,
+            text: justResponse($("#AddNote").find('.note_details'))
+        };
+    },
+    remove: function(){
+        $(this).closest('.note').slideFadeOut(400,function(){
+            $(this).remove();
+            if (notes.callback) notes.callback();
+            if (notes.targetObj) notes.targetObj.current.notes = notes.retrieve();
+        })
+    },
+    retrieve: function(){
+        var notes = [];
+        $("#NoteList").find(".note").each(function(){
+            notes.push($(this).data());
+        });
+        return notes.length > 0 ? notes : null;
+    },
+    autofill: function(existingNotes){
+        if (existingNotes == '""' || existingNotes == undefined) return;
+        $.each(existingNotes,function(n, note){
+            $(".note_title").val(note.title);
+            $('.note_details').val(note.text);
+            notes.add();
+        });
+        notes.marksaved();
+    },
+    autosave: function(){
+        console.log('saving pinned notes');
+        var currentNotes = notes.retrieve(), model = $("#AddNoteModal").data('model'), uid = $("#AddNoteModal").data('uid');
+        console.log(model, uid);
+        $.ajax({
+            url:'/savePinnedNotes/'+model+"/"+uid,
+            method: "POST",
+            data: {
+                notes: currentNotes
+            },
+            success:function(data){
+                if (data == 'checkmark'){
+                    autosave.success();
+                    notes.updateOptionsNav();
+                    notes.marksaved();
+                }
+            }
+        })
+    },
+    marksaved: function(){
+        $("#NoteList").find('.unsaved').removeClass('unsaved');
+    }
+};
 function initializeNewForms(){
     initializeInputs();
     initializeFullScreenBtns();
@@ -22,35 +252,121 @@ function initializeNewForms(){
     $(".clearTableFilters").off("click",clearTableFilters);
     $(".clearTableFilters").on("click",clearTableFilters);    
 }
-function initializeAdditionalNoteForm(autosaveType = null){
-    var btn = filterByData('#AddNoteBtn','hasDynamicFx',false);
-    btn.on('click',function(){
-        addNote(autosaveType);
-    });
-    btn.data('hasDynamicFx',true);
+function initializeAdditionalNoteForm(targetObj = null, callback = null){
+    console.log('use notes.initialize');
+    return false;
+    if (targetObj) notes.targetObj = targetObj;
+    if (callback && typeof callback == 'function') notes.callback = callback;
+    var form = filterByData('#AddNote','hasDynamicFx',false), addBtn = $('#AddNoteBtn');
+    if (form.dne()) return;
+    $("#NoteList").on('click','.delete', notes.remove);
+    addBtn.on('click', notes.add);
+    form.data('hasDynamicFx',true);
 }
-function addNote(autosaveType = null){
-    var form = $("#AddNote");
-    if (!checkForm(form)) return false;
-    var newNote = createNoteObj(), h4 = newNote.title ? "<h4>"+newNote.title+"</h4>" : "";
-    $("<div/>",{
-        class: 'note',
-        html: h4+"<div>"+newNote.text+"</div>",
-        data: newNote
-    }).appendTo("#NoteList");
-    $("#NoNotes").slideFadeOut();
-    resetForm(form);
-    if (autosaveType){
-        if (autosaveType == 'Invoice') autoSaveInvoice();
-        if (autosaveType == 'Note') autoSaveNote();
+function autoSavePinnedNotes(){
+    console.log('use notes.autosave');
+    // var currentNotes = notes.retrieve(), model = $("#AddNoteModal").data('model'), uid = $("#AddNoteModal").data('uid');
+    // $.ajax({
+    //     url:'/savePinnedNotes/'+model+"/"+uid,
+    //     method: "POST",
+    //     data: {
+    //         notes: currentNotes
+    //     },
+    //     success:function(data){
+    //         if (data == 'checkmark'){
+    //             console.log(data);
+    //             showAutosaveTime();
+    //             updatePinnedNotesOptionsNav(currentNotes);
+    //         }
+    //     }
+    // })
+}
+function updatePinnedNotesOptionsNav(notes){
+    var pinnedNotes = $(".optionsNav").find(".value.pinnedNotes");
+    if (pinnedNotes.dne()) return;
+    pinnedNotes.html("");
+    $.each(notes,function(n,note){
+        if (note.title) pinnedNotes.append("<div><span><span class='bold'>"+note.title+"</span>: "+note.text+"</span></div>");
+        else pinnedNotes.append("<div><span>"+note.text+"</span></div>");
+    });
+    if (pinnedNotes.html() == "") pinnedNotes.html("None");
+}
+function fillNotes(notes){
+    console.log('use notes.autofill');
+    // $.each(notes,function(n, note){
+    //     $(".note_title").val(note.title);
+    //     $('.note_details').val(note.text);
+    //     addNote();
+    // });
+}
+function initializeNoApptsBtn(message){
+    var btn = filterUninitialized("#NoEligibleApptsBtn");
+    btn.on('click',function(){
+        confirm('No Eligible Appointments',message,'create new appointment','dismiss',null,function(){clickTab("appointments-index");unblurAll();})
+    });
+    btn.data('initalized',true);
+}
+function initializeSelectNewApptBtns(fadeTheseIn = null){
+    var selectBtn = filterUninitialized('.selectNewAppt');
+    selectBtn.on('click',function(){
+        showOtherAppts(fadeTheseIn);
+    });
+    selectBtn.data('initialized',true);
+}
+function showOtherAppts(fadeTheseIn = null){
+    $(".selectNewAppt").hide();
+    fadeTheseIn = fadeTheseIn ? $(fadeTheseIn).add("#ApptLegend") : $("#ApptLegend");
+    fadeTheseIn.slideFadeIn();
+    $("#CurrentAppt").slideFadeOut();
+    $('.confirmApptBtn').addClass('disabled');
+}
+function selectThisAppt(){
+    if ($(this).hasClass('active') || $(this).closest("#ApptLegend").length == 1){
+        return;
+    }else{
+        $(".appt").removeClass('active');
+        $(this).addClass('active');     
+        $("#ApptSummary").html($(this).html().split("<br>").join(", ") + "<br>" + $(this).data('services'));
+        $('.confirmApptBtn').removeClass('disabled');
+        var newText;
+        if ($(this).hasClass('hasNote')){newText = 'finish note';}
+        else if ($(this).hasClass('noNote')){newText = 'start note';}
+        else if ($(this).hasClass('hasInvoice')){newText = 'finish invoice';}
+        else if ($(this).hasClass('noInvoice')){newText = 'create invoice';}
+        $(".confirmApptBtn").text(newText);
     }
 }
-function createNoteObj(){
-    var title = justResponse($("#AddNote").find('.note_title'));
-    return {
-        title: (title == '') ? null : title,
-        text: justResponse($("#AddNote").find('.note_details'))
-    };
+function initializeApptClicks(){
+    var appts = filterUninitialized('.appt');
+    if (appts.dne()) return;
+    appts.on('click',selectThisAppt);
+    appts.data('initialized');
+}
+
+
+
+function getModelNotes(model,uid){
+    $.ajax({
+        url:'/addNote/'+model+"/"+uid,
+        method: "GET",
+        success: function(data){
+            if ($("#AddNoteModal").exists()){
+                $("#AddNoteModal").html(data).data({model:model,uid,uid});
+            }else{
+                $("<div/>",{
+                    id: 'AddNoteModal',
+                    class: 'modalForm',
+                    data: {model:model,uid:uid},
+                    html: data
+                }).appendTo("body");
+            }
+            minifyForm($("#AddNote"));
+            var modelInfo = $("#AddNoteModal").find('.instance').data();
+            initializeAdditionalNoteForm(autoSavePinnedNotes);
+            blurTopMost('#AddNoteModal');
+            notes.autofill(modelInfo.notes);
+        }
+    })
 }
 function initializeInputs(target = null, options = null){
     var inputs = filterUninitialized('input');
@@ -644,30 +960,31 @@ function showFollowUps(responseStr,item){
 }
 
 function checkForm(form, includeInvisible = false, forceAutoSave = false){
-    var obj = createSubmitObject(form, includeInvisible, forceAutoSave);
-    // console.log(form);
-    if (obj){
-        return obj;
-    }else{
-        return false;
-    }
+    console.log('use forms.retrieve');
+    return false;
+    // var obj = createSubmitObject(form, includeInvisible, forceAutoSave);
+    // // console.log(form);
+    // if (obj){
+    //     return obj;
+    // }else{
+    //     return false;
+    // }
 }
 function submitForm(){
     if (!$(this).data('submission') || $(this).hasClass('disabled')){
         return;
     }
+    alert("Just checking, forms 974");
     var formName = $(this).data("formname"), form = $(this).closest('.formDisp'), uid = form.data('uid'), formId = Number(form.data('formid'));
-    var obj = checkForm(form);
-    if (!obj){
-        return false;
-    }
+    var obj = forms.retrieve(form);
+    if (!obj){return false;}
+    
     var dataObj = {
         jsonObj: obj
     };
     if ($.inArray(formId, [26]) > -1){
         dataObj = createSubmissionColumnObj(formId,form,dataObj);
     }
-    // return false;
     blurTopMost("#loading");
     $.ajax({
         url: "/form/"+uid+"/submit",
@@ -675,7 +992,7 @@ function submitForm(){
         data: dataObj,
         success:function(data){
             if (data=='checkmark'){
-                updateUidList();
+                // updateUidList();
                 blurTopMost("#checkmark");
                 delayedReloadTab(2000);
             }else{
@@ -704,41 +1021,43 @@ function createSubmissionColumnObj(formId, form, dataObj){
     return dataObj;
 }
 function createSubmitObject(form, includeInvisible = false, forceAutoSave = false){
-    var SubmitObj = {};
-    SubmitObj['Sections'] = [];
-    SubmitObj['UID'] = form.data('uid');
-    SubmitObj['FormID'] = form.data('formid');
-    SubmitObj['FormName'] = form.data('formname');
-    var sections = includeInvisible ? form.find(".section") : form.find(".section").filter(":visible"), uid = form.data("uid"), check = false;
-    sections.each(function(s, section){
-        section = $(section), secName = section.find("h2").first().text();
-        var ItemsArr = [], items = includeInvisible ? section.find(".item") : section.find(".item").filter(":visible");
-        items.each(function(i, item){
-            item = $(item);
-            if (!forceAutoSave && validateItem(item)){
-                ItemsArr.push(getResponse(item));
-                check = true;
-            }else if (forceAutoSave){
-                ItemsArr.push(getResponse(item));
-                check = true;
-            }
-            else {
-                check = false;
-                return false;
-            }
-        })
-        if (check==false){return false;}
-        var secObj = {
-            Name: secName,
-            Items: ItemsArr
-        }
-        SubmitObj['Sections'].push(secObj);
-    })
-    if (check){
-        return SubmitObj;
-    }else{
-        return false;
-    }
+    console.log('use forms.retrieve');
+    return false;
+    // var SubmitObj = {};
+    // SubmitObj['Sections'] = [];
+    // SubmitObj['UID'] = form.data('uid');
+    // SubmitObj['FormID'] = form.data('formid');
+    // SubmitObj['FormName'] = form.data('formname');
+    // var sections = includeInvisible ? form.find(".section") : form.find(".section").filter(":visible"), uid = form.data("uid"), check = false;
+    // sections.each(function(s, section){
+    //     section = $(section), secName = section.find("h2").first().text();
+    //     var ItemsArr = [], items = includeInvisible ? section.find(".item") : section.find(".item").filter(":visible");
+    //     items.each(function(i, item){
+    //         item = $(item);
+    //         if (!forceAutoSave && validateItem(item)){
+    //             ItemsArr.push(getResponse(item));
+    //             check = true;
+    //         }else if (forceAutoSave){
+    //             ItemsArr.push(getResponse(item));
+    //             check = true;
+    //         }
+    //         else {
+    //             check = false;
+    //             return false;
+    //         }
+    //     })
+    //     if (check==false){return false;}
+    //     var secObj = {
+    //         Name: secName,
+    //         Items: ItemsArr
+    //     }
+    //     SubmitObj['Sections'].push(secObj);
+    // })
+    // if (check){
+    //     return SubmitObj;
+    // }else{
+    //     return false;
+    // }
 }
 function scrollToInvalidItem(item, type = null){
     console.log(item);
@@ -791,6 +1110,7 @@ function validateItem(item, type = null){
         }else if (t==="scale"){
             // no real reason to ever return false;
         }else if (t==="signature"){
+            console.log('hi');
             var sig = item.find(".signature"), sigData = sig.jSignature("getData","base30"), printedName = item.find(".printed").find("input") ;
             
             if ((printedName.length>0 && printedName.val().length==0) || sigData[1] == ""){
@@ -885,7 +1205,7 @@ function getImageClickData(item){
             top: t / h * 100 + "%"
         });
     })
-    console.log(indicatorArr);
+    // console.log(indicatorArr);
     return indicatorArr;
 }
 function justResponse(input, asArray = false, type = null, allowInvisible = false){
@@ -988,35 +1308,10 @@ function fillAnswer(item,response){
     }
 }
 function disableForm(form){
-    form.find('input, textarea').attr('readonly',true);
-    form.find('.signature').filter(":visible").each(function(){
-        $(this).jSignature('disable');
-    });
-    form.find('.number').off("mousedown touchstart",".change",startChange);
-    form.find('.number').off("mouseup touchend",".change",stopChange);
-    form.find('.number').off('keyup',"input",inputNum);
-    form.find('.signature').find('.clear').hide();
-    form.find('.radio, .checkboxes, .imageClick, .number').addClass('disabled');
-    form.find('.button.cancel').text("close");
-    form.find('.slider, select').attr('disabled',true);
-    form.find('.datepicker').each(function(){
-        $(this).datepick('disable');
-    })
+    console.log('use forms.disable');
 }
 function enableForm(form){
     alert('enableForm in forms.js......not used much');
-    // form.find('input, textarea').removeAttr('readonly');
-    // form.find('.signature').filter(":visible").each(function(){
-    //     $(this).jSignature();
-    // });
-    // form.find('.number').on("mousedown touchstart",".change",startChange);
-    // form.find('.number').on("mouseup touchend",".change",stopChange);
-    // form.find('.number').on('keyup',"input",inputNum);
-    // form.find('.signature').find('.clear').show();
-    // form.find('.radio, .checkboxes, .imageClick').removeClass('disabled');
-    // form.find('.button.cancel').text("cancel");
-    // form.find('.slider').removeAttr('disabled');
-
 }
 function unlockForm(){
     if ($("#UnlockForm").length==0){
@@ -1064,36 +1359,40 @@ function checkPhrase(){
 
 
 function fillForm(json,form){
-    if (json == undefined || form.data('filled')) return false;
-    var sections = json['Sections'];
-    $.each(sections,function(s,savedSection){
-        var sectionOnForm = form.find(".section").filter(function(){
+    console.log('use forms.fill');
+    return false;
+    // if (json == undefined || form.data('filled')) return false;
+    // var sections = json['Sections'];
+    // $.each(sections,function(s,savedSection){
+    //     var sectionOnForm = form.find(".section").filter(function(){
             
-            var t = $(this).find("h2").first().text(), ot = t, otsplice = t;
-            if ($(this).find("h2").first().data('originaltext') != undefined){
-                ot = $(this).find("h2").first().data('originaltext');
-                otsplice = $(this).find("h2").first().data('originalsplice')
-            }
-            return ((t == savedSection.Name) || (ot == savedSection.Name) || savedSection.Name.includes(otsplice)) ; 
-        });
-        $.each(savedSection['Items'],function(i,savedItem){
-            // if (savedItem.type !== 'narrative' && savedItem.type !== 'signature'){
-            if (savedItem.type !== 'narrative'){
-                var itemOnForm = sectionOnForm.find(".item").filter(function(){return $(this).children(".question").find(".q").text().trim() == savedItem.question.trim();});
-                if (savedItem.type == 'bodyClick') console.log(savedItem.response);
-                if (savedItem.response != undefined) fillAnswer(itemOnForm,savedItem.response);
-                if (savedItem.followups != undefined){
-                    $.each(savedItem.followups,function(f,savedFU){
-                        var fuOnForm = itemOnForm.find(".itemFU").filter(function(){return $(this).children(".question").find(".q").text().trim() == savedFU.question.trim();});
-                        if (savedFU.response != undefined) fillAnswer(fuOnForm,savedFU.response);
-                    })
-                }
-            }
-        })
-    })
-    form.data('filled',true);
+    //         var t = $(this).find("h2").first().text(), ot = t, otsplice = t;
+    //         if ($(this).find("h2").first().data('originaltext') != undefined){
+    //             ot = $(this).find("h2").first().data('originaltext');
+    //             otsplice = $(this).find("h2").first().data('originalsplice')
+    //         }
+    //         return ((t == savedSection.Name) || (ot == savedSection.Name) || savedSection.Name.includes(otsplice)) ; 
+    //     });
+    //     $.each(savedSection['Items'],function(i,savedItem){
+    //         // if (savedItem.type !== 'narrative' && savedItem.type !== 'signature'){
+    //         if (savedItem.type !== 'narrative'){
+    //             var itemOnForm = sectionOnForm.find(".item").filter(function(){return $(this).children(".question").find(".q").text().trim() == savedItem.question.trim();});
+    //             if (savedItem.type == 'bodyClick') console.log(savedItem.response);
+    //             if (savedItem.response != undefined) fillAnswer(itemOnForm,savedItem.response);
+    //             if (savedItem.followups != undefined){
+    //                 $.each(savedItem.followups,function(f,savedFU){
+    //                     var fuOnForm = itemOnForm.find(".itemFU").filter(function(){return $(this).children(".question").find(".q").text().trim() == savedFU.question.trim();});
+    //                     if (savedFU.response != undefined) fillAnswer(fuOnForm,savedFU.response);
+    //                 })
+    //             }
+    //         }
+    //     })
+    // })
+    // form.data('filled',true);
 }
 function minifyForm(form){
+    if (typeof form == 'string') form = $(form);
+    if (form.dne()) return;
     form.addClass('minified');
     form.find('.item').children('br').remove();
 }

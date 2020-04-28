@@ -18,7 +18,7 @@
 		$invoiceId = "new";
 	}
 	$paymentInfoForm = Form::find(42);
-	$paymentMethodOptions = Practice::getFromSession()->available_payment_methods;
+	$paymentMethodOptions = $practice->available_payment_methods;
 ?>
 
 <h3 id='ApptInfo' class='pink' data-id='{{$apptId}}' data-invoiceid='{{$invoiceId}}' data-autosave='{{json_encode($invoiceAutoSave)}}'>{{$patient->name}}<br>{{$appt->name}}</h3>
@@ -62,11 +62,10 @@
 		<div class="label">Total Charge</div>
 		<div class="value" id='TotalCharge'></div>
 		<div class="label" id='AddPaymentLabel'>Add Payment</div>
-		<div class="value" id='PaymentMethod'>
+		<div class="value" id='PaymentMethod' data-paymentmethods='{{json_encode($paymentMethodOptions)}}'>
 			{{$paymentInfoForm->formDisplay(false,false)}}
 		</div>
 	</div>
 </div>
 @include ('portal.user.stripe-modal')
-@include ('layouts.forms.autosave-wrap')
 <div class="button pink" id="SaveInvoiceBtn">save invoice</div>

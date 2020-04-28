@@ -1,5 +1,29 @@
 var notify, notificationCheck, notificationCategory = 'all', clickWhenFinished = null, multiBtns;
+var uids = {
+	list: {},
+	set: function(model, uid = null){
+		if (typeof model == 'string') uids.list[model] = uid ? Number(uid) : null;
+		else $.each(model,function(key, value){uids.set(key, value);});
+	},
+	get: function(model){
+		return (uids.list[model] != undefined) ? uids.list[model] : null;
+	},
+	clear: function(){uids.list = {}},
+	log: function(){console.log(uids.list)}
+};
+const practice = {
+	info: null,
+	set: function(practiceData){
+		if (Object.isFrozen(practice)) return;
+		practice.info = practiceData;
+		Object.freeze(practice);
+	},
+	get: function(key){
+		return (practice.info[key] != undefined) ? practice.info[key] : null;
+	}
+}
 $(document).ready(function () {
+	practice.set($("#NavBar").data('practiceinfo'));
 	//NOTIFICATIONS
 		// checkNotifications();
 	    notificationCheck = setInterval(checkNotifications,3000*60);
@@ -24,6 +48,7 @@ $(document).ready(function () {
 });
 
 function clickTab(){
+	alert('clickTab');
 	var tabId = $(this).data('tabId');
 	unblurAll();
 	$(tabId).find(".title").click();
@@ -32,7 +57,7 @@ function clickTab(){
 var notifyXhr = undefined;
 function checkNotifications(){
 	var update = filterUninitialized('.notificationUpdate');
-	if (update.length == 1){
+	if (update.exists()){
 		$("#Notifications").find('.notificationUpdate').replaceWith(update);
 		updateNotificationList();
 		update.data('initialized',true);
@@ -48,7 +73,6 @@ function checkNotifications(){
 			}
 		})
 	}
-
 }
 function updateNotificationList(){
 	var selectMultiBtn = $("#Notifications").find(".selectMultiple");
@@ -82,10 +106,7 @@ function updateNotifications(uids, action = 'mark-read'){
 			fetch: notificationCategory
 		},
 		success:function(data){
-			// console.log(notifications);
-			if (data == 'checkmark'){
-				checkNotifications();
-			}
+			console.log(data);
 		}
 	})
 }
@@ -115,7 +136,7 @@ function showFullNotification(){
 	$("<h1 class='purple'>"+data.type+"</h1><h3 class='pink paddedSmall bottomOnly'>"+data.description+"</h3><div class='details split3366KeyValues paddedSmall'></div>").appendTo(msg);
 	$.each(details, function(key,value){
 		var displayText = (typeof value === 'string') ? value : 'complex';
-		$("<div><div class='label'>"+key+":</div><div class='value' data-key='"+key+"'>"+displayText+"</div></div>").appendTo(msg.find('.details'));
+		$("<div class='label'>"+key+":</div><div class='value' data-key='"+key+"'>"+displayText+"</div>").appendTo(msg.find('.details'));
 	});
 	if (data.model !== ""){notification.find(".viewModel").text('view '+data.model).data({model:data.model,uid:data.uid}).show();
 	}else{notification.find(".viewModel").hide();

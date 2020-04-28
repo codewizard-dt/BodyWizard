@@ -71,7 +71,8 @@ class PushController extends Controller
         $phone = $request->From;
         $msg = $request->Body;
     }
-    public function twilioError(Request $request){
-
+    public function twilioError(Request $request){}
+    public function pushertest(Request $request){
+        return view('confirmations.pushertest');
     }
 }

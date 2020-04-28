@@ -16,15 +16,11 @@ class Invoice extends Model
 
     protected $casts = [
         'status' => 'array',
-        'notes' => 'array',
-        'payments' => 'array',
-        'line_items' => 'array',
         'settled_at' => 'datetime',
         'updated_at' => 'datetime',
         'created_at' => 'datetime'
     ];
     protected $hidden = ['autosave'];
-
 
     public function __construct($attributes = []){
         parent::__construct($attributes);
@@ -42,12 +38,12 @@ class Invoice extends Model
                             ["label" => 'Invoicee',
                             "className" => 'name',
                             "attribute" => 'invoicee_name'],
-                            ["label" => 'Date',
+                            ["label" => 'Created',
                             "className" => 'date',
                             "attribute" => 'created_at'],
                             ["label" => 'Total',
                             "className" => 'total',
-                            "attribute" => 'total_charge'],
+                            "attribute" => 'total_charge_formatted'],
                             ["label" => 'Status',
                             "className" => 'status',
                             "attribute" => 'status'],
@@ -94,14 +90,61 @@ class Invoice extends Model
         }
         return array_merge($commonArr,$arr);
     }
-    public static function moreOptions(){
-
+    public function navOptions(){
+        $dataAttrs = [
+            [
+                'key' => 'status',
+                'value' => $this->status
+            ],
+        ];
+        $extraClasses = "";
+        $buttons = ($this->status == 'settled') ? [
+            [
+                'text' => 'view',
+                'destination' => 'view'
+            ],
+            [
+                'text' => 'email',
+                'destination' => 'email'
+            ],
+            [
+                'text' => 'notes',
+                'destination' => 'addNote'
+            ],
+        ] : [
+            [
+                'text' => 'edit',
+                'destination' => 'edit'
+            ],
+            [
+                'text' => 'notes',
+                'destination' => 'addNote'
+            ],
+        ];
+        $data = [
+                    'dataAttrs' => $dataAttrs,
+                    'extraClasses' => $extraClasses,
+                    'buttons' => $buttons,
+                    'instance' => $this,
+                    'model' => getModel($this)
+                ];
+        return $data;
     }
+    public function modelDetails(){
+        $isSettled = ($this->status == 'settled');
+        return [
+            'Status' => $this->status.checkOrX($isSettled),
+            'Appointment' => $this->appointment->detailClick(),
+            'Pinned Notes' => $this->notes ?: 'none',
+            'Total Charge' => $this->total_charge_formatted,
+        ];
+    }
+
     public function invoicee(){
         return $this->belongsTo('App\User','invoiced_to_user_id');
     }
     public function appointment(){
-        return $this->hasOne('App\Appointment');
+        return $this->belongsTo('App\Appointment','appointment_id');
     }
     public function getNameAttribute(){
         return $this->invoicee->name.' '.$this->created_at;
@@ -109,26 +152,36 @@ class Invoice extends Model
     public function getInvoiceeNameAttribute(){
         return $this->invoicee->name;
     }
+    public function getTotalChargeFormattedAttribute(){
+        $practice = Practice::getFromSession();
+        $currency = $practice->currency;
+        return $currency['symbol'].number_format($this->total_charge,2);
+    }
     public function getCreatedAtAttribute($value){
         $date = new Carbon($value);
         return $date->format('n/j g:ia');
-    }    
+    }
     public function getSettledAtAttribute($value){
         $date = $value ? new Carbon($value) : null;
         return $date ? $date->format('n/j g:ia') : 'pending';
     }
-    public function getStatusAttribute($value){
-        if ($this->settled_at !== 'pending') return 'settled';
-        return 'status';
+    public function getStatusAttribute(){
+        return ($this->settled_at == 'pending') ? 'pending' : 'settled';
     }
-    public function getCurrentStatusAttribute(){
+    // public function getCurrentStatusAttribute(){
         
-    }
+    // }
     public function getLineItemsAttribute($value){
         return $this->decryptKMS($value);
     }
     public function setLineItemsAttribute($value){
         $this->attributes['line_items'] = $this->encryptKms($value);
+    }
+    public function getPaymentsAttribute($value){
+        return $this->decryptKMS($value);
+    }
+    public function setPaymentsAttribute($value){
+        $this->attributes['payments'] = $this->encryptKms($value);
     }
     public function getNotesAttribute($value){
         return $this->decryptKMS($value);

@@ -29,53 +29,36 @@ class Practitioner extends Model
             'includeFullJson' => false
         ];
         // $this->nameAttr = ['preferred_name!!%preferred_name% %last_name%!!%first_name% %last_name%','userInfo'];
-	    $this->tableValues = array(
-	    	'tableId' => 'PractitionerList',
-	    	'index' => 'id',
-            'model' => "Practitioner",
-	    	'columns' => array(
-                        array(
-                            "label" => 'Name',
-                            "className" => 'name',
-                            "attribute" => 'name',
-                        ),
-                        array(
-                            "label" => 'Phone',
-                            "className" => 'phone',
-                            "attribute" => 'phone',
-                        )
-                    ),
-            'displayName' => "%name% %lastName%",
-	    	'hideOrder' => "",
-	    	'filtersColumn' => array(),
-	    	'filtersOther' => array(),
-            'destinations' => array(
-                'edit','settings','delete'
-            ),
-            'btnText' => array(
-                'edit','settings', 'delete'
-            ),
-            'extraBtns' => [
-                // ['manage categories','/PractitionerCategory/index']
-            ]
-	    );
-        $this->optionsNavValues = array(
-            'model' => "Practitioner",
-            'destinations' => array(
-                'edit','schedule','delete'
-            ),
-            'btnText' => array(
-                'edit info','edit schedule', 'delete'
-            )
-        );
-
-        // This will load a resource table for each connected model
-        // into the create.blade view for THIS model, creating modals that
-        // automatically popped up when required.
-        // [Model, relationship]
         $this->connectedModels = array(
             // ['Service','many','morphToMany']
         );
+    }
+
+    public static function tableValues(){
+        return [
+            'tableId' => 'PractitionerList',
+            'index' => 'id',
+            'model' => "Practitioner",
+            'columns' => [
+                'Name' => 'name',
+                'Phone' => 'phone',
+            ],
+            'hideOrder' => [],
+            'filters' => [],
+            'extraBtns' => [
+                // ['manage categories','/PractitionerCategory/index']
+            ]
+        ];
+
+    }
+    public function navOptions(){
+        return 'nav options';
+    }
+    public function modelDetails(){
+        return 'model details';
+    }
+    public function detailClick(){
+        return 'detail click';
     }
 
     public function userInfo(){

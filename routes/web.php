@@ -16,6 +16,7 @@ Route::any('/push/sendgrid', 'PushController@incomingSendGrid');
 Route::any('/push/google/calendar', 'PushController@incomingGoogle');
 Route::any('/push/twilio/sms', 'PushController@incomingTwilioSms');
 Route::any('/push/twilio/error', 'PushController@twilioError');
+Route::get('/pusher/test', 'PushController@pushertest');
 Route::domain('bodywizard.ngrok.io')->group(function(){
 	Route::any('/', 'PushController@googlePushVerification');
 });
@@ -50,6 +51,7 @@ Route::get('/schedule/non-ehr', 'ScheduleController@nonEhrEventFeed');
 
 // ROUTES USING DYNAMIC {model} URI
 	Route::get('/optionsNav/{model}/{uid}', 'ScriptController@OptionsNav');
+	Route::get('/options-nav/{model}/{uid}', 'ScriptController@OptionsNavNew');
 	Route::get('/display/table/{model}', 'ScriptController@ResourceTable');
 	Route::get('/{model}/index', 'ScriptController@ListWithNav');
 	Route::get('/{model}/index/{uid}', 'ScriptController@ListWithNav');
@@ -59,10 +61,12 @@ Route::get('/schedule/non-ehr', 'ScheduleController@nonEhrEventFeed');
 	Route::get('/create/{model}', 'ScriptController@CreateNewModel');
 	Route::get('/edit/{model}/{uid}', 'ScriptController@EditModel');
 	Route::delete('/delete/{model}/{uid}', 'ScriptController@DeleteModel');
+	Route::get('/addNote/{model}/{uid}', 'ScriptController@AddNotes');
 	Route::patch('/save/settings/{model}/{uid}', 'ScriptController@SaveSettings');
 	Route::patch('/save/{model}/{uid}', 'ScriptController@UpdateModel');
 	Route::post('/save/{model}', 'ScriptController@SaveNewModel');
 	Route::get('/retrieve/{model}/{uid}', 'ScriptController@fetchModel');
+	Route::post('/savePinnedNotes/{model}/{uid}', 'ScriptController@savePinnedNotes');
 
 
 Route::get('/home/appointments', 'AppointmentController@home');
@@ -83,7 +87,7 @@ Route::get('/Invoice/{id}/edit','InvoiceController@edit');
 Route::post('/Invoice/{id}/autosave','InvoiceController@autosave');
 Route::post('/Invoice/{id}/save','InvoiceController@save');
 
-Route::post('user/{userId}/get-payment-intent','StripeController@getPaymentIntent');
+Route::post('user/{userId}/invoice/{invoiceId}/get-payment-intent','StripeController@getPaymentIntent');
 
 Route::resource('appointments', 'AppointmentController');
 Route::get('/home/botanicals', 'BotanicalController@home');
@@ -122,6 +126,8 @@ Route::post('/portal/settings/display-order', 'SettingsController@displayOrderUp
 
 Route::get('/practice/contact-info','PracticeController@contactInfo')->middleware('auth');
 Route::get('/practice/legal-info','PracticeController@legalInfo')->middleware('auth');
+
+Route::resource('bugs', 'BugController');
 
 Route::get('/portal/user/settings', 'SettingsController@userSettings');
 Route::get('/user/info', 'SettingsController@userInfo');

@@ -30,95 +30,6 @@ class Patient extends Model
             'audit_table' => 'patients_audit',
             'includeFullJson' => false
         ];
-	    // $this->tableValues = array(
-	    // 	'tableId' => 'PatientList',
-	    // 	'index' => 'id',
-     //        'model' => "Patient",
-     //        'with' => 'appointments',
-	    // 	'columns' => array(
-     //                    [
-     //                        'label' => "Name",
-     //                        'className' => 'name',
-     //                        'attribute' => 'name'
-     //                    ],
-     //                    [
-     //                        'label' => 'Phone',
-     //                        'className' => 'phone',
-     //                        'attribute' => 'phone',
-     //                    ],
-     //                    [
-     //                        'label' => 'Email',
-     //                        'className' => 'email',
-     //                        'attribute' => 'email',
-     //                    ]
-     //                ),
-     //        // 'displayName' => "%name% %LName%",
-	    // 	'hideOrder' => "",
-	    // 	'filtersColumn' => array(),
-	    // 	'filtersOther' => 
-     //        [
-     //            [
-     //                'label' => 'New Patient',
-     //                'filterName' => 'patientInfo',
-     //                'showFilter' => false,
-     //                'attribute' => null,
-     //                'method' => 'isNewPatient',
-     //                'markOptions' => null,
-     //                'filterOptions' => [
-     //                    [
-     //                        'label' => 'newPatient',
-     //                        'value' => "isNewPatient:true",
-     //                        'attribute' => 'method',
-     //                        'method' => 'isNewPatient'
-     //                    ]
-     //                    //, [
-     //                    //     'label' => 'newPatient',
-     //                    //     'value' => "isNewPatient:true",
-     //                    //     'attribute' => 'method',
-     //                    //     'method' => 'lastPractitioner'
-     //                    // ]
-     //                ]
-     //            ],
-     //            [
-     //                'label' => 'Appointments',
-     //                'filterName' => 'appts',
-     //                'attribute' => null,
-     //                'markOptions' => null,
-     //                'filterOptions' => [
-     //                    [
-     //                        'label' => 'today',
-     //                        'value' => "hasApptsToday:true",
-     //                        'attribute' => 'method',
-     //                        'method' => 'hasApptsToday'
-     //                    ],
-     //                    [
-     //                        'label' => 'this week',
-     //                        'value' => "hasApptsThisWeek:true",
-     //                        'attribute' => 'method',
-     //                        'method' => 'hasApptsThisWeek'
-     //                    ]
-     //                ]
-     //            ]
-     //        ],
-     //        'destinations' => array(
-     //            'edit','delete'
-     //        ),
-     //        'btnText' => array(
-     //            'edit','delete'
-     //        ),
-     //        'extraBtns' => []
-	    // );
-     //    $this->optionsNavValues = array(
-     //        'model' => "Patient",
-     //        'destinations' => array(
-     //            'edit','settings','delete'
-     //        ),
-     //        'btnText' => array(
-     //            'edit','settings','delete'
-     //        )
-     //    );
-
-
 
         // This will load a resource table for each connected model
         // into the create.blade view for THIS model, creating modals that
@@ -142,97 +53,79 @@ class Patient extends Model
             'index' => 'id',
             'model' => "Patient",
             'with' => 'appointments',
-            'columns' => array(
-                [
-                    'label' => "Name",
-                    'className' => 'name',
-                    'attribute' => 'name'
-                ],
-                [
-                    'label' => 'Phone',
-                    'className' => 'phone',
-                    'attribute' => 'phone',
-                ],
-                [
-                    'label' => 'Email',
-                    'className' => 'email',
-                    'attribute' => 'email',
-                ]
-            ),
-            'hideOrder' => "",
-            'filtersColumn' => array(),
-            'filtersOther' => 
-            [
-                [
-                    'label' => 'New Patient',
-                    'filterName' => 'patientInfo',
-                    'showFilter' => false,
-                    'attribute' => null,
-                    'method' => 'isNewPatient',
-                    'markOptions' => null,
-                    'filterOptions' => [
-                        [
-                            'label' => 'newPatient',
-                            'value' => "isNewPatient:true",
-                            'attribute' => 'method',
-                            'method' => 'isNewPatient'
-                        ]
-                        //, [
-                        //     'label' => 'newPatient',
-                        //     'value' => "isNewPatient:true",
-                        //     'attribute' => 'method',
-                        //     'method' => 'lastPractitioner'
-                        // ]
-                    ]
-                ],
-                [
-                    'label' => 'Appointments',
-                    'filterName' => 'appts',
-                    'attribute' => null,
-                    'markOptions' => null,
-                    'filterOptions' => [
-                        [
-                            'label' => 'today',
-                            'value' => "hasApptsToday:true",
-                            'attribute' => 'method',
-                            'method' => 'hasApptsToday'
-                        ],
-                        [
-                            'label' => 'this week',
-                            'value' => "hasApptsThisWeek:true",
-                            'attribute' => 'method',
-                            'method' => 'hasApptsThisWeek'
-                        ]
-                    ]
-                ]
+            'columns' => [
+                'Name' => 'name',
+                'Phone' => 'phone',
+                'Email' => 'email',
+                'Last Seen' => 'last_seen',
             ],
-            // 'destinations' => array(
-            //     'edit','delete'
-            // ),
-            // 'btnText' => array(
-            //     'edit','delete'
-            // ),
+            'hideOrder' => ['Email','Phone','Last Seen'],
+            'filters' => [
+                'Appointments' => [
+                    'today' => 'has_appts_today',
+                    'this week' => 'has_appts_this_week',
+                    'this month' => 'has_appts_this_month'
+                ],
+                'Status' => [
+                    'active' => 'is_active',
+                    'inactive' => 'is_inactive',
+                ],
+            ],
             'extraBtns' => [],
-            'optionsNavValues' => array(
-                'model' => "Patient",
-                'destinations' => array(
-                    'edit','settings','delete'
-                ),
-                'btnText' => array(
-                    'edit','settings','delete'
-                )
-            )
+            'extraData' => [
+                'isnewpatient' => 'is_new_patient',
+            ],
         );
-        // $this->optionsNavValues = array(
-        //     'model' => "Patient",
-        //     'destinations' => array(
-        //         'edit','settings','delete'
-        //     ),
-        //     'btnText' => array(
-        //         'edit','settings','delete'
-        //     )
-        // );        
     }
+    public function navOptions(){
+        $dataAttrs = [
+            [
+                'key' => 'json',
+                'value' => str_replace("'","\u0027",$this->userInfo->full_json)
+            ],
+            [
+                'key' => 'isNewPatient',
+                'value' => $this->isNewPatient()
+            ],
+        ];
+        $buttons = [
+            [
+                'text' => 'edit info',
+                'destination' => 'edit'
+            ],
+            [
+                'text' => 'portal settings',
+                'destination' => 'settings'
+            ],
+        ];
+        $extraClasses = "";
+        $data = [
+                    'dataAttrs' => $dataAttrs,
+                    'extraClasses' => $extraClasses,
+                    'buttons' => $buttons,
+                    'instance' => $this,
+                    'model' => getModel($this)
+                ];
+        return $data;
+    }
+    public function modelDetails(){
+        $upcoming = $this->upcoming_appointments;
+        $recent = $this->prev_appointments;
+        return [
+            'Name' => ($this->full_name == $this->legal_name) ? $this->full_name : $this->full_name.'<span class="little">'.$this->legal_name.'</span>',
+            'Pronouns' => $this->pronouns,
+            'Phone' => $this->phone,
+            'Email' => $this->email,
+            'Upcoming Appointments' => $upcoming->count() > 0 ? $upcoming->map(function($appt){return $appt->detailClick();})->toArray() : 'none',
+            'Recent Appointments' => $recent->count() > 0 ? $recent->map(function($appt){return $appt->detailClick();})->toArray() : 'none'
+        ];
+    }
+    public function detailClick(){
+        $model = getModel($this);
+        $uid = $this->getKey();
+        return "<div class='link patient' data-model='$model' data-uid='$uid'>" . $this->name . "</div>";
+    }
+
     public function userInfo(){
         return $this->belongsTo('App\User','user_id');
     }
@@ -280,24 +173,60 @@ class Patient extends Model
             return $value;
         }
     }
+    public function getNextAppointmentAttribute(){
+        return $this->upcoming_appointments ? $this->upcoming_appointments->first() : null;
+    }
+    public function getUpcomingAppointmentsAttribute(){
+        $appts = $this->appointments()->where('date_time','>=',Carbon::now())->orderBy('date_time','asc')->take(5)->get();
+        return $appts ? $appts : null;
+    }
+    public function getLastAppointmentAttribute(){
+        return $this->prev_appointments ? $this->prev_appointments->first() : null;
+    }
+    public function getPrevAppointmentsAttribute(){
+        $appts = $this->appointments()->where('date_time','<=',Carbon::now())->orderBy('date_time','desc')->take(5)->get();
+        return $appts ? $appts : null;
+    }
+    public function getLastSeenAttribute(){
+        $last = $this->last_appointment; 
+        return $last ? $last->date_time->format('n/j/y') : 'never';
+    }
 
     public function isNewPatient(){
         $appts = $this->appointments()->where("status->completed",true)->get();
-        return (count($appts) == 0) ? "true" : "false";
+        return (count($appts) == 0);
     }
-    public function hasApptsThisWeek(){
+    public function getIsActiveAttribute(){
+        $appts = $this->appointments()->where([
+            ['date_time','>',Carbon::now()->subUnit('month',6)->toDateTimeString()],
+            ['date_time','<',Carbon::now()->addUnit('month',1)->toDateTimeString()]
+        ])->get();
+        return (count($appts) != 0);
+    }
+    public function getIsInactiveAttribute(){
+        return !$this->is_active;
+    }
+
+    public function getHasApptsThisWeekAttribute(){
         $appts = $this->appointments()->where([
             ['date_time','>',Carbon::now()->subUnitNoOverflow('week',1,'week')->toDateTimeString()],
             ['date_time','<',Carbon::now()->addUnitNoOverflow('week',1,'week')->toDateTimeString()]
         ])->get();
-        return (count($appts) == 0) ? "false" : "true";
+        return (count($appts) != 0);
     }
-    public function hasApptsToday(){
+    public function getHasApptsThisMonthAttribute(){
+        $appts = $this->appointments()->where([
+            ['date_time','>',Carbon::now()->subUnitNoOverflow('month',1,'month')->toDateTimeString()],
+            ['date_time','<',Carbon::now()->addUnitNoOverflow('month',1,'month')->toDateTimeString()]
+        ])->get();
+        return (count($appts) != 0);
+    }
+    public function getHasApptsTodayAttribute(){
         $appts = $this->appointments()->where([
             ['date_time','>',Carbon::now()->subUnitNoOverflow('day',1,'day')->toDateTimeString()],
             ['date_time','<',Carbon::now()->addUnitNoOverflow('day',1,'day')->toDateTimeString()]
         ])->get();
-        return (count($appts) == 0) ? "false" : "true";
+        return (count($appts) == 0);
     }
     public function lastPractitioner(){
         $lastAppt = $this->appointments()->where("status->completed")->orderBy("date_time","desc")->get();

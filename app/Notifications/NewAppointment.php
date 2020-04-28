@@ -73,7 +73,7 @@ class NewAppointment extends Notification
                 'type' => 'New Appointment',
                 'description' => "This appointment has booked for you!",
                 'details' => [
-                    'Patient' => $appt->patient_list,
+                    'Patient' => $appt->patient->name,
                     'Date + Time' => $appt->long_date_time,
                     'Services' => $appt->service_list
                 ],

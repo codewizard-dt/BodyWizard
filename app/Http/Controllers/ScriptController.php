@@ -34,48 +34,6 @@ class ScriptController extends Controller
         $this->middleware('auth');
     }
 
-    // SESSION FUNCTIONS
-        public function GetVar(Request $request){
-            $key = $request->getVar;
-            if (is_array(session($key))) {
-                return json_encode(session($key));
-            }else{
-                return session($key);
-            }
-        }
-        public function SetVar(Request $request){	
-        	$variables = $request->all();
-    		foreach($variables as $key => $val){
-                if ($key == 'setUID'){
-                    $uidList = session('uidList');
-                    foreach ($val as $model => $uid){
-                        $uidList[$model] = $uid;
-                        session([$model => $uid]);
-                    }
-                    session(['uidList' => $uidList]);
-                    // return $uidList;
-                }else{
-                    $request->session()->put($key, $val);
-                    // return session($key);
-                }
-    		    if ($val == "unset"){
-    				$request->session()->forget($key);
-                    // return null;
-    		    }
-    		}
-        	return listReturn('checkmark',$request->path());
-            // return response()->withLists('checkmark');
-        }
-        // public function notificationCheck(Request $request){
-        //     $user = Auth::user();
-        //     if ($request->category == 'unread'){
-        //         $notifications = $user->unreadNotifications;
-        //     }elseif ($request->category == 'all'){
-        //         $notfications = $user->notifications;
-        //     }
-        //     return $notifications;
-        // }
-
     // TABLE AND NAV VIEWS
         public function OptionsNav($model, $uid){
             $class = "App\\$model";
@@ -100,53 +58,17 @@ class ScriptController extends Controller
                 'btnText' => $options['btnText']
             ]);
         }
-        // public function ResourceTable($model){
-        //     unset($collection);
-        //     $class = "App\\$model";
-        //     $ctrl = new $class;
-        //     $models = plural($model);
-
-        //     // setting table options and getting collection
-        //     if (method_exists($ctrl,'tableValues')){
-        //         $tableOptions = $class::tableValues();
-        //     }else{
-        //         $tableOptions = $ctrl->tableValues;
-        //     }
-        //     // $tableOptions = $ctrl->tableValues;
-        //     if (!isset($orderBy)){
-        //         $orderBy = isset($tableOptions['orderBy']) ? $tableOptions['orderBy'] : null;
-        //     }
-        //     if (!isset($where)){
-        //         $where = isset($tableOptions['where']) ? $tableOptions['where'] : null;
-        //     }
-
-        //     if ($where){
-        //         $collection = $class::where($where);
-        //     }
-        //     if ($orderBy){
-        //         foreach ($orderBy as $method){
-        //             $attr = $method[0];
-        //             $dir = $method[1];
-        //             if (!isset($collection)){
-        //                 $collection = $class::orderBy($attr, $dir);
-        //             }else{
-        //                 $collection->orderBy($attr, $dir);
-        //             }
-        //         }
-        //     }
-
-        //     if (!isset($collection)){
-        //         $collection = $class::all();
-        //     }else{
-        //         $collection = $collection->get();
-        //     }
-
-        //     $tableOptions['collection'] = $collection;
-        //     $modalId = $tableOptions['tableId']."Modal";
-
-        //     $tableOptions['modal'] = true;
-        //     return view('models.table',$tableOptions);
-        // }
+        public function OptionsNavNew($model, $uid){
+            $class = "App\\$model";
+            setUid($model,$uid);
+            try{
+                $instance = $class::findOrFail($uid);
+                return listReturn(view('models.navOptions.options-nav',$instance->navOptions())->render());
+            }catch(\Exception $e){
+                reportError($e,'scriptcontroller 106');
+                return listReturn(view('models.navOptions.empty-nav',['header'=>explode("Stack",$e)[0]])->render());
+            }              
+        }
         public function ListWithNav($model, Request $request, $uid = null){
             if ($uid){setUid($model,$uid);}
             $data = ['model'=>$model,'request'=>$request];
@@ -204,6 +126,7 @@ class ScriptController extends Controller
             }
 
             if ($model == 'Appointment' && $result === true){
+                // $newModel->createdTasks
                 $practice = Practice::getFromSession();
                 $apptFeeds = [
                     'appointments' => $practice->appointments,
@@ -243,14 +166,7 @@ class ScriptController extends Controller
             $practice = Practice::getFromSession();
             $models = strtolower(plural($model));
             $columns = isset($request->columnObj) ? $request->columnObj : [];
-            // Log::info($instance);
             $trackChanges = usesTrait($instance,"TrackChanges");
-
-            // if ($trackChanges && $request->isMethod('patch')){
-            //     $includeFullJson = isset($instance->auditOptions['includeFullJson']) ? $instance->auditOptions['includeFullJson'] : false;
-            //     $changes = $instance->checkForChanges($instance,$request,$includeFullJson);
-            //     if (!$changes){return "no changes";}
-            // }
 
             // SPECIAL STEP FOR USER / MESSAGE
                 if ($model == "User" && $request->isMethod('post')){
@@ -291,6 +207,14 @@ class ScriptController extends Controller
 
             try{
                 // Save things
+                $connectedModels = isset($request->connectedModels) ? json_decode($request->connectedModels,true) : null;
+                // Log::info($connectedModels);
+                foreach($connectedModels as $connectedModel){
+                    if ($connectedModel['model'] == 'Practitioner' && $connectedModel['connectedto'] == 'Appointment'){
+                        $instance->practitioner_id = $connectedModel['uidArr'][0];
+                    }
+                }
+                // return true;
                 $instance->save();
                 $uidList = session('uidList');
                 $newId = $instance->getKey();
@@ -300,7 +224,6 @@ class ScriptController extends Controller
                     $model => $newId
                 ]);
 
-                $connectedModels = isset($request->connectedModels) ? json_decode($request->connectedModels,true) : null;
                 if (isset($connectedModels)){
                     $result = $this->updateRelationships($instance,$connectedModels);
                     if ($result !== true){
@@ -312,24 +235,9 @@ class ScriptController extends Controller
                     $usertype = isset($columns['user_type']) ? $columns['user_type'] : "patient";
                     $usertype = ucfirst(removespaces(camel($usertype)));
                     $userClass = "App\\$usertype";
-                    if ($usertype == 'patient'){
-                    }
                     $user = new $userClass;
                     $user->user_id = $newId;
                     $user->save();
-                }
-
-                // if ($trackChanges && $request->isMethod('patch')){
-                //     $instance->saveTrackingInfo($instance, $changes, $request->getClientIp());
-                // }
-
-                if ($model == 'Appointment'){
-                    $method = $request->method();
-                    $result = $instance->saveToGoogleCal($method);
-                    if ($result !== true){return $result;}
-                    $result = $instance->saveToFullCal();
-                    $changes = isset($changes) ? $changes : null;
-                    event(new AppointmentSaved($instance, $changes, session('practiceId'), Auth::user()->user_type));
                 }
 
                 // IF THE PRACTITIONER HAS A SCHEDULE, UPDATE SCHEDULES
@@ -441,6 +349,31 @@ class ScriptController extends Controller
                 return "ewwww";
             }
         }
+        public function AddNotes($model, $uid){
+            return view('layouts.forms.add-note-modal',["model"=>$model,"uid"=>$uid]);
+        }
+        public function savePinnedNotes($model, $uid, Request $request){
+            try{
+                $class = "App\\$model";
+                $instance = $class::find($uid);
+                $instance->notes = $request->notes;
+                
+                if (array_key_exists('autosave',$instance->makeVisible('autosave')->attributesToArray())){
+                    if ($instance->autosave) {
+                        $data = $instance->autosave;
+                        $data['notes'] = $request->notes;
+                        $instance->autosave = $data;
+                    }else {
+                        $instance->autosave = ['notes'=>$request->notes];
+                    }
+                }
+                $instance->save();
+            }catch(\Exception $e){
+                reportError($e,'ScriptController 419');
+            }
+            
+            return isset($e) ? listReturn($e) : listReturn('checkmark');
+        }
 
     // EDIT / SAVE SETTINGS / SCHEDULE
         public function EditSettings($model, $uid){
@@ -475,9 +408,6 @@ class ScriptController extends Controller
 
             try{
                 $existingInstance->settings_json = $request->settings_json;
-                // if (isset($request->settings)){
-                //     $existingInstance->settings = json_decode($request->settings,true);
-                // }
                 $existingInstance->save();
             }catch(\Exception $e){
                 return $e;

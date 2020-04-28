@@ -16,7 +16,7 @@ class CreateComplaintsTable extends Migration
         Schema::create('complaints', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('name');
-            $table->string('complaint_type');
+            $table->unsignedInteger('complaint_category_id')->nullable();
             $table->json('full_json');
             $table->json('settings')->nullable()->default(null);
             $table->timestamps();

@@ -57,10 +57,5 @@
 			'relationship' => $includeModel[2],
 			'connectedTo' => $model
 		])
-		@if (Auth::user()->user_type == 'practitioner')
-			@include('models.create-modal', [
-				'model' => $includeModel[0]
-			])
-		@endif
 	@endforeach
 @endif

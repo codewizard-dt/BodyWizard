@@ -1,0 +1,1 @@
+<span class="link {{$classes}}" data></span>

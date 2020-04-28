@@ -1,7 +1,22 @@
 var waitForForm, autoClickBtn = undefined, xhrWait = undefined, purple = "rgb(105,12,104)", yellow = "rgb(240,154,53)", pink = "rgb(234,78,80)";
+var tabs = {
+    list: {},
+    set: function(menu, tab = null){
+        if (typeof menu == 'string' && menu != "") tabs.list[menu] = tab;
+        else if (typeof menu == 'object') $.each(menu,function(key, value){tabs.set(key, value);});
+    },
+    get: function(menu){
+        return (tabs.list[menu] != undefined) ? tabs.list[menu] : null;
+    },
+    clear: function(){tabs.list = {}},
+    log: function(){console.log(tabs.list)}
+};
 $(document).ready(function(){
     $("#MobileMenu").children(".title").attr('id','MenuToggle');
     $("#MobileMenu").children('.dropDown').attr('id','MenuDisplay');
+    // console.log($("#NavBar").data('initialtabs'));
+    tabs.set($("#NavBar").data('initialtabs'));
+
     initializeNewMenus();
     $(document).on('touchstart mousedown scroll',function(e){
         var dropdown = $(e.target).closest('.dropDown'), activeDD = $(".dropDown").filter('.active'), tabs = activeDD.parents('.tab'), parents = tabs.add(tabs.children());
@@ -90,11 +105,11 @@ function clickTab(id){
 }
 function ClickActiveTabsV2(){
     var menus = $(".menuBar").not(".siteMenu").filter(function(){
-        return $(this).data('mode') != 'scroll' && $(this).find(".title.active").length == 0;
+        return $(this).data('mode') != 'scroll' && $(this).find(".title.active").dne();
     });
     if (menus.length == 0){return false;}
-    var activeTabJson = JSON.parse($("#tabList").text()), tab;
-
+    // var activeTabJson = JSON.parse($("#tabList").text()), tab;
+    var activeTabJson = tabs.list, tab;
     menus.each(function(){
         if (!activeTabJson){
             $(this).find('.title').first().click();
@@ -236,14 +251,23 @@ function followMenuLink(){
         if (target=="window"){
             window.location.href = uri;
         }else{
-            LoadingContent(target,uri);
+            if (uri.includes('artisan')){
+                confirm('Confirm','Are you sure you want to '+tab.text(),'yes, ' +tab.text(), 'no', function(){
+                    unblurAll();
+                    LoadingContent(target,uri);
+                })
+            }else{
+                LoadingContent(target,uri);
+            }
         }
     }        
     animateMenuV2(menu);
 }
 function dropdownClick(e){
     var tab = $(this).closest('.tab'), underline = tab.children(".underline"), dropdownChild = tab.children(".dropDown"), showNow = !dropdownChild.hasClass('active'), dropdownChildren = tab.find(".dropDown"), parentDropDowns = tab.parents('.dropDown'), menu = tab.closest(".menuBar");
+    var allOtherDropdowns = $(".dropDown").not(dropdownChildren).not(parentDropDowns);
     if (showNow){
+        allOtherDropdowns.removeClass('active');
         $(".underline").removeClass('hover');
         underline.addClass("hover");
         dropdownChild.addClass("active");
@@ -273,20 +297,21 @@ function menuMouseLeave(e){
     },500);
 }
 function setActiveTab(menu,tab){
+    tabs.set(menu,tab);
     // if ($("#tabList").text().trim() == 'no session'){return false;}
     // var tabJson = JSON.parse($("#tabList").text());
     // if (!tabJson){tabJson = {};}
     // tabJson[menu] = tab;
     // setSessionVar({"CurrentTabs":tabJson})
     // $("#tabList").text(JSON.stringify(tabJson));
-    try{
-        tabHeaderInfo = JSON.parse($("#tabList").text());
-        tabHeaderInfo = (tabHeaderInfo === null) ? {} : tabHeaderInfo;
-    }catch(e){
-        tabHeaderInfo = {};
-    }
-    tabHeaderInfo[menu] = tab;
-    $("#tabList").text(JSON.stringify(tabHeaderInfo));
+    // try{
+    //     tabHeaderInfo = JSON.parse($("#tabList").text());
+    //     tabHeaderInfo = (tabHeaderInfo === null) ? {} : tabHeaderInfo;
+    // }catch(e){
+    //     tabHeaderInfo = {};
+    // }
+    // tabHeaderInfo[menu] = tab;
+    // $("#tabList").text(JSON.stringify(tabHeaderInfo));
     // console.log(tabHeaderInfo);
 }
 function reloadTab(){
@@ -320,13 +345,13 @@ function LoadingContent(target,uri,callback = null){
         loadXHR.abort();
         console.log('aborted xhr');
     }
-    if (autosaveNoteTimer) clearTimeout(autosaveNoteTimer);
+    // if (autosaveNoteTimer) clearTimeout(autosaveNoteTimer);
 
     loadXHR = $.ajax({
         url:uri,
         headers:{
-            'X-Current-Tabs': $("#tabList").text(),
-            'X-Current-Uids': $("#uidList").text()
+            'X-Current-Tabs': JSON.stringify(tabs.list),
+            'X-Current-Uids': JSON.stringify(uids.list)
         },
         success:function(data){
             $(".toModalHome, .modalForm").appendTo("#ModalHome");
@@ -334,19 +359,20 @@ function LoadingContent(target,uri,callback = null){
                 return $.inArray($(this).attr('id'),systemModalList) === -1;
             }).remove();
             $(target).html(data);
-            if ($(target).find(".listUpdate").length != 0){
-                var lists = $(target).find(".listUpdate").data(), uids = lists.uids, tabs = lists.tabs;
-                uids = (uids && uids.length == 0) ? 'null' : JSON.stringify(uids);
-                tabs = (tabs && tabs.length == 0) ? 'null' : JSON.stringify(tabs);
-                $("#uidList").text(uids);
-                $("#tabList").text(tabs);
-                var userInfo = $(target).find(".userUpdate").data();
-                $("#UserInfo").data({
-                    usertype: userInfo.usertype, 
-                    isAdmin: (userInfo.isadmin == 1), 
-                    isSuper: (userInfo.issuperuser == 1)
-                });
-            }
+            // if ($(target).find(".listUpdate").length != 0){
+            //     var lists = $(target).find(".listUpdate").data(), newUids = lists.uids, tabs = lists.tabs;
+            //     uids.set(newUids);
+            //     // newUids = (newUids && newUids.length == 0) ? 'null' : JSON.stringify(newUids);
+            //     tabs = (tabs && tabs.length == 0) ? 'null' : JSON.stringify(tabs);
+            //     // $("#uidList").text(newUids);
+            //     $("#tabList").text(tabs);
+            //     // var userInfo = $(target).find(".userUpdate").data();
+            //     // $("#UserInfo").data({
+            //     //     usertype: userInfo.usertype, 
+            //     //     isAdmin: (userInfo.isadmin == 1), 
+            //     //     isSuper: (userInfo.issuperuser == 1)
+            //     // });
+            // }
             initializeNewContent();
             if (callback) callback();
             loadXHR = undefined;

@@ -1,6 +1,7 @@
 <?php 
 use App\Appointment;
 use App\ChartNote;
+
 $apptId = getUid('Appointment');
 if ($apptId){
 	$appt = Appointment::find($apptId);
@@ -25,16 +26,16 @@ $allAppts = $apptsWithoutNotes->merge($apptsWithUnsignedNotes)->sortBy('date_tim
 				<div class="label">Appointment</div>
 				<div class="value">{{$appt->name}}</div>
 				<div class="label">Patient</div>
-				<div class="value">{{$appt->patient_list}}</div>
+				<div class="value">{{$appt->patient->name}}</div>
 			</div>
 		@endif
 		<div class="button small pink confirmApptBtn">{{$btnText}}</div>
-		<div class="button small pink70 selectNewAppt">select different appointment</div>
+		<div class="button small pink70 selectNewAppt">see other appointments</div>
 		<div id="ApptLegend" class='flexbox styled'><div class="appt hasNote">unsigned note</div><div class="appt noNote">no note</div></div>
 		<div id="ApptsWithoutNotes" class='flexbox styled'>
 			@forelse ($allAppts as $appt)
 				<?php $noteIndicator = $appt->chartNote ? 'hasNote' : 'noNote'; ?>
-				<div class="appt {{$noteIndicator}}" data-uid='{{$appt->id}}' data-services='{{$appt->service_list}}'>{{$appt->patient_list}}<br>{{$appt->date}}</div>
+				<div class="appt {{$noteIndicator}}" data-uid='{{$appt->id}}' data-services='{{$appt->service_list}}'>{{$appt->patient->name}}<br>{{$appt->date}}</div>
 			@empty
 				<div id="NoEligibleApptsBtn">no eligible appointments</div>
 			@endforelse

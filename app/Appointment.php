@@ -40,21 +40,9 @@ class Appointment extends Model
 	    	'index' => 'id',
             'model' => "Appointment",
 	    	'columns' => [
-                        [
-                            "label" => 'Patient',
-                            "className" => 'patient',
-                            "attribute" => 'name'
-                        ],
-                        [
-                            'label' => 'Date + Time',
-                            'className' => 'time',
-                            'attribute' => 'date_time'
-                        ],
-                        [
-                            'label' => 'Services',
-                            'className' => 'services',
-                            'attribute' => 'services'
-                        ]
+                        'Patient' => 'name',
+                        'Date + Time' => 'date_time',
+                        'Services' => 'service_list',
                     ],
 	    	'hideOrder' => "",
 	    	'filtersColumn' => array(),
@@ -83,13 +71,20 @@ class Appointment extends Model
         // [Model, relationship]
         $this->connectedModels = array(
             ['Service','many','morphToMany'],
-            ['Patient','one','morphedByMany'],
+            ['Patient','one','belongsTo'],
             ['Practitioner','one','belongsTo']
         );
     }
 
     public function moreOptions(){
 
+    }
+    public function detailClick(){
+        $model = getModel($this);
+        $uid = $this->getKey();
+        $chartnote = $this->chartNote ? $this->chartNote->signed_at : 'none';
+        $invoice = $this->invoice ? $this->invoice->settled_at : 'none';
+        return "<span class='link appointment' data-model='$model' data-uid='$uid' data-chartnote='$chartnote' data-invoice='$invoice'>" . $this->name . "</span>";
     }
 
     static function allApptsStartingBetween(Carbon $min, Carbon $max, $eagerLoad = false){
@@ -132,9 +127,9 @@ class Appointment extends Model
         return Appointment::allApptsStartingBetween($start,$end,$eagerLoad);
     }
     static function allApptsNeedingReminder(){
-        $appts = Appointment::allApptsStartingWithin24hr('patients.userInfo')
+        $appts = Appointment::allApptsStartingWithin24hr('patient.userInfo')
                 ->filter(function($appt){
-                    $requested = $appt->patients->first()->settings['reminders']['appointments'];
+                    $requested = $appt->patient->settings['reminders']['appointments'];
                     $lastReminder = lastInArray($appt->status['reminders']['sentAt']);
                     if (!$lastReminder && $requested){return true;}
                     elseif ($lastReminder){
@@ -167,10 +162,11 @@ class Appointment extends Model
         });
         return $appts;
     }
-    static function recentAppointmentsWithUnpaidInvoices($daysBack = 30){
+    static function recentAppointmentsWithPendingInvoices($daysBack = 30){
         $midnight = Carbon::now()->setTime(23,59,0);  $start = Carbon::now()->subDays($daysBack);
         $appts = Appointment::allApptsStartingBetween($start, $midnight, 'invoice')->filter(function($appt){
-            return $appt->invoice && $appt->invoice->settled_at !== 'pending';
+            if ($appt->invoice) Log::info($appt->invoice->settled_at);
+            return $appt->invoice && $appt->invoice->settled_at == 'pending';
         });
         return $appts;
     }
@@ -184,7 +180,7 @@ class Appointment extends Model
                 return $appt->requiresForm($formId);
             });
         }else{
-            $appointments = Appointment::allApptsStartingAfter(Carbon::now()->subMonths(1),"patients")->filter(function($appt,$a) use($formId){
+            $appointments = Appointment::allApptsStartingAfter(Carbon::now()->subMonths(1),"patient")->filter(function($appt,$a) use($formId){
                 return $appt->requiresForm($formId);
             });
         }
@@ -204,7 +200,6 @@ class Appointment extends Model
                 ];
     }
 
-    ////////
     public function forms($usertype = null){
         foreach ($this->services as $service){
             if ($usertype){
@@ -224,11 +219,9 @@ class Appointment extends Model
     public function chartNote(){
         return $this->hasOne('App\ChartNote');
     }
-    public function patients(){
-        return $this->morphedByMany("App\Patient", 'appointmentable');
-    }
     public function patient(){
-        return $this->patients->first();
+        return $this->belongsTo('App\Patient', 'patient_id');
+        // return $this->patients->first();
     }
     public function practitioner(){
         return $this->belongsTo("App\Practitioner", 'practitioner_id');
@@ -239,6 +232,20 @@ class Appointment extends Model
     public function invoice(){
         return $this->hasOne('App\Invoice');
     }
+    public function createdTasks($serviceIds){
+        try{
+            $this->services->sync($serviceIds);
+            $method = request()->method();
+            $model->saveToGoogleCal($method);
+            $model->saveToFullCal();
+            $lastChange = DB::table('appointments_audit')->where('affected_record',$model->id)->orderBy('changed_at','desc')->first();
+            $changes = $lastChange ? json_decode($lastChange->changes,true) : null;
+            $practice = Practice::getFromSession();
+            event(new AppointmentSaved($model, $changes, $practice->practice_id, Auth::user()->user_type));
+        }catch(\Exception $e){
+            reportError($e,'Appointment 257');
+        }
+    }
 
     public function checkFormSubmission($formId){
         $submission = $this->submissions->filter(function($submission) use($formId){
@@ -248,9 +255,10 @@ class Appointment extends Model
     }
 
     public function getPatientUserModelsAttribute(){
-        return $this->patients->map(function($patient){
-            return $patient->userInfo;
-        });
+        reportError("don't use patient_user_models",'Appointment 259');
+        // return $this->patients->map(function($patient){
+        //     return $patient->userInfo;
+        // });
     }
     public function getLongDateTimeAttribute(){
         return $this->date_time->format('h:ia \o\n D n/j/y');
@@ -265,10 +273,11 @@ class Appointment extends Model
         return implode(", ",$services);
     }
     public function getPatientListAttribute(){
-        $patients = $this->patients->map(function($patient){
-            return $patient->name;
-        })->toArray();
-        return implode(", ",$patients);
+        reportError("don't use patient_list",'Appointment 277');
+        // $patients = $this->patients->map(function($patient){
+        //     return $patient->name;
+        // })->toArray();
+        // return implode(", ",$patients);
     }
     public function getNameAttribute(){
         return $this->service_list." (".$this->date_time->format('n/j/y').")";
@@ -294,7 +303,7 @@ class Appointment extends Model
     }
     public function saveToGoogleCal($method = 'POST', $calendarId = null){
         // $practiceId = session('practiceId');
-
+        $method = strtoupper($method);
         $calendar = app('GoogleCalendar');
         $practice = Practice::getFromSession();
         $calendarId = isset($calendarId) ? $calendarId : $practice->calendar_id;
@@ -315,13 +324,17 @@ class Appointment extends Model
         })->toArray();
 
         // $attendees = $this->patients;
-        $attendeeArr = $this->patients->map(function($patient){
-            return 
-            [
-                'displayName' => $patient->name,
-                'email' => $patient->email
-            ];
-        })->toArray();
+        // $attendeeArr = $this->patients->map(function($patient){
+        //     return 
+        //     [
+        //         'displayName' => $patient->name,
+        //         'email' => $patient->email
+        //     ];
+        // })->toArray();
+        $attendeeArr = [
+            'displayName' => $this->patient->name,
+            'email' => $this->patient->email
+        ];
 
         $event = new \Google_Service_Calendar_Event([
             'start' => ['dateTime' => $start->toRfc3339String()],
@@ -459,7 +472,7 @@ class Appointment extends Model
                 }
             }
         
-        $appointmentData = Appointment::where('uuid',$apptIds)->with('services.forms','patients','practitioner')->get()->map(function($appt){
+        $appointmentData = Appointment::where('uuid',$apptIds)->with('services.forms','patient','practitioner')->get()->map(function($appt){
             // Log::info($appt,['location'=>'appointment.php 463']);
             return $appt->getDetailsForFullCal();
         });
@@ -488,7 +501,6 @@ class Appointment extends Model
             $forms = $service->forms->filter(function($form){
                 return $form->user_type == 'patient';
             })->map(function($form) use($appt){
-                $patient = $appt->patients->first();
                 return [
                     'form_id' => $form->form_id,
                     'name' => $form->form_name,
@@ -498,28 +510,19 @@ class Appointment extends Model
             $formArr = array_merge($formArr,$forms);
         }
         $chartNote = $appt->chartNote;
-        $noteInfo = $chartNote ? [
-            'status' => $chartNote->signed_at,
-            'id' => $chartNote->id
-        ] : null;   
         $invoice = $appt->invoice;
-        $invoiceInfo = $invoice ? [
-            'status' => $invoice->status,
-            'id' => $invoice->id
-        ] : null;   
         $arr = [
-            'services' => implode(", ",$appt->services->map(function($service){return $service->name;})->toArray()),
-            'patients' => implode(", ",$appt->patients->map(function($patient){return $patient->name;})->toArray()),
-            'serviceIds' => $appt->services->modelKeys(),
-            'patientIds' => $appt->patients->modelKeys(),
-            'noteInfo' => $noteInfo,
-            'invoiceInfo' => $invoiceInfo,
+            'services' => ['names' => implode(", ",$appt->services->map(function($service){return $service->name;})->toArray()),'ids' => $appt->services->modelKeys()],
+            'patient' => ['name' => $appt->patient->name,'id' => $appt->patient->id],
+            'chartNote' => $appt->chartNote ? ['status' => $appt->chartNote->signed_at,'id' => $appt->chartNote->id] : ['id' => null],
+            'invoice' => $appt->invoice ? ['status' => $appt->invoice->status,'id' => $appt->invoice->id] : ['id' => null],
             'forms' => $formArr,
             'status' => $appt->status,
-            'bodywizardUid' => $appt->id,
+            'uid' => $appt->id,
             'googleUuid' => $appt->uuid,
-            'practitioner' => $appt->practitioner->name,
-            'practitionerId' => $appt->practitioner->id,
+            'practitioner' => ['name' => $appt->practitioner->name, 'id' => $appt->practitioner->id],
+            // 'practitioner' => $appt->practitioner->name,
+            // 'practitionerId' => $appt->practitioner->id,
             'type' => "EHR:appointment"
         ];
         return $arr;

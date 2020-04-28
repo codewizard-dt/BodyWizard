@@ -65,6 +65,7 @@ class FormController extends Controller
             $submission->appointment_id = $apptId;
             $submission->form_uid = $uid;
             $submission->form_id = $form->form_id;
+            $submission->form_user_type = $form->user_type;
             $submission->form_name = $form->form_name;
             $submission->responses = $request->jsonObj;
             $submission->save();

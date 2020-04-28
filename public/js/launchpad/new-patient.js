@@ -18,7 +18,7 @@ $(document).ready(function(){
         })
     }    
     function submit(){
-        if (checkForm($("#NewPatient"))){
+        if (forms.retrieve($("#NewPatient"))){
             var FName = $("#FName").find("input").val();
             var LName = $("#LName").find("input").val();
             var Email = $("#Email").find("input").val();

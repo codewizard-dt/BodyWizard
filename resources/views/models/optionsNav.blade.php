@@ -6,14 +6,14 @@
 	$class = "App\\$nospaces";
 	$count = $class::all()->count();
 	$extraClasses = [];
-	$extraData = [];
+	$dataAttrs = [];
 	$jsonStr = "";
 	$markupStr = "";
 	try{
 		if (!$uid){$extraClasses[] = 'hide';}
 
 		if (session("diagnosisType") !== null){
-			$extraData[] = ['dxtype',session('diagnosisType')];
+			$dataAttrs[] = ['dxtype',session('diagnosisType')];
 		}
 		if ($model == 'Diagnosis' && $uid != null){
 			$instanceType = $class::find($uid)->medicine_type;
@@ -60,7 +60,7 @@
 			}
 			if ($model == "Form" && Auth::user()->user_type == "patient"){
 				$submission = $instance->submissions()->get()->last();
-				if ($submission){$extraData[] = ['lastsubmission',$submission->id];}
+				if ($submission){$dataAttrs[] = ['lastsubmission',$submission->id];}
 			}
 
 			// ADDING OPTIONSNAV BUTTONS BASED ON ATTRIBUTES
@@ -80,8 +80,8 @@
 					}
 				}
 
-			if ($markupStr){$extraData[] = ['markup',$markupStr];}
-			if ($jsonStr){$extraData[] = ['json',$jsonStr];}
+			if ($markupStr){$dataAttrs[] = ['markup',$markupStr];}
+			if ($jsonStr){$dataAttrs[] = ['json',$jsonStr];}
 
 			$modelArr = null;
 			if (isset($instance->connectedModels)){
@@ -118,7 +118,7 @@
 				}
 			}
 			if ($modelArr){
-				$extraData[] = ['connectedmodels',json_encode($modelArr)];
+				$dataAttrs[] = ['connectedmodels',json_encode($modelArr)];
 			}
 		}
 	}
@@ -134,7 +134,7 @@
 			<div class="navHead">
 				<span class="optionsBar">
 					<span class="name" data-uid="{{$uid}}" 
-					@foreach ($extraData as $data) data-{{$data[0]}}='{{$data[1]}}'@endforeach
+					@foreach ($dataAttrs as $data) data-{{$data[0]}}='{{$data[1]}}'@endforeach
 					></span>
 				</span>
 			</div>
@@ -144,7 +144,7 @@
 				{{$instance->moreOptions()}}
 				@endif
 			</div>
-			<div class="toggleDetails down">
+			<div class="navOptionsToggle down">
 				<span class="label">more</span>
 				<div class="arrow"></div>
 			</div>

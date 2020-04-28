@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 class Message extends Model
 {
@@ -79,7 +80,7 @@ class Message extends Model
                 'display in full','reply'
             )
         );
-        $this->nameAttr = "subject!!%type%: %subject%!!%type%: %message%";
+        // $this->nameAttr = "subject!!%type%: %subject%!!%type%: %message%";
 
         // This will load a resource table for each connected model
         // into the create.blade view for THIS model, creating modals that
@@ -96,6 +97,149 @@ class Message extends Model
             'user' => 'recipient',
             'user' => 'sender'
         ];
+    }
+    public static function tableValues(){
+        $usertype = Auth::user()->user_type;
+        $commonArr = [
+            'tableId' => 'MessageList',
+            'index' => 'id'
+        ];
+        if ($usertype == 'practitioner'){
+            $arr = [
+                        'columns' => 
+                        [
+                            [
+                                "label" => 'Recipient',
+                                "className" => 'name',
+                                "attribute" => 'recipient_id',
+                            ],
+                            [
+                                "label" => 'Message',
+                                "className" => 'message',
+                                "attribute" => 'subject!!subject!!message'
+                            ],
+                            [
+                                "label" => 'Type',
+                                "className" => 'type',
+                                "attribute" => 'type'
+                            ],
+                            [
+                                "label" => 'Sent',
+                                "className" => 'sent',
+                                "attribute" => 'created_at'
+                            ],
+                            [
+                                "label" => 'Status',
+                                "className" => 'status',
+                                "attribute" => 'decoded_status'
+                            ]
+                        ],
+                        'hideOrder' => "type,usertype,charting",
+                        'filtersColumn' => [],
+                        'filtersOther' => [
+                            [
+                                "label" => 'Form Type',
+                                "filterName" => 'type',
+                                "attribute" => 'form_type',
+                                "markOptions" => null,
+                                "filterOptions" => [
+                                    ["label" => 'practitioner',"value" => 'practitioner'],
+                                    ["label" => 'patient',"value" => 'patient'],
+                                    ["label" => 'admin',"value" => 'admin'],
+                                    ["label" => 'system',"value" => 'system']
+                                ]
+                            ],
+                            [
+                                "label" => 'Hide',
+                                "filterName" => 'hide',
+                                'attribute' => null,
+                                'reverseFilter' => true,
+                                "markOptions" => null,
+                                "filterOptions" => [
+                                    [
+                                        "label" => 'inactive',
+                                        "value" => 'active:0',
+                                        'attribute'=>'active'
+                                    ],
+                                    ["label" => 'system forms',"value" => 'form_type:system','attribute'=>'form_type'],
+                                    ["label" => 'locked forms',"value" => 'locked:1','attribute'=>'locked']
+                                ]
+                            ]
+                        ],
+                        'optionsNavValues' => [
+                            'destinations' => ["settings","form-preview","forms-edit","delete"],
+                            'btnText' => ["settings","preview","edit","delete"]
+                        ],
+                        'orderBy' => [
+                            ['form_name',"asc"],
+                            ['version_id',"desc"]
+                        ]
+            ];
+        }elseif ($usertype == 'patient'){
+            $arr = 
+            [
+                'columns' => 
+                [
+                    ["label" => 'Form Name',
+                    "className" => 'name',
+                    "attribute" => 'form_name'],
+                    ["label" => 'Submitted',
+                    "className" => 'submitted',
+                    "attribute" => 'last_submitted'],
+                    ["label" => 'Status',
+                    "className" => 'status',
+                    "attribute" => 'status']
+                ],
+                'hideOrder' => "",
+                'filtersColumn' => [],
+                'filtersOther' => [
+                ],
+                'optionsNavValues' => [
+                    'destinations' => ['loadForm'],
+                    'btnText' => ['open form']
+                ],
+                'orderBy' => [
+                    ['form_name',"asc"]
+                ]
+            ];
+        }
+        return array_merge($commonArr,$arr);
+    }
+    public function navOptions(){
+        $user = Auth::user();
+        $dataAttrs = [
+            [
+                'key' => 'json',
+                'value' => str_replace("'","\u0027",$this->full_json)
+            ],
+        ];
+        $extraClasses = [];
+        $buttons = [
+            [
+                'text' => 'edit form',
+                'destination' => 'forms-edit'
+            ],
+            [
+                'text' => 'portal settings',
+                'destination' => 'settings'
+            ],
+            [
+                'text' => 'preview',
+                'destination' => 'form-preview'
+            ],
+            [
+                'text' => 'delete',
+                'destination' => 'delete'
+            ],
+        ];
+        if (!$this->active) $buttons[] = ['text'=>'use this version','destination'=>'setAsActiveForm'];
+        return  [
+                    'dataAttrs' => $dataAttrs,
+                    'extraClasses' => $extraClasses,
+                    'buttons' => $buttons,
+                    'instance' => $this,
+                    'model' => getModel($this)
+                ];
     }
     public function defaultStatus(){
         $type = $this->type;
@@ -138,6 +282,7 @@ class Message extends Model
                 }
             if ($changes){
                 $changeTxt = "";
+                // reportError($changes,'message 285');
                 foreach($changes as $change){
                     foreach($change as $key => $values){
                         if ($key == 'date_time'){

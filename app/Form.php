@@ -194,6 +194,61 @@ class Form extends Model
             return $submissions->count() == 0;
         });
     }
+
+    public function navOptions(){
+        $user = Auth::user();
+        $dataAttrs = [
+            [
+                'key' => 'json',
+                'value' => str_replace("'","\u0027",$this->full_json)
+            ],
+        ];
+        $extraClasses = '';
+        $buttons = [
+            [
+                'text' => 'edit form',
+                'destination' => 'forms-edit'
+            ],
+            [
+                'text' => 'portal settings',
+                'destination' => 'settings'
+            ],
+            [
+                'text' => 'preview',
+                'destination' => 'form-preview'
+            ],
+            [
+                'text' => 'delete',
+                'destination' => 'delete'
+            ],
+        ];
+        if (!$this->active) $buttons[] = ['text'=>'use this version','destination'=>'setAsActiveForm'];
+        $data = [
+                    'dataAttrs' => $dataAttrs,
+                    'extraClasses' => $extraClasses,
+                    'buttons' => $buttons,
+                    'instance' => $this,
+                    'model' => getModel($this)
+                ];
+        return $data;
+    }
+    public function modelDetails(){
+        return [];
+    }
+    public function detailClick(Appointment $appt = null, Patient $patient = null){
+        $model = getModel($this);
+        $uid = $this->getKey();
+        $form_id = $this->form_id;
+        // $patient = getUid('Patient');
+        // $appt = getUid('Appointment');
+        if ($patient && $appt){
+            $hasSubmission = $this->apptHasSubmission($appt, $patient);
+            $subValue = $hasSubmission ? 'hasSubmission' : 'noSubmission';
+            return "<div class='link form $subValue' data-model='$model' data-uid='$uid' data-formid='$form_id' data-submission='$subValue'>" . $this->name . checkOrX($hasSubmission)."</div>";
+        }else{
+            return "<div class='link form' data-model='$model' data-uid='$uid' data-formid='$form_id'>" . $this->name . "</div>";
+        }
+    }
     public function getRequiredIntervalAttribute(){
         if (!$this->settings['require_periodically']) return null;
         $period = $this->settings['periodicity'];
@@ -203,6 +258,10 @@ class Form extends Model
             // returns number portion of 'every X months'
             return explode(" ",$period)[2];
         }
+    }
+    public function apptHasSubmission(Appointment $appt, Patient $patient){
+        $submissionId = $this->checkApptFormStatus($appt, $patient);
+        return $submissionId !== false;
     }
     public function checkApptFormStatus(Appointment $appt, Patient $patient){
         // Log::info("Check Appt Form Status");
@@ -490,6 +549,9 @@ class Form extends Model
                 echo '<li tabindex="0" data-value="'.$options[$i].'">'.$options[$i].'</li>';
             }
             echo '</ul>';
+        }
+        public static function radioBlade($options,$name = null,$default = null){
+            return view('layouts.forms.radio',compact(['options','default','name']));            
         }
         public function text($options){
             if (isset($options)){

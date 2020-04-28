@@ -1,4 +1,5 @@
 <?php 
+use App\ChartNote;
 $submissions = $note->appointment->submissions;
 $patientSubmissions = $submissions->filter(function($submission){
 	return $submission->form->user_type == 'patient';
@@ -8,9 +9,47 @@ $practitionerSubmissions = $submissions->filter(function($submission){
 });
 $ctrl = new \App\Form;
 $signOptions = ['typedName'=>'no','name'=>'PractitionerSignature'];
+$patient = $note->patient;
+$lastChartNote = ChartNote::where([['patient_id',$patient->id],['id','!=',$note->id]])->orderBy('created_at','desc')->first();
+if ($lastChartNote){
+	$notesFromLastChartNote = $lastChartNote->notes;
+	$lastNoteDate = $lastChartNote->signed_on ?: $lastChartNote->created_at;
+	$lastNoteDate = is_string($lastNoteDate) ? $lastNoteDate : $lastNoteDate->format('n/j/y');		
+}else{
+	$notesFromLastChartNote = '';
+}
+$todaysNotes = $note->notes;
+	// dd($todaysNotes);
+
+
 ?>
 <h1 class='purple'>Signed Chart Note</h1>
 <h2 class="pink">{{$note->name}}</h2>
+@if ($lastChartNote)
+	<div id="NotesFromLastTime" class='left'>
+		<h3 class="chartNoteHeader marginXBig topOnly purple">Pinned Notes From {{$lastNoteDate}}</h3>
+		@forelse ($notesFromLastChartNote as $pinnedNote)
+			<div class='left paddedSides small paddedSmall'>
+				@if (isset($pinnedNote['title']))<h4>{{$pinnedNote['title']}}</h4>@endif
+				<div>{{$pinnedNote['text']}}</div>
+			</div>
+		@empty
+			<h4 class='left paddedSides small paddedSmall'>None</h4>
+		@endforelse
+	</div>
+@endif
+<div id="NotesFromThisTime" class='left'>
+	<h3 class="chartNoteHeader marginXBig topOnly purple">Pinned Notes For Next Time</h3>
+	@forelse ($todaysNotes as $pinnedNote)
+		<div class='left paddedSides small paddedSmall'>
+			@if (isset($pinnedNote['title']))<h4>{{$pinnedNote['title']}}</h4>@endif
+			<div>{{$pinnedNote['text']}}</div>
+		</div>
+	@empty
+		<h4 class='left paddedSides small paddedSmall'>None</h4>
+	@endforelse
+</div>
+
 <h3 class="chartNoteHeader marginXBig topOnly purple">Patient Submissions</h3>
 @forelse ($patientSubmissions as $submission)
 	@include ('portal.practitioner.chart_notes.submission',['submission'=>$submission])

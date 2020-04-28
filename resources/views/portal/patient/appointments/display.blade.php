@@ -37,7 +37,7 @@
 <div id="PatientCalendar" class='calendar patient' data-location='Austin, TX' data-timezone='{{date_default_timezone_get()}}'>
     <div class='lds-ring dark'><div></div><div></div><div></div><div></div></div>
 </div>
-<div id="ApptInfo" class="modalForm prompt">
+<div id="Appointment" class="modalForm prompt">
     <div class="message">
         <h1 class='purple'>Appointment Details</h1>
         <div class='split3366KeyValues'>

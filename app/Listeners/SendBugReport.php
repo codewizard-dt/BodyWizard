@@ -33,6 +33,10 @@ class SendBugReport
         $bug->description = title($event->description);
         $bug->details = $event->details;
         $bug->location = $event->location;
+        $bug->request = [
+            'url'=>request()->url(),
+            'method'=>request()->method()
+        ];
         $bug->category = title($event->category);
         $bug->user_id = $event->user ? $event->user : null;
         $bug->status = 'open';

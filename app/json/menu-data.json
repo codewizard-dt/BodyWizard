@@ -211,6 +211,27 @@
                     "text":"Reset Users",
                     "dropdown":false,
                     "uri":"/artisan/execute/refresh-users"
+                },
+                "refresh-complaints":
+                {
+                    "id":"refresh-complaints",
+                    "text":"Reset Complaints",
+                    "dropdown":false,
+                    "uri":"/artisan/execute/refresh-complaints"
+                },
+                "refresh-bugs":
+                {
+                    "id":"refresh-bugs",
+                    "text":"Reset Bugs",
+                    "dropdown":false,
+                    "uri":"/artisan/execute/refresh-bugs"
+                },
+                "reset-uids":
+                {
+                    "id":"reset-uids",
+                    "text":"Reset UIDs",
+                    "dropdown":false,
+                    "uri":"/artisan/execute/reset-uids"
                 }
             }
         },
@@ -458,13 +479,6 @@
                     "text":"Users",
                     "dropdown":
                     {
-                        "user-index":
-                        {
-                            "id":"user-index",
-                            "uri":"/User/index",
-                            "text":"All Users",
-                            "dropdown":false
-                        },
                         "patient-index":
                         {
                             "id":"patient-index",
@@ -488,39 +502,47 @@
                         }
                     }
                 },
-                "complaint-index":
+                "diagnostics-list":
                 {
-                    "text":"Complaints",
-                    "uri":"/Complaint/index",
-                    "id":"complaint-index",
-                    "dropdown":false
-                },
-                "diagnosis-type-list":
-                {
-                    "text":"Diagnoses",
-                    "id":"diagnosis-list",
+                    "id":"diagnostics-list",
+                    "text":"Diagnostics",
                     "dropdown":
                     {
-                        "diagnosis-index":
+                        "complaint-index":
                         {
-                            "id":"diagnosis-index",
-                            "uri":"/Diagnosis/index",
-                            "text":"All",
+                            "text":"Complaints",
+                            "uri":"/Complaint/index",
+                            "id":"complaint-index",
                             "dropdown":false
                         },
-                        "western-diagnosis-index":
+                        "diagnosis-type-list":
                         {
-                            "id":"western-diagnosis-index",
-                            "uri":"/Diagnosis/index?type=Western",
-                            "text":"Western",
-                            "dropdown":false
+                            "text":"Diagnoses",
+                            "id":"diagnosis-list",
+                            "dropdown":
+                            {
+                                "western-diagnosis-index":
+                                {
+                                    "id":"western-diagnosis-index",
+                                    "uri":"/Diagnosis/index?type=Western",
+                                    "text":"Western",
+                                    "dropdown":false
+                                },
+                                "chinese-diagnosis-index":
+                                {
+                                    "id":"chinese-diagnosis-index",
+                                    "uri":"/Diagnosis/index?type=Chinese",
+                                    "text":"Chinese",
+                                    "dropdown":false
+                                }
+                            }
                         },
-                        "chinese-diagnosis-index":
+                        "code-index":
                         {
-                            "id":"chinese-diagnosis-index",
-                            "uri":"/Diagnosis/index?type=Chinese",
-                            "text":"Chinese",
-                            "dropdown":false
+                            "id":"code-index",
+                            "text":"Codes",
+                            "dropdown":false,
+                            "uri":"/Code/index"
                         }
                     }
                 },
@@ -537,13 +559,6 @@
                     "text":"Invoices",
                     "dropdown":false,
                     "uri":"/Invoice/index"
-                },
-                "code-index":
-                {
-                    "id":"code-index",
-                    "text":"Codes",
-                    "dropdown":false,
-                    "uri":"/Code/index"
                 },
                 "form-type-list":{
                     "id":"form-type-list",

@@ -42,7 +42,7 @@ $(document).ready(function(){
 })
 
 function submitRegistration(){
-    var obj = checkForm($("#NewUser")), form = $("#NewUser"), u = form.find("#username"), e = form.find("#email_address"), p = form.find("#phone_number");
+    var obj = forms.retrieve($("#NewUser")), form = $("#NewUser"), u = form.find("#username"), e = form.find("#email_address"), p = form.find("#phone_number");
     if (!obj){return false;}
     if (finalizePhone(p) && finalizeEmail(e) && finalizeUsername(u)){
         blurElement(form,"#loading");

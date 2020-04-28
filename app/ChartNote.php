@@ -25,81 +25,95 @@ class ChartNote extends Model
         'signature' => 'array',
         'signed_at' => 'datetime'
     ];
+    protected $with = ['appointment','patient'];
     protected $hidden = ['autosave'];
 
     public function __construct($attributes = []){
         parent::__construct($attributes);
-        $this->auditOptions = [
-            'audit_table' => 'chart_notes_audit',
-            'includeFullJson' => false
-        ];
 
     }
 
     static function tableValues(){
-        $usertype = Auth::user()->user_type;
-        $commonArr = [
+        return [
             'tableId' => 'ChartNoteList',
-            'index' => 'id'
+            'index' => 'id',
+            'columns' => 
+            [
+                'Patient' => 'patient_name',
+                'Appointment' => 'appointment_name',
+                'Signed' => 'signed_at',
+            ],
+            'hideOrder' => ['Appointment'],
+            'filtersColumn' => [],
+            'filtersOther' => [],
+            'optionsNavValues' => [
+                'destinations' => ["view"],
+                'btnText' => ["view"]
+            ],
+            'orderBy' => [
+                ['created_at',"desc"],
+            ]
         ];
-        if ($usertype == 'practitioner'){
-            $arr = [
-                        'columns' => 
-                        [
-                            ["label" => 'Patient',
-                            "className" => 'patient',
-                            "attribute" => 'patient_name'],
-                            ["label" => 'Appointment',
-                            "className" => 'appointment',
-                            "attribute" => 'appointment_name'],
-                            ["label" => 'Signed',
-                            "className" => 'signedAt',
-                            "attribute" => 'signed_at'],
-                        ],
-                        'hideOrder' => "category,location,reported",
-                        'filtersColumn' => [],
-                        'filtersOther' => [],
-                        'optionsNavValues' => [
-                            'destinations' => ["view"],
-                            'btnText' => ["view"]
-                        ],
-                        'orderBy' => [
-                            ['created_at',"desc"],
-                        ]
-            ];
-        }elseif ($usertype == 'patient'){
-            $arr = [
-                        'columns' => 
-                        [
-                            ["label" => 'Bug',
-                            "className" => 'description',
-                            "attribute" => 'description'],
-                            ["label" => 'Category',
-                            "className" => 'category',
-                            "attribute" => 'category'],
-                            ["label" => 'Location',
-                            "className" => 'location',
-                            "attribute" => 'location'],
-                            ["label" => 'Reported At',
-                            "className" => 'reported',
-                            "attribute" => 'created_at']
-                        ],
-                        'hideOrder' => "category,location,reported",
-                        'filtersColumn' => [],
-                        'filtersOther' => [],
-                        'optionsNavValues' => [
-                            'destinations' => ["details"],
-                            'btnText' => ["details"]
-                        ],
-                        'orderBy' => [
-                            ['created_at',"desc"],
-                        ]
-            ];
-        }
-        return array_merge($commonArr,$arr);
     }
-    static function moreOptions(){
-
+    public function navOptions(){
+        $dataAttrs = [
+            [
+                'key' => 'status',
+                'value' => $this->signed_at
+            ],
+        ];
+        $buttons = ($this->signed_at == 'not signed') ? 
+        [
+            [
+                'text' => 'continue chart note',
+                'destination' => 'edit'
+            ],
+            [
+                'text' => 'pinned notes',
+                'destination' => 'addNote'
+            ],
+        ] : 
+        [
+            [
+                'text' => 'view full chart',
+                'destination' => 'view'
+            ],
+            [
+                'text' => 'pinned notes',
+                'destination' => 'addNote'
+            ],
+        ];
+        $extraClasses = "";
+        $data = [
+                    'dataAttrs' => $dataAttrs,
+                    'extraClasses' => $extraClasses,
+                    'buttons' => $buttons,
+                    'instance' => $this,
+                    'model' => getModel($this)
+                ];
+        return $data;
+    }
+    public function modelDetails(){
+        $isSigned = ($this->signed_at != 'not signed');
+        $details = $isSigned ? 
+        [
+            'Signed' => $this->signed_at.' by '.$this->practitioner->name.checkOrX($isSigned),
+            'Patient' => $this->patient->name,
+            'Appointment' => $this->appointment->detailClick(),
+            'Chief Complaints' => 'Fix this soon',
+            'Pinned Notes' => $this->notes ?: 'none',
+            'Patient Submissions' => $this->patient_submissions ? $this->patient_submissions->map(function($sub){return $sub->detailClick();})->toArray() : 'none',
+            'Chart Forms' => $this->chart_forms ? $this->chart_forms->map(function($sub){return $sub->detailClick();})->toArray() : 'none',
+        ] : [
+            'Signed' => 'not signed'.checkOrX($isSigned),
+            'Patient' => $this->patient->name,
+            'Appointment' => $this->appointment->detailClick(),
+            'Chief Complaints' => 'Fix this soon',
+            'Pinned Notes' => $this->notes ?: 'none',
+            'Required Submissions' => $this->patient_forms ? $this->patient_forms->map(function($form){return $form->detailClick();})->toArray() : 'none',
+            'Default Chart Forms' => $this->practitioner_forms ? $this->practitioner_forms->map(function($form){return $form->detailClick();})->toArray() : 'none',
+        ];
+        return $details;
     }
 
     public function getNameAttribute(){
@@ -107,6 +121,25 @@ class ChartNote extends Model
     }
     public function getPatientNameAttribute(){
         return $this->patient->name;
+    }
+    public function getPatientSubmissionsAttribute(){
+        $submissions = $this->submissions()->where('form_user_type','patient')->get();
+        return ($submissions->count() != 0) ? $submissions : null;
+    }
+    public function getChartFormsAttribute(){
+        $submissions = $this->submissions()->where('form_user_type','practitioner')->get();
+        return ($submissions->count() != 0) ? $submissions : null;
+    }
+    public function getFormsAttribute(){
+        return $this->appointment->forms();
+    }
+    public function getPatientFormsAttribute(){
+        $forms = $this->forms->filter(function($form){return $form->user_type == 'patient';});
+        return ($forms->count() != 0) ? $forms : null;
+    }
+    public function getPractitionerFormsAttribute(){
+        $forms = $this->forms->filter(function($form){return $form->user_type == 'practitioner';});
+        return ($forms->count() != 0) ? $forms : null;
     }
     public function getAppointmentDateAttribute(){
         return $this->appointment->date;
@@ -116,7 +149,12 @@ class ChartNote extends Model
     }
     public function getSignedAtAttribute($value){
         $date = $value ? new Carbon($value) : null;
-        return $date ? $date->format('n/j g:ia') : 'not signed';
+        return $date ? $date->format('n/j/y g:ia') : 'not signed';
+    }
+    public function getSignedOnAttribute(){
+        $signedAt = $this->signed_at;
+        $date = ($signedAt != 'not signed') ? explode(' ', $signedAt)[0] : 'not signed';
+        return $date;
     }
     public function setAutosaveAttribute($value){
         $this->attributes['autosave'] = $this->encryptKms($value);
@@ -125,8 +163,18 @@ class ChartNote extends Model
         $val = $this->decryptKms($value);
         return $val;
     }
+    public function setNotesAttribute($value){
+        $this->attributes['notes'] = $this->encryptKms($value);
+    }
+    public function getNotesAttribute($value){
+        $val = $this->decryptKms($value);
+        return $val ?: [];
+    }
     public function patient(){
-    	return $this->belongsTo('App\Patient','patient_id');
+        return $this->belongsTo('App\Patient','patient_id');
+    }
+    public function practitioner(){
+        return $this->belongsTo('App\Practitioner','practitioner_id');
     }
     public function appointment(){
         return $this->belongsTo('App\Appointment','appointment_id');

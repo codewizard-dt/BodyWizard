@@ -1555,6 +1555,9 @@ select {
   --black30: rgba(0, 0, 0, 0.3);
   --black50: rgba(0, 0, 0, 0.5);
   --black70: rgba(0, 0, 0, 0.7);
+  --green: rgb(46, 107, 53);
+  --green10: rgba(46, 107, 53, 0.1);
+  --green70: rgba(46, 107, 53, 0.7);
 }
 
 @font-face {
@@ -1730,11 +1733,6 @@ footer .copyright {
   padding: 1em;
 }
 
-#tabList,
-#uidList {
-  display: none;
-}
-
 h1,
 h2,
 h3,
@@ -1775,6 +1773,10 @@ h5 span {
   font-size: 0.9em;
 }
 
+.nodisplay {
+  display: none;
+}
+
 .inline {
   display: inline;
 }
@@ -1802,6 +1804,10 @@ h5 span {
 
 .pink {
   color: var(--pink);
+}
+
+.green {
+  color: var(--green);
 }
 
 .purple {
@@ -1958,6 +1964,11 @@ h5 span {
   padding-left: 2.5em;
   padding-right: 2.5em;
   box-sizing: border-box;
+}
+
+.paddedSides.xsmall {
+  padding-left: 0.25em;
+  padding-right: 0.25em;
 }
 
 .paddedSides.small {
@@ -2463,6 +2474,7 @@ a:hover {
   text-decoration: underline;
   cursor: pointer;
   transition: color 500ms;
+  position: relative;
 }
 
 .button.link {
@@ -3368,6 +3380,7 @@ a:hover {
 .menuBar .dropDown .tab:hover {
   border-left-color: var(--yellow30);
   border-right-color: var(--yellow30);
+  background-color: var(--yellow5);
 }
 
 .dropDown .divide {
@@ -3381,42 +3394,42 @@ a:hover {
   position: relative;
   padding: 0.4em 0.8em;
   border-radius: 4px;
+  border: 2px solid transparent;
   top: 50%;
   -webkit-transform: translateY(-50%);
           transform: translateY(-50%);
+  transition: background-color 400ms, border-color 400ms, color 400ms, font-size 400ms;
 }
 
 .menuBar > .tab > .title.active {
-  background-color: var(--yellow) !important;
-  color: white;
+  background-color: var(--yellow20) !important;
+  border-color: var(--yellow30);
+  /*color: white;*/
 }
 
 .menuBar .title.showingDD {
-  color: var(--yellow);
+  background-color: var(--yellow10) !important;
+  color: black !important;
 }
 
 .menuBar .title:hover {
-  color: var(--yellow);
+  border-color: var(--yellow30);
 }
 
 .menuBar .dropDown .title {
   top: auto;
   -webkit-transform: unset;
           transform: unset;
-  padding: 0;
+  padding: 4px;
+  margin-left: -6px;
   width: 100%;
+  border-color: transparent;
 }
 
 .menuBar .dropDown .title.active {
-  background-color: var(--yellow);
-  color: white;
+  background-color: var(--yellow30);
+  /*color:white;*/
 }
-
-/*.menuBar li.active{
-    color: var(--yellow);
-    font-weight: bold;
-}
-*/
 
 .menuBar .underline {
   position: absolute;
@@ -3447,7 +3460,7 @@ a:hover {
   top: 100%;
   -webkit-transform: translateX(-50%) scaleX(0);
           transform: translateX(-50%) scaleX(0);
-  padding: 10px;
+  padding: 0 10px;
   text-align: center;
   white-space: nowrap;
   border-radius: 0 0 5px 5px;
@@ -3455,6 +3468,8 @@ a:hover {
   transition: transform 400ms;
   transition: transform 400ms, -webkit-transform 400ms;
   box-sizing: border-box;
+  border: 4px solid var(--gray80);
+  border-top-style: dotted;
 }
 
 .menuBar > .tab > .dropDown.active {
@@ -3465,14 +3480,14 @@ a:hover {
 .menuBar .dropDown .dropDown.active {
   -webkit-transform: translateX(-100%) scaleX(1);
           transform: translateX(-100%) scaleX(1);
-  border-top-color: var(--yellow30);
-  border-right-color: var(--yellow30);
+  border-top-color: var(--yellow70);
+  border-right-color: var(--gray80);
   border-right-style: dotted;
 }
 
 .menuBar .dropDown .dropDown {
-  left: 0;
-  top: calc(100% - 1.75em);
+  left: -4px;
+  top: calc(100% - 2.5em);
 }
 
 #Block {
@@ -3624,8 +3639,23 @@ body > .blur {
   border-color: #fff transparent transparent transparent;
 }
 
+.lds-ring.insideBtn {
+  padding: 3px 6px;
+  width: 1.75em;
+  height: 1.75em;
+  top: 50%;
+  -webkit-transform: translate(-50%, -50%);
+          transform: translate(-50%, -50%);
+}
+
+.lds-ring.insideBtn div {
+  width: 1.5em;
+  height: 1.5em;
+  margin: 2px;
+  border-width: 2px;
+}
+
 .lds-ring.dark div {
-  border: 6px solid rgb(120, 120, 120);
   border-color: rgb(120, 120, 120) transparent transparent transparent;
 }
 
@@ -3642,6 +3672,11 @@ body > .blur {
 .lds-ring div:nth-child(3) {
   -webkit-animation-delay: -0.15s;
           animation-delay: -0.15s;
+}
+
+.opacityFlash {
+  -webkit-animation: opacityFlash 0.8s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+          animation: opacityFlash 0.8s cubic-bezier(0.5, 0, 0.5, 1) infinite;
 }
 
 @-webkit-keyframes lds-ring {
@@ -3685,6 +3720,26 @@ body > .blur {
 
   100% {
     background-color: var(--pink);
+  }
+}
+
+@-webkit-keyframes opacityFlash {
+  0% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes opacityFlash {
+  0% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0.5;
   }
 }
 

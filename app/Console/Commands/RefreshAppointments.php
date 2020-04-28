@@ -80,6 +80,8 @@ class RefreshAppointments extends Command
         $this->info('Submission table cleared.');
         RefreshTables::clearChartNoteTables();
         $this->info('Chart Note table cleared.');
+        RefreshTables::clearInvoiceTables();
+        $this->info('Invoice table cleared.');
 
         setActiveStorage('Practice',$practice->practice_id);
         $practice->updateEntireEventFeed();

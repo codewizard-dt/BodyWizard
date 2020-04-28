@@ -116,7 +116,7 @@ function initializeSettingsForm(){
 	settingsForm.each(function(){
 		var json = $(this).data('settingsjson');
 		if(json !== ""){
-			fillForm(json,$(this));
+			forms.fill($(this),json);
 		}		
 	})
 	settingsForm.data('hasCurrentSettings',true);
@@ -136,7 +136,7 @@ function initializeSuperUserOptions(){
 }
 function saveSettings(){
 	var form = $("#ModelSettings"), formWrap = form.closest(".settingsForm"), model = formWrap.data('model'),
-		obj = checkForm(form), connectedModelArr = checkConnectedModels(model), uid = formWrap.data('uid'),
+		obj = forms.retrieve(form), connectedModelArr = checkConnectedModels(model), uid = formWrap.data('uid'),
 		url = "/save/settings/" + model + "/" + uid, columnObj = constructSettingsObj(model, form);
 
 	if (obj){

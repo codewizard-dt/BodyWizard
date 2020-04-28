@@ -8,6 +8,7 @@ use App\Appointment;
 use App\Submission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class ChartNoteController extends Controller
 {
@@ -26,14 +27,17 @@ class ChartNoteController extends Controller
         $chartNote = ($id == 'new') ? new ChartNote : ChartNote::find($id);
         $apptId = $request->appointment_id;
         $appt = Appointment::find($apptId);
-        $patient = $appt->patients->first();
+        // $patient = $appt->patients->first();
+        $patient = $appt->patient;
+        // Log::info($request->submissions);
         try{
             $chartNote->patient_id = $patient->id;
             $chartNote->practitioner_id = Auth::user()->practitionerInfo->id;
             $chartNote->appointment_id = $appt->id;
             $chartNote->autosave = $request->submissions;
+            $chartNote->notes = $request->notes;
             $chartNote->save();
-            $appt->saveToFullCal();
+            // $appt->saveToFullCal();
             setUid('ChartNote',$chartNote->id);
         }catch(\Exception $e){
             reportError($e,'ChartNoteController 39');
@@ -45,7 +49,8 @@ class ChartNoteController extends Controller
         $chartNote = ($id == 'new') ? new ChartNote : ChartNote::find($id);
         $apptId = $request->appointment_id;
         $appt = Appointment::find($apptId);
-        $patient = $appt->patients->first();
+        $patient = $appt->patient;
+        // $patient = $appt->patients->first();
         $submissions = $request->submissions;
         $signature = $request->signature;
         $submissionIds = [];
@@ -58,6 +63,7 @@ class ChartNoteController extends Controller
                 $submission->form_uid = $form->form_uid;
                 $submission->form_id = $form->form_id;
                 $submission->form_name = $form->form_name;
+                $submission->form_user_type = $form->user_type;
                 $submission->patient_id = $patient->id;
                 $submission->appointment_id = $appt->id;
                 $submission->self_submitted = false;
@@ -70,12 +76,10 @@ class ChartNoteController extends Controller
             $chartNote->practitioner_id = Auth::user()->practitionerInfo->id;
             $chartNote->appointment_id = $appt->id;
             $chartNote->signature = $signature;
+            $chartNote->notes = $request->notes;
             $chartNote->signed_at = time();
-            // $chartNote->autosave = null;
             $chartNote->save();
             $chartNote->trackableSync('submissions',$submissionIds);
-            // $chartNote->submissions()->sync($submissionIds);
-            $appt->saveToFullCal();
             setUid('ChartNote',$chartNote->id);
         }catch(\Exception $e){
             reportError($e,'ChartNoteController 81');
