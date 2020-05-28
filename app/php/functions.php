@@ -19,41 +19,79 @@ use App\Form;
 use App\Practitioner;
 
 $menuJson = json_decode(file_get_contents(app_path("/json/menu-data.json")),true);
-function listReturn($requestStatus, $url='not given'){
-  if (is_array($requestStatus)){
-    $requestStatus = json_encode($requestStatus);
-  }
-  $user = Auth::user();
-  $usertype = $user->user_type;
-  if ($usertype == 'patient'){
-    $userInfo = [
-      'id' => $user->id,
-      'type' => $user->user_type,
-      'patient_id' => $user->patientInfo->id,
-      'is_new_patient' => $user->patientInfo->isNewPatient(),
-      'name' => $user->name
-    ];
-  }elseif ($usertype == 'practitioner'){
-    $userInfo = [
-      'id' => $user->id,
-      'type' => $user->user_type,
-      'is_admin' => $user->is_admin,
-      'is_superuser' => $user->is_superuser,
-      'practitioner_id' => $user->practitionerInfo->id,
-      'name' => $user->name
-    ];
-  }
-
-  $withLists = [
-    'message'=> $requestStatus,
-    'url'=> $url,
-    'uidList' => session('uidList'),
-    'tabList' => session('CurrentTabs'),
-    'user' => $userInfo,
-    'notifications' => view('portal.user.notifications')->render()
-  ];
-  return $withLists;
+function listReturn($requestStatus, $url = null){
+  reportError(new \Exception(`Don't be usin listReturn no more`),'functions 23');
+  return;
 }
+function notificationData($notification, $format = 'string'){
+  $data = [];
+  $data['id'] = $notification->id;
+  $data['created_at'] = $notification->created_at->toString();
+  $data['type'] = notificationType($notification);
+  foreach($notification->data as $attr => $value){
+    $data[$attr] = is_array($value) ? json_encode($value) : $value;
+  }
+  $collection = collect($data);
+  // $str = implode(" ", array_values($collection->map(function($value,$attr){
+  //       return "data-$attr='$value'";
+  //     })->toArray()));
+  $str = dataAttrStr($collection);
+  return $format == 'string' ? $str : $collection->toJson();
+}
+function notificationType($notification){
+  return title(unreplacespaces(snake(explode('\\',$notification->type)[2])));
+}
+function dataAttrStr($collection){
+  return implode(" ", array_values($collection->map(function($value,$attr){
+    return "data-$attr='".e($value)."'";
+  })->toArray()));
+}
+function handleModelDetail($value){
+  // return "value";
+  $result = "";
+  if (is_string($value)) $result = "<span>$value</span>";
+  elseif (is_array($value)) {
+    $result .= "<div style='margin-left: 1em;'>";
+    unset($key);
+    foreach ($value as $key => $val){
+      $result .= "<div>";
+      if (!is_numeric($key)){
+        $result .= "<span class='bold'>";
+        $result .= $key;
+        $result .= ": </span>";
+      }
+      $result .= "<span>";
+      if ($key === 'autosave' && !is_null($val)){
+        $result .= 'non-null autosave data';
+      }else $result .= handleModelDetail($val);
+      $result .= "</span>";
+      $result .= "</div>";
+    }
+    $result .= "</div>";
+    // $result = var_dump($value);
+  }elseif (is_null($value)) $result = "<span>null</span>";
+  elseif (is_object($value)) $result = "<span>".json_encode($value)."</span>";
+  return $result;
+}
+// $defaultHeaders = function(){
+//   ret
+// }
+// function defaultHeaders(){
+//   $user = Auth::user();
+//   return [
+//     'X-UIDS' => session('uidList'),
+//     'X-TABS' => session('CurrentTabs'),
+//     'X-USER' => [
+//       'id' => $user->id,
+//       'type' => $user->user_type,
+//       'is_admin' => $user->is_admin,
+//       'is_super' => $user->is_superuser,
+//       // 'practitioner_id' => $user->practitionerInfo->id,
+//       'name' => $user->name
+//     ],
+//   ];
+// }
+
 function getPractice($practiceId){
   $practice = Practice::where('practice_id',$practiceId)->get();
   return $practice;
@@ -88,6 +126,14 @@ function reportError($exception,$location=null){
     ));
   }
 }
+// function checkForSync($model){
+//   if (request()->has('sync')){
+//     foreach(request()->sync as $relationship => $ids){
+//       $model->$relationship()->sync($ids);
+//     }
+//     // if (method_exists($model, 'postSyncFx')) $model->postSyncFx();
+//   }
+// }
 
 // String related functions
   function plural($str){
@@ -172,6 +218,10 @@ function reportError($exception,$location=null){
   function isEven($num){return $num % 2 == 0;}
   function isOdd($num){return $num % 2 == 1;}
   function boolToYN(bool $bool){return $bool ? "yes" : "no";}
+  function makeNumeric($val){
+    return intval($val);
+  }
+
 
   function cleaninput($data) {
       if (is_array($data)){
@@ -554,13 +604,22 @@ function reportError($exception,$location=null){
   }
   function setUid($model, $uid){
     $uidList = (session('uidList') !== null) ? session('uidList') : [];
-    $uidList[$model]  = $uid;
+    if ($uid){
+      $uidList[$model] = $uid;
+    }else{
+      if (getUid($model)) unset($uidList[$model]);
+    }
     session(['uidList' => $uidList]);
   }
   function getUid($model){
-    if (session('uidList')===null){return null;}
-    elseif (!isset(session('uidList')[$model])){return null;}
-    else{return session('uidList')[$model];}
+    // Log::info($model);
+    $uidList = session('uidList');
+    if ($uidList) return isset($uidList[$model]) ? $uidList[$model] : null;
+    else return null;
+    // Log::info(session('uidList'),['location'=>'functions 578']);
+    // if (session('uidList')===null || empty(session('uidList'))){return null;}
+    // elseif (session('uidList')[$model] === undefined){return null;}
+    // else{return session('uidList')[$model];}
   }
   function getModel($instance, $spaces = false){
     $name = substr(strrchr(get_class($instance), "\\"), 1); 
@@ -816,8 +875,12 @@ function reportError($exception,$location=null){
 
 // Practice functions
   function setActiveStorage($key,$value){
-    $active = Storage::disk('local')->get('active.json');
-    $active = json_decode($active,true);
+    if (Storage::disk('local')->exists('active.json')){
+      $active = Storage::disk('local')->get('active.json');
+      $active = json_decode($active,true);
+    }else{
+      $active = [];
+    }
     $active[$key] = $value;
     Storage::disk('local')->put('active.json',json_encode($active));
   }

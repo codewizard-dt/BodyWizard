@@ -1,15 +1,19 @@
 <?php 
 if (!isset($filters)){
 	$filters = [];
-	reportError("Define tableValue['filters'] for $model",'table-new.blade 4');
+	reportError("Define tableValue[filters] for $model",'table-new.blade 4');
 }
 if (!isset($extraData)) $extraData = [];
+if (!isset($extraBtns)) $extraBtns = [];
+if (!isset($nameColumn)) $nameColumn = array_key_first($columns);
+$nameColumn = camel($nameColumn);
 if ($tableType == 'secondary'){
 	$extraBtns = ["manage ".plural($model) =>  "/$nospaces/index"];
-	$xtrBtnColor = 'yellow70';
+	$extraBtnColor = 'yellow70';
 }else{
-	$xtrBtnColor = 'yellow';
+	$extraBtnColor = 'yellow';
 }
+
 
 ?>
 <div class='wrapMe marginBig bottomOnly' style='display:inline-block'>
@@ -22,7 +26,7 @@ if ($tableType == 'secondary'){
 	    	<div class='button xsmall selectData pink disabled'>confirm</div>
 	    @endif
     	@foreach ($extraBtns as $text => $uri)
-			<div class='button xsmall {{$xtrBtnColor}} loadInTab' data-uri='{{$uri}}'>{{$text}}</div>
+			<div class='button xsmall {{$extraBtnColor}} loadInTab' data-uri='{{$uri}}'>{{$text}}</div>
     	@endforeach
 	</div>
 	@include ('layouts.table.filters', compact('filters','tableId'))
@@ -32,7 +36,7 @@ if ($tableType == 'secondary'){
     	<div class="tableArrow right disabled"></div>
 	</div>
 	<div>
-		<table id='{{$tableId}}' class='styledTable clickable modelTable' data-index="{{$index}}" data-display='{{$displayName}}' data-target="#Current{{$nospaces}}" data-model='{{$nospaces}}' data-hideorder='{{json_encode(camel($hideOrder))}}' data-significance='{{$tableType}}'>
+		<table id='{{$tableId}}' class='styledTable clickable modelTable' data-index="{{$index}}" data-display='{{$displayName}}' data-target="#Current{{$nospaces}}" data-model='{{$nospaces}}' data-hideorder='{{json_encode(camel($hideOrder))}}' data-significance='{{$tableType}}' data-namecolumn='{{$nameColumn}}'>
 			@include ('layouts.table.header', compact('columns'))
 	        @foreach ($collection as $instance)
 	        	@include('layouts.table.row')

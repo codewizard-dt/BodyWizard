@@ -61,7 +61,10 @@ class BugReport extends Notification
             'details' => ['location' => $this->bug->location, 'details' => $this->bug->details],
             'model' => 'Bug',
             'uid' => $this->bug->id,
-            'tabId' => "#bug-index"
+            'buttons' => [
+                ['text' => 'go to bugs', 'type' => 'click', 'target' => "#bug-index"],
+                ['text' => 'view bug', 'type' => 'viewModel'],
+            ]
         ];
     }
 }

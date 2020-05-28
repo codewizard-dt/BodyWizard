@@ -20,7 +20,7 @@ $allAppts = $apptsWithoutInvoices->merge($apptsWithPendingInvoices)->sortBy('dat
 ?>
 <div id='NewInvoice' class="central large">
 	<h1 class='purple'>Quick Invoice Access</h1>
-	<div id="ConfirmApptForInvoice">
+	<div id="ConfirmApptForInvoice" class='confirmAppt' url=''>
 		@if ($appt)
 			<div class="split3366KeyValues" id='CurrentAppt' data-uid='{{$appt->id}}'>
 				<div class="label">Appointment</div>
@@ -45,4 +45,3 @@ $allAppts = $apptsWithoutInvoices->merge($apptsWithPendingInvoices)->sortBy('dat
 </div>
 <div id="Invoice" class='central large'></div>
 
-@include ('portal.list-update')

@@ -38,10 +38,6 @@
      data-target="{{ $target }}"
      {{ $scroll }}>
     @if ($type == 'site')
-        <!-- <div id='MobileMenu'>
-            <div id='MenuToggle'></div>
-            <div id='MenuDisplay'></div>
-        </div> -->
         @include ('layouts.menus.menu-item',$mobile)
     @endif
     @forelse ($items as $name)

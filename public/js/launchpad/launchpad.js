@@ -19,33 +19,218 @@ const practice = {
 		Object.freeze(practice);
 	},
 	get: function(key){
+		if (!practice.info) log({error:'practice info not set'});
 		return (practice.info[key] != undefined) ? practice.info[key] : null;
 	}
 }
-$(document).ready(function () {
-	practice.set($("#NavBar").data('practiceinfo'));
-	//NOTIFICATIONS
-		// checkNotifications();
-	    notificationCheck = setInterval(checkNotifications,3000*60);
-	    var menu = $("#NavBar").find('.siteMenu'), divide = menu.find(".divide");
-	    notify = $("#Notifications");
-	    notify.insertBefore(divide);
-	    notify.on('click','.title',showFullNotification);
-	    notify.on('click','.selectMultiple',toggleSelectMode);
-	    notify.on('click','.selectAll',toggleSelectAll);
-	    notify.on('click','.markMultiAsUnread',markMultiAsUnread);
-	    notify.on('click','.markMultiAsRead',markMultiAsRead);
-	    notify.on('click','.deleteMulti',deleteMulti);
-
-	    $("#Notification").on('click','.viewModel',showRelatedModel);
-	    $("#Notification").on('click','.clickTab',clickTab);
-	    $("#Notification").on('click','.markAsUnread',markNotificationAsUnread);
-	    $("#Notification").on('click','.delete',deleteNotification);
-	    multiBtns = notify.find(".multiBtns");
-	    multiBtns.hide();
-	// ERROR MESSAGES
-		$('.openErrorMsg').on('click',openErrorMsg);
-});
+const notifications = {
+	current: [],
+	element: null,
+	markAsUnreadBtn: null,
+	markAsReadBtn: null,
+	deleteBtn: null,
+	selectBtn: null,
+	allBtn: null,
+	limit: 1,
+	timer: null,
+	initialize: {
+		all: function(){
+			notifications.element = $("#Notifications");
+			notifications.element.insertBefore($("#NavBar").find(".siteMenu").find('.divide'));
+			$.each(notifications.initialize, function(name, initFunc){
+				if (!['all'].includes(name) && typeof initFunc === 'function') initFunc();
+			});
+			notifications.update.list();
+			if (notifications.timer) clearInterval(notifications.timer);
+			notifications.timer = setInterval(notifications.get.unread, 180000);
+		},
+		buttons: function(){
+			init([
+				[notifications.element.find('.list').find(".tab"),function(){
+					$(this).on('click', {notification: $(this)}, notifications.click)
+				}],
+				[notifications.element.find('.button.markAsUnread'), function(){
+					notifications.markAsUnreadBtn = new Button({
+						element: $(this),
+						action: notifications.update.ajax.bind(null,'unread'),
+						id: 'MarkSelectedAsUnreadBtn',
+					});
+				}],
+				[notifications.element.find('.button.markAsRead'), function(){
+					notifications.markAsReadBtn = new Button({
+						element: $(this),
+						action: notifications.update.ajax.bind(null,'read'),
+						id: 'MarkSelectedAsReadBtn',
+					});
+				}],
+				[notifications.element.find('.button.delete'), function(){
+					notifications.deleteBtn = new Button({
+						element: $(this),
+						action: notifications.delete,
+						id: 'DeleteSelectedBtn',
+					});
+				}],
+				[$("#Notification").find('.button.markThisAsUnread'), function(){
+					new Button({
+						element: $(this),
+						action: function(){
+							notifications.update.ajax('unread');
+							unblur();
+						},
+						id: 'MarkThisAsUnread',
+					});
+				}],
+				[$("#Notification").find('.button.deleteThis'), function(){
+					new Button({
+						element: $(this),
+						action: async function(){
+							let result = await notifications.delete();	
+							if (result) unblur();
+						},
+						id: 'DeleteThis',
+					});
+				}],
+				[notifications.element.find('.button.selectMultiple'), function(){
+					notifications.deleteBtn = new Button({
+						element: $(this),
+						action: function(){
+							notifications.element.toggleClass('multi');
+							if (notifications.limit == 1)	notifications.limit = null;
+							else notifications.limit = 1;
+						},
+						id: 'SelectMultiBtn',
+					});
+				}],
+			]);			
+		}
+	},
+	add: notificationJson => {
+		log({notifcations: notificationJson},`notifications ${moment().format('h:mma')}`);
+		notificationJson.forEach(notification => {
+			if (!notifications.element.find('.notification').find('.title').get().find(
+				existing => $(existing).data('id') == notification.id)
+			) {
+				log({notification});
+				let node = $(`<div class='tab notification'><div class='title'><span class='selector'></span>${notification.type}<span class='indicator unread'></span></div></div>`);
+				node.prependTo(notifications.element.find('.list')).find('.title').data(jsonIfValid(notification.data));
+				node.on('click',notifications.click);
+			}
+		})
+		notifications.update.list();
+	},
+	get: {
+		unread: async () => {
+			let unreadNotifications = await $.ajax('/notification-check');
+			let json = jsonIfValid(unreadNotifications);
+			notifications.add(json);
+			clearInterval(notifications.timer);
+			notifications.timer = setInterval(notifications.get.unread, 180000);
+		},
+		active: () => $("#Notifications").find(".list").find(".active"),
+		activeIds: () => notifications.get.active().get().map(notification => $(notification).data('id')),
+	},
+	delete: async () => {
+		try{
+			let ele = notifications.element.find('.list').is(':visible') ? notifications.element.find('.list') : $("#Notification");
+			blur(ele,'#loading');
+			let ids = notifications.get.activeIds();
+			let result = await $.ajax({
+				url: '/notification-delete',
+				method: 'POST',
+				data: {ids: ids}
+			})
+			unblur();
+			log({notifications:notifications.get.active()});
+			if (result == 'checkmark') {
+				notifications.get.active().parent().slideFadeOut(400,function(){
+					$(this).remove();
+					notifications.update.list();
+				});
+			}else feedback('Error deleting','System admins have been notified.');
+			// notifications.update.list();
+			return result == 'checkmark';
+		}catch(error){
+			log({error});
+			return false;
+		}
+	},
+	update: {
+		ajax: async (status) => {
+			let ids = notifications.get.activeIds();
+			if (!status) {log({error:'status not defined',status:status}); return;}
+			notifications.update.list(status);
+			// log({status},'updating as '+status);
+			let result = await $.ajax({
+				url: '/notification-update',
+				method: 'POST',
+				data: {ids: ids, status: status}
+			})
+			let reverse = (status == 'read') ? 'unread' : 'read';
+			if (result != 'checkmark') {
+				log({error:result},'notification error');
+				notifications.update.list(reverse);
+			}
+		},
+		list: (status = null) => {
+			if (status) {
+				let active = notifications.get.active();
+				if (status == 'unread') active.find('.indicator').removeClass('read').addClass('unread');
+				else if (status == 'read') active.find('.indicator').removeClass('unread').addClass('read');
+			}
+			let unreadCount = notifications.element.find('.indicator.unread').length;
+			$("#UnreadCount").text(unreadCount);
+			if (unreadCount == 0) $("#UnreadCount").slideFadeOut();	
+			else $("#UnreadCount").slideFadeIn();
+			let totalCount = notifications.element.find('.notification').length;
+			if (totalCount == 0 && notifications.element.find('.noNotifications').dne()) {
+				let noNotifications = $(`<div class='tab noNotifications'><div class='title'>No notifications</div></div>`);
+				notifications.element.find('.list').prepend(noNotifications);
+			}else if (totalCount != 0) notifications.element.find('.noNotifications').remove();
+		}
+	},
+	click: (ev) => {
+		let notification = $(ev.target);
+		if (notification.parent().hasClass('noNotifications')) return;
+		if (notifications.limit == 1) {
+			notifications.element.resetActives();
+			notification.addClass('active');
+			notifications.update.ajax('read');
+			notifications.open(notification);
+			notifications.update.list('read');
+		}else{
+			notification.toggleClass('active');
+		}
+	},
+	open: notification => {
+		let data = notification.data(), message = $("#Notification").find('.message'), options = $("#Notification").find('.options');
+		options.find('.button.temp').remove();
+		message.html(`<h2 class='purple'>${data.type}</h2><h3>${data.description}</h3><div class='split3366KeyValues'></div>`);
+		let list = message.find('.split3366KeyValues'),
+				details = jsonIfValid(data.details), buttons = jsonIfValid(data.buttons);
+		// log({notification,data,details,buttons });
+		$.each(details, (key,value) => {
+			// log({key,value,list});
+			value = (value == null) ? 'none' : value;
+			list.append(`<span class='label'>${key}</span><span class='value'>${value}</span>`);
+		})
+		if (data.model && data.uid) {
+			uids.set(data.model,data.uid);
+		}
+		if (buttons) {
+			buttons.forEach(button => {
+				let btnOptions = {
+					classList: "small yellow temp",
+					appendTo: options.find('.tempBtns'),
+					text: button.text,
+				}
+				if (button.type == 'click') btnOptions.action = function(){unblurAll();$(button.target).click();}
+				else if (button.type == 'viewModel') btnOptions.action = function(){log({btn:data},'view model')}
+				new Button(btnOptions);
+			});
+		}
+		blurTop("#Notification");
+	},
+}
 
 function clickTab(){
 	alert('clickTab');
@@ -56,6 +241,8 @@ function clickTab(){
 }
 var notifyXhr = undefined;
 function checkNotifications(){
+	log({error:'dont use check notifications'},'old function');
+	return;
 	var update = filterUninitialized('.notificationUpdate');
 	if (update.exists()){
 		$("#Notifications").find('.notificationUpdate').replaceWith(update);

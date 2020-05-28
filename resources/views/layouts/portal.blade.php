@@ -7,11 +7,11 @@
     if ($usertype == 'practitioner'){
         $menuData = "PortalPractitioner";
         $menuName = "PortalPractitioner";
-        $items = ['home','divide','lock-ehr','logout'];
+        $items = ['home','notifications','divide','lock-ehr','logout'];
     }elseif ($usertype == 'patient'){
         $menuData = "PortalPatient";
         $menuName = "PortalPatient";
-        $items = ['booknow','divide','logout'];
+        $items = ['booknow','notifications','divide','logout'];
     }
     $form = new \App\Form;
     $optionsEmail = ['name'=>'email','placeholder'=>'Your Email Address'];
@@ -37,7 +37,6 @@
             @csrf
         </form>
 
-        @include('portal.user.notification-nav')
         @include('layouts.forms.autosave-wrap')
         @yield("content")
         
@@ -94,10 +93,11 @@
             <div id="Notification" class='prompt large'>
                 <div class="message"></div>
                 <div class="options">
-                    <div class="button small pink markAsUnread">mark as unread</div>
-                    <div class="button small pink delete">delete notification</div>
-                    <div class="button small yellow viewModel">go to there</div>
-                    <div class="button small yellow clickTab">go to there</div>
+                    <div style='display:inline-block;'>
+                        <div class="button small pink markThisAsUnread">mark as unread</div>
+                        <div class="button small pink deleteThis">delete notification</div>                        
+                    </div>
+                    <div style='display:inline-block;' class="tempBtns"></div>
                     <div class="button small cancel">go back</div>
                 </div>
             </div>

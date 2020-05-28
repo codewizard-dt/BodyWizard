@@ -95,6 +95,13 @@ textarea[data-followup]{
 .datepick * {
     transition: background-color 400ms;
 }
+.datepick .unavailable {
+    background-color: var(--yellow10) !important;
+    color: #bbb !important;
+}
+.datepick .datepick-today {
+    border-color: var(--purple30);
+}
 #miniSchedule .fc-today{
     background-color: unset;
 }
@@ -442,7 +449,7 @@ form, .indent, .report, .w95 {
     border-color: var(--black50);
 }
 .removeForm, .removePayment{
-    margin-left: 3px;
+    margin: -3px 0 0 3px;
     color: var(--black50);
     width:1em;
     transition: color 1s;
@@ -580,6 +587,7 @@ form, .indent, .report, .w95 {
     font-size: 0.8em;
     cursor: default;
 }
+#ApptsList {display: none;}
 .lineItem {
     padding: 0.5em 0.75em;
     /*background-color: var(--yellow5);*/
@@ -657,15 +665,15 @@ form, .indent, .report, .w95 {
 #ApptsWithoutNotes, #ApptsWithoutInvoices, #ApptLegend{
     display: none;
 }
-#ApptsWithoutNotes > div, #ApptsWithoutInvoices > div{
+#ApptsList > div{
     border-color: var(--yellow);
     cursor: pointer;
     transition: background-color 500ms;
 }
-#ApptsWithoutNotes > div:hover, #ApptsWithoutInvoices > div:hover{
+#ApptsList > div:hover{
     background-color: var(--yellow10);
 }
-#ApptsWithoutNotes > div.active, #ApptsWithoutInvoices > div.active{
+#ApptsList > div.active{
     background-color: var(--yellow30);
 }
 #ApptDetails{

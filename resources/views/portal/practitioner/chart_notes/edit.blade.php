@@ -6,9 +6,10 @@
 	if (!isset($apptId)){dd('no appointment selected');}
 
 	// $appt = Appointment::find($apptId);
-	$appt = Appointment::with(['patients','services.forms','chartNote'])->where('id',$apptId)->first();
+	$appt = Appointment::with(['patient','services.forms','chartNote'])->where('id',$apptId)->first();
 
-	$patient = $appt->patient();
+	$patient = $appt->patient;
+	$practitioner = $appt->practitioner;
 	$forms = $appt->forms();
 	$patientForms = $forms->filter(function($form){return $form->user_type == 'patient';});
 	$practitionerForms = $forms->filter(function($form){return $form->user_type == 'practitioner';});
@@ -52,9 +53,18 @@
 	}else{
 		$notesFromLastChartNote = '';
 	}
+	$data = [
+		'appointment_id' => $appt->id,
+		'uid' => $appt->chartNote ? $appt->chartNote->id : 'null',
+		'patient_id' => $appt->patient->id,
+		'practitioner_id' => $appt->practitioner->id,
+		'autosave' => $appt->chartNote ? json_encode($autosavedForms) : 'null',
+		'notes' => $appt->chartNote ? json_encode($notes) : 'null',
+	];
+	$dataStr = dataAttrStr(collect($data));
 ?>
 
-<h3 id='ApptInfo' class='pink' data-id='{{$apptId}}' data-noteid='{{$noteId}}' data-notes='{{json_encode($notes)}}' data-autosave='{{json_encode($autosavedForms)}}'>{{$patient->name}}<br>{{$appt->name}}</h3>
+<h3 id='ApptInfo' class='pink' {!!$dataStr!!}>{{$patient->name}}<br>{{$appt->name}}</h3>
 <div id="ChartFormsModal" class='prompt'>
 	<div class="message">
 		<h2 class='purple'>Charting Forms</h2>

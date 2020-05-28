@@ -2,6 +2,7 @@
 namespace App;
 
 use App\Traits\TrackChanges;
+use App\Traits\Encryptable;
 
 use App\Message;
 use Illuminate\Database\Eloquent\Model;
@@ -9,531 +10,457 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Arr;
+use App\Events\AppointmentSaved;
 
 class Appointment extends Model
 {
-    use TrackChanges;
-    use SoftDeletes;
+  use TrackChanges;
+  use SoftDeletes;
+  use Encryptable;
 
-    public $tableValues;
-    public $optionsNavValues;
-    public $connectedModels;
-    public $auditOptions;
+  public $tableValues;
+  public $optionsNavValues;
+  public $connectedModels;
+  public $auditOptions;
 
-    protected $casts = [
-        'status' => 'array',
-        'date_time' => 'datetime'
+  protected $casts = [
+    'status' => 'array',
+    'date_time' => 'datetime'
+  ];
+  protected $hidden = ['full_json'];
+  protected $fillable = ['patient_id', 'practitioner_id', 'date_time', 'duration'];
+
+  public function __construct($attributes = []){
+    parent::__construct($attributes);
+    $this->auditOptions = [
+      'audit_table' => 'appointments_audit',
+      'includeFullJson' => false
     ];
-    protected $hidden = ['full_json'];
 
-    public function __construct($attributes = []){
-        parent::__construct($attributes);
-        $this->auditOptions = [
-            'audit_table' => 'appointments_audit',
-            'includeFullJson' => false
-        ];
+    $this->tableValues = array(
+      'tableId' => 'AppointmentList',
+      'index' => 'id',
+      'model' => "Appointment",
+      'columns' => [
+        'Patient' => 'name',
+        'Date + Time' => 'date_time',
+        'Services' => 'service_list',
+      ],
+      'hideOrder' => "",
+      'filtersColumn' => array(),
+      'filtersOther' => array(),
+      'destinations' => array(
+        'edit','delete'
+      ),
+      'btnText' => array(
+        'edit','delete'
+      ),
+      'extraBtns' => []
+    );
+    $this->optionsNavValues = array(
+      'model' => "Appointment",
+      'destinations' => array(
+        'edit','delete'
+      ),
+      'btnText' => array(
+        'edit','delete'
+      )
+    );
 
-	    $this->tableValues = array(
-	    	'tableId' => 'AppointmentList',
-	    	'index' => 'id',
-            'model' => "Appointment",
-	    	'columns' => [
-                        'Patient' => 'name',
-                        'Date + Time' => 'date_time',
-                        'Services' => 'service_list',
-                    ],
-	    	'hideOrder' => "",
-	    	'filtersColumn' => array(),
-	    	'filtersOther' => array(),
-            'destinations' => array(
-                'edit','delete'
-            ),
-            'btnText' => array(
-                'edit','delete'
-            ),
-            'extraBtns' => []
-	    );
-        $this->optionsNavValues = array(
-            'model' => "Appointment",
-            'destinations' => array(
-                'edit','delete'
-            ),
-            'btnText' => array(
-                'edit','delete'
-            )
-        );
+// This will load a resource table for each connected model
+// into the create.blade view for THIS model, creating modals that
+// automatically popped up when required.
+// [Model, relationship]
+    $this->connectedModels = array(
+      ['Service','many','morphToMany'],
+      ['Patient','one','belongsTo'],
+      ['Practitioner','one','belongsTo']
+    );
+  }
 
-        // This will load a resource table for each connected model
-        // into the create.blade view for THIS model, creating modals that
-        // automatically popped up when required.
-        // [Model, relationship]
-        $this->connectedModels = array(
-            ['Service','many','morphToMany'],
-            ['Patient','one','belongsTo'],
-            ['Practitioner','one','belongsTo']
-        );
-    }
+  public function moreOptions(){
 
-    public function moreOptions(){
+  }
+  public function detailClick(){
+    $model = getModel($this);
+    $uid = $this->getKey();
+    $chartnote = $this->chartNote ? $this->chartNote->signed_at : 'none';
+    $invoice = $this->invoice ? $this->invoice->settled_at : 'none';
+    return "<span class='link appointment' data-model='$model' data-uid='$uid' data-chartnote='$chartnote' data-invoice='$invoice'>" . $this->name . "</span>";
+  }
+  static public function successResponse(){
+    $practice = Practice::getFromSession();
+    return [
+      'appointments' => $practice->appointments,
+      'anon' => $practice->anon_events
+    ];
+  }
 
+  static function allApptsStartingBetween(Carbon $min, Carbon $max, $eagerLoad = false){
+    if ($eagerLoad){
+      $appts = Appointment::orderBy('date_time')->with($eagerLoad)->get()->filter(function($appt) use ($min, $max){
+        return $appt->date_time->isBetween($min, $max);
+      });
+    }else{
+      $appts = Appointment::orderBy('date_time')->get()->filter(function($appt) use ($min, $max){
+        return $appt->date_time->isBetween($min,$max);
+      });
     }
-    public function detailClick(){
-        $model = getModel($this);
-        $uid = $this->getKey();
-        $chartnote = $this->chartNote ? $this->chartNote->signed_at : 'none';
-        $invoice = $this->invoice ? $this->invoice->settled_at : 'none';
-        return "<span class='link appointment' data-model='$model' data-uid='$uid' data-chartnote='$chartnote' data-invoice='$invoice'>" . $this->name . "</span>";
+    return $appts;
+  }
+  static function allApptsStartingAfter(Carbon $start, $eagerLoad = false){
+    if ($eagerLoad){
+      $appts = Appointment::orderBy('date_time')->with($eagerLoad)->get()->filter(function($appt) use ($start){
+        return $appt->date_time->isAfter($start);
+      });
+    }else{
+      $appts = Appointment::orderBy('date_time')->get()->filter(function($appt) use ($start){
+        return $appt->date_time->isAfter($start);
+      });
     }
+    return $appts;        
+  }
+  static function allApptsStartingWithin24hr($eagerLoad = false){
+    $start = Carbon::now()->addDay();
+    $end = Carbon::now()->addDay()->addMinutes(15);
+    return Appointment::allApptsStartingBetween($start,$end,$eagerLoad);
+  }
+  static function allApptsStartingWithin48hr($eagerLoad = false){
+    $start = Carbon::now()->addDays(2);
+    $end = Carbon::now()->addDays(2)->addMinutes(15);
+    return Appointment::allApptsStartingBetween($start,$end,$eagerLoad);
+  }
+  static function allApptsStartingWithin72hr($eagerLoad = false){
+    $start = Carbon::now()->addDays(3);
+    $end = Carbon::now()->addDays(3)->addMinutes(15);
+    return Appointment::allApptsStartingBetween($start,$end,$eagerLoad);
+  }
+  static function allApptsNeedingReminder(){
+    $appts = Appointment::allApptsStartingWithin24hr('patient.userInfo')
+    ->filter(function($appt){
+      $requested = $appt->patient->settings['reminders']['appointments'];
+      $lastReminder = lastInArray($appt->status['reminders']['sentAt']);
+      if (!$lastReminder && $requested){return true;}
+      elseif ($lastReminder){
+        $lastReminder = new Carbon($lastReminder);
+        $failsafe = Carbon::now()->subMinutes(30);
+        return $lastReminder->isBefore($failsafe);
+      }
+      return true;
+    });
+    return $appts;
+  }
+  static function recentAppointmentsWithoutNotes($daysBack = 30){
+    $midnight = Carbon::now()->setTime(23,59,0);  $start = Carbon::now()->subDays($daysBack);
+    $appts = Appointment::allApptsStartingBetween($start, $midnight, 'chartNote')->filter(function($appt){
+      return !$appt->chartNote;
+    });
+    return $appts;
+  }
+  static function recentAppointmentsWithUnsignedNotes($daysBack = 30){
+    $midnight = Carbon::now()->setTime(23,59,0);  $start = Carbon::now()->subDays($daysBack);
+    $appts = Appointment::allApptsStartingBetween($start, $midnight, 'chartNote')->filter(function($appt){
+      return $appt->chartNote && $appt->chartNote->signed_at === 'not signed';
+    });
+    return $appts;
+  }
+  static function recentAppointmentsWithoutInvoices($daysBack = 30){
+    $midnight = Carbon::now()->setTime(23,59,0);  $start = Carbon::now()->subDays($daysBack);
+    $appts = Appointment::allApptsStartingBetween($start, $midnight, 'invoice')->filter(function($appt){
+      return !$appt->invoice;
+    });
+    return $appts;
+  }
+  static function recentAppointmentsWithPendingInvoices($daysBack = 30){
+    $midnight = Carbon::now()->setTime(23,59,0);  $start = Carbon::now()->subDays($daysBack);
+    $appts = Appointment::allApptsStartingBetween($start, $midnight, 'invoice')->filter(function($appt){
+      if ($appt->invoice) Log::info($appt->invoice->settled_at);
+      return $appt->invoice && $appt->invoice->settled_at == 'pending';
+    });
+    return $appts;
+  }
 
-    static function allApptsStartingBetween(Carbon $min, Carbon $max, $eagerLoad = false){
-        if ($eagerLoad){
-            $appts = Appointment::orderBy('date_time')->with($eagerLoad)->get()->filter(function($appt) use ($min, $max){
-                return $appt->date_time->isBetween($min, $max);
-            });
-        }else{
-            $appts = Appointment::orderBy('date_time')->get()->filter(function($appt) use ($min, $max){
-                return $appt->date_time->isBetween($min,$max);
-            });
-        }
-        return $appts;
+  static function firstThatNeedsForm($formId, $patientId = null){
+    if (!$patientId && session('uidList') !== null && isset(session('uidList')['Patient'])){
+      $patientId = session('uidList')['Patient'];
     }
-    static function allApptsStartingAfter(Carbon $start, $eagerLoad = false){
-        if ($eagerLoad){
-            $appts = Appointment::orderBy('date_time')->with($eagerLoad)->get()->filter(function($appt) use ($start){
-                return $appt->date_time->isAfter($start);
-            });
-        }else{
-            $appts = Appointment::orderBy('date_time')->get()->filter(function($appt) use ($start){
-                return $appt->date_time->isAfter($start);
-            });
-        }
-        return $appts;        
+    if ($patientId){
+      $appointments = Patient::find($patientId)->appointments->filter(function($appt,$a) use($formId){
+        return $appt->requiresForm($formId);
+      });
+    }else{
+      $appointments = Appointment::allApptsStartingAfter(Carbon::now()->subMonths(1),"patient")->filter(function($appt,$a) use($formId){
+        return $appt->requiresForm($formId);
+      });
     }
-    static function allApptsStartingWithin24hr($eagerLoad = false){
-        $start = Carbon::now()->addDay();
-        $end = Carbon::now()->addDay()->addMinutes(15);
-        return Appointment::allApptsStartingBetween($start,$end,$eagerLoad);
-    }
-    static function allApptsStartingWithin48hr($eagerLoad = false){
-        $start = Carbon::now()->addDays(2);
-        $end = Carbon::now()->addDays(2)->addMinutes(15);
-        return Appointment::allApptsStartingBetween($start,$end,$eagerLoad);
-    }
-    static function allApptsStartingWithin72hr($eagerLoad = false){
-        $start = Carbon::now()->addDays(3);
-        $end = Carbon::now()->addDays(3)->addMinutes(15);
-        return Appointment::allApptsStartingBetween($start,$end,$eagerLoad);
-    }
-    static function allApptsNeedingReminder(){
-        $appts = Appointment::allApptsStartingWithin24hr('patient.userInfo')
-                ->filter(function($appt){
-                    $requested = $appt->patient->settings['reminders']['appointments'];
-                    $lastReminder = lastInArray($appt->status['reminders']['sentAt']);
-                    if (!$lastReminder && $requested){return true;}
-                    elseif ($lastReminder){
-                        $lastReminder = new Carbon($lastReminder);
-                        $failsafe = Carbon::now()->subMinutes(30);
-                        return $lastReminder->isBefore($failsafe);
-                    }
-                    return true;
-                });
-        return $appts;
-    }
-    static function recentAppointmentsWithoutNotes($daysBack = 30){
-        $midnight = Carbon::now()->setTime(23,59,0);  $start = Carbon::now()->subDays($daysBack);
-        $appts = Appointment::allApptsStartingBetween($start, $midnight, 'chartNote')->filter(function($appt){
-            return !$appt->chartNote;
+    $appt = $appointments->first();
+    return $appt;
+  }
+  static function defaultStatus(){
+    return [
+      'scheduled_at' => Carbon::now()->toDateTimeString(),
+      'rescheduled_at' => false,
+      'reminders' => [],
+      'confirmed' => [],
+      'canceled' => false,
+      'completed' => false,
+      'invoiced' => false,
+      'paid' => false
+    ];
+  }
+
+  public function forms($usertype = null){
+    foreach ($this->services as $service){
+      if ($usertype){
+        $forms = $service->forms->filter(function($form) use ($usertype){
+          return $form->user_type == $usertype;
         });
-        return $appts;
+      }else{
+        $forms = $service->forms;
+      }
+      $allForms = !isset($allForms) ? $forms : $allForms->merge($forms);
     }
-    static function recentAppointmentsWithUnsignedNotes($daysBack = 30){
-        $midnight = Carbon::now()->setTime(23,59,0);  $start = Carbon::now()->subDays($daysBack);
-        $appts = Appointment::allApptsStartingBetween($start, $midnight, 'chartNote')->filter(function($appt){
-            return $appt->chartNote && $appt->chartNote->signed_at === 'not signed';
-        });
-        return $appts;
-    }
-    static function recentAppointmentsWithoutInvoices($daysBack = 30){
-        $midnight = Carbon::now()->setTime(23,59,0);  $start = Carbon::now()->subDays($daysBack);
-        $appts = Appointment::allApptsStartingBetween($start, $midnight, 'invoice')->filter(function($appt){
-            return !$appt->invoice;
-        });
-        return $appts;
-    }
-    static function recentAppointmentsWithPendingInvoices($daysBack = 30){
-        $midnight = Carbon::now()->setTime(23,59,0);  $start = Carbon::now()->subDays($daysBack);
-        $appts = Appointment::allApptsStartingBetween($start, $midnight, 'invoice')->filter(function($appt){
-            if ($appt->invoice) Log::info($appt->invoice->settled_at);
-            return $appt->invoice && $appt->invoice->settled_at == 'pending';
-        });
-        return $appts;
-    }
+    return $allForms;
+  }
+  public function services(){
+    return $this->morphToMany('App\Service', 'serviceable');
+  }
+  public function chartNote(){
+    return $this->hasOne('App\ChartNote');
+  }
+  public function patient(){
+    return $this->belongsTo('App\Patient', 'patient_id');
+// return $this->patients->first();
+  }
+  public function practitioner(){
+    return $this->belongsTo("App\Practitioner", 'practitioner_id');
+  }
+  public function submissions(){
+    return $this->hasMany('App\Submission');
+  }
+  public function invoice(){
+    return $this->hasOne('App\Invoice');
+  }
 
-    static function firstThatNeedsForm($formId, $patientId = null){
-        if (!$patientId && session('uidList') !== null && isset(session('uidList')['Patient'])){
-            $patientId = session('uidList')['Patient'];
+  public function checkFormSubmission($formId){
+    $submission = $this->submissions->filter(function($submission) use($formId){
+      return $submission->form_id = $formId;
+    });
+    return ($submission->count() == 0) ? false : true;
+  }
+
+  public function getPatientUserModelsAttribute(){
+    reportError("don't use patient_user_models",'Appointment 259');
+// return $this->patients->map(function($patient){
+//     return $patient->userInfo;
+// });
+  }
+  public function getLongDateTimeAttribute(){
+    return $this->date_time->format('h:ia \o\n D n/j/y');
+  }
+  public function getDateAttribute(){
+    return $this->date_time->format('n/j/y');        
+  }
+  public function getServiceListAttribute(){
+    $services = $this->services->map(function($service){
+      return $service->name;
+    })->toArray();
+    return implode(", ",$services);
+  }
+  public function getPatientListAttribute(){
+    reportError("don't use patient_list",'Appointment 277');
+// $patients = $this->patients->map(function($patient){
+//     return $patient->name;
+// })->toArray();
+// return implode(", ",$patients);
+  }
+  public function getNameAttribute(){
+    return $this->service_list." (".$this->date_time->format('n/j/y').")";
+  }
+
+  public function requiresForm($formId, $usertype = null){
+    $required = false;
+    if (!$usertype){$usertype = Auth::user()->user_type;}
+    $apptId = $this->id;
+    $this->services->each(function($service,$s) use($formId, $apptId, &$required, $usertype){
+      $formIds = $service->forms->map(function($form, $f) use($apptId, $usertype){
+        $submission = Submission::where('appointment_id',$apptId)->get();
+        $formType = isset($form->settings['form_type']) ? $form->settings['form_type'] : 'any user type';
+        $usertypeMatch = in_array($formType, ['any user type',$usertype]);
+        if ($submission->count() == 0 && $usertypeMatch){
+          return $form->form_id;
         }
-        if ($patientId){
-            $appointments = Patient::find($patientId)->appointments->filter(function($appt,$a) use($formId){
-                return $appt->requiresForm($formId);
-            });
-        }else{
-            $appointments = Appointment::allApptsStartingAfter(Carbon::now()->subMonths(1),"patient")->filter(function($appt,$a) use($formId){
-                return $appt->requiresForm($formId);
-            });
-        }
-        $appt = $appointments->first();
-        return $appt;
-    }
-    static function defaultStatus(){
-        return [
-                    'scheduled_at' => Carbon::now()->toDateTimeString(),
-                    'rescheduled_at' => false,
-                    'reminders' => ['sentAt' => []],
-                    'confirmed' => ['calendar' => [], 'sms' => []],
-                    'canceled' => false,
-                    'completed' => false,
-                    'invoiced' => false,
-                    'paid' => false
-                ];
-    }
+      })->toArray();
+      $required = in_array($formId, $formIds);
+      if ($required){return;}
+    });
+    return $required;
+  }
 
-    public function forms($usertype = null){
-        foreach ($this->services as $service){
-            if ($usertype){
-                $forms = $service->forms->filter(function($form) use ($usertype){
-                    return $form->user_type == $usertype;
-                });
-            }else{
-                $forms = $service->forms;
-            }
-            $allForms = !isset($allForms) ? $forms : $allForms->merge($forms);
-        }
-        return $allForms;
+  //GOOGLE CALENDAR
+    public function gcal($operation){
+      try{
+        if ($operation == 'create' || $operation == 'update') $this->saveToGoogleCal($operation);
+        else if ($operation == 'delete') $this->removeFromGoogleCal();
+      }catch(\Exception $e){
+        reportError($e,'appointment 319');
+      }
+      return !isset($e);
     }
-    public function services(){
-        return $this->morphToMany('App\Service', 'serviceable');
-    }
-    public function chartNote(){
-        return $this->hasOne('App\ChartNote');
-    }
-    public function patient(){
-        return $this->belongsTo('App\Patient', 'patient_id');
-        // return $this->patients->first();
-    }
-    public function practitioner(){
-        return $this->belongsTo("App\Practitioner", 'practitioner_id');
-    }
-    public function submissions(){
-        return $this->hasMany('App\Submission');
-    }
-    public function invoice(){
-        return $this->hasOne('App\Invoice');
-    }
-    public function createdTasks($serviceIds){
-        try{
-            $this->services->sync($serviceIds);
-            $method = request()->method();
-            $model->saveToGoogleCal($method);
-            $model->saveToFullCal();
-            $lastChange = DB::table('appointments_audit')->where('affected_record',$model->id)->orderBy('changed_at','desc')->first();
-            $changes = $lastChange ? json_decode($lastChange->changes,true) : null;
-            $practice = Practice::getFromSession();
-            event(new AppointmentSaved($model, $changes, $practice->practice_id, Auth::user()->user_type));
-        }catch(\Exception $e){
-            reportError($e,'Appointment 257');
-        }
-    }
+    public function getDetailsForGCal(){
+      $start = Carbon::parse($this->date_time);
+      $end = Carbon::parse($this->date_time)->addMinutes($this->duration);
 
-    public function checkFormSubmission($formId){
-        $submission = $this->submissions->filter(function($submission) use($formId){
-            return $submission->form_id = $formId;
-        });
-        return ($submission->count() == 0) ? false : true;
-    }
+      $description = $this->services->map(function($service,$s){
+        return $service->description_calendar;
+      })->toArray();
+      $description = implode("\n",$description);
 
-    public function getPatientUserModelsAttribute(){
-        reportError("don't use patient_user_models",'Appointment 259');
-        // return $this->patients->map(function($patient){
-        //     return $patient->userInfo;
-        // });
-    }
-    public function getLongDateTimeAttribute(){
-        return $this->date_time->format('h:ia \o\n D n/j/y');
-    }
-    public function getDateAttribute(){
-        return $this->date_time->format('n/j/y');        
-    }
-    public function getServiceListAttribute(){
-        $services = $this->services->map(function($service){
-            return $service->name;
-        })->toArray();
-        return implode(", ",$services);
-    }
-    public function getPatientListAttribute(){
-        reportError("don't use patient_list",'Appointment 277');
-        // $patients = $this->patients->map(function($patient){
-        //     return $patient->name;
-        // })->toArray();
-        // return implode(", ",$patients);
-    }
-    public function getNameAttribute(){
-        return $this->service_list." (".$this->date_time->format('n/j/y').")";
-    }
+      $forms = $this->forms('patient')->map(function($form){
+        return ['form_id' => $form->form_id, 'name' => $form->form_name];
+      })->toArray();
+      $forms = json_encode($forms);
 
-    public function requiresForm($formId, $usertype = null){
-        $required = false;
-        if (!$usertype){$usertype = Auth::user()->user_type;}
-        $apptId = $this->id;
-        $this->services->each(function($service,$s) use($formId, $apptId, &$required, $usertype){
-            $formIds = $service->forms->map(function($form, $f) use($apptId, $usertype){
-                $submission = Submission::where('appointment_id',$apptId)->get();
-                $formType = isset($form->settings['form_type']) ? $form->settings['form_type'] : 'any user type';
-                $usertypeMatch = in_array($formType, ['any user type',$usertype]);
-                if ($submission->count() == 0 && $usertypeMatch){
-                    return $form->form_id;
-                }
-            })->toArray();
-            $required = in_array($formId, $formIds);
-            if ($required){return;}
-        });
-        return $required;
-    }
-    public function saveToGoogleCal($method = 'POST', $calendarId = null){
-        // $practiceId = session('practiceId');
-        $method = strtoupper($method);
-        $calendar = app('GoogleCalendar');
-        $practice = Practice::getFromSession();
-        $calendarId = isset($calendarId) ? $calendarId : $practice->calendar_id;
-        $start = Carbon::parse($this->date_time);
-        $end = Carbon::parse($this->date_time)->addMinutes($this->duration);
-
-        $services = $this->services;
-        $serviceDesc = $services->first()->description_calendar;
-
-        $formArr = $this->forms()->filter(function($form){
-            return $form->user_type == 'patient';
-        })->map(function($form){
-            return 
-            [
-                'form_id' => $form->form_id,
-                'name' => $form->form_name
-            ];
-        })->toArray();
-
-        // $attendees = $this->patients;
-        // $attendeeArr = $this->patients->map(function($patient){
-        //     return 
-        //     [
-        //         'displayName' => $patient->name,
-        //         'email' => $patient->email
-        //     ];
-        // })->toArray();
-        $attendeeArr = [
+      return [
+        'start' => ['dateTime' => $start->toRfc3339String()],
+        'end' => ['dateTime' => $end->toRfc3339String()],
+        'summary' => $this->service_list,
+        'description' => $description,
+        'attendees' => [
+          [
             'displayName' => $this->patient->name,
             'email' => $this->patient->email
-        ];
+          ]
+        ],
+        'location' => '1706 S Lamar Blvd',
+        'id' => $this->uuid,
+        'guestsCanSeeOtherGuests' => false,
+        'guestsCanInviteOthers' => false,
+        'extendedProperties' => [
+          'private' => [
+            'type' => 'EHR:appointment',
+          ]
+        ]
+      ];
+    }
+    public function saveToGoogleCal($operation, $calendarId = null){
+      $calendar = app('GoogleCalendar');
+      $practice = Practice::getFromSession();
+      $calendarId = isset($calendarId) ? $calendarId : $practice->calendar_id;
 
-        $event = new \Google_Service_Calendar_Event([
-            'start' => ['dateTime' => $start->toRfc3339String()],
-            'end' => ['dateTime' => $end->toRfc3339String()],
-            'summary' => $this->service_list,
-            'description' => $serviceDesc,
-            'attendees' => $attendeeArr,
-            'location' => '1706 S Lamar Blvd',
-            'id' => $this->uuid,
-            // 'organizer', $organizer,
-            'guestsCanSeeOtherGuests' => false,
-            'guestsCanInviteOthers' => false,
-            'extendedProperties' => [
-                'private' => [
-                    'type' => 'EHR:appointment',
-                    'forms' => json_encode($formArr)
-                ]
-            ]
-        ]);
+      $details = $this->getDetailsForGCal();
+      $event = new \Google_Service_Calendar_Event($details);
 
-        try{
-            if ($method == 'POST'){
-                $event = $calendar->events->insert($calendarId, $event);
-                $this->appt_link = $event->htmlLink;
-                $this->save();
-            }
-            elseif ($method == 'PATCH'){
-                $event = $calendar->events->patch($calendarId, $this->uuid, $event);
-            }
-            return true;
-        }catch(\Exception $e){
-            return $e;
+      try{
+        if ($operation == 'create'){
+          $event = $calendar->events->insert($calendarId, $event);
+          Appointment::where('id',$this->id)->update(['appt_link' => $event->htmlLink]);
         }
+        elseif ($operation == 'update'){
+          $event = $calendar->events->patch($calendarId, $this->uuid, $event);
+        }
+        return true;
+      }catch(\Exception $e){
+        reportError($e,'saveToGoogleCal 336');
+        return false;
+      }
     }
     public function removeFromGoogleCal($calendarId = null, $eventId = null){
-        try{
-            $calendarId = isset($calendarId) ? $calendarId : session('calendarId');
-            $eventId = isset($eventId) ? $eventId : $this->uuid;
-            $service = app('GoogleCalendar');
-            $service->events->delete($calendarId, $eventId);
-            return true;
-        }catch(\Exception $e){
-            // Log::info($e);
-            reportError($e,'Appointment.php 329');
-            return false;
-        }
+      try{
+        $calendarId = isset($calendarId) ? $calendarId : session('calendarId');
+        $eventId = isset($eventId) ? $eventId : $this->uuid;
+        $service = app('GoogleCalendar');
+        $service->events->delete($calendarId, $eventId);
+        return true;
+      }catch(\Exception $e){
+        reportError($e,'Appointment.php 329');
+        return false;
+      }
+    }
+  //FULLCALENDAR
+    public function fcal($operation){
+      try{
+        if ($operation == 'create' || $operation == 'update') $this->saveToFullCal();
+        else if ($operation == 'delete') $this->removeFromFullCal();
+      }catch(\Exception $e){
+        reportError($e,'appointment 404');
+      }
+      return !isset($e);
     }
     public function saveToFullCal(){
-        $practice = Practice::getFromSession();
-        $calendarId = $practice->calendar_id;
-        $eventId = $this->uuid;
-        $cal = app("GoogleCalendar");
-        $event = $cal->events->get($calendarId, $eventId);
+      $practice = Practice::getFromSession();
+      $start = Carbon::parse($this->date_time);
+      $end = Carbon::parse($this->date_time)->addMinutes($this->duration);
 
-        $ehrArr = [];
-        $nonEhrArr = [];
-        $recurringEventExceptions = [];
-        $apptIds = [];
+      $event = [
+        'start' => $start,
+        'end' => $end,
+        'title' => $this->service_list,
+        'allDay' => false,
+        'classNames' => ['EHR','appointment'],
+        'extendedProps' => $this->getDetailsForFullCal()
+      ];
+      $anonEvent = [
+        'start' => $start,
+        'end' => $end,
+        'practitioner_id' => $this->practitioner->id,
+        'uid' => $this->id,
+        'uuid' => $this->uuid,
+        'classNames' => ['EHR','appointment'],
+      ];
+      // Log::info($event);
+      $feed = $practice->appointments_enc;
+      $feed[$this->uuid] = $event;
+      $practice->appointments_enc = $feed;
 
-        $newEvent = [];
-        unset($start, $end, $allDay, $id, $title, $extendedProperties);
+      $feed = $practice->anon_appt_feed;
+      $feed[$this->uuid] = $anonEvent;
+      $practice->anon_appt_feed = $feed;
 
-        $start = $event->start->dateTime;
-        $allDay = false;
-        if (empty($start)) {
-            $start = $event->start->date;
-            $allDay = true;
-        }
-        $end = $event->end->dateTime;
-        if (empty($end)) {
-            $end = $event->end->date;
-        }
-        $id = $event->id;
-        $title = $event->summary;
-
-        // DEFINE EVENT DATETIME DETAILS
-            if (isset($event->recurrence)){
-                $start = Carbon::parse($start);
-                $end = Carbon::parse($end);
-                $duration = $start->diff($end)->format("%H:%I");
-                $dtstart = "DTSTART:".$start->format('Ymd\THis');
-                $rrule = $dtstart."\n".$event->recurrence[0];
-                $newEvent = array(
-                    "id" => $id,
-                    "title" => $title,
-                    "allDay" => $allDay,
-                    'rrule' => $rrule,
-                    'duration' => $duration,
-                    'extendedProps' => [
-                        'exTime' => $start->format('\THis')
-                    ]
-                );
-            }elseif (isset($event->recurringEventId)){
-                $startCarbon = Carbon::parse($start);
-                $endCarbon = Carbon::parse($end);
-                $duration = $startCarbon->diff($endCarbon)->format("%H:%I");
-                $exDate = $startCarbon->format('Ymd');
-
-                $newEvent = array(
-                    "start" => $start,
-                    "end" => $end,
-                    "allDay" => $allDay,
-                    "id" => $id,
-                    "title" => $title,
-                    'extendedProps' => [
-                        'recurringEventId' => $event->recurringEventId
-                    ]
-                );
-                $recurringEventExceptions[$event->recurringEventId] = $exDate;
-            }else{
-                $newEvent = array(
-                    "start" => $start,
-                    "end" => $end,
-                    "allDay" => $allDay,
-                    "id" => $id,
-                    "title" => $title
-                );
-            }
-
-        // DEFINE EVENT TYPE
-                $type = (isset($event->extendedProperties) && isset($event->extendedProperties->private['type'])) ? $event->extendedProperties->private['type'] : 'nonEHR';
-                if ($type == "EHR:appointment"){
-                    $ehrArr[$id] = $newEvent;
-                    $apptIds[] = $id;
-                }elseif($type == "nonEHR"){
-                    $newEvent['extendedProps']['type'] = 'nonEHR';
-                    $nonEhrArr[$id] = $newEvent;
-                }
-
-        // EXCLUDE MODIFIED DATES FOR RECURRING EVENTS
-            foreach ($recurringEventExceptions as $id => $exDate){
-                if (isset($nonEhrArr[$id])){
-                    $time = $nonEhrArr[$id]['extendedProps']['exTime'];
-                    $nonEhrArr[$id]['rrule'] .= "\nEXDATE:".$exDate.$time;
-                }
-            }
-        
-        $appointmentData = Appointment::where('uuid',$apptIds)->with('services.forms','patient','practitioner')->get()->map(function($appt){
-            // Log::info($appt,['location'=>'appointment.php 463']);
-            return $appt->getDetailsForFullCal();
-        });
-        foreach ($appointmentData as $apptDetails){
-            $uuid = $apptDetails['googleUuid'];
-            $extProps = isset($ehrArr[$uuid]['extendedProps']) ? array_merge_recursive($ehrArr[$uuid]['extendedProps'],$apptDetails) : $apptDetails;
-            $ehrArr[$uuid]['extendedProps'] = $extProps;
-        }
-        if (!empty($ehrArr)){
-            $feed = $practice->appointments_enc;
-            $feed[$eventId] = $ehrArr[$eventId];
-            $practice->appointments_enc = $feed;
-        }
-        if (!empty($nonEhrArr)){
-            $feed = $practice->other_events_enc;
-            $feed[$eventId] = $nonEhrArr[$eventId];
-            $practice->other_events_enc = $feed;
-        }
-        $practice->save();
-        return isset($e) ? false : true; 
+      $practice->save();
     }
+
     public function getDetailsForFullCal(){
-        $appt = $this;
-        $formArr = [];
-        foreach ($appt->services as $service){
-            $forms = $service->forms->filter(function($form){
-                return $form->user_type == 'patient';
-            })->map(function($form) use($appt){
-                return [
-                    'form_id' => $form->form_id,
-                    'name' => $form->form_name,
-                    'completed' => $appt->checkFormSubmission($form->form_id)
-                ];
-            })->toArray();
-            $formArr = array_merge($formArr,$forms);
-        }
-        $chartNote = $appt->chartNote;
-        $invoice = $appt->invoice;
-        $arr = [
-            'services' => ['names' => implode(", ",$appt->services->map(function($service){return $service->name;})->toArray()),'ids' => $appt->services->modelKeys()],
-            'patient' => ['name' => $appt->patient->name,'id' => $appt->patient->id],
-            'chartNote' => $appt->chartNote ? ['status' => $appt->chartNote->signed_at,'id' => $appt->chartNote->id] : ['id' => null],
-            'invoice' => $appt->invoice ? ['status' => $appt->invoice->status,'id' => $appt->invoice->id] : ['id' => null],
-            'forms' => $formArr,
-            'status' => $appt->status,
-            'uid' => $appt->id,
-            'googleUuid' => $appt->uuid,
-            'practitioner' => ['name' => $appt->practitioner->name, 'id' => $appt->practitioner->id],
-            // 'practitioner' => $appt->practitioner->name,
-            // 'practitionerId' => $appt->practitioner->id,
-            'type' => "EHR:appointment"
+      $appt = $this;
+      $forms = $appt->forms('patient')->map(function($form) use ($appt){
+        return [
+          'form_id' => $form->form_id,
+          'name' => $form->form_name,
+          'completed' => $appt->checkFormSubmission($form->form_id)
         ];
-        return $arr;
+      })->toArray();
+      $chartNote = $appt->chartNote ? ['status' => $appt->chartNote->signed_at,'id' => $appt->chartNote->id] : ['id' => null];
+      $invoice = $appt->invoice ? ['status' => $appt->invoice->status,'id' => $appt->invoice->id] : ['id' => null];
+      $arr = [
+        'services' => ['names' => implode(", ",$appt->services->map(function($service){return $service->name;})->toArray()),'ids' => $appt->services->modelKeys()],
+        'patient' => ['name' => $appt->patient->name,'id' => $appt->patient->id],
+        'chartNote' => $chartNote,
+        'invoice' => $invoice,
+        'forms' => $forms,
+        'status' => $appt->status,
+        'uid' => $appt->id,
+        'googleUuid' => $appt->uuid,
+        'practitioner' => ['name' => $appt->practitioner->name, 'id' => $appt->practitioner->id],
+        'type' => "EHR:appointment"
+      ];
+      return $arr;
     }
     public function removeFromFullCal($practiceId = null, $eventId = null){
-        $practice = isset($practiceId) ? Practice::find($practiceId) : Practice::getFromSession();
-        $calendarId = $practice->calendarId;
-        $eventId = isset($eventId) ? $eventId : $this->uuid;
-        $feed = $practice->appointments_enc;
-        unset($feed[$eventId]);
-        $practice->appointments_enc = $feed;
-        $practice->save();
+      $practice = isset($practiceId) ? Practice::find($practiceId) : Practice::getFromSession();
+      $calendarId = $practice->calendarId;
+      $eventId = isset($eventId) ? $eventId : $this->uuid;
+      
+      $feed = $practice->appointments_enc;
+      unset($feed[$this->uuid]);
+      $practice->appointments_enc = $feed;
+
+      $feed = $practice->anon_appt_feed;
+      unset($feed[$this->uuid]);
+      $practice->anon_appt_feed = $feed;
+      
+      $practice->save();
     }
 }

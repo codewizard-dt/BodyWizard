@@ -28,7 +28,9 @@ class AppointmentController extends Controller
     {
         //
         $usertype = Auth::user()->user_type;
-        return listReturn(view("portal.$usertype.appointments.display")->render());        
+        return view("portal.$usertype.appointments.display");
+        // return ['display' => view("portal.$usertype.appointments.display")->render()];
+        // return listReturn(view("portal.$usertype.appointments.display")->render());        
     }
 
     // public function getChartNote($uid, Request $request){

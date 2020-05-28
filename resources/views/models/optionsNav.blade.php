@@ -149,7 +149,7 @@
 				<div class="arrow"></div>
 			</div>
 		</div>
-		@include ('portal.list-update')
+		
 	@else
 		<h3 class="optionNavHeader purple paddedSmall topOnly">Error Loading Options</h3>
 		<div>We notified a team member about this.</div>

@@ -107,6 +107,12 @@
                 }
             }
         },
+        "notifications":
+        {
+            "id":"notifications",
+            "dropdown": {}
+        },
+        
         "divide":
         {
             "id":"divide"
@@ -129,6 +135,11 @@
         "divide":
         {
             "id":"divide"
+        },
+        "notifications":
+        {
+            "id":"notifications",
+            "dropdown": {}
         },
         "booknow":
         {
@@ -583,7 +594,7 @@
                 },
                 "message-list":
                 {
-                    "id":"form-index",
+                    "id":"message-list",
                     "text":"Messages",
                     "dropdown":{
                         "message-index":

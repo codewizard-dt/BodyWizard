@@ -28,8 +28,9 @@ Route::domain('headspaceacupuncture.com')->group(function(){
 	});
 });
 
-Route::any('/notification-check', 'NotificationController@notificationCheck');
-Route::post('/notification-update', 'NotificationController@notificationUpdate');
+Route::any('/notification-check', 'NotificationController@getUnread');
+Route::post('/notification-update', 'NotificationController@update');
+Route::post('/notification-delete', 'NotificationController@delete');
 
 Route::get('/', 'PagesController@home');
 Route::get('/about', 'PagesController@about');
@@ -58,13 +59,13 @@ Route::get('/schedule/non-ehr', 'ScheduleController@nonEhrEventFeed');
 	Route::get('/{model}/modal', 'ScriptController@ListAsModal');
 	Route::get('/settings/{model}/{uid}', 'ScriptController@EditSettings');
 	Route::get('/schedule/{model}/{uid}', 'ScheduleController@EditUserSchedule');
-	Route::get('/create/{model}', 'ScriptController@CreateNewModel');
-	Route::get('/edit/{model}/{uid}', 'ScriptController@EditModel');
+	// Route::get('/create/{model}', 'ScriptController@CreateNewModel');
+	// Route::get('/edit/{model}/{uid}', 'ScriptController@EditModel');
 	Route::delete('/delete/{model}/{uid}', 'ScriptController@DeleteModel');
 	Route::get('/addNote/{model}/{uid}', 'ScriptController@AddNotes');
-	Route::patch('/save/settings/{model}/{uid}', 'ScriptController@SaveSettings');
-	Route::patch('/save/{model}/{uid}', 'ScriptController@UpdateModel');
-	Route::post('/save/{model}', 'ScriptController@SaveNewModel');
+	// Route::patch('/save/settings/{model}/{uid}', 'ScriptController@SaveSettings');
+	// Route::patch('/save/{model}/{uid}', 'ScriptController@UpdateModel');
+	Route::post('/save/{model}', 'ScriptController@save');
 	Route::get('/retrieve/{model}/{uid}', 'ScriptController@fetchModel');
 	Route::post('/savePinnedNotes/{model}/{uid}', 'ScriptController@savePinnedNotes');
 

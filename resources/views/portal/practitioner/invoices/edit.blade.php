@@ -6,7 +6,7 @@
 	if (!isset($apptId)){dd('no appointment selected');}
 
 	$appt = Appointment::find($apptId);
-	$patient = $appt->patient();
+	$patient = $appt->patient;
 	$practice = Practice::getFromSession();
 	setUid('Patient',$patient->id);
 	$services = $appt->services;
@@ -19,9 +19,19 @@
 	}
 	$paymentInfoForm = Form::find(42);
 	$paymentMethodOptions = $practice->available_payment_methods;
+	$invoice = $appt->invoice;
+	$data = [
+		'appointment_id' => $apptId,
+		'uid' => $invoice ? $invoice->id : 'null',
+		'autosave' => $invoice ? json_encode($invoice->autosave) : 'null',
+		'invoiced_to_user_id' => $patient->userInfo->id,
+		'patient_id' => $patient->id,
+		'notes' => $invoice ? $invoice->notes : 'null',
+	];
+	$dataAttrStr = dataAttrStr(collect($data));
 ?>
 
-<h3 id='ApptInfo' class='pink' data-id='{{$apptId}}' data-invoiceid='{{$invoiceId}}' data-autosave='{{json_encode($invoiceAutoSave)}}'>{{$patient->name}}<br>{{$appt->name}}</h3>
+<h3 id='ApptInfo' class='pink' {!!$dataAttrStr!!}>{{$patient->name}}<br>{{$appt->name}}</h3>
 <div id="LineItemsModal" class='prompt'>
 	<div class="message">
 		<h2 class='purple'>Line Items</h2>
@@ -56,11 +66,16 @@
 @include('layouts.forms.additional-notes')
 <div id="PaymentDetails" data-currency='{{json_encode($practice->currency)}}'>
 	<h3 class="invoiceHeader marginXBig topOnly purple">Payment Details</h3>
-	<div class="split3366KeyValues" id="CurrentAppt" data-uid="1">
+	<div class="split3366KeyValues" id="CurrentAppt">
 		<div class="label">Patient</div>
-		<div class="value" id='PatientName' data-patientid='{{$patient->id}}' data-userid='{{$patient->user_id}}'>{{$patient->name}}</div>
+		<div class="value" id='PatientName'>{{$patient->name}}</div>
 		<div class="label">Total Charge</div>
 		<div class="value" id='TotalCharge'></div>
+		<div class="label">Payments</div>
+		<div class="value" id="PartialPayments">
+			<div id="Remainder" class="pink">none</div>
+		</div>
+
 		<div class="label" id='AddPaymentLabel'>Add Payment</div>
 		<div class="value" id='PaymentMethod' data-paymentmethods='{{json_encode($paymentMethodOptions)}}'>
 			{{$paymentInfoForm->formDisplay(false,false)}}
@@ -68,4 +83,4 @@
 	</div>
 </div>
 @include ('portal.user.stripe-modal')
-<div class="button pink" id="SaveInvoiceBtn">save invoice</div>
+<div class="button pink" id="SaveInvoiceBtn">settle invoice</div>

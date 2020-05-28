@@ -20,7 +20,7 @@ $allAppts = $apptsWithoutNotes->merge($apptsWithUnsignedNotes)->sortBy('date_tim
 ?>
 <div id='NewChartNote' class="central large">
 	<h1 class='purple'>Quick Chart Note Access</h1>
-	<div id="ConfirmApptForNote">
+	<div id="ConfirmApptForNote" class='confirmAppt' data-url='/appointment/apptId/edit-chart-note'>
 		@if ($appt)
 			<div class="split3366KeyValues" id='CurrentAppt' data-uid='{{$appt->id}}'>
 				<div class="label">Appointment</div>
@@ -32,7 +32,7 @@ $allAppts = $apptsWithoutNotes->merge($apptsWithUnsignedNotes)->sortBy('date_tim
 		<div class="button small pink confirmApptBtn">{{$btnText}}</div>
 		<div class="button small pink70 selectNewAppt">see other appointments</div>
 		<div id="ApptLegend" class='flexbox styled'><div class="appt hasNote">unsigned note</div><div class="appt noNote">no note</div></div>
-		<div id="ApptsWithoutNotes" class='flexbox styled'>
+		<div id="ApptsList" class='flexbox styled'>
 			@forelse ($allAppts as $appt)
 				<?php $noteIndicator = $appt->chartNote ? 'hasNote' : 'noNote'; ?>
 				<div class="appt {{$noteIndicator}}" data-uid='{{$appt->id}}' data-services='{{$appt->service_list}}'>{{$appt->patient->name}}<br>{{$appt->date}}</div>
@@ -45,4 +45,3 @@ $allAppts = $apptsWithoutNotes->merge($apptsWithUnsignedNotes)->sortBy('date_tim
 </div>
 <div id="ChartNote" class='central large'></div>
 
-@include ('portal.list-update')

@@ -196,7 +196,7 @@ button.datepick-cmd {
 	background-color: var(--yellow10);
 }
 .datepick-month td .datepick-today {
-	background-color: var(--yellow30);
+	background-color: var(--yellow40) !important;
 }
 .datepick-month td .datepick-highlight {
 	background-color: var(--yellow50);

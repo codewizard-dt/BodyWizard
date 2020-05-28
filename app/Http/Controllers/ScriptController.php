@@ -63,10 +63,10 @@ class ScriptController extends Controller
             setUid($model,$uid);
             try{
                 $instance = $class::findOrFail($uid);
-                return listReturn(view('models.navOptions.options-nav',$instance->navOptions())->render());
+                return view('models.navOptions.options-nav',$instance->navOptions());
             }catch(\Exception $e){
                 reportError($e,'scriptcontroller 106');
-                return listReturn(view('models.navOptions.empty-nav',['header'=>explode("Stack",$e)[0]])->render());
+                return view('models.navOptions.empty-nav',['header'=>explode("Stack",$e)[0]]);
             }              
         }
         public function ListWithNav($model, Request $request, $uid = null){
@@ -91,76 +91,70 @@ class ScriptController extends Controller
         public function createNewModel($model){
             return view('models.create',['model'=>$model]);
         }
-        public function saveNewModel($model, Request $request){
-            // include_once app_path("php/functions.php");
-            $model = (in_array($model,['Patient','Practitioner','StaffMember'])) ? "User" : $model;
+        public function save($model, Request $request){
             $class = "App\\$model";
-
-            if ($model == "Message"){
-                $recipient_ids = json_decode($request->recipient_ids);
-                $connectedArr = $request->connectedModels;
-                // Log::info($connectedArr);
-                $request->message_id = uuid();
-                foreach ($recipient_ids as $id){
-                    $newModel = new $class;
-                    $request->recipient_id = $id;
-                    $newModel->type = $request->columnObj['type'];
-                    $newModel->status = $newModel->defaultStatus();
-                    $result = $this->saveModel($model, $newModel, $request);
-                    if ($result === true){
-                        $newModel->practice_id = session('practiceId');
-                        // Log::info("PracticeId ".session('practiceId'));
-                        event(new OutgoingMessage($newModel));
-                    }else{
-                        break;
-                    }
+            try{
+                if ($request->uid != null){
+                    $instance = $class::findOrFail($request->uid);
+                    $instance->update($request->columns);
+                }else{
+                    $instance = $class::create($request->columns);
                 }
-            }elseif ($model == "Appointment"){
-                $newModel = new $class;
-                $newModel->uuid = uuidNoDash();
-                $newModel->status = Appointment::defaultStatus();
-                $result = $this->saveModel($model, $newModel, $request);
-            }else{
-                $newModel = new $class;
-                $result = $this->saveModel($model, $newModel, $request);
-            }
 
-            if ($model == 'Appointment' && $result === true){
-                // $newModel->createdTasks
-                $practice = Practice::getFromSession();
-                $apptFeeds = [
-                    'appointments' => $practice->appointments,
-                    'anon' => $practice->anon_appt_feed
-                ];
-                return listReturn(json_encode($apptFeeds), $request->path());
-            }elseif ($result === true){
-                return listReturn("checkmark",$request->path());
-            }else{
-                // Log::error($result,['location'=>'ScriptController 216']);
-                reportError($result,'ScriptController 217');
-                return listReturn("error",$request->path());
+                if ($request->submissions){
+                    $submissionIds = $this->saveSubmissions($request);
+                    if ($submissionIds) $instance->submissions()->sync($submissionIds);
+                }
+                setUid($model,$instance->id);
+                $response = method_exists($class, 'successResponse') ? $class::successResponse() : 'checkmark';
+            }catch(\Exception $e){
+                reportError($e,'scriptcontroller 100');
+                $response = $e;
             }
+            return $response;
+        }
+        public function saveSubmissions(Request $request){
+            try{
+                $submissions = collect($request->submissions);
+                $apptId = $request->columns['appointment_id'];
+                $appt = Appointment::findOrFail($apptId);
+                $user = Auth::user();
+                $shared = [
+                    'patient_id' => $appt->patient->id,
+                    'appointment_id' => $appt->id,
+                    'submitted_by' => $user->user_type,
+                    'submitted_by_user_id' => $user->id,
+                ];
+                $savedIds = $submissions->map(function($responses,$formId) use ($shared){
+                    $form = Form::findOrFail($formId);
+                    $submission = \App\Submission::create([
+                        'responses' => $responses,
+                        'form_uid' => $form->form_uid,
+                        'form_id' => $form->form_id,
+                        'form_name' => $form->form_name,
+                        'form_user_type' => $form->user_type,
+                        'patient_id' => $shared['patient_id'],
+                        'appointment_id' => $shared['appointment_id'],
+                        'submitted_by' => $shared['submitted_by'],
+                        'submitted_by_user_id' => $shared['submitted_by_user_id'],
+                    ]);
+                    return $submission->id;
+                })->toArray();
+                $result = $savedIds;
+            }catch(\Exception $e){
+                reportError($e,'script controller, save submissions');
+                $result = null;
+            }
+            return $result;
+        }
+
+
+        public function saveNewModel($model, Request $request){
+            return new \Exception('outdated. do not use SaveNewModel');
         }
         public function UpdateModel($model, $uid, Request $request){
             // include_once app_path("php/functions.php");
-            $class = "App\\$model";
-            $existingInstance = $class::find($uid);
-            $result = $this->saveModel($model, $existingInstance, $request);
-
-            if ($model == 'Appointment' && $result === true){
-                $practice = Practice::getFromSession();
-                $apptFeeds = [
-                    'appointments' => $practice->appointments,
-                    'anon' => $practice->anon_appt_feed
-                ];
-                return listReturn($apptFeeds, $request->path());
-            }elseif ($result === true){
-                return listReturn("checkmark",$request->path());
-            }else{
-                reportError($result,'ScriptController 235');
-                // Log::error($result,['location'=>'ScriptController 235']);
-                return ['errors' => ["Error saving $model details.","System admin has been notified."]];
-            }
+            return new \Exception('outdated. do not use UpdateModel');
         }
         public function saveModel($model, $instance, Request $request){
             $practice = Practice::getFromSession();
@@ -296,58 +290,16 @@ class ScriptController extends Controller
             $class = "App\\$model";
             $practice = Practice::getFromSession();
             try{
-                if (isUser($model) && $model != "User"){
-                    $userId = $class::find($uid)->user_id;
-                    User::destroy($userId);
-                }elseif ($model == "User"){
-                    $type = ucfirst(camel(User::find($uid)->user_type));
-                    $typeClass = "App\\$type";
-                    $typeClass::where('user_id',$uid)->delete();
-                }
-                if ($model == 'Appointment'){
-                    $appt = $class::find($uid);
-                    // Log::info($appt,['location'=>'387','uid'=>$uid]);
-                    event(new AppointmentCancelled($appt, session('practiceId'), Auth::user()->user_type, $request));
-                    $appt->delete();
-                }else{
-                    $class::destroy($uid);
-                }
-                $uidList = session('uidList');
-                unset($uidList[$model]);
-                session(['uidList'=>$uidList]);
-                session()->forget($model);
-
-                if ($model == 'Appointment'){
-                    $practice = Practice::getFromSession();
-                    $apptFeeds = [
-                        'appointments' => $practice->appointments,
-                        'anon' => $practice->anon_appt_feed
-                    ];
-                    return listReturn(json_encode($apptFeeds), $request->path());
-                }else{
-                    return listReturn("checkmark",$request->path());
-                }
-
-
-                // $message = ($model == 'Appointment') ? [
-                //     'appointments' => $practice->appointments,
-                //     'anon' => $practice->anon_appt_feed
-                // ] : "checkmark";
-                // // Log::info(json_encode($message),['location'=>'scriptcontroller 411']);
-                // return listReturn($message);
+                $instance = $class::findOrFail($uid);
+                $instance->delete();
+                setUid($model,null);
             }
             catch(\Exception $e){
-                event(new BugReported(
-                    [
-                        'description' => "Deleting Model", 
-                        'details' => $e, 
-                        'category' => 'Messages', 
-                        'location' => 'ScriptController.php',
-                        'user' => null
-                    ]
-                ));
-                return "ewwww";
+                reportError($e,'scriptcontroller delete');
             }
+            $response = method_exists($class, 'successResponse') ? $class::successResponse() : 'checkmark';
+            return isset($e) ? $e : $response;
+
         }
         public function AddNotes($model, $uid){
             return view('layouts.forms.add-note-modal',["model"=>$model,"uid"=>$uid]);
@@ -372,7 +324,7 @@ class ScriptController extends Controller
                 reportError($e,'ScriptController 419');
             }
             
-            return isset($e) ? listReturn($e) : listReturn('checkmark');
+            return isset($e) ? $e : 'checkmark';
         }
 
     // EDIT / SAVE SETTINGS / SCHEDULE

@@ -35,7 +35,8 @@ class SendBugReport
         $bug->location = $event->location;
         $bug->request = [
             'url'=>request()->url(),
-            'method'=>request()->method()
+            'method'=>request()->method(),
+            'data'=>request()->all()
         ];
         $bug->category = title($event->category);
         $bug->user_id = $event->user ? $event->user : null;

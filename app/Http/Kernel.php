@@ -39,7 +39,8 @@ class Kernel extends HttpKernel
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             \App\Http\Middleware\CheckDomain::class,
-            \App\Http\Middleware\CheckTabHeader::class
+            \App\Http\Middleware\CheckTabHeader::class,
+            \App\Http\Middleware\AddDefaultHeaders::class
         ],
 
         'api' => [

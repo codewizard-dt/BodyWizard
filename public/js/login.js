@@ -45,7 +45,7 @@ function submitRegistration(){
     var obj = forms.retrieve($("#NewUser")), form = $("#NewUser"), u = form.find("#username"), e = form.find("#email_address"), p = form.find("#phone_number");
     if (!obj){return false;}
     if (finalizePhone(p) && finalizeEmail(e) && finalizeUsername(u)){
-        blurElement(form,"#loading");
+        blur(form,"#loading");
     }else{
         return false;
     }
@@ -71,30 +71,32 @@ function submitRegistration(){
         success:function(data){
             console.log(data);
             if (data=='checkmark'){
-                blurElement(form,"#checkmark");
+                blur(form,"#checkmark");
                 setTimeout(function(){
                     location.reload();
                 },1000)
             }else{
-                unblurElement($("body"));
-                unblurElement(form);                
+                unblur($("body"));
+                unblur(form);                
             }
         },
         error:function(data){
             console.log(data);
             $("#Error").html(data.reponseText + "<br><div class='button cancel'>cancel</div>").css("max-height","10em");
             // form.html(data.responseText);
-            unblurElement(form);
-            blurElement($("body"),"#Error");
+            unblur(form);
+            blur($("body"),"#Error");
         }
     })
 }
 function checkLogin(){
     if ($("#LoginForm").find("#username").val()==""){
-        alertBox("required",$("#username"),"after");
+        // alertBox("required",$("#username"),"after");
+        feedback('Username is required','Please enter your username.')
         return false;
     }else if ($("#LoginForm").find("#pw").val()==""){
-        alertBox("required",$("#pw"),"after");
+        feedback('Password is required','Please enter your password.')
+        // alertBox("required",$("#pw"),"after");
         return false;
     }else{
         return true;
@@ -102,7 +104,7 @@ function checkLogin(){
 }
 function submitLogin(){
     var login = $("#LoginForm");
-    blurElement(login,"#loading");
+    blur(login,"#loading");
     //var un = $("#username").val(), pw = $("#pw").val(), recaptcha = $("#recaptchaResponseLogin").val();
     var data = {}, inputs = login.find("input");
     inputs.each(function(i,input){
@@ -114,13 +116,13 @@ function submitLogin(){
         method:"POST",
         data:data,
         success:function(data){
-            blurElement(login,"#checkmark");
+            blur(login,"#checkmark");
             setTimeout(function(){
                 window.location.href = "/portal/launchpad";
             },1000)
         },
         error:function(data){
-            unblurElement(login)
+            unblur()
         }
     })
 }

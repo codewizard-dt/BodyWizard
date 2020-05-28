@@ -130,6 +130,3 @@
         <div class='button cancel medium'>Cancel</div>   
     </div>
 </div>
-
-@include ('portal.list-update')
-@include ('portal.user.notifications')

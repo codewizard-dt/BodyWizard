@@ -22,15 +22,13 @@ if (Auth::user()->user_type == 'patient'){
 ?>
 
 <div id="SelectDate" class='progressiveSelection selector toModalHome'>
-	<h3 data-default='Select Date'>Select Date</h3>
+	<h2 class='purple center' style='text-align: center;' data-default='Select Date'>Select Date</h2>
 	{{$ctrl->answerDisp('date',$dateOptions)}}
 </div>
 
 <div id="SelectTime" class='progressiveSelection selector toModalHome'>
-	<div class="progressBar">
-		<div class='back'></div>
-	</div>
-	<h3 data-default='Times'>Times</h3>
+	<h2 class='purple center' style='text-align: center;' data-default='Times'>Times</h2>
+	<div id='ServiceWarning' class='pink'><div class="message">availability may change when services are added</div><div id='ServiceWarningLink' class='button xxsmall pink70'>select services now</div></div>
 	<ul id='TimeSelector' class='answer radio'>
 		@foreach ($times as $time)
 			<li data-value="{{$time['carbon']}}">{{$time['display']}}</li>

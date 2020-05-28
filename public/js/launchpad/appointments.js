@@ -1,59 +1,153 @@
-var action = undefined, appointmentDetails = {services:null,date:null,time:null,datetime:null,patient:null,practitioner:null}, defaultPatientInfo = null, defaultPractitionerInfo = null, activeForm = null, category = null, practitioners, practiceTz, clientTz, patientInfo = {}, calendar, serviceConfirmBtn, dateTimeConfirmBtn, allowOverride = false, serviceOverride = false;
+// var action = undefined, appointmentDetails = {services:null,date:null,time:null,datetime:null,patient:null,practitioner:null}, defaultPatientInfo = null, defaultPractitionerInfo = null, activeForm = null, category = null, practitioners, practiceTz, clientTz, patientInfo = {}, calendar, serviceConfirmBtn, dateTimeConfirmBtn, allowOverride = false, serviceOverride = false;
+
 var appointment = {
 	current: {
+		uid: null,
 		uuid: null,
 		patient: null,
 		practitioner: null,
 		services: null,
+		duration: null,
 		date: null,
 		time: null,
-		datetime: null
+		datetime: null,
+		chartnote: null,
+		invoice: null,
+		forms: null,
+		changes: null,
+	},
+	previous: {
+		attributes: {
+			practitioner: null,
+			services: null,
+			datetime: null,			
+		},
+		set: function(updateObj){
+			for (let attr in updateObj){appointment.previous.attributes[attr] = updateObj[attr]}
+			log({previous:appointment.previous.attributes},'previous settings');
+		},
+		updateChanges: function(){
+			let now = appointment.current, then = appointment.previous.attributes;
+			let changes = model.attr.compare([
+				['practitioner_id',then.practitioner,now.practitioner],
+				['services',then.services,now.services],
+				['date_time',then.datetime,now.datetime],
+			]);
+			appointment.current.changes = changes;
+			return changes;
+		},
+	},
+	list: [],
+
+	get: function(uid){
+		return appointment.list.find(appt => appt.extendedProps.uid == uid);
 	},
 	has: function(attr){
-		let val = appointment.current[attr];
-		return (val == undefined || val == null) ? false : true;
+		if (typeof attr == 'string'){
+			let val = appointment.current[attr];
+			return (val == undefined || val == null) ? false : true;
+		}else{
+			for (let prop of attr){
+				if (!appointment.has(prop)) return false;
+			}
+			return true;
+		}
+	},
+	isComplete: function(){
+		return appointment.has(['patient','datetime','services','practitioner']);
+	},
+	requires: function(){
+		let missing = [];
+		for (let attr of ['patient','date','time','services','practitioner']){
+			if (!appointment.has(attr)) missing.push(attr);
+		}
+		return missing;
 	},
 	defaultPatient: null,
 	defaultPractitioner: null,
+	bypassCheck: false,
 	set: function(updateObj = null){
 		try{
 			if (typeof updateObj != 'object') throw({error:'Invalid object',object:updateObj});
 			if (updateObj !== null){
+				log({updateObj});
 				$.each(updateObj,function(attr,val){
 					if (attr == 'services'){
-						console.log({attr,val});
-						if (val === null){appointment.current.services = null;}
+						let isObj = (typeof val == 'object');
+						if (val === null || (isObj && val.isEmpty())){appointment.current.services = null;}
 						else if (typeof val == 'object'){appointment.current.services = val;}
 						else if (appointment.current.services == null){appointment.current.services = [val];}
 						else {appointment.current.services.push(val);}
-					}else if ($.inArray(attr, ['uuid','patient','practitioner','date','time','datetime']) > -1){
+						appointment.current.duration = appointment.services.getDuration();
+					}else if ($.inArray(attr, ['uid', 'uuid','patient','practitioner','date','time','chartnote','invoice','forms']) > -1){
 						appointment.current[attr] = val;
-						if (attr == 'patient') uids.set('Patient',val);
+						if (attr == 'patient') {
+							uids.set('Patient',val);
+							appointment.services.override = false;
+						}
+						if (attr == 'date') {
+							appointment.current.time = null;
+							appointment.current.datetime = null;
+						}
+						if (attr == 'time' && appointment.has(['date','time'])) {
+							appointment.current.datetime = moment(appointment.current.date + " " + appointment.current.time, "M/D/YYYY h:mma");
+						}
+					}else if (attr == 'datetime'){
+						appointment.current.datetime = val;
+						appointment.current.date = appointment.current.datetime.format("M/D/YYYY");
+						appointment.current.time = appointment.current.datetime.format("h:mma");
 					}else{
-						console.log({error:'invalid attribute',attribute:attr});
+						let message = 'invalid attribute', error = {attribute:attr};
+						log({message,error});
 					}
 				})
-				if (appointment.current.date && appointment.current.time && !appointment.current.datetime){
-					appointment.current.datetime = moment(appointment.current.date + " " + appointment.current.time, "M/D/YYYY h:mma");
-				}
-				if (appointment.current.datetime && (!appointment.current.date || !appointment.current.time)){
-					appointment.current.date = appointment.current.datetime.format("M/D/YYYY");
-					appointment.current.time = appointment.current.datetime.format("h:mma");
-				}
+				// if (appointment.current.datetime && !appointment.has('date')) appointment.set({date:appointment.current.datetime.format("M/D/YYYY")})
+				// if (appointment.current.datetime && !appointment.has('time')) appointment.set({time:appointment.current.datetime.format("h:mma")})
+				// if (appointment.current.datetime && (!appointment.current.date || !appointment.current.time)){
+				// 	appointment.current.date = appointment.current.datetime.format("M/D/YYYY");
+				// 	appointment.current.time = appointment.current.datetime.format("h:mma");
+				// }
 				if (appointment.current.datetime) appointment.schedules.check.momentObj = appointment.current.datetime;
 			}
 		}catch(error){
 			if (user.isSuper()) console.log(error);
 		}
-		console.log({services: appointment.current.services});
 		if (appointment.defaultPractitioner) appointment.current.practitioner = appointment.defaultPractitioner.practitioner_id;
-		appointment.update.all();
+		if (appointment.has('patient') && !appointment.patient.info) appointment.patient.info = appointment.patient.getInfo();
+		if (appointment.has('uid')) appointment.previous.updateChanges();
+		else appointment.current.changes == null;
+		appointment.update.all(updateObj);
 	},
 	update: {
 		all: function(updateObj = null){
 			if (appointment.form.active){
 				appointment.update.hiddenValues();
 				appointment.update.visibleDetails();
+				if (appointment.has('uid')) {
+					appointment.save.btn.text('save changes');
+					if (appointment.current.changes.isEmpty()) appointment.save.btn.addClass('disabled');
+					else appointment.save.btn.removeClass('disabled');	
+				}else{
+					appointment.save.btn.text('book appointment');
+					if (appointment.isComplete()) appointment.save.btn.removeClass('disabled');
+					else appointment.save.btn.addClass('disabled');					
+				}
+				// log(appointment.current, `current duration is ${appointment.current.duration}`);
+				appointment.schedules.check.duration = appointment.current.duration;
+				
+				if (updateObj.date || updateObj.services){
+					// appointment.schedules.check.updateDayAvailability(updateObj.date || appointment.current.date);
+					appointment.update.times();
+				}
+				if (updateObj.services && appointment.has('datetime')) {
+					let check = appointment.schedules.check.this(appointment.current.datetime, appointment.current.duration);
+					if (!check && !appointment.bypassCheck) {
+						let options = {goback: appointment.form.service.remove, callback: unblur};
+						setTimeout(appointment.schedules.check.displayErrors.bind(null,options),400);
+					}
+					console.log({check},'service datetime check');
+				}
+				if (updateObj.patient) appointment.update.servicesLabel();
 			}
 			if (user.is('practitioner')) appointment.update.flow.practitioner();
 		},
@@ -81,7 +175,7 @@ var appointment = {
 					}
 				});
 				if (appointment.defaultPractitioner) appointment.update.flow.hide(['practitioner']);
-				if (appointment.defaultPatient) appointment.update.flow.hide(['patient']);
+				if (appointment.defaultPatient || appointment.current.uid) appointment.update.flow.hide(['patient']);
 			},
 			hide: function(details){
 				let matches = details.map(detail => appointment.form.details.getOpener(detail));
@@ -91,35 +185,30 @@ var appointment = {
 			},
 		},
 		hiddenValues: function(){
-			if (appointment.has('patient')) {
-				let list = table.get('PatientList');
-				appointment.update.categories(list.getDataById(appointment.current.patient));
-				let patient = appointment.defaultPatient ? appointment.defaultPatient : table.get('PatientList').getDataById(appointment.current.patient);
-				appointment.update.categories(patient);				
-			}
-			// if (appointment.has('practitioner')) table.get('PractitionerList').selectByUid(appointment.current.practitioner);
-			// if (appointment.has('services')) table.get('ServiceList').selectByUid(appointment.current.services);
+			appointment.update.categories();
 			if (appointment.has('date')) appointment.form.active.find('.date, .DateSelector').val(appointment.current.date);
 			if (appointment.has('time')) appointment.form.active.find('.time').val(appointment.current.time);
 		},
 		visibleDetails: function(key = null, value = null){
 			if (!key) {
+				let serviceList = appointment.services.getNames();
 				appointment.update.visibleDetails({
 					patient: appointment.has('patient') ? table.get('PatientList').getNameById(appointment.current.patient) : null,
 					practitioner: appointment.has('practitioner') ? table.get('PractitionerList').getNameById(appointment.current.practitioner) : null,
-					services: appointment.has('services') ? table.get('ServiceList').getNameById(appointment.current.services) : null,
+					services: appointment.has('services') ? serviceList : null,
 					date: appointment.has('date') ? appointment.current.date : null,
 					time: appointment.has('time') ? appointment.current.time : null
 				});
+				$("#ServiceSummary").find(".summary").text(serviceList);
+				$("#SelectServices").resetActives();
 			}
-		    if (typeof key == 'object' && key != null){
-				console.log({key,value})		    	
-		        $.each(key,function(attr, val){
-		            appointment.update.visibleDetails(attr, val);
-		        });
-		    }else{
-		    	appointment.update.detail(key, value);
-		    }
+			if (typeof key == 'object' && key != null){
+				$.each(key,function(attr, val){
+					appointment.update.visibleDetails(attr, val);
+				});
+			}else{
+				appointment.update.detail(key, value);
+			}
 		},
 		detail: function(key, value = null){
 			if (!key) return;
@@ -128,48 +217,340 @@ var appointment = {
 			detail.find('.edit').text(value ? 'change' : 'select');
 		},
 		times: function(){
-		    // var slots = $("#TimeSelector").find("li");
-		    // slots.addClass('disabled');
-		    // appointment.schedules.check.all();
+			if (!appointment.has('date')) return;
+			// log({date:appointment.current.date},'UPDATING TIMES');
+			let timeSlots = appointment.form.timeSlots, date = appointment.current.date, time = appointment.current.time, duration = appointment.schedules.check.duration, availability = appointment.schedules.check.dayAvailability[date] || [];
+			// log({current:appointment.current},'updating times');
+			if (time){
+				timeSlots.removeClass('active');
+				let currentMatch = timeSlots.filter((s,slot) => $(slot).text().replace(" ","") == time);
+				currentMatch.addClass('active');				
+			}else timeSlots.removeClass('active');
+			// log({duration,availability,date,time});
+			timeSlots.each(function(s,slot){
+				let thisTime = $(slot).data('value'), momentObj = moment(`${date} ${thisTime}`,'M/D/YYYY hh:mm:ss'),
+						timeOk = availability.includes(thisTime) && appointment.schedules.check.this(momentObj, duration);
+				// log({thisTime,momentObj});
+				if (timeOk) $(slot).data({errors:null,conflicts:null}).removeClass('disabled');
+				else $(slot).data({errors:appointment.schedules.check.errors,conflicts:appointment.schedules.check.conflicts}).addClass('disabled');
+			})
+			// log('done updating','DONE UPDATING TIMES');
+
 		},
-		services: function(category){
-			let allowedServices = appointment.services.filter({category});
-			appointment.form.service.list.forEach(function(serviceEle){
-				let name = serviceEle.data('value');
-				allowedServices.some(service => service.name == name) ? serviceEle.show() : serviceEle.hide();
-			});
+		servicesLabel: function(){
+			if (user.is('patient')){
+				if (appointment.patient.isNew()) $("#SelectServices").find(".conditionalLabel").html("showing New Patient options only");
+				else $("#SelectServices").find(".conditionalLabel").html("");
+			}else{
+				if (appointment.patient.isNew() && !appointment.services.override) $("#SelectServices").find(".conditionalLabel").html("showing New Patient options only <span class='override'>override</span>");
+				else if (appointment.patient.isNew() && appointment.services.override) $("#SelectServices").find(".conditionalLabel").html("showing all options");
+				else $("#SelectServices").find(".conditionalLabel").html("");
+			}
 		},
-		categories: function(patient){
-			let allowedServices = appointment.services.filter({patient});
+		services: function(){
+			let allowedServices = appointment.services.get();
+			if (allowedServices){
+				appointment.form.service.elements.forEach(function(serviceEle){
+					let name = serviceEle.data('value');
+					allowedServices.some(service => service.name == name) ? serviceEle.show() : serviceEle.hide();
+				});
+				$("#NoServicesAvailable").hide();				
+			}else{
+				appointment.form.service.elements.forEach(function(){$(this).hide();});
+				$("#NoServicesAvailable").show();
+			}
+		},
+		categories: function(){
+			appointment.services.removeFilter('category');
+			if (!appointment.has('services')) appointment.services.removeFilter('services');
+			if (appointment.has('patient')) {
+				let list = table.get('PatientList');
+				let patient = appointment.defaultPatient ? appointment.defaultPatient : list.getDataById(appointment.current.patient);
+				if (!appointment.services.override) appointment.services.filter({patient});
+				else appointment.services.removeFilter('patient');
+			}
+			if (appointment.has('services')) {
+				let services = appointment.current.services;
+				appointment.services.filter({services});
+			}else{
+				appointment.services.filter({serviceAttr: {attr: 'addon_only', value: false}});
+			}
+			//update categories based on allowed services
+			let allowedServices = appointment.services.get();
 			let allowedCategories = appointment.services.categories.filter(allowedServices);
-			appointment.form.category.list.forEach(function(categoryEle){
-				let name = categoryEle.data('value');
-				allowedCategories.some(category => category.name == name) ? categoryEle.show() : categoryEle.hide();
-			});
+			if (allowedServices){
+				appointment.form.category.elements.forEach(function(categoryEle){
+					let name = categoryEle.data('value');
+					allowedCategories.some(category => category.name == name) ? categoryEle.show() : categoryEle.hide();
+				});
+				$("#NoServicesAvailable").hide();
+			}else{
+				appointment.form.category.elements.forEach(function(){$(this).hide();});
+				$("#NoServicesAvailable").show();
+			}
+		},
+		calendar: {
+			feed: function(info){
+				if (typeof info == 'string'){
+					var feed = jsonIfValid(info);
+					if (!feed){return;}
+				}else if (typeof info == 'object'){
+					var feed = info;
+				}
+				if (feed.appointments == undefined){return;}
+				var appts = feed.appointments;
+				appointment.list = appts;
+				if ($('.calendar').exists()){
+					appointment.calendar.element.getEventSourceById('appointments').remove();
+					appointment.calendar.element.addEventSource({events:appts,id:'appointments'});		
+				}
+				// $("#AppointmentsFullCall").data('schedule',appts);
+				if (feed.anon) appointment.schedules.anonEvents = feed.anon;
+				var anon = (feed.anon != undefined) ? feed.anon : null;
+				if (anon){$("#AnonFeed").data('schedule',anon);}
+				appointment.update.calendar.eventTitles();
+			},
+			eventTitles: function(){
+				var active = $("#ChangeTitle").find(".active"), hasActive = (active.exists()), attr, events = appointment.calendar.element.getEvents();
+				if (!$(this).is('li') && hasActive) attr = active.data('value'); 
+				else attr = $(this).data('value');
+
+				if (attr == 'names') $.each(events,function(e,event){event.setProp('title', event.extendedProps.patient.name)})
+				else if (attr == 'service') $.each(events,function(e,event){event.setProp('title', event.extendedProps.services.names)})
+				else if (attr == 'no label') $.each(events,function(e,event){event.setProp('title', "")})
+
+				appointment.calendar.element.rerenderEvents();
+			}
 		}
+		
 	},
-	save: function(){},
-	delete: function(){
-		// confirm('Delete Appointment?')
+	save: {
+		btn: null,
+		confirm: function(){
+			let missing = appointment.requires(), changes = appointment.current.changes,
+					isChanged = model.attr.changesIncludes.bind(changes),
+					changed = model.attr.changedFrom.bind(changes);
+			if (missing.isEmpty()){
+				if (changes !== null && changes.isEmpty()){
+					feedback('Unable To Save',"You haven't changed the appointment.");
+					return;
+				}
+
+				let date = appointment.current.datetime,
+						dateStr = `${appointment.current.time} on ${appointment.current.date}`,
+						dateRelStr = appointment.schedules.relDateString(),
+						services = appointment.form.active.find(".services.value").text(),
+						patient = appointment.form.active.find(".patient.value").text(),
+						newAppt = appointment.form.active.is("#createAppointment"),
+						message = $(`<h3 class='pink'></h3>`),
+						dateChange = isChanged('date_time'),
+						oldDateTime = dateChange ? moment(changed('date_time'),'YYYY-MM-DD HH:mm:ss') : null;
+				message.append(`<div class='patient'>${patient}</div>`);
+				message.append(`<div class='services'>${services}</div>`);
+				if (isChanged('services')) {
+					$(`<div style='text-decoration:line-through;'>${table.get('ServiceList').getNameById(changed('services'))}</div>`).insertBefore(message.find('.services'));
+				}
+				message.append(`<div class='date_time'>${dateStr} (${dateRelStr})</div>`);
+				if (dateChange) {
+					let oldRelString = appointment.schedules.relDateString(oldDateTime);
+					$(`<div style='text-decoration:line-through;'>${oldDateTime.format('h:mma')} on ${oldDateTime.format('M/D/YYYY')} (${oldRelString})</div>`).insertBefore(message.find('.date_time'));
+				}
+				// message.append(`<div class='bold date_time_rel'>appointment ${dateRelStr}</div>`);
+				// if (dateChange) {
+				// 	oldRelString = appointment.schedules.relDateString(oldDateTime).replace('is','was');
+				// 	$(`<div class='bold' style='text-decoration:line-through;'>appointment ${oldRelString}</div>`).insertBefore(message.find('.date_time_rel'));
+				// }
+				confirm({
+					header: newAppt ? 'Confirm New Appointment' : 'Confirm Changes to Appointment',
+					message: message,
+					yesBtnText: newAppt ? 'confirm new appointment' : 'confirm changes',
+					noBtnText: 'cancel',
+					affirmativeCallback: appointment.save.ajax,
+				})
+				// if (changes && !changes.isEmpty()){
+				// 	changes.forEach(change => {
+				// 		for (attr in change){
+				// 			let old = change[attr].old, ele = $("#Confirm").find(`.${attr}`);
+				// 			if (attr == 'date_time') {
+				// 				let oldMoment = moment(old,'YYYY-MM-DD HH:mm:ss'),
+				// 						oldRel = `was ${oldMoment.fromNow()}`,
+				// 						eleRel = $("#Confirm").find(`.date_time_rel`);
+				// 				old = oldMoment.format('h:mma [on] M/D/YYYY');
+				// 				eleRel.css('text-decoration','line-through');
+				// 				// $(`<div class='bold'>appointment ${oldRel}</div>`).insertBefore(eleRel);
+				// 			}
+				// 			ele.css('text-decoration','line-through');
+				// 			$(`<div>${old}</div>`).insertBefore(ele);
+				// 			log({ele,old,attr,change});
+				// 		}
+				// 	})
+				// }
+				// appointment.save.ajax();
+			}else{
+				let message = $("<div/>",{html:"<h3 class='pink'>Cannot save:</h3><ul></ul>",css:{textAlign:'left',display:'inline-block'}});
+				for (let detail of missing){
+					message.find('ul').append("<li>Appointment is missing "+detail.toTitleCase()+"</li>");
+				}
+				feedback('Appointment Incomplete',message);
+			}
+		},
+		ajax: function(){
+			let data = {
+				uid: appointment.current.uid,
+				columns: {
+					patient_id: appointment.current.patient,
+					practitioner_id: appointment.current.practitioner,
+					date_time: appointment.current.datetime.format('YYYY-MM-DD HH:mm:ss'),
+					duration: appointment.current.duration,
+				},
+				sync: {
+					services: appointment.current.services
+				}
+			}
+			if (appointment.current.uid){
+				data['changes'] = appointment.current.changes;
+			}
+			log({data},'ajaxcall data');
+			// return;
+			blurTop('#loading');
+			$.ajax({
+				url: '/save/Appointment',
+				method: "POST",
+				data: data,
+				success:function(result){
+					appointment.update.calendar.feed(result);
+					blurTop('#checkmark');
+					let date = appointment.current.datetime.format('M/D/YYYY');
+					unblurAll(appointment.schedules.check.updateDayAvailability.bind(null,date,true), 1000);
+				}
+			})
+		},
+	},
+	delete: {
+		confirm: function(){
+			let date = appointment.current.datetime,
+					status = ifu(appointment.current.chartnote.status,null);
+			log({note:appointment.current.chartnote,status:status});
+			let options = {
+				header: 'Delete Appointment?',
+				yesBtnText: 'yes delete now',
+				noBtnText: 'dismiss',
+				affirmativeCallback: appointment.delete.ajax,
+			}
+			if (status !== null && status !== 'not signed'){
+				feedback('Unable to Delete','You are unable to delete any appointment with a signed chart note');
+				return;
+			}
+			if (date.isBefore(moment()) && (status === null || status === 'not signed')) {
+				options.message = `<h3 class='pink'>${appointment.patient.info.name}<br>${date.format('M/D/YY h:mma')}<br><span class='bold'>this appointment was ${date.fromNow()}</span></h3>`;
+			}else	if (date.isAfter(moment()) && (status === null || status === 'not signed')) {
+				options.message = `<h3 class='pink'>${appointment.patient.info.name}<br>${date.format('M/D/YY h:mma')}<br><span class='bold'>this appointment is ${date.fromNow()}</span></h3>`;
+			}
+			confirm(options);				
+
+		},
+		ajax: function(){			
+			blurTop('#loading');	
+			model.delete('Appointment',appointment.current.uid, function(result){
+				appointment.update.calendar.feed(result);
+				blurTop('#checkmark',{
+					callback: unblurAll,
+					delay: 800,
+				});
+				let date = appointment.current.datetime.format('M/D/YYYY');
+				setTimeout(appointment.schedules.check.updateDayAvailability.bind(null,date,true), 1000);
+			})
+		},
+	},
+	calendar: {
+		element: null,
+
+	},
+	patient: {
+		info: null,
+		getInfo: function(){
+			if (!appointment.has('patient')) return null;
+			return appointment.defaultPatient ? appointment.defaultPatient : table.get('PatientList').getDataById(appointment.current.patient);
+		},
+		isNew: function(){
+			return appointment.patient.info ? appointment.patient.info.isnewpatient : null;
+		}
 	},
 	services: {
 		available: null,
 		override: false,
+		activeFilters: {},
 		reset: function(){
 			appointment.services.available = $("#ServiceDetails").data('details');
-			appointment.services.override = false;
+			// appointment.services.override = false;
+			appointment.services.categories.reset();
 		},
 		get: function(){
 			return !appointment.services.available.isEmpty() ? appointment.services.available : null;
 		},
-		filter: function(options){
-			if (options.patient != undefined){
-				let isNew = options.patient.isnewpatient;
-				appointment.services.available = appointment.services.available.filter(service => isNew ? service.new_patients_ok : !service.new_patients_only);
+		getNames: function(){
+			return appointment.has('services') ? table.get('ServiceList').getNameById(appointment.current.services).join(", ") : 'No Services';
+		},
+		getDuration: function(){
+			if (!appointment.has('services')) return null;
+			let services = table.get('ServiceList').getDataById(appointment.current.services);
+			return services.map(service => Number(service.duration)).reduce((total,duration) => total + duration);
+		},
+		updateActiveFilters: function(name,newFilter){
+			let filters = appointment.services.activeFilters, existingFilterArr = filters[name];
+			// console.log(newFilter);
+			if (existingFilterArr == undefined) filters[name] = [newFilter];
+			else if (name == 'serviceAttr'){
+				let i = existingFilterArr.indexOf(existingFilterArr.find(f => f.attr == newFilter.attr));
+				if (i > -1)	existingFilterArr.splice(i, 1);
+				existingFilterArr.push(newFilter);
+				filters.serviceAttr = existingFilterArr;
 			}
-			if (options.category != undefined){
-				appointment.services.available = appointment.services.available.filter(service => service.service_category_id == options.category.id);
+			else if (name == 'patient'){
+				let i = existingFilterArr.indexOf(existingFilterArr.find(f => f.id == newFilter.id));
+				if (i > -1)	existingFilterArr.splice(i, 1);
+				existingFilterArr.push(newFilter);
+				filters.patient = existingFilterArr;
 			}
+			else if (name == 'services') filters.services = [newFilter];
+			else if (name == 'category') filters.category = [newFilter];
+			appointment.services.activeFilters = filters;
+		},
+		removeFilter: function(filterType, value = null){
+			if (appointment.services.activeFilters[filterType] == undefined) return;
+			if (!value) delete appointment.services.activeFilters[filterType];
+			appointment.services.reset();
+			appointment.services.filter();
+		},
+		filter: function(newFilter = null){
+			if (newFilter){
+				for (let type in newFilter){
+					appointment.services.updateActiveFilters(type,newFilter[type]);
+				}
+			}
+			for (let filterType in appointment.services.activeFilters){
+				let values = appointment.services.activeFilters[filterType];
+				appointment.services.activeFilters[filterType].forEach(function(filter,f){
+					if (filterType == 'services'){
+						let serviceIds = filter;
+						appointment.services.available = appointment.services.available.filter(
+							service => service.is_addon && (service.addon_services ? service.addon_services.some(addon => $.inArray(addon, serviceIds) > -1) : true) && $.inArray(service.id, serviceIds) == -1
+							);
+					}
+					if (filterType == 'serviceAttr'){
+						let attr = filter.attr, value = filter.value;
+						appointment.services.available = appointment.services.available.filter(service => (service[attr] == undefined) ? true : service[attr] == value);
+					}
+					if (filterType == 'patient'){
+						let isNew = filter.isnewpatient;
+						appointment.services.available = appointment.services.available.filter(service => isNew ? service.new_patients_ok : !service.new_patients_only);
+					}
+					if (filterType == 'category'){
+						appointment.services.available = appointment.services.available.filter(service => service.service_category_id == filter.id);
+					}
+				})
+			}
+			// appointment.update.categories();
 			return appointment.services.get();
 		},
 		categories: {
@@ -202,24 +583,124 @@ var appointment = {
 			duration: null,
 			services: null,
 			errors: [],
+			conflicts: null,
+			dayAvailability: {},
+			displayErrors: function(options){
+				let errors = ifu(options.errors, appointment.schedules.check.errors, true), 
+						datetime = ifu(options.datetime, appointment.schedules.check.momentObj),
+						conflicts = ifu(options.conflicts, appointment.schedules.check.conflicts, true),
+						callbackAffirm = ifu(options.callback, null),
+						callbackNegate = ifu(options.goback, null),
+						duration = ifu(options.duration, appointment.schedules.check.duration);
+				log({errors,datetime,conflicts,callbackAffirm,callbackNegate,duration},'displaying errors');
+				let display = $("<div/>",{
+						class: 'scheduleErrors',
+						html:`<h3 class='pink'>${datetime.format('h:mma')}${(duration ? moment(datetime).add(duration,'m').format('[-] h:mma') : "") + ' on ' + datetime.format('M/D/YY')}</h3><ul style='text-align:left'></ul>`,
+						css:{display:'inline-block'}
+					});
+				errors.reverse().forEach(error => display.find('ul').append(`<li>${error.toTitleCase()}</li>`));
+				
+				if (user.is('practitioner')) {
+					// confirm('Schedule Conflict', display, 'continue despite conflict', 'go back', null, callbackAffirm, callbackNegate);
+					confirm({
+						header: 'Schedule Conflict',
+						message: display,
+						yesBtnText: 'continue despite conflict',
+						noBtnText: 'go back',
+						affirmativeCallback: callbackAffirm,
+						negativeCallback: callbackNegate,
+						resolveOnClick: $("#Confirm").find('li'),
+					});
+					if (conflicts) {
+						display.append("<h3 class='pink'>Closest Available Times</h3>");
+						conflicts.forEach(function(conflict){
+							log({conflict});
+							let appt = appointment.get(conflict.uid);
+							$("#Confirm").find('li').filter((l,li) => $(li).text().includes('Another Appointment')).append(`<br><i>${appt.extendedProps.patient.name} (${moment(appt.start).format('h:mma')} - ${moment(appt.end).format('h:mma')})<br>${appt.title}</i>`);													
+						})
+						let firstBeforeConflict = appointment.schedules.find.firstBeforeConflict(datetime),
+								firstAfterConflict = appointment.schedules.find.firstAfterConflict(datetime);
+						if (firstBeforeConflict.exists()){
+							let firstTimeBeforeBtn = new Button({
+								classList: 'small yellow70 smallMargin resolve',
+								action: function(){firstBeforeConflict.click();},
+								id: 'firstTimeBeforeBtn',
+								text: firstBeforeConflict.text(),
+								appendTo: $("#Confirm").find(".scheduleErrors")
+							});
+						}
+						if (firstAfterConflict.exists()){
+							let firstTimeAfterBtn = new Button({
+								classList: 'small yellow70 smallMargin resolve',
+								action: function(){firstBeforeConflict.click();},
+								id: 'firstTimeAfterBtn',
+								text: firstAfterConflict.text(),
+								appendTo: $("#Confirm").find(".scheduleErrors")
+							});
+						}
+						if (firstBeforeConflict.dne() && firstAfterConflict.dne()) display.append('no available times on this date');
+					}else display.append("<h3 class='pink'>How To Proceed?</h3>");
+				}else {
+					feedback('Appointment Unavailable',display);
+				}
+			},
 			logError: function(error){
 				appointment.schedules.check.errors.push(error)
 			},
 			resetErrors: function(){
-				$.each(appointment.schedules.check.errors,function(type,value){
-					appointment.schedules.check.errors[type] = null;
-				});
+				appointment.schedules.check.errors = [];
+				appointment.schedules.check.conflicts = null;
+			},
+			this: function(momentObj, duration = null){
+				appointment.schedules.check.momentObj = momentObj;
+				appointment.schedules.check.duration = duration;
+				if (debug.level(0)) console.log({moment:momentObj,duration:duration});
+				return appointment.schedules.check.all();
+			},
+			within: function(limits,test){
+				if (test.duration) test.end = moment(test.start).add(test.duration,'m');
+				let startWithin = (test.start.isSameOrAfter(limits.start) && test.start.isBefore(limits.end)),
+					endWithin = test.end ? (test.end.isAfter(limits.start) && test.end.isSameOrBefore(limits.end)) : true;
+				if (debug.level(0)) console.log(`${moment(test.start).format('h:mma')} & ${moment(test.end).format('h:mma')} within ${moment(limits.start).format('h:mma')} - ${moment(limits.end).format('h:mma')}?`);
+				if (debug.level(0)) console.log(`start:${startWithin?'true':'false'} end:${endWithin?'true':'false'}, both:${(startWithin&&endWithin)?'true':'false'}`)
+				return startWithin && endWithin;
+			},
+			overlaps: function(limits,test){
+				if (test.duration) test.end = moment(test.start).add(test.duration,'m');
+				let startWithin = (test.start.isSameOrAfter(limits.start) && test.start.isBefore(limits.end)),
+					endWithin = test.end ? (test.end.isAfter(limits.start) && test.end.isSameOrBefore(limits.end)) : false;
+				if (debug.level(0)) console.log(`${moment(test.start).format('h:mma')} & ${moment(test.end).format('h:mma')} within ${moment(limits.start).format('h:mma')} - ${moment(limits.end).format('h:mma')}?`);
+				if (debug.level(0)) console.log(`start:${startWithin?'true':'false'} end:${endWithin?'true':'false'}, both:${(startWithin&&endWithin)?'true':'false'}`)
+				return startWithin || endWithin;
 			},
 			all: function(){
-				if (!appointment.schedules.check.momentObj) return false;
+				if (!appointment.schedules.check.momentObj) {
+					let error = 'appointment.schedules.check.momentObj not defined';
+					// log({error},'schedule check error');
+					return false;
+				}
 				appointment.schedules.check.resetErrors();
-				var pass = false;
-				var bizHourCheck = appointment.schedules.check.businessHours();
-				if (!bizHourCheck) {appointment.schedules.check.logError('outside business hours'); return false;}
-				return pass;
+				if (debug.level(0)) console.groupCollapsed(`check ALL, start:${appointment.schedules.check.momentObj.format('h:mma')}, duration:${appointment.schedules.check.duration}`);
+				if (debug.level(0)) console.groupCollapsed('business hour checks');
+				let bizHourCheck = appointment.schedules.check.businessHours();
+				if (debug.level(0)) console.groupEnd();
+				if (!bizHourCheck) appointment.schedules.check.logError('outside business hours');
+				if (debug.level(0)) console.groupCollapsed('appointment conflict checks');
+				let apptConflictCheck = appointment.schedules.check.againstCurrentAppts();
+				if (debug.level(0)) console.groupEnd();
+				if (!apptConflictCheck) appointment.schedules.check.logError('conflicts with another appointment');
+				if (debug.level(0)) log({bizHourCheck,apptConflictCheck},`bizcheck:${bizHourCheck?'true':'false'} apptcheck:${apptConflictCheck?'true':'false'}`);
+				if (debug.level(0)) console.groupEnd();
+
+				let errors = appointment.schedules.check.errors;
+				// log({errors},'figure this shitout');
+				if (!errors.isEmpty() && debug){
+					let options = {momentObj: appointment.schedules.check.momentObj, duration: appointment.current.duration};
+					// log({errors,options},'schedule check errors');
+				}
+				return errors.isEmpty();
 			},
 			businessHours: function(){
-				console.log('hi checking biz hours');
 				return appointment.schedules.check.againstSchedule(appointment.schedules.businessHours.schedule);
 			},
 			againstSchedule: function(schedule){
@@ -232,34 +713,52 @@ var appointment = {
 				return true;
 			},
 			againstCurrentAppts: function(){
-				var appts = appointment.schedules.anonEvents, pass = true;
-				$.each(appts,function(a,appt){
-					console.log(appt);
-				})
-				return pass;
+				var appts = appointment.schedules.anonEvents, test = appointment.schedules.check.momentObj, duration = appointment.schedules.check.duration,
+						practitioner = appointment.current.practitioner, uid = appointment.current.uid;
+				let testObj = {start:test,duration:duration};
+				if (debug.level(0)) console.groupCollapsed(`check ${testObj.start.format('M/D')} start:${testObj.start.format("h:mma")}, duration:${testObj.duration} againstCurrentAppts`);
+				if (debug.level(0)) log(testObj,'test obj');
+				let conflicts = appts.filter(function(appt) {
+					if (debug.level(0)) console.groupCollapsed(`existingAPPT ${moment(appt.start).format('M/D h:mma')}-${moment(appt.end).format('h:mma')}`);
+					let overlapCheck = appointment.schedules.check.overlaps({start:appt.start,end:appt.end},testObj);
+					if (debug.level(0)) console.log(`test ${moment(testObj.start).format('h:mma')}-${moment(testObj.end).format('h:mma')}`);
+					if (debug.level(0)) console.log(`overlaps:${overlapCheck}, pract:${(practitioner ? practitioner == appt.practitioner_id : true)}, uid:${(uid ? uid != appt.uid : true)}`);
+					if (debug.level(0)) console.groupEnd();
+					// return overlapCheck && (practitioner ? practitioner == appt.practitioner_id : true) && (uid ? uid != appt.uid : true);
+					return overlapCheck;
+				});
+				if (debug.level(0)) console.groupEnd();
+				if (!conflicts.isEmpty()) {
+					let error = 'appointment overlap';
+					if (duration && debug.level(0)) log({error,conflicts,test,duration},'conflicts');
+					appointment.schedules.check.conflicts = conflicts;
+					return false;
+				}else{
+					return true;	
+				}
 			},
 			againstDayOfWeek: function(timeBlock){
 				var dayToCheck = appointment.schedules.check.momentObj.day();
 				var availability = [
-					(timeBlock.days.Sunday === true || timeBlock.days.Sunday === 'true'),
-					(timeBlock.days.Monday === true || timeBlock.days.Monday === 'true'),
-					(timeBlock.days.Tuesday === true || timeBlock.days.Tuesday === 'true'),
-					(timeBlock.days.Wednesday === true || timeBlock.days.Wednesday === 'true'),
-					(timeBlock.days.Thursday === true || timeBlock.days.Thursday === 'true'),
-					(timeBlock.days.Friday === true || timeBlock.days.Friday === 'true'),
-					(timeBlock.days.Saturday === true || timeBlock.days.Saturday === 'true'),
+				(timeBlock.days.Sunday === true || timeBlock.days.Sunday === 'true'),
+				(timeBlock.days.Monday === true || timeBlock.days.Monday === 'true'),
+				(timeBlock.days.Tuesday === true || timeBlock.days.Tuesday === 'true'),
+				(timeBlock.days.Wednesday === true || timeBlock.days.Wednesday === 'true'),
+				(timeBlock.days.Thursday === true || timeBlock.days.Thursday === 'true'),
+				(timeBlock.days.Friday === true || timeBlock.days.Friday === 'true'),
+				(timeBlock.days.Saturday === true || timeBlock.days.Saturday === 'true'),
 				];
 				return availability[dayToCheck];
 			},
 			againstTimeOfDay: function(timeBlock){
-				var momentStart = appointment.schedules.check.momentObj,
-					blockStart = moment(momentStart.format("MM-DD-YYYY") + " " + timeBlock.start_time, "MM-DD-YYYY hh:mma"),
-					blockEnd = moment(momentStart.format("MM-DD-YYYY") + " " + timeBlock.end_time, "MM-DD-YYYY hh:mma"),
+				var testStart = appointment.schedules.check.momentObj, within = appointment.schedules.check.within,
+					blockStart = moment(testStart.format("MM-DD-YYYY") + " " + timeBlock.start_time, "MM-DD-YYYY hh:mma"),
+					blockEnd = moment(testStart.format("MM-DD-YYYY") + " " + timeBlock.end_time, "MM-DD-YYYY hh:mma"),
 					duration = appointment.schedules.check.duration,
-					momentEnd = duration ? moment(momentStart).add('m',duration) : null;
-				var startOk = (momentStart.isSameOrAfter(blockStart) && momentStart.isBefore(blockEnd)),
-					endOk = momentEnd ? (momentEnd.isAfter(blockStart) && momentEnd.isSameOrBefore(blockEnd)) : true;
-				return (startOk && endOk);
+					testEnd = duration ? moment(testStart).add(duration,'m') : null;
+				var startOk = (testStart.isSameOrAfter(blockStart) && testStart.isBefore(blockEnd)),
+				endOk = testEnd ? (testEnd.isAfter(blockStart) && testEnd.isSameOrBefore(blockEnd)) : true;
+				return within({start:blockStart,end:blockEnd},{start:testStart,end:testEnd});
 			},
 			againstServicesOffered: function(timeBlock){
 				if (timeBlock.services == undefined || appointment.schedules.check.services == null) return true;
@@ -271,8 +770,64 @@ var appointment = {
 			},
 			thisPractitioner: function(practitionerId){
 
+			},
+			updateDayAvailability: async function(date = null, thisDayOnly = false){
+				if (!date) date = moment().format('M/D/YYYY');
+				appointment.reset();
+				let workingDate = moment(date,'M/D/YYYY'), lastDate = moment(date,'M/D/YYYY'),
+						slots = appointment.form.timeSlots.get().map(slot => $(slot).data('value').split(":")),
+						duration = appointment.current.duration || null;
+				if (!thisDayOnly){
+					workingDate.startOf('month').subtract(1,'M').subtract(7,'d');
+					lastDate.endOf('month').add(1,'M').add(7,'d');
+				}
+				// console.groupCollapsed('updating availability');
+				while(workingDate.isSameOrBefore(lastDate)){
+					let available = slots.filter(slot => appointment.schedules.check.this(moment(workingDate).hours(slot[0]).minutes(slot[1]),duration));
+					appointment.schedules.check.dayAvailability[workingDate.format('M/D/YYYY')] = available.map(time => time.join(":"));
+					// log({availability:appointment.schedules.check.dayAvailability[workingDate.format('M/D/YYYY')]},workingDate.format('M/D/YYYY'));
+					workingDate.add(1,'d');
+				}
+				// console.groupEnd();
+				return true;
+			},
+			dayHasAvailability: function(date){
+				let findMe = moment(date).format('M/D/YYYY'), availability = appointment.schedules.check.dayAvailability[findMe],
+						durationCheck = true;
+				if (availability == undefined) {
+					appointment.schedules.check.updateDayAvailability(findMe);
+					availability = appointment.schedules.check.dayAvailability[findMe]
+				}
+				if (appointment.has('duration')){
+					let duration = appointment.current.duration;
+					durationCheck = availability.some(time => appointment.schedules.check.this(moment(`${findMe} ${time}`,'M/D/YYYY hh:mm:ss'), duration));
+				}
+				return (availability.isEmpty() || !durationCheck) ? {selectable:false, dateClass:'unavailable'} : {};
 			}
-		}
+		},
+		find: {
+			firstBeforeConflict: function(datetime){
+				let match = appointment.form.timeSlots.get().find(slot => $(slot).text() == datetime.format("h:mm a")),
+						previous = $(match).prev();
+				while(previous.hasClass('disabled')){
+					previous = previous.prev();
+				}
+				return previous;
+			},
+			firstAfterConflict: function(datetime){
+				let match = appointment.form.timeSlots.get().find(slot => $(slot).text() == datetime.format("h:mm a")),
+						next = $(match).next();
+				while(next.hasClass('disabled')){
+					next = next.next();
+				}
+				return next;
+
+			}
+		},
+		relDateString: (datetime = appointment.current.datetime) => {
+			if (datetime === null) return 'NULL';
+			return datetime.fromNow();
+		},
 	},
 	form: {
 		active: null,
@@ -284,9 +839,12 @@ var appointment = {
 			if (activeForm instanceof jQuery && activeForm.dne()) return;
 			appointment.form.active = activeForm;
 			appointment.form.activeId = activeForm.attr('id');
-            appointment.reset();
+			appointment.reset();
 		},
 		open: {
+			summary: function(){
+				// appointment.
+			},
 			edit: function(apptDetails = null){
 				appointment.form.setActive('edit');
 				appointment.form.open.active(apptDetails);
@@ -298,7 +856,7 @@ var appointment = {
 			active: function(apptDetails = null){
 				appointment.form.collectElements();
 				if (apptDetails) appointment.set(apptDetails);
-				blurElement($("body"),"#"+appointment.form.activeId);
+				blur('body',`#${appointment.form.activeId}`);
 			}
 		},
 		collectElements: function(display = false){
@@ -312,15 +870,32 @@ var appointment = {
 			selectors: null,
 			display: null,
 			openers: null,
-			open: function(key){
+			open: function(key, addon = null){
 				let selector = appointment.form.details.getSelector(key);
 				appointment.form.details.selectors.hide();
 				if (key == 'services') {
-					let dispText = user.is('patient') ? 'Select Service Type' : 'Select Service Category';
-					$("#CategoryDetails").find('h3').text(dispText);
-					$("#ServiceDetails, #ServiceSummary").hide();
+					if (appointment.has('services') && !addon){
+						$("#SelectServices").find('.progressBar').find('.back').fadeOut();
+						$("#CategoryDetails, #ServiceDetails").hide();
+						$("#ServiceSummary").fadeIn();
+					}else{
+						let dispText = user.is('patient') ? 'Select Service Type' : 'Select Service Category';
+						let isNew = table.get('PatientList').getDataById(appointment.current.patient)
+						$("#CategoryDetails").fadeIn().find('h3').first().text(dispText)
+						$("#ServiceDetails, #ServiceSummary").hide();
+					}
+				}else if (key == 'time') {
+					$("#SelectTime").css({opacity:1});
+					log({has:appointment.has('services'),current:appointment.current.services});
+					if (!appointment.has('services')) {
+						$("#ServiceWarning").find('.message').text('availability may change when services are added');
+						$("#ServiceWarningLink").text('select services now');
+					} else {
+						$("#ServiceWarning").find('.message').text('availability may change if additional services are added');
+						$("#ServiceWarningLink").text('add/change services now');
+					}
 				}
-				if ($(selector).is(".modalForm")) blurTopMost(selector);
+				if ($(selector).is(".modalForm")) blurTop(selector);
 				else $(selector).fadeIn();
 			},
 			getOpener: function(key){
@@ -331,1573 +906,477 @@ var appointment = {
 			}
 		},
 		category: {
-			list: [],
+			elements: [],
 			select: function(ev){
 				let name = $(this).data('value');
 				let category = appointment.services.categories.get().find(category => category.name == name);
-				appointment.update.services(category);
+				appointment.services.filter({category});
+				appointment.update.services();
 				$("#CategoryDetails").fadeOut(400,function(){
-					let dispText = $("#CategoryDetails").find("h3").text();
-					$("#SelectServices").find(".progressBar").find(".back").data('target',$("#CategoryDetails")).find('.message').text(dispText);
-					$("#ServiceDetails").find("h3").text(category.name);
-					$("#ServiceDetails").fadeIn(400);
+					let dispText = $("#CategoryDetails").find("h3").first().text();
+					$("#SelectServices").find(".progressBar").find(".back").fadeIn().find('.message').text(dispText);
+					$("#ServiceDetails").resetActives().fadeIn(400).find("h3").first().text(category.name);
+					$("#ServiceDescription").hide();
 				})
 			}
 		},
 		service: {
-			list: [],
+			elements: [],
+			addOnBtn: null,
+			removeBtn: null,
 			select: function(ev){
 				let name = $(this).data('value');
 				let service = appointment.services.get().find(service => service.name == name);
 				let description = $("#ServiceDescription");
-				console.log(service);
 				description.find('.message').html("").append($("<div/>",{class:'purple',text:service.description})).append($("<div/>",{class:'pink',text:practice.get('currency').symbol+service.price}));
 				description.slideFadeIn();
-				// $("#CategoryDetails").fadeOut(400,function(){
-				// 	let dispText = $("#CategoryDetails").find("h3").text();
-				// 	$("#SelectServices").find(".progressBar").find(".back").data('target',$("#CategoryDetails")).find('.message').text(dispText);
-				// 	$("#ServiceDetails").find("h3").text(service.name);
-				// 	$("#ServiceDetails").fadeIn(400);
-				// })
 			},
 			confirm: function(ev){
 				let serviceEle = $("#ServiceDetails").find(".active");
 				let selection = appointment.services.get().find(service => service.name == serviceEle.data('value'));
 				appointment.set({services:selection.id});
+				$("#ServiceDescription, #ServiceDetails").hide();
+				let services = $("#ApptDetails").find('.services.value').text();
+				$("#ServiceSummary").find(".summary").text(services);
+				$("#ServiceSummary").fadeIn();
+				$("#SelectServices").find('.progressBar').find(".back").fadeOut();
+				appointment.services.removeFilter('category');
+				appointment.services.filter({services:appointment.current.services});
 			},
-			remove: function(ev){}
+			remove: function(ev){
+				appointment.current.services.pop();
+				appointment.set({services: appointment.current.services});
+			},
+			chooseAddOn: function(ev){
+				appointment.form.details.open('services','addon');
+			}
+		},
+		chartnote: {
+			check: function(){
+				let info = appointment.current.chartnote;
+				// console.log(appointment.current);
+				if (!info) return false;
+				if (info.id === null){
+					confirm({
+						header: 'No Chart Note',
+						message: 'There is no chart note for this appointment yet.<h3 class="pink">Create Charte Note Now?</h3>',
+						yesBtnText: 'create note',
+						noBtnText: 'dismiss',
+						affirmativeCallback: chartnote.edit,
+					})
+				}
+				else if (info.status == 'not signed'){
+					confirm({
+						header: 'Unfinished Chart Note',
+						message: 'There is an existing chart note that has not been finished and signed.<h3 class="pink">Edit + Finish Chart Note?</h3>',
+						yesBtnText: 'edit note',
+						noBtnText: 'dismiss',
+						affirmativeCallback: chartnote.edit,
+					})
+				}else{
+					confirm({
+						header: 'Chart Note Complete',
+						message: 'The chart note for this appointment is finished and signed.<h3 class="pink">View chart note?</h3>',
+						yesBtnText: 'view note',
+						noBtnText: 'dismiss',
+						affirmativeCallback: chartnote.view.bind(null,info.id),
+					})
+				}
+				return false;
+			}
+		},
+		invoice: {
+			check: function(){
+				let info = appointment.current.invoice;
+				console.log(appointment.current);
+				if (!info) return false;
+				if (info.id === null){
+					// confirm('Create Invoice?',"There's been no payment for this appointment yet. <h3 class='pink'>Create invoice now?</h3>", 'yes, create','not now', null, invoice.edit);
+					confirm({
+						header: 'No Invoice Yet',
+						message: 'There has been no invoice created for this appointment.<h3 class="pink">Create invoice now?</h3>',
+						yesBtnText: 'create invoice',
+						noBtnText: 'dismiss',
+						affirmativeCallback: invoice.edit,
+					})
+
+				}
+				else if (info.status == 'not settled'){
+					// confirm('Pending Invoice',"There's an invoice for this appointment that hasn't been settled. <h3 class='pink'>Go to Invoice?</h3>",'yes, go now','not now', null, invoice.edit);
+					confirm({
+						header: 'Pending Invoice',
+						message: 'This invoice is missing payment and has not been settled.<h3 class="pink">Edit + Settle Invoice?</h3>',
+						yesBtnText: 'edit invoice',
+						noBtnText: 'dismiss',
+						affirmativeCallback: invoice.edit,
+					})
+				}else{
+					// console.log("confirming");
+					// confirm('Settled Invoice',"This invoice is complete with payments and is up to date. <h3 class='pink'>View invoice?</h3>",'view invoice','not now',null, invoice.view.modal.bind(null,info.id));
+					confirm({
+						header: 'Settled Invoice',
+						message: 'This invoice is complete with payments and is settled.<h3 class="pink">View Invoice?</h3>',
+						yesBtnText: 'view invoice',
+						noBtnText: 'dismiss',
+						affirmativeCallback: invoice.view.modal.bind(null,info.id),
+					})
+				}
+				return false;
+			}
 		},
 	},
 	reset: function(){
-		appointment.current = {
-			uuid: null,
-			patient: appointment.defaultPatient ? appointment.defaultPatient.patient_id : uids.get('Patient'),
-			practitioner: appointment.defaultPractitioner ? appointment.defaultPractitioner.practitioner_id : null,
-			services: null,
-			date: null,
-			time: null,
-			datetime: null
-		};
+		for (let attr in appointment.current){
+			// console.log({attr:attr,value:appointment.current[attr]});
+			if (attr == 'patient') appointment.defaultPatient ? appointment.defaultPatient.patient_id : uids.get('Patient');
+			else if (attr == 'practitioner') appointment.defaultPractitioner ? appointment.defaultPractitioner.practitioner_id : null;
+			else appointment.current[attr] = null;
+		}
+		// log(appointment.current,'current appointment');
 		appointment.services.reset();
-		appointment.services.categories.reset();		
+		appointment.services.categories.reset();
 		if (appointment.form.active){
 			appointment.form.active.find('input, textarea').val("");
 			appointment.form.active.resetActives();
 		}
-		// if (appointment.defaultPractitioner) appointment.set({practitioner: appointment.defaultPractitioner.practitioner_id});
-		// if (appointment.defaultPatient) appointment.set({patient: appointment.defaultPatient.practitioner_id});
-		// else appointment.set({patient: uids.get('Patient')});
 	},
 	initialize: {
 		all: function(){
 			if ($("#Appointment").dne()) return;
+			appointment.list = jsonIfValid($("#AppointmentsFullCall").data('schedule'));
 			appointment.reset();
 			notes.resetForm();
 			if (user.is('patient')) appointment.defaultPatient = user.current;
 			appointment.schedules.businessHours = $("#BizHours").data();
 			appointment.schedules.practitioners = $("#Practitioners").data('schedule');
 			appointment.schedules.anonEvents = $("#AnonFeed").data('schedule');
+			appointment.form.timeSlots = $("#TimeSelector").find("li");
 			$.each(appointment.initialize, function(name, initFunc){
-				if (name != 'all' && typeof initFunc === 'function') initFunc();
+				if (!['all','externalSelectAndLoad'].includes(name) && typeof initFunc === 'function') initFunc();
 			})
-			appointment.autofill.onload();
 		},
 		calendar: function(){
-		    $(".ChangeTitle").attr('id','ChangeTitle');
-		    $("#ChangeTitle").addClass('purple');
+			$(".ChangeTitle").attr('id','ChangeTitle');
+			$("#ChangeTitle").addClass('purple');
 			var target = $(".calendar."+user.current.type.split(" ").join(""));
-		    var tz = target.data('timezone'), clientTz = moment.tz.guess(), location = target.data('location');
-		    moment.tz.setDefault(tz.replace(" ","_"));
-		    target.html("");
-
+			var tz = target.data('timezone'), clientTz = moment.tz.guess(), location = target.data('location');
+			moment.tz.setDefault(tz.replace(" ","_"));
+			target.html("");
+			init([
+				[$("#ChangeTitle").find("li"), function(){$(this).on('click',appointment.update.calendar.eventTitles)}],
+				[$(".datepick").on('click','.unavailable', function(){
+					console.log('hi');
+				})]
+			]);
 			if (user.is('patient')){
 				console.log('loading patient calendar lol');
 			}else if (user.is('practitioner')){
 				var header = {
-			            left:"title",
-			            center:"",
-			            right:"prev,today,next dayGridMonth,timeGridWeek,timeGridDay",
-			        };
-			    calendar = new FullCalendar.Calendar(target[0], {
-			        plugins: ['dayGrid','list', 'timeGrid', 'interaction', 'rrule', 'momentTimezone'],
-			        timeZone: tz,
-			        header: header,
-			        height: "auto",
-			        dateClick: function(info){
-			            let date = moment(info.date).format("M/D/YYYY"), time = moment(info.date).format("h:mma");
-			            // appointment.set();
-			            appointment.form.open.create({date:date,time:time});
-			        },
-			        eventClick: function(info){
-			            var ev = info.event, details = $.extend(true, {}, ev.extendedProps), ele = $(info.el), dateTime = moment(ev.start);
-			            // var patients = details.patients, practitioner = details.practitioner, services = details.services, patientIds = details.patientIds, practitionerId = details.practitionerId, serviceIds = details.serviceIds, forms = details.forms, dateTime = moment(ev.start), uid = details.bodywizardUid, type = details.type, ele = $(info.el);
-			            serviceOverride = false;
-			            resetEntireAppt();
-			            console.log(details);
-			            if (ele.hasClass('appointment')){
-			                activeForm = $("#editAppointment");
-			                moveServiceSelect("#editAppointment",false);
-			                movePracTimeSelect("#editAppointment",false);
-			                moveDetails('#editAppointment');
-			                updateAppointment({
-			                    patient: details.patient.id,
-			                    practitioner: details.practitioner.id,
-			                    services: details.serviceIds,
-			                    datetime: details.dateTime
-			                });
-			                $("#editAppointment").data('uid',details.uid);
-			                // setUid("Appointment",details.uid);
-			                uids.set({
-			                	Appointment: details.uid,
-			                	Practitioner: details.practitioner.id,
-			                	ChartNote: details.chartNote.id
-			                });
-			                // uids.log();
-			                $("#PatientName").text(details.patient.name);
-			                $("#PractitionerName").text(details.practitioner.name);
-			                $("#ApptDateTime").text(dateTime.format("h:mm a [on] dddd, MMMM Do YYYY"));
-			                $("#ApptDateTime").data('dateTime',dateTime);
-			                $("#ServiceInfo").text(details.services.names);
-			                updateFormInfo(details.forms);
-			                updateChartNoteBtn(details.chartNote);
-			                updateInvoiceBtn(details.invoice);
-			                // loadApptInfo(patientIds,practitionerId,serviceIds,dateTime,$("#editAppointment"));
-			                blurElement($("body"),"#Appointment");                
-			            }
-			        },  
-			        defaultView:"timeGridWeek",
-			        allDaySlot: false,
-			        minTime:$("#BizHours").data("earliest"),
-			        maxTime:$("#BizHours").data("latest"),
-			        eventSources: 
-			        [
-			            {
-			                events: jsonIfValid($("#AppointmentsFullCall").data('schedule')),
-			                id: "appointments"
-			            },
-			            {
-			                events: jsonIfValid($("#NonEhr").data('schedule')),
-			                id: "nonEHR"
-			            }    
-			        ],
-			        businessHours: $("#BizHours").data('fullcal'),
-			        eventRender: function(info){
-			            var eventData = info.event, ele = info.el;
-			            applyEventClasses(eventData,$(ele));
-			        },
-			        nowIndicator: true
-			    })
+					left:"title",
+					center:"",
+					right:"prev,today,next dayGridMonth,timeGridWeek,timeGridDay",
+				};
+				appointment.calendar.element = new FullCalendar.Calendar(target[0], {
+					plugins: ['dayGrid','list', 'timeGrid', 'interaction', 'rrule', 'momentTimezone'],
+					timeZone: tz,
+					header: header,
+					height: "auto",
+					dateClick: function(info){
+						let check = appointment.schedules.check.this(moment(info.date));
+						if (!check){
+							appointment.schedules.check.displayErrors({callback: function(){
+								let date = moment(info.date).format("M/D/YYYY"), time = moment(info.date).format("h:mma");
+				        appointment.form.open.create({date:date,time:time});							
+							}})
+						}else{
+							let date = moment(info.date).format("M/D/YYYY"), time = moment(info.date).format("h:mma");
+			        appointment.form.open.create({date:date,time:time});							
+						}
+		      },
+	        eventClick: function(info){
+	        	var ev = info.event, details = $.extend(true, {}, ev.extendedProps), clonedProps = $.extend(true, {}, ev.extendedProps), ele = $(info.el);
+            appointment.bypassCheck = true;
+            if (ele.hasClass('appointment')){
+              uids.set({
+              	Appointment: details.uid,
+              	Practitioner: details.practitioner.id,
+              	ChartNote: details.chartNote.id
+              });
+              appointment.previous.set({
+              	patient: clonedProps.patient.id,
+              	practitioner: clonedProps.practitioner.id,
+              	services: clonedProps.services.ids,
+              	datetime: moment(ev.start),
+              });
+              try{
+	              appointment.form.open.edit({
+	              	uid: details.uid,
+	              	uuid: details.googleUuid,
+	              	patient: details.patient.id,
+	              	practitioner: details.practitioner.id,
+	              	services: details.services.ids,
+	              	datetime: moment(ev.start),
+	              	chartnote: details.chartNote,
+	              	invoice: details.invoice,
+	              	forms: details.forms,
+	              });
+              }catch(error){
+              	log({error});
+              }
+            }
+            appointment.bypassCheck = false;
+	        },  
+	        defaultView:"timeGridWeek",
+	        allDaySlot: false,
+	        minTime:$("#BizHours").data("earliest"),
+	        maxTime:$("#BizHours").data("latest"),
+	        eventSources: 
+	        [
+		        {
+		        	events: jsonIfValid($("#AppointmentsFullCall").data('schedule')),
+		        	id: "appointments"
+		        },
+		        {
+		        	events: jsonIfValid($("#NonEhr").data('schedule')),
+		        	id: "nonEHR"
+		        }    
+	        ],
+	        businessHours: $("#BizHours").data('fullcal'),
+	        eventRender: function(info){
+	     //    	var eventData = info.event, ele = info.el;
+						// var extProps = details.extendedProps, type = extProps.type, types = type.split(":").join(" ");
+						$(info.el).addClass(info.event.extendedProps.type.split(":").join(' '));
+	        	// applyEventClasses(eventData,$(ele));
+	        },
+	        nowIndicator: true
+		    })
 
-			    calendar.render();
-			    resizeFcCalendar();
-			    var tb = target.find(".fc-toolbar");
-			    $("#TimezoneWrap").insertAfter(tb).css('display','inline-block');
-			    if (tz != clientTz){
-			        $("#TimezoneWrap").html("Take note: you appear to be in a different timezone than your appointments will be held.<br><b>Appointments are displayed and scheduled in local "+location+" time.</b>");
-			    }
-			    $("#ChangeTitleWrap").insertAfter(tb).css('display','inline-block');
-			    $("#ChangeTitleWrap").on('click','li',changeTitles);
-			    $("#ChangeTitle").find("li").filter('[data-value="service"]').addClass('active');
-
+				appointment.calendar.element.render();
+				resizeFcCalendar();
+				var tb = target.find(".fc-toolbar");
+				$("#TimezoneWrap").insertAfter(tb).css('display','inline-block');
+				if (tz != clientTz){
+					$("#TimezoneWrap").html("Take note: you appear to be in a different timezone than your appointments will be held.<br><b>Appointments are displayed and scheduled in local "+location+" time.</b>");
+				}
+				$("#ChangeTitleWrap").insertAfter(tb).css('display','inline-block');
+				// $("#ChangeTitleWrap").on('click','li',changeTitles);
+				$("#ChangeTitle").find("li").filter('[data-value="service"]').addClass('active');
 			}
+			appointment.schedules.check.updateDayAvailability(moment().format('M/D/YYYY'));
 		},
 		services: function(){
-		    let practitioners = appointment.schedules.practitioners;
-		    if (practitioners.isSolo()){
-		    	appointment.defaultPractitioner = practitioners[0];
-		    }
-		    initialize.ele({
-		    	select: $("#CategoryDetails").find('li'),
-		    	function: function(){
-		    		appointment.form.category.list.push($(this));
-		    		$(this).on('click', appointment.form.category.select);
-		    	}
-		    })
-		    initialize.ele({
-		    	select: $("#ServiceDetails").find('li'),
-		    	function: function(){
-		    		appointment.form.service.list.push($(this));
-		    		$(this).on('click', appointment.form.service.select);
-		    	}
-		    })
-		    initialize.ele({
-		    	select: '#SelectServiceBtn',
-		    	function: function(){
-		    		$(this).on('click', appointment.form.service.confirm);
-		    	}
-		    });
-			// var serviceBtn = filterUninitialized('#SelectServiceBtn');
-			// serviceBtn.on('click',addService);
-			// serviceBtn.on('click',goForward);
-			var removeServiceBtn = filterUninitialized('.removeService');
-			removeServiceBtn.on('click',removeService);
-			// removeServiceBtn.on('click',goForward);
-			
-			var dateSelect = filterByData('.DateSelector','hasUpdateFx',false);
-			dateSelect.each(function(){
-				$(this).datepick('destroy');
-				var options = {
-			    	minDate: $(this).data('mindate'),
-			    	maxDate: $(this).data('maxdate'),
-			    	dateFormat: 'm/d/yyyy',
-			    	onSelect: function(dates){
-			    		var date = moment(dates[0]).format("M/D/YYYY");
-			    		updateDate(date);
-			    	}			
-				};
-			    $(this).datepick(options);
-			})
+			let practitioners = appointment.schedules.practitioners;
+			if (practitioners.isSolo()){
+				appointment.defaultPractitioner = practitioners[0];
+			}
+			init([
+				[$("#CategoryDetails").find('li'),function(){
+					appointment.form.category.elements.push($(this));
+					$(this).on('click', appointment.form.category.select);
+				}],
+				[$("#ServiceDetails").find('li'),function(){
+					appointment.form.service.elements.push($(this));
+					$(this).on('click', appointment.form.service.select);
+				}],
+				['#SelectServiceBtn',function(){
+					$(this).on('click', appointment.form.service.confirm);
+				}],
+				['.DateSelector','hasUpdateFx',function(){
+					$(this).css({fontSize:'1.3em',textAlign:'center'});
+					$(this).datepick('destroy');
+					let options = {
+						minDate: $(this).data('mindate'),
+						maxDate: $(this).data('maxdate'),
+						dateFormat: 'm/d/yyyy',
+						onDate: appointment.schedules.check.dayHasAvailability,
+						onSelect: function(dates){
+							// log({dates});
+							appointment.set({date:moment(dates[0]).format("M/D/YYYY")});
+							$("#SelectTime").css({opacity:1});
+							$("#SelectDate").fadeOut(400,function(){$("#SelectTime").fadeIn(400)})
+						},
+						beforeShow: function(picker, instance){
+							console.log({picker,instance});
+						}
+					};
+					$(this).datepick(options);					
+				}],
+				[appointment.form.timeSlots, function(){
+					$(this).on('click',function(){
+						let time = $(this).text().replace(" ","");
+						log({slotData:$(this).data()},`${time} data`);
+						if ($(this).data('errors')){
+							appointment.schedules.check.displayErrors({
+								errors: $(this).data('errors'),
+								conflicts: $(this).data('conflicts'),
+								datetime: moment(`${appointment.current.date} ${time}`,'M/D/YYYY h:mma'),
+								callback:function(){
+									appointment.set({time});
+									$("#SelectTime").slideFadeOut();								
+									setTimeout(unblur,400);
+								}
+							})
+						}else{
+							appointment.set({time:$(this).text().replace(" ","")});
+							$("#SelectTime").slideFadeOut();							
+						}
+					})
+				}],
+				['#ServiceWarningLink','hasEditFx',function(){
+					$(this).on('click',function(){
+						if (appointment.has('patient')) appointment.form.details.open('services');
+						else {
+							confirm({
+								header: 'Select Patient First',
+								message: 'A patient must be selected to determine which services are available',
+								yesBtnText: 'select patient now',
+								noBtnText: 'go back',
+								affirmativeCallback: function(){
+									unblur();
+									appointment.form.details.open('patient');
+								}
+							})
+						}
+					})
+				}]
+			]);
 		},
 		forms: function(){
-			$("#createAppointment, #editAppointment").find('.submitForm').text("save appointment");
-		    $("#createAppointment, #editAppointment").find(".item").hide();			
+			let forms = $("#createAppointment, #editAppointment");
+			forms.find(".item").hide();
+			appointment.save.btn = forms.find(".submitForm");
+			appointment.save.btn.addClass('disabled').off('click',saveModel).on('click',appointment.save.confirm).text("save appointment");
+			appointment.form.service.addOnBtn = $("#ServiceSummary").find(".button.add");
+			appointment.form.service.removeBtn = $("#ServiceSummary").find(".button.remove");
+			appointment.delete.btn = new Button({
+				url: 'Appointment/delete',
+				classList: 'small pink70',
+				id: 'DeleteApptBtn',
+				action: appointment.delete.confirm,
+				text: 'delete',
+				insertAfter: $("#editAppointment").find('.button.submitForm')
+			})
+			appointment.form.chartnote.btn = new Button({
+				url: 'ChartNote/index',
+				classList: 'small yellow',
+				id: 'CheckNoteBtn',
+				action: appointment.form.chartnote.check,
+				text: 'chart note',
+				insertAfter: $("#DeleteApptBtn")
+			})
+			appointment.form.invoice.btn = new Button({
+				url: 'Invoice/index',
+				classList: 'small yellow70',
+				id: 'InvoiceBtn',
+				action: appointment.form.invoice.check,
+				text: 'invoice',
+				insertAfter: $("#CheckNoteBtn")
+			})
 			appointment.form.details.selectors = $("#SelectServices, #SelectPractitioner, #SelectDate, #SelectTime");
 			appointment.form.details.display = $("#ApptDetails");
 			appointment.form.details.openers = $("#ApptDetails").find('.edit');
-			appointment.form.timeSlots = $("#TimeSelector").find("li");
-			initialize.ele({select: "#EditApptBtn", function: function(){
-				$(this).on('click',appointment.form.open.edit);
-			}});
-			initialize.ele({
-				select: appointment.form.details.openers, 
-				function: function(){
-					$(this).on('click', appointment.form.details.open.bind(null,$(this).data('value')));
-				},
-				dataAttr: 'openFx',
-				searchValue: false,
-				setValue: true
-			});
-			// initialize.ele({select: "#DeleteApptBtn",function:function(){$(this).on('click',function(){blurElement($("body"),'#editAppointment')})}});
+			init([
+				['#editAppointment',function(){$(this).find("h1").first().remove()}],
+				[appointment.form.service.addOnBtn, function(){$(this).on('click',appointment.form.service.chooseAddOn)}],
+				[appointment.form.service.removeBtn, function(){$(this).on('click',appointment.form.service.remove)}],
+				[$("#SelectServices").find(".conditionalLabel"), function(){
+						$(this).on('click','.override',function(){
+							appointment.services.override = true;
+							appointment.update.servicesLabel();
+							appointment.services.removeFilter('patient');
+							appointment.update.categories();
+						})					
+				}],
+				["#EditApptBtn", function(){$(this).on('click',appointment.form.open.edit)}],
+				[appointment.form.details.openers, 'openFx', function(){
+					let addon = appointment.has('services');
+					$(this).on('click', appointment.form.details.open.bind(null,$(this).data('value'),addon));
+				}],
+				[$(".progressBar"), function(){
+					$(this).on('click','.back',function(){
+						let box = $(this).closest(".selector"), steps = box.find('.step'), thisStep = steps.filter(':visible'), lastStep = thisStep.prev('.step');
+						steps.hide();
+						if (lastStep.is("#CategoryDetails")) appointment.services.removeFilter('category');
+						lastStep.resetActives().fadeIn();
+						if (lastStep.prev('.step').dne()) $(this).fadeOut();
+					});
+				}],
+			]);
 		},
-		deleteBtn: function(){
-			var btn = filterUninitialized('#DeleteApptBtn');
-			btn.on('click',confirmApptDelete);
-			btn.data('initialized',true);
+		externalSelectAndLoad: function(options = {}){
+			let target = ifu(options.target, null),
+					url = ifu(options.url, null),
+					callback = ifu(options.callback, null),
+					btnText = ifu(options.btnText, null),
+					errors = [];
+			if (!target) errors.push('invalid target');
+			if (!url) errors.push('invalid url');
+			if (callback && typeof callback != 'function') errors.push('invalid callback');
+			if (!btnText) log(options,'define btnText for more flex');
+			if (!errors.isEmpty()) {
+				let message = 'Error initializing appt links';
+				log({errors,options,message});
+				return;
+			}
+			init([
+				['.selectNewAppt',function(){
+					$(this).on('click',function(){
+				    $(".selectNewAppt").hide();
+				    $("#ApptLegend, #ApptsList").slideFadeIn();
+				    $("#CurrentAppt").slideFadeOut();
+				    $('.confirmApptBtn').addClass('disabled');						
+					})
+				}],
+				['.confirmApptBtn',function(){
+					let btn = $(this);
+					$(this).on('click',function(){
+						if (btn.hasClass('disabled')) {
+							feedback('No Appointment Selected','Pick an appointment first, silly.');
+							return false;
+						}
+						var active = $(".appt").filter('.active'), 
+								apptId = active.data('uid') || uids.get('Appointment');
+						if (!apptId) {
+							feedback('No Appointment Selected','Pick an appointment first, silly.');
+							return;
+						}
+						url = url.replace('apptId',apptId);
+						log({target,apptId,url,callback,btnText})
+						// return;
+						$(".confirmAppt").slideFadeOut();
+						menu.load({url,	target,	callback});
+
+					});
+				}],
+				['.appt',function(){
+					let appt = $(this);
+					$(this).on('click',function(ev){
+						log({ev:ev,this:this,appt:appt,isactive:appt.hasClass('active'),legend:appt.closest("#ApptLegend")},'appt');
+				    if (appt.hasClass('active') || $("#ApptLegend").dne()){
+				        return;
+				    }else{
+				        $(".appt").removeClass('active');
+				        log({appt:appt, data:appt.data()},'MADE IT');
+				        // return;	
+				        appt.addClass('active');     
+				        $("#ApptSummary").html($(this).html().split("<br>").join(", ") + "<br>" + $(this).data('services'));
+				        $('.confirmApptBtn').removeClass('disabled');
+				        var newText;
+				        if (btnText) {
+				        	log(btnText,'Button text');
+				        	for (let searchClass in btnText){
+				        		if ($(this).hasClass(searchClass)) $(".confirmApptBtn").text(btnText[searchClass]);
+				        	}
+				        }else	log(options,'define btnText for more flex');
+				    }						
+					})
+				}],
+			]);
 		},
-		// detailClick: function(){
-		// },
-		formLink: function(){
-			var info = filterUninitialized('#FormInfo');
-			info.on('click','.link',checkFormStatus);
-			info.data('initialized',true);			
-		}
+		// formLink: function(){
+		// 	var info = filterUninitialized('#FormInfo');
+		// 	info.on('click','.link',checkFormStatus);
+		// 	info.data('initialized',true);			
+		// }
 	},
-	autofill: {
-		onload: function(){
-			console.log('fill appt details');
-		}
-	}
 };
-function initializeApptForms(){
-	console.log('use appointment.initialize.all');
-	return;
-	$("#createAppointment, #editAppointment").find('.submitForm').text("save appointment");
-    $("#createAppointment, #editAppointment").find(".item").hide();
- 	$("#editAppointment").find("h1").first().text("Edit Appointment");
-    $(".ChangeTitle").attr('id','ChangeTitle');
-    $("#ChangeTitle").addClass('purple');
-
-    var uninitialized = filterUninitialized('#EditApptBtn, #DeleteApptBtn, #ApptDetails, #FormInfo, .selector, .selectPractitioner, #SelectTime, #PractitionerSelector, #SelectOrRandom, #booknow, #SelectServices, #ChartNoteBtn, #InvoiceBtn');
-	// uninitialized.filter("#EditApptBtn").on('click',function(){
-	// 	blurElement($("body"),"#editAppointment");
-	// })
-	// uninitialized.filter("#DeleteApptBtn").on('click',confirmApptDelete);
-    // uninitialized.filter("#ApptDetails").on('click','.edit',openDetail);
-    // uninitialized.filter('#FormInfo').on('click','.link',checkFormStatus);
-
-    uninitialized.filter(".selector").on('click','.next',goForward);
-    uninitialized.filter(".selector").on('click','.firstStep',firstStep);
-    uninitialized.filter(".selector").on('click',".selectDate",function(){
-    	$("#ApptDetails").find('.date').find(".edit").click();
-    })
-    uninitialized.filter(".selectPractitioner").on('click',function(){
-    	$("#ApptDetails").find('.practitioner').find(".edit").click();
-    })
-    // $(".dateSelector").on('focusout',checkDate);
-    uninitialized.find("#TimeSelector").on('click','li',updateTime);
-    uninitialized.filter("#PractitionerSelector").on('click','li',updatePractitioner);
-    uninitialized.filter("#SelectOrRandom").on('click','.closeBtn',randomPractitioner);
-    uninitialized.filter(".selector").hide();
-
-    uninitialized.data('initialized',true);
-
-    // usertype = getUsertype();
-	if (usertype == 'patient'){
-		defaultPatientInfo = $("#PatientInfo").data('patient');
-		$("#ApptDetails").addClass('toModalHome');
-		$("#createAppointment").find(".submitForm").text('book appointment');
-	    $("#booknow").data('target','#createAppointment');
-	    $("#EditApptBtn").data('target','#editAppointment');
-	    var newBtns = filterByData("#booknow, #EditApptBtn",'hasFx',false);
-	    newBtns.on('click',showAppointmentDetails);
-	    newBtns.data('hasFx',true);
-	    if ($("#PatientCalendar").exists()){
-	        $("#PatientCalendar").html("");
-	     	loadPatientCal($("#PatientCalendar"));
-     	    activateServiceSelection();
-	    }
-	    $("#createAppointment").on('click','.cancel',function(){$("#booknow").find('.active').removeClass('active');})
-	}else if (usertype == 'practitioner'){
-		allowOverride = true;
-	    uninitialized.filter("#SelectServices").on('click', '.override',overrideService);
-	    uninitialized.filter("#ChartNoteBtn").on('click',checkForChartNote);
-	    uninitialized.filter("#InvoiceBtn").on('click',checkForInvoice);
-	    if ($("#PractitionerCalendar").exists()){
-	       	$("#PractitionerCalendar").html("");
-	    	loadPractitionerCal($("#PractitionerCalendar"));
-			activateServiceSelection();
-	    }
-	}
-}
-function activateServiceSelection(){
-	console.log('use appointment.initialize.services');
-	return;
-	// var categories = $("#CategoryDetails").data('details'), 
-	// 	services = $("#ServiceDetails").data("details"),
-	// 	serviceItems = filterUninitialized("#createAppointment, #editAppointment").find(".item").filter(function(){
-	// 		return $(this).find(".q").text().includes("Select Service(s)");
-	// 	}), 
-	// 	serviceLIs = filterUninitialized("#ServiceDetails").find("li"), 
-	// 	categoryLIs = filterUninitialized("#CategoryDetails").find("li"),
-	// 	durationItems = filterUninitialized("#createAppointment, #editAppointment").find(".item").filter(function(){
-	// 		return $(this).find(".q").text().includes("Duration");
-	// 	}), 
-	// 	patientItems = filterUninitialized(".item").filter(function(){
- //        	return $(this).find(".q").text().includes("Select Patient");
- //   		});
-
- //    anonEvents = $("#AnonFeed").data('schedule');
- //    practitioners = $("#Practitioners").data('schedule');
-
- //    if (practitioners != undefined && practitioners.length == 1){
- //    	// console.log(practitioners);
- //    	defaultPractitionerInfo = practitioners[0];
- //    	resetEntireAppt();
- //    }
-
-	// serviceItems.find("textarea").off("focus",openConnectedModelModal);
-	// serviceItems.find(".q").text("Selected Service(s)");
- //    durationItems.find('input').attr('readonly',true);
- //    durationItems.find('.q').html("Duration <span class='little italic'>(automatically updates)</span>");
-
- //    if (defaultPatientInfo){
- //    	patientItems.find('input').val(defaultPatientInfo.name);
- //    	patientItems.find('input').removeClass('targetInput');
- //    }
-    
- //    var timepicker = filterUninitialized('.ui-timepicker-am, .ui-timepicker-pm');
-
-	// categoryLIs.each(function(){
-	// 	var name = $(this).text(), category = categories[name];
-	// 	$(this).data(category);
-	// 	$(this).data('show',true);
-	// })
-	// serviceLIs.each(function(){
-	// 	var name = $(this).text(), service = services[name];
-	// 	$(this).data(service);
-	// 	$(this).data('show',true);
-	// })
-	// categoryLIs.on('click',selectCategory);
-	// categoryLIs.on('click',goForward);
-	// serviceLIs.on('click',showServiceDescription);
-
-	// $(".selector").on('click','.back', goBack);
-	// categoryLIs.on('click',function(){
-	// 	var id = $(this).data('id'), matches = serviceLIs.filter(function(){
-	// 		return $(this).data('service_category_id') == id && $(this).data('show');
-	// 	}), notMatches = $("#ServiceDetails").find("li").not(matches);
-	// 	matches.show();
-	// 	notMatches.hide();
-	// })
-	// serviceLIs.on('click',function(){
-	// 	var description = $(this).data('description');
-	// 	$("#ServiceDescription").find('.target').text(description);
-	// })
-
-	// var serviceBtn = filterUninitialized('#SelectServiceBtn');
-	// serviceBtn.on('click',addService);
-	// serviceBtn.on('click',goForward);
-	// var removeServiceBtn = filterUninitialized('.removeService');
-	// removeServiceBtn.on('click',removeService);
-	// // removeServiceBtn.on('click',goForward);
-	
-	// var dateSelect = filterByData('.DateSelector','hasUpdateFx',false);
-	// dateSelect.each(function(){
-	// 	$(this).datepick('destroy');
-	// 	var options = {
-	//     	minDate: $(this).data('mindate'),
-	//     	maxDate: $(this).data('maxdate'),
-	//     	dateFormat: 'm/d/yyyy',
-	//     	onSelect: function(dates){
-	//     		var date = moment(dates[0]).format("M/D/YYYY");
-	//     		updateDate(date);
-	//     	}			
-	// 	};
-	//     $(this).datepick(options);
-	// })
-
-	// serviceItems.data('initialized',true);
-	// serviceLIs.data('initialized',true);
-	// categoryLIs.data('initialized',true);
-	// durationItems.data('initialized',true);
-	// patientItems.data('initialized',true);
-	// timepicker.data('initialized',true);
-	// dateSelect.data('hasUpdateFx',true);
-	// serviceBtn.data('initialized',true);
-	// removeServiceBtn.data('initialized',true);	
-}
-function moveServiceSelect(id, display = true){
-	console.log('use appointments.form.collectElements');
-	return;
-	$(id).find(".section").last().append($("#SelectServices"));
-	if (display){$("#SelectServices").fadeIn();}else{$("#SelectServices").hide();}
-}
-function movePracTimeSelect(id, display = true){
-	console.log('use appointments.form.collectElements');
-	return;
-	$(id).find(".section").last().append($("#SelectPractitioner, #SelectDateTime"));
-	$("#SelectPractitioner").find('li').removeClass('disabled');
-	if (display){$("#SelectPractitioner, #SelectDateTime").fadeIn();}else{$("#SelectPractitioner, #SelectDateTime").hide();}
-}
-function moveDetails(id, display = true){
-	console.log('use appointments.form.collectElements');
-	return;
-	var timeEdit = $("#ApptDetails").find('.time').find('.edit');
-	$("#ApptDetails").insertAfter($(id).find("h2").first());
-	$("#ApptDetails").find(".value").text("none");
-	$("#ApptDetails").find(".edit").text('select');
-	timeEdit.text('');
-	if (display){$("#ApptDetails").fadeIn();}else{$("#ApptDetails").hide();}
-}
-
-function goBack(){
-	var box = $(this).closest(".selector"), steps = box.children().not(".progressBar"), current = steps.filter(":visible"), prev = current.prev(".step");
-	if (prev.length != 0){
-		current.fadeOut(200,function(){
-			prev.fadeIn(400);
-			prev.find(".active").removeClass('active');
-			// reset current/prev
-			current = steps.filter(":visible"), prev = current.prev(".step");
-			if (prev.length == 0){
-				box.find('.progressBar').find(".back").fadeOut(400);
-			}
-		})
-	}else{box.find(".back").fadeOut();}
-}
-function goForward(){
-	var box = $(this).closest(".selector"), steps = box.children().not(".progressBar"), current = steps.filter(":visible"), next = current.next(".step");	if (next.length != 0){
-		current.fadeOut(200,function(){
-			next.fadeIn(400);
-			next.find(".active").removeClass('active');
-			// reset current/next
-			current = steps.filter(":visible"), next = current.next(".step");
-			if (current.hasClass("noBack")){
-				box.find('.progressBar').find(".back").fadeOut(400);
-			}
-		})
-	}
-}
-function firstStep(box = null){
-	if (typeof box == 'object'){box = $(this).closest(".selector");}
-	var steps = box.children('.step'), current = steps.filter(":visible"), first = steps.first();
-	if (first.length != 0){
-		current.fadeOut(200,function(){
-			first.fadeIn(400);
-			first.find(".active").removeClass('active');
-			// reset current/first
-			current = steps.filter(":visible"), first = steps.first();
-			if (current.hasClass("noBack")){
-				box.find('.progressBar').find(".back").fadeOut(400);
-			}
-		})
-	}	
-}
-function showAppointmentDetails(){
-    var modalId = $(this).data('target');
-    activeForm = $(modalId);
-    // console.log(activeForm);
-    moveServiceSelect(modalId, false);
-    movePracTimeSelect(modalId, false);
-    moveDetails(modalId);
-    $(modalId).find(".selector").hide();
-    if (modalId == '#createAppointment'){
-        resetEntireAppt();
-        updateAppointment();
-    }else{
-    	updateAppointment({
-    		date: activeForm.find(".date").val(),
-    		time: activeForm.find(".time").val()
-    	});
-    }
-    updateServiceNames();
-    blurElement($("body"),modalId);
-}
-
-function resetEntireAppt(){
-	var patient = null;
-	resetConnectedModels();
-	if (activeForm){
-		activeForm.find('input, textarea').val("");
-		activeForm.find('.active').removeClass('active');
-		activeForm.removeData('dateTime');		
-	}
-	if (defaultPatientInfo){patient = defaultPatientInfo.id
-	}else if (getUids('Patient') != null){patient = Number(getUids('Patient'))
-	}
-
-	appointmentDetails = 
-	{
-		services:null,
-		date:null,
-		time:null,
-		datetime:null,
-		patient: patient,
-		practitioner: defaultPractitionerInfo ? defaultPractitionerInfo.practitioner_id : null,
-	};
-}
-function updateDate(date){
-	console.log(activeForm,date);
-    updateAppointment({date:date,time:null,datetime:null});
-    updateAvailableTimes(activeForm);
-    addDetail('date',date);
-    addDetail('time','none');
-    activeForm.find(".date").val(date);
-    $("#SelectDate").find(".next").removeClass('disabled').click();
-}
-function updateAvailableTimes(){
-    // console.log('updateAvailableTimes');
-    var bizHours = $("#BizHours").data('schedule'), services = appointmentDetails.services, duration = Number(activeForm.find('.duration').val()), date = appointmentDetails.date, slots = $("#TimeSelector").find("li"), practitioner = appointmentDetails.practitioner;
-    if (practitioner){
-        // var id = practitioner[0];
-        practitionerInfo = practitioners.find(p => {
-            return p.practitioner_id === practitioner;
-        })
-    }
-    // console.log(practitioner);
-    slots.addClass('disabled');
-    var anonEvents = $("#AnonFeed").data('schedule');
-    // console.log(practitioners);
-    slots.each(function(){
-        var slot = $(this), time = slot.data('value'), practitionerEvents, available, momentObj;
-        momentObj = moment(date+" "+time, "MM/DD/YYYY HH:mm:ss");
-        bizHourCheck = checkSchedule(momentObj, bizHours, services, duration);
-		available = availablePractitioners(momentObj, duration, services, true);
-        if (bizHourCheck === true){
-            slot.removeClass('disabled');
-        }
-        if (practitioner == null){
-        }else{
-        	if ($.inArray(practitioner, available) > -1){
-        		slot.removeClass('disabled');
-        	}else{
-        		slot.addClass("disabled");
-        	}
-        }
-    })
-    if (usertype == 'patient'){
-    	slots.filter('.disabled').hide();
-    	slots.not('.disabled').show();
-    }
-}
-function updatePractitioner(){
-	console.log("UPDATE PRACTITIONER");
-    var name = $(this).text(), list = $("#PractitionerSelector").data('details'), id = list[name];
-	updateAppointment({practitioner:id});
-	$("#SelectPractitioner").slideFadeOut(800,function(){
-		$("#SelectPractitioner").resetActives().css('opacity',1);
-		// $("#SelectPractitioner").find('.active').removeClass('active');
-	});
-}
-function randomPractitioner(){
-    var form = activeForm;
-    var p = randomArrayElement(availablePractitioners(form.data('dateTime'),form.find("#duration").val(),$("#ServiceListModal").data('uidArr')));
-    updateInputByUID(form.find("#select_practitioner"),p.practitioner_id);
-    addDetail('practitioner',p.name);
-}
-function updateTime(){
-    if ($(this).hasClass('disabled')){return;}
-    // console.log('updateTime');
-    var form = $("#createAppointment, #editAppointment").filter(":visible"), time = $(this).text().replace(" ",""), date = form.find(".date").val(), services = $("#ServiceListModal").data('uidArr');
-    form.find(".time").val(time);
-    var dateTime = moment(date + " " + time,'MM/DD/YYYY hh:mma');
-    $("#SelectTime").find(".next").removeClass('disabled').click();
-    form.data('dateTime',dateTime);
-    addDetail('time',time);
-    updateAppointment({time:time});
-    if (!defaultPractitionerInfo){
-		var p = availablePractitioners(dateTime,form.find("#duration").val(), services);
-	    $("#PractitionerSelector").find("li").addClass('disabled');
-	    $.each(p,function(x,practitioner){
-	        $("#PractitionerSelector").find("li").filter(function(){return $(this).text() == practitioner.name}).removeClass('disabled');
-	    })
-    }
-    // slideFadeOut($(this).closest('.selector'));
-    $(this).closest('.selector').slideFadeOut(800);
-}
-
-function updateAppointment(attrArr = null){
-	if (attrArr){
-		$.each(attrArr,function(attr,val){
-			if (attr == 'services'){
-				if (val === null){appointmentDetails.services = null;}
-				else if (typeof val == 'object'){appointmentDetails.services = val;}
-				else if (appointmentDetails.services == null){appointmentDetails.services = [val];}
-				else {appointmentDetails.services.push(val);}
-			}else{
-				appointmentDetails[attr] = val;
-			}
-		})
-		if (appointmentDetails.date && appointmentDetails.time && !appointmentDetails.datetime){
-			appointmentDetails.datetime = moment(appointmentDetails.date + " " + appointmentDetails.time, "M/D/YYYY h:mma");
-		}
-		if (appointmentDetails.datetime && (!appointmentDetails.date || !appointmentDetails.time)){
-			appointmentDetails.date = appointmentDetails.datetime.format("M/D/YYYY");
-			appointmentDetails.time = appointmentDetails.datetime.format("h:mma");
-		}
-	}
-	var appt = appointmentDetails;	
-	// console.log(activeForm, appointmentDetails);
-	if (activeForm){
-		if (appt.patient){
-			updateInputByUID(activeForm.find(".select_patient"),appt.patient);
-			addDetail('patient',activeForm.find(".select_patient").val());
-		}else{removeDetail('patient');}
-		if (appt.practitioner){
-			updateInputByUID(activeForm.find(".select_practitioner"),appt.practitioner);
-			addDetail('practitioner',activeForm.find(".select_practitioner").val());
-		}else{removeDetail('practitioner');}
-		if (appt.date){
-			activeForm.find('.date, .DateSelector').val(appt.date);
-			addDetail('date',activeForm.find(".date").val());
-		}else{removeDetail('date');}
-		if (appt.time){
-			activeForm.find('.time').val(appt.time);
-			addDetail('time',activeForm.find(".time").val());
-		}else{removeDetail('time');}
-		if (appt.services){
-			// console.log(activeForm,activeForm.find(".select_services"));
-			updateInputByUID(activeForm.find(".select_services"),appt.services);
-			addDetail('services',activeForm.find(".select_services").val());
-		}else{
-			removeDetail('services');
-		}
-	}
-	updateAvailableTimes();
-	updateServiceNames();
-	if (usertype == 'patient'){
-		if (appt.practitioner && appt.services){
-			$("#ApptDetails").find('.date').find('.edit').show();
-		}else{
-			$("#ApptDetails").find('.date').find('.edit').hide();			
-		}		
-	}else{
-		if (appt.date){$("#ApptDetails").find('.date').find('.edit').show();}
-	}
-
-	setTimeout(function(){
-		if (appt.patient){updatePatientData();}
-		if (appt.practitioner){updatePractitionerData();}
-	    updateAvailableServices();
-	},205)
-
-	var requires = [];
-	if (appt.patient === null){requires.push('patient')};
-	if (appt.practitioner === null){requires.push('practitioner')};
-	if (appt.services === null){requires.push('services')};
-	if (appt.datetime === null){requires.push('datetime')};
-	
-	if (requires.length == 0){
-		$("#editAppointment, #createAppointment").find('.submitForm').removeClass('disabled');
-		return true;
-	}else{
-		$("#editAppointment, #createAppointment").find('.submitForm').addClass('disabled');
-		return requires;
-	}
-	// return (requires.length == 0) ? true : requires;
-}
-function resetConnectedModels(){
-	// $("#ServiceListModal").removeData('uidArr');
-	// $("#PractitionerListModal").removeData('uidArr');
-	$(".connectedModel").removeData('uidArr');
-	$(".connectedModelItem").val("");
-	// console.log("resetConnectedModels");
-}
-function refreshAppointmentFeed(info){
-	if (info == 'no changes'){
-		return;
-	}else if (typeof info == 'string'){
-		var feed = jsonIfValid(info);
-		if (!feed){return;}
-	}else if (typeof info == 'object'){
-		var feed = info;
-	}
-	if (feed.appointments == undefined){return;}
-	var appts = feed.appointments;
-	if ($('.calendar').length == 1){
-		calendar.getEventSourceById('appointments').remove();
-		calendar.addEventSource({events:appts,id:'appointments'});		
-	}
-	$("#AppointmentsFullCall").data('schedule',appts);
-	var anon = (feed.anon != undefined) ? feed.anon : null;
-	if (anon){$("#AnonFeed").data('schedule',anon);}
-	changeTitles();
-}
-function checkFormStatus(){
-	var formInfo = $(this).closest('.checkFormStatus');
-	console.log(usertype);
-	if (usertype == 'patient'){
-		if (formInfo.data('completed')){
-			confirm('Form Completed',"You've already completed this form!",'see your submission','go back');
-			setUid('Submission',formInfo.data('completed'));
-			var callback = function(){
-				unblurAll(function(){
-					$("#submissions-index").find(".title").click();					
-				});
-			}
-		}else{
-			confirm('Required Form Status','You haven\'t completed this form yet. Would you like to go to the forms page now?','go to forms','not right now');
-			setUid('Form',formInfo.data('form_id'));
-			var callback = function(){
-				unblurAll(function(){
-					$("#forms-home").find(".title").click();
-				});
-			}
-		}
-	}else if (usertype == 'practitioner'){
-		if (formInfo.data('completed')){
-			confirm('Form Completed',"Patient has already submitted this form",'view submission','go back');
-			setUid('Submission',formInfo.data('completed'));
-			var callback = function(){
-				unblurAll(function(){
-					$("#submission-index").find(".title").click();
-				});
-			}
-		}else{
-			confirm('Required Form Status','Patient has not completed this form.<h3 class="pink">Send reminder?</h3>','yes send reminder','not right now');
-			var callback = function(){
-				alert("SEND REMINDER");
-			}
-		}
-	}
-
-	var wait = setInterval(function(){
-		// console.log(confirmBool);
-		if (confirmBool != undefined){
-			if (confirmBool){
-				unblurTopMost();
-				callback();
-			}else{
-				clearInterval(wait);
-				confirmBool = undefined;
-			}
-			clearInterval(wait);
-			setTimeout(function(){
-				confirmBool = undefined;
-			},300)
-		}
-	},100)	
-}
-function getServiceNames(){
-	var services = appointmentDetails.services, names = [];
-	$.each(services,function(s,serviceId){
-		names.push($("#ServiceDetails").find("li").filter(function(){return $(this).data('id') == serviceId}).text());
-	})
-	return (names.length == 0) ? null : names;
-}
-function addService(){
-	var service = $("#ServiceDetails").find(".active"), id = service.data().id, dateBtn = $("#ServiceSummary").find(".selectDate");
-	// console.log(service.data(),id);
-	updateAppointment({services:id});
-	if (appointmentDetails.practitioner){dateBtn.show();
-	}else{dateBtn.hide();}
-	// updateServiceNames();
-}
-function removeService(){
-	// console.log(appointmentDetails.services);
-	var services = appointmentDetails.services;
-	if (services == null || services.length == 0){
-		return false;
-	}
-	services.pop();
-	if (services.length == 0){
-		updateAppointment({services:null});
-	}else{
-		updateAppointment({services:services});		
-	}
-	// console.log(appointmentDetails.services);
-}
-function updateServiceNames(){
-	var services = getServiceNames();
-	if (services){
-		$("#ServiceSummary").find(".summary").text(services.join(", "));
-	}else{
-		$("#ServiceSummary").find(".summary").text('none selected');
-		$("#ApptDetails").find(".services").find(".edit").click();
-	}
-}
-function updateDuration(){
-	// console.log('updateDuration');
-	var form = $("#SelectServices").closest('.modalForm'), services = form.find('.select_services').val().split(", "), durationInput = form.find(".number").find('input'), duration = 0, endDateTime, matches = $("#ServiceDetails").find('li').filter(function(){return $.inArray($(this).text(), services) > -1;}), dateTime = form.data('dateTime'), practitioner = $("#SelectServices").data('practitionerInfo'), serviceIds = $("#ServiceListModal").data('uidArr') == undefined ? null : $("#ServiceListModal").data('uidArr'), practitionerCheck, formVisible = form.is(":visible"), h2 = [], div = [];
-	matches.each(function(m,match){
-		duration = duration + Number($(this).data('duration'));
-		endDateTime = moment(dateTime).add(duration, 'm');
-		if (formVisible){
-			practitionerCheck = practitioner ? checkSchedule(dateTime, practitioner.schedule, serviceIds, duration) : null;
-			bizCheck = checkSchedule(dateTime, $("#BizHours").data('schedule'), null, duration);
-			if (bizCheck !== true && practitionerCheck === null){
-	            handleCheck(bizCheck,'biz','service',dateTime,endDateTime);
-			}else if (practitionerCheck && practitionerCheck !== true){
-				handleCheck(practitionerCheck,'practitioner','service',dateTime,endDateTime);
-			}
-		}
-	})
-	if (matches.length == 0){duration = "0"}
-	durationInput.val(duration);
-}
-function addDetail(type,value){
-	console.log('use appointment.details');
-	return;
-	// if (type == 'services'){console.log(value)}
-    $("#ApptDetails").find("."+type).find(".value").text(value);
-    $("#ApptDetails").find("."+type).find(".edit").show().text("change");
-    if (type == 'date'){
-    	$("#ApptDetails").find(".time").find(".edit").text("select");
-    }
-    if (defaultPractitionerInfo){$("#ApptDetails").find('.practitioner').find(".edit").hide();}
-}
-function removeDetail(type){
-	console.log('use appointment.details');
-	return;
-    if ($.isArray(type)){
-        $.each(type,function(x,t){
-            removeDetail(t);
-        })
-    }else{
-        var t = (type == 'time') ? "" : "select";
-        $("#ApptDetails").find("."+type).find(".value").text("none");
-        $("#ApptDetails").find("."+type).find(".edit").text(t);        
-    }
-}
-function openDetail(){
-    var targetId = $(this).data('target'), target = $(targetId), openBtn = target.find('.openBtn'), steps = target.children('div').not('.progressBar'), 
-    	allDetails = $("#SelectServices, #SelectDateTime, #SelectPractitioner"), inactive = allDetails.not(target);
-    if (target.hasClass('modalForm')){
-    	if ($(this).data('input') != undefined){
-    		activeForm.find($(this).data('input')).addClass('targetInput');
-    	}
-    	blurTopMost(targetId);
-    }else{
-	    if (target.is("#SelectServices") && !appointmentDetails.patient){
-	        feedback("Select A Patient","You must select a patient to determine the services available");
-	        return;
-	    }
-	    steps.hide();
-	    steps.first().fadeIn();
-	    if (inactive.filter(":visible").length > 0){
-	    	inactive.hide();
-	    	target.css('opacity',1);
-	    	target.fadeIn();
-	    }else{
-		    target.slideFadeIn();
-	    }
-	    if (($(this).text() == 'change' && !$(this).closest('h3').hasClass('date'))
-	    	|| ($(this).closest('h3').hasClass('.time'))){
-	    	steps.hide();
-	    	steps.last().show();
-	    }
-	    
-	    target.resetActives();
-	    target.find('.back').fadeOut();    	
-    }
-}
-function noEventConflict(start, duration, anonEvents){
-	if (anonEvents===null){return true;}
-	var sameDayEvents = anonEvents.filter(event => moment(event.start).format("MM-DD-YYYY") == start.format("MM-DD-YYYY")), pass = true,
-		end = moment(start).add(Number(duration),'m');
-	$.each(sameDayEvents,function(x,event){
-		if (conflictWithExistingEvent(start, end, event)){pass = false;}
-	})
-	return pass;
-}
-function conflictWithExistingEvent(start, end, event){
-	var conflict = true, eventStart = moment(event.start), eventEnd = moment(event.end);
-	if (start.isSameOrAfter(eventEnd)){
-		conflict = false;
-	}else if (end.isSameOrBefore(eventStart)){
-		conflict = false;
-	}
-	return conflict;
-}
-function hideAlreadySelected(progressiveSelector){
-	var targetStr = progressiveSelector.data('target'), target = modalOrBody($(this)).find(targetStr), currentVal = target.val(),
-		matches = progressiveSelector.find("li").filter(function(){
-			return currentVal.includes($(this).text());
-		});
-	matches.data('show',false);
-}
-
-function updatePatientData(){
-	// console.log('updatePatientData');
-	var patient = appointmentDetails.patient, row, patientId;
-	if (defaultPatientInfo){
-		patientInfo = defaultPatientInfo;
-		$("#ApptDetails").find('.patient').hide();
-	}else{
-		row = $("#PatientList").find("tr").filter(function(){return Number($(this).data('uid')) == patient;});
-		$.each(row.find(".patientInfo").text().split(','),function(i,info){
-        	var key = info.split(":")[0], val = info.split(":")[1];
-        	if (val == "true"){val = true;}
-        	if (val == "false"){val = false;}
-        	patientInfo[key] = val;
-        })
-        patientInfo['id'] = patient;
-        patientInfo['name'] = trimCellContents(row.find('.name'));
-	}
-	updateAvailableServices();
-}
-function updatePractitionerData(){
-	// console.log('updatePractitionerData');
-	var practitioner = appointmentDetails.practitioner, practitionerInfo;
-
-	if (practitioner){
-		$.each($("#Practitioners").data('schedule'),function(p,pract){
-			if (pract.practitioner_id == practitioner){practitionerInfo = pract;}
-		})
-		if (activeForm){
-			var services = ($("#ServiceListModal").data('uidArr') == undefined) ? null : $("#ServiceListModal").data('uidArr'),
-				duration = ($.inArray(activeForm.find("#duration").val(),['','0']) > -1) ? null : Number(activeForm.find("#duration").val()), 
-				time = activeForm.find(".time").val(), date = activeForm.find(".date").val(), dateTime = moment(date + " " + time, "MM-DD-YYYY hh:mma");
-			dateTime = (activeForm.data('dateTime') != undefined) ? activeForm.data('dateTime') : null;
-			if (services){
-				updateDuration();
-			}else if (dateTime){
-				var check = checkSchedule(dateTime, practitionerInfo.schedule, null, duration);
-				if (check !== true){
-					var endTime = (duration) ? moment(dateTime).add(duration,'m') : null;
-					setTimeout(function(){
-						handleCheck(check,'practitioner','practitioner',dateTime, endTime);
-					},500)
-				}			
-			}
-		}
-	}else{
-		practitionerInfo = null;
-		$("#PractitionerListModal").removeData('uidArr');
-	}
-	if (defaultPractitionerInfo){
-		addDetail('practitioner',defaultPractitionerInfo.name);
-		$("#SelectServices").find('.selectPractitioner').hide();
-	}
-	$("#SelectServices").data('practitionerInfo',practitionerInfo);
-}
-function updateAvailableServices(){
-	// console.log('updateAvailableServices');
-	var services = $("#ServiceDetails").find("li"), isNewPatient, newPatientsOk, newPatientsOnly, addonOk, addonOnly;
-	var practitioner = appointmentDetails.practitioner;
-	if (patientInfo == undefined){return false;}
-	isNewPatient = patientInfo.isNewPatient;
-	if (serviceOverride){
-		services.data('show',true);
-	}else if (isNewPatient){
-		if (usertype == 'patient'){
-			text = "New Patients are limited to Evaluation and Fascial Release appointments";
-		}else if (allowOverride){
-			text = "showing New Patient options only <span class='override'>show all</span>";
-		}else{
-			text = "showing New Patient options only";
-		}
-		$("#SelectServices").find(".conditionalLabel").html(text);
-		services.each(function(){
-			newPatientsOk = $(this).data('new_patients_ok');
-			$(this).data('show',newPatientsOk);
-		})
-	}else if (!isNewPatient){
-		$("#SelectServices").find(".conditionalLabel").text('');
-		services.each(function(){
-			newPatientsOnly = $(this).data('new_patients_only');
-			$(this).data('show',newPatientsOnly);
-		})
-	}
-	var count = (appointmentDetails.services) ? appointmentDetails.services.length : 0, text = $("#SelectServices").find(".conditionalLabel").text();
-	if (count > 0){
-		if (usertype == 'patient'){
-			text = "Limited selection until Initial Evaluation";
-		}else if (allowOverride){
-			text = isNewPatient ? "Showing New Patient Add-On services only <span class='override'>show all</span>" : "Showing Add-On services only";
-		}else{
-			text = isNewPatient ? "Showing New Patient Add-On services only" : "Showing Add-On services only";
-		}
-		$("#SelectServices").find(".conditionalLabel").html(text);
-		services.each(function(){
-			addonOk = $(this).data('is_addon');
-			if (!addonOk){
-				$(this).data('show', false);
-			}
-		})
-	}else{
-		services.each(function(){
-			addonOnly = $(this).data('add_on_only');
-			if (addonOnly){
-				$(this).data('show',false);
-			}
-		})
-	}
-	var alreadySelected = getServiceNames();
-	if (alreadySelected){
-		services.filter(function(){
-			return alreadySelected.includes($(this).text());
-		}).data('show',false);			
-	}
-	var showMe = services.filter(function(){
-			return $(this).data('show')
-		}), hideMe = services.not(showMe);
-	// console.log(showMe,hideMe);
-	showMe.show();
-	hideMe.hide();
-	updateAvailableCategories();
-}
-function updateAvailableCategories(){
-	// console.log('updateAvailableCategories');
-	var categories = $("#CategoryDetails").find("li"), services = $("#ServiceDetails").find("li"), categoryId, hasMatchingServices;
-	categories.each(function(){
-		categoryId = $(this).data('id');
-		hasMatchingServices = (services.filter(function(){return $(this).data('show') && $(this).data('service_category_id') == categoryId}).length > 0);
-		$(this).data('show',hasMatchingServices);
-	});
-	var showMe = categories.filter(function(){return $(this).data('show');}), hideMe = categories.not(showMe);
-	showMe.show();
-	hideMe.hide();
-	if (showMe.length == 0){$("#CategoryDetails").find(".conditionalLabel").html("NO ADDITIONAL SERVICES AVAILABLE<br><div class='button xsmall pink removeService'>remove service</div><div class='button xsmall yellow selectDate'>select date</div>")}
-}
-function updateFormInfo(forms){
-    $("#FormInfo").html("");
-    $.each(forms,function(f, form){
-    	var c = form.completed ? "complete":"incomplete";
-        $("<div/>",{
-            class: 'checkFormStatus ' + c,
-            data: form,
-            html: "<span class='link'>"+form.name+"</span>",
-            css: {position:'relative'}
-        }).appendTo($("#FormInfo"));
-        if (form.completed){
-            $("#FormInfo").find("div").last().append("<span class='checkmark'>✓</span>");
-        }else{
-            $("#FormInfo").find("div").last().append("<span class='xMark'>x</span>");
-        }
-    });
-    if (forms.length == 0){
-    	$("#FormInfo").append("<div>none</div>");
-    }
-}
-function updateChartNoteBtn(noteInfo){
-	$("#ChartNoteBtn").data('info',noteInfo);
-}
-function updateInvoiceBtn(invoiceInfo){
-	$("#InvoiceBtn").data('info',invoiceInfo);
-}
-
-function selectCategory(){
-	// console.log($(this).data());
-	var back = $("#SelectServices").find(".progressBar").find(".back");
-	back.find('.message').text("category");
-	$("#CategoryDetails").fadeOut(200,function(){
-		$("#ServiceDetails").fadeIn(400);
-		$("#ServiceDetails").find(".active").removeClass('active');
-		$("#ServiceDescription").hide();
-		back.fadeIn(400);
-	});
-}
-function showServiceDescription(){
-	var data = $(this).data(), desc = data.description, price = data.price;
-	$("#ServiceDescription").find(".message").html("<h4 class='purple'>"+desc+"<div class='pink'>$"+price+"</div></h4>");
-	slideFadeIn($("#ServiceDescription"));
-}
-function confirmApptDelete(){
-	var text, apptTime = $("#ApptDateTime").data('dateTime'), feeIncursion = moment().add(25, 'h').isAfter(apptTime), 
-		dateStr = apptTime.format("h:mma [on] dddd MMMM Do, YYYY");
-	if (usertype != 'patient'){
-		var name = $("#PatientName").text();
-		text = "<h3 class='purple flexbox'><span>"+name+"</span><span>"+dateStr+"</span></h3><label><input id='DoNotSendEmail' type='checkbox'>do not send cancellation email</label>";
-		if (feeIncursion){text+="<br><label><input id='AutoChargeCancelFee' type='checkbox'>auto-charge cancellation fee</label>";}
-	}else{
-		text = "<div>You are about to cancel your appointment on "+dateStr+".</div>";
-		if (feeIncursion){text += "<div class='paddedSmall'>Cancelling now will incur a cancellation fee because it is within 24hrs of your appointment.</div>";}
-		text += "<label><input id='DoNotSendEmail' type='checkbox'>do not send cancellation email</label>";
-	}
-	confirm('Cancelling Appointment',text+'<h3 class="pink paddedSmall topOnly">Are you sure?</h3>','yes, cancel it','no, do not cancel');
-	var wait = setInterval(function(){
-		if (confirmBool != undefined){
-			var obj = {};
-			if ($("#DoNotSendEmail").length == 1 && $("#DoNotSendEmail").is(":checked")){obj['send_email'] = false;}
-			else {obj['send_email'] = true;}
-			if (feeIncursion && $("#AutoChargeCancelFee").length == 1){
-				obj['late_cancel'] = $("#AutoChargeCancelFee").is(":checked") ? "charge" : 'no_charge';
-			}else{obj['late_cancel'] = false;}
-			if (confirmBool){
-				deleteAppt(obj);
-			}
-			confirmBool = undefined;
-			clearInterval(wait);
-		}
-	},100)
-}
-function deleteAppt(obj){
-	blurTopMost("#loading");
-
-	$.ajax({
-		url:"/delete/Appointment/"+$("#editAppointment").data('uid'),
-		method:"DELETE",
-		data:obj,
-		success:function(data){
-			// if (data == 'checkmark'){
-				// console.log(data);
-				blurTopMost("#checkmark");
-				delayedUnblurAll();
-				refreshAppointmentFeed(data);
-				// delayedUnblurAll();
-				// calendar.refetchEvents();
-			// }
-		}
-	})
-}
-
-function checkTime(momentObj, begin, end, duration = null){
-	var arr = [];
-
-	if (duration){
-		duration = Number(duration);
-		var moment2 = moment(momentObj).add(duration, 'm');
-		if (!(momentObj.isSameOrAfter(begin) && momentObj.isBefore(end))){
-			arr.push("start time");
-		}
-		if (!(moment2.isSameOrAfter(begin) && moment2.isSameOrBefore(end))){
-			arr.push("end time");
-		}
-	}else{
-		if (!(momentObj.isSameOrAfter(begin) && momentObj.isBefore(end))){
-			arr.push("start time");
-		}
-	}
-	return (arr.length == 0) ? true : arr;
-}
-function checkSchedule(momentObj, scheduleBlocks, services = null, duration = null){
-	if (momentObj == undefined){return true;}
-	var day = momentObj.day(), pass = false, notOffered = [], returnObj = {}, serviceInfo, dateInfo;
-	// console.log(scheduleBlocks);
-	$.each(scheduleBlocks,function(s,schedule){
-		var start = moment(momentObj.format("MM-DD-YYYY") + " " + schedule.start_time, "MM-DD-YYYY hh:mma"), 
-			end = moment(momentObj.format("MM-DD-YYYY") + " " + schedule.end_time, "MM-DD-YYYY hh:mma"),
-			availableServices = (schedule.services != undefined) ? schedule.services : null, timeCheck;
-
-		serviceInfo = {
-			services: services,
-			availableServices: availableServices
-		};
-		dateInfo = {
-			momentObj: momentObj,
-			start: start,
-			end: end,
-			duration: duration
-		};
-		var Sunday = (schedule.days.Sunday === true || schedule.days.Sunday === 'true'),
-			Monday = (schedule.days.Monday === true || schedule.days.Monday === 'true'),
-			Tuesday = (schedule.days.Tuesday === true || schedule.days.Tuesday === 'true'),
-			Wednesday = (schedule.days.Wednesday === true || schedule.days.Wednesday === 'true'),
-			Thursday = (schedule.days.Thursday === true || schedule.days.Thursday === 'true'),
-			Friday = (schedule.days.Friday === true || schedule.days.Friday === 'true'),
-			Saturday = (schedule.days.Saturday === true || schedule.days.Saturday === 'true'),
-			isDayAvailable = [Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday];
-		
-		if (isDayAvailable[day]){
-			returnObj = createCheckObj(dateInfo, serviceInfo);
-			if ($.isEmptyObject(returnObj)){pass = true;}
-		}
-	})
-	if (!pass && $.isEmptyObject(returnObj)){
-		returnObj['timeCheck'] = ['no hours today'];
-	}
-	// console.log(returnObj);
-	var r = ($.isEmptyObject(returnObj)) ? true : returnObj;
-	return pass ? true : returnObj;
-}
-function createCheckObj(dateInfo, serviceInfo){
-	var notOffered = [], timeCheck, returnObj = {};
-	if (serviceInfo.services && serviceInfo.availableServices){
-		$.each(serviceInfo.services,function(i,serviceId){
-			if ($.inArray(serviceId,serviceInfo.availableServices) == -1){
-				notOffered.push(serviceId);
-			}
-		})
-		if (notOffered.length > 0){
-			returnObj['notOffered'] = notOffered;
-			returnObj['offered'] = serviceInfo.availableServices;
-			returnObj['schedule'] = {'start':dateInfo.start,'end':dateInfo.end};
-		}
-	}
-	timeCheck = checkTime(dateInfo.momentObj, dateInfo.start, dateInfo.end, dateInfo.duration);
-	// console.log(dateInfo);
-	if (timeCheck !== true){
-		returnObj['timeCheck'] = timeCheck;
-		returnObj['schedule'] = {'start':dateInfo.start,'end':dateInfo.end};
-	}
-	return returnObj;
-}
-function availablePractitioners(momentObj, duration, services, idsOnly = false){
-	var practitioners = $("#Practitioners").data('schedule'), anonEvents = $("#AnonFeed").data('schedule'), availablePractitioners = [], availableIds = [];
-	// console.log(typeof anonEvents);
-	// practitioners = typeof practitioners == 'string
-	$.each(practitioners,function(p,practitioner){
-		var schedule = practitioner.schedule;
-		var	pracMatch = anonEvents.filter(event => 
-				(event.practitionerId != undefined && event.practitionerId == practitioner.practitioner_id)
-				|| (event.block != undefined && event.block == true)
-			), scheduleCheck = checkSchedule(momentObj, schedule, services, duration),
-			conflictCheck = noEventConflict(momentObj, duration, pracMatch);
-			// console.log(schedule,scheduleCheck,conflictCheck);
-		if (scheduleCheck === true && conflictCheck){
-			availablePractitioners.push(practitioner);
-			availableIds.push(practitioner.practitioner_id);
-		}
-	})
-	return idsOnly ? availableIds : availablePractitioners;
-}
-function applyEventClasses(details,element){
-	var extProps = details.extendedProps, type = extProps.type, types = type.split(":").join(" ");
-	$(element).addClass(types);
-}
-function handleCheck(check, type, action, start, end = null){
-	var h2 = [], div = [], str = '';
-	if (check.schedule != undefined){hours = "are set to " + check.schedule.start.format("h:mma") + "-" + check.schedule.end.format('h:mma') + ".";
-	}else{hours = "are not set.";}
-
-	if (type == 'biz'){
-        h2.push('Outside Business Hours');
-        if (end){
-	        div.push("The selected services push the appointment end time to "+end.format("h:mm a")+", which is outside of business hours. On "+ end.format("dddd") + ", business hours "+hours);
-        }else{
-        	div.push(start.format("dddd, MMMM Do YYYY, h:mm a")+" is outside of business hours. On "+ start.format("dddd") + ", business hours "+hours);
-        }
-	}else if (type == 'practitioner'){
-		var practitioner = $("#SelectServices").data('practitionerInfo'), services = $("#ServiceListModal").data('uidArr');
-
-		if (check.timeCheck != undefined){
-			var patient = (usertype == 'patient');
-			var h = patient ? practitioner.name +" Unavailable" : 'Unscheduled Practitioner';
-			h2.push(h);
-			str = "";
-			$.each(check.timeCheck, function(t,time){
-				if (time.includes('start') && str == ""){
-					str = "The start time, "+start.format("h:mm a")+", is outside of "+practitioner.name+"'s schedule. Their hours on " + check.schedule.start.format("dddd") +" are "+ check.schedule.start.format("h:mm a")+"-" + check.schedule.end.format("h:mm a") + ".";
-				}else if (time.includes('end') && str == ""){
-					if (patient){
-						str = "Adding this service would push the appointment outside of " + practitioner.name + "'s availability. Would you like to choose a different date and time to accomodate this new service?";
-					}else{
-						str = "The end time, "+end.format("h:mm a")+", is outside of "+practitioner.name+"'s schedule. Their hours on " + check.schedule.start.format("dddd") +" are "+  check.schedule.start.format("h:mm a")+"-" + check.schedule.end.format("h:mm a") + ".";	
-					}
-				}else if (time.includes('end')){
-					str = "This appointment time, "+start.format("h:mm a")+" to "+end.format("h:mm a")+", is outside of "+practitioner.name+"'s schedule. Their hours on " + check.schedule.start.format("dddd") +" are "+ check.schedule.start.format("h:mm a")+"-" + check.schedule.end.format("h:mm a") + ".";
-				}
-			})
-			div.push(str);
-		}else if (check.notOffered != undefined){
-			var i = check.notOffered.length - 1, serviceId = check.notOffered[i], serviceName = services[i], offered;
-			offered = commaSeparated(getColumnById("Service",check.offered),true);
-			h2.push('Unscheduled Service');
-			// console.log(services);
-			div.push("'"+ serviceName + "' is not offered by " + practitioner.name + " at this time. On "+start.format('dddd')+"'s from "+check.schedule.start.format("h:mm a")+" to "+check.schedule.end.format("h:mm a")+" they offer only "+offered+".");
-		}
-	};
-
-	$("#Warn").find(".message").html("");
-	str = "";
-	$.each(h2,function(i,error){
-		str += "<h2>"+error+"</h2><div>"+div[i]+"</div>";
-	});
-	if (allowOverride){
-		str += "<h3 class='pink'>Continue Anyway?</h3>";
-	}
-
-	var targetId = allowOverride ? "#Warn" : "#Confirm";
-	$(targetId).find(".message").html(str);
-    blurTopMost(targetId);
-
-    if (allowOverride){
-	    var wait = setInterval(function(){
-	        if (confirmBool != undefined){
-	            if (confirmBool){
-	            	if (action == 'new'){
-	            		blurElement($("body"),"#createAppointment");
-	            	}else{
-		            	unblurTopMost();
-	            	}
-	            }else{
-	            	handleAction(action);
-	            }
-	            clearInterval(wait);
-	            confirmBool = undefined;
-	        }
-	    },100)    	
-    }else{
-	    var wait = setInterval(function(){
-	        if (confirmBool != undefined){
-	            if (confirmBool){
-	            	if (action == 'service'){
-	            		removeDetail(['date','time']);
-	            		$("#ApptDetails").closest(".modalForm").find(".time, .date, #DateSelector").val("");
-	            	}
-	            	unblurTopMost();
-	            }else{
-	            	handleAction(action);
-	            }
-	            clearInterval(wait);
-	            confirmBool = undefined;
-	        }
-	    },100)    	
-    }
-}
-function handleAction(action){
-   	var form = $("#createAppointment, #editAppointment").filter(":visible");
-	if (action == 'service'){
-		// console.log('yup');
-    	$("#SelectServices").find(".clearLastBtn").click();
-	}else if (action == 'time'){
-		form.find('.time').click();
-	}else if (action == 'practitioner'){
-		$("#PractitionerListModal").find(".active").removeClass('.active');
-		$("#PractitionerListModal").removeData('uidArr');
-		form.find('.select_practitioner').val('');
-		$("#SelectServices").removeData('practitionerInfo');
-	}
-}
-
-function loadPatientCal(target){
-    var tz = target.data('timezone'), clientTz = moment.tz.guess(), location = target.data('location');
-    moment.tz.setDefault(tz.replace(" ","_"));
-    calendar = new FullCalendar.Calendar(target[0], {
-        plugins: ['dayGrid','list', 'timeGrid', 'interaction', 'rrule', 'momentTimezone'],
-        timeZone: tz,
-        header:{
-            left:"title",
-            center:"",
-            right:"prev,today,next dayGridMonth,listMonth",
-        },
-        height: "auto",
-        dateClick: function(info){
-            resetEntireAppt();
-            // console.log(info);
-            var date = moment(info.date).format("M/D/YYYY");
-            updateAppointment({date:date});
-            $("#booknow").click();
-        },
-        eventClick: function(info){
-            var ev = info.event, details = $.extend(true, {}, ev.extendedProps), patients = details.patients, practitioner = details.practitioner, services = details.services, patientIds = details.patientIds, practitionerId = details.practitionerId, serviceIds = details.serviceIds, forms = details.forms, dateTime = moment(ev.start), uid = details.bodywizardUid, type = details.type, ele = $(info.el), title = ev.title;
-            // console.log(ev,details);
-            resetEntireAppt();
-            if (ele.hasClass('appointment')){
-                activeForm = $("#editAppointment");
-                updateAppointment({
-                    patient:patientIds[0],
-                    practitioner:practitionerId,
-                    services:serviceIds,
-                    datetime:dateTime
-                });
-                $("#editAppointment").data('uid',uid);
-                setUid("Appointment",uid);
-                $("#PatientName").text(patients);
-                $("#PractitionerName").text(practitioner);
-                $("#ApptDateTime").text(dateTime.format("h:mm a [on] dddd, MMMM Do YYYY"));
-                $("#ApptDateTime").data('dateTime',dateTime);
-                $("#ServiceInfo").text(services);
-                // console.log('updateform',details,forms);
-                updateFormInfo(details.forms);
-                moveServiceSelect("#editAppointment");
-                // loadApptInfo(patientIds,practitionerId,serviceIds,dateTime,$("#editAppointment"));
-                blurElement($("body"),"#Appointment");                
-            }
-        },
-        defaultView:"listMonth",
-        allDaySlot: false,
-        minTime:$("#BizHours").data("earliest"),
-        maxTime:$("#BizHours").data("latest"),
-        noEventsMessage: "No appointments scheduled this month",
-        eventSources: 
-        [
-            {
-                events: jsonIfValid($("#AppointmentsFullCall").data('schedule')),
-                id: "appointments"
-            }
-        ],
-        businessHours: $("#BizHours").data('fullcal'),
-        eventRender: function(info){
-            var eventData = info.event, ele = info.el;
-            applyEventClasses(eventData,$(ele));
-        },
-        nowIndicator: true
-    })
-
-    calendar.render();
-    resizeFcCalendar();
-    var tb = target.find(".fc-toolbar");
-    $("#TimezoneWrap").insertAfter(tb).css('display','inline-block');
-    if (tz != clientTz){
-        $("#TimezoneWrap").html("Take note: you appear to be in a different timezone than your appointments will be held.<br><b>Appointments are displayed and scheduled in local "+location+" time.</b>");
-    }
-}
-function loadPractitionerCal(target){
-    var tz = target.data('timezone'), clientTz = moment.tz.guess(), location = target.data('location');
-    moment.tz.setDefault(tz.replace(" ","_"));
-
-    calendar = new FullCalendar.Calendar(target[0], {
-        plugins: ['dayGrid','list', 'timeGrid', 'interaction', 'rrule', 'momentTimezone'],
-        timeZone: tz,
-        header:{
-            left:"title",
-            center:"",
-            right:"prev,today,next dayGridMonth,timeGridWeek,timeGridDay",
-        },
-        height: "auto",
-        dateClick: function(info){
-            activeForm = $("#createAppointment");
-            serviceOverride = false;
-            resetEntireAppt();
-            moveServiceSelect("#createAppointment",false);
-            movePracTimeSelect("#createAppointment",false);
-            moveDetails('#createAppointment');
-            var date = moment(info.date).format("M/D/YYYY"), time = moment(info.date).format("h:mma");
-            updateAppointment({date:date,time:time});
-            blurElement($("body"),'#createAppointment');
-        },
-        eventClick: function(info){
-            var ev = info.event, details = $.extend(true, {}, ev.extendedProps), ele = $(info.el), dateTime = moment(ev.start);
-            // var patients = details.patients, practitioner = details.practitioner, services = details.services, patientIds = details.patientIds, practitionerId = details.practitionerId, serviceIds = details.serviceIds, forms = details.forms, dateTime = moment(ev.start), uid = details.bodywizardUid, type = details.type, ele = $(info.el);
-            serviceOverride = false;
-            resetEntireAppt();
-            console.log(details);
-            if (ele.hasClass('appointment')){
-                activeForm = $("#editAppointment");
-                moveServiceSelect("#editAppointment",false);
-                movePracTimeSelect("#editAppointment",false);
-                moveDetails('#editAppointment');
-                updateAppointment({
-                    patient: details.patient.id,
-                    practitioner: details.practitioner.id,
-                    services: details.serviceIds,
-                    datetime: details.dateTime
-                });
-                $("#editAppointment").data('uid',details.uid);
-                // setUid("Appointment",details.uid);
-                uids.set({
-                	Appointment: details.uid,
-                	Practitioner: details.practitioner.id,
-                	ChartNote: details.chartNote.id
-                });
-                uids.log();
-                $("#PatientName").text(details.patient.name);
-                $("#PractitionerName").text(details.practitioner.name);
-                $("#ApptDateTime").text(dateTime.format("h:mm a [on] dddd, MMMM Do YYYY"));
-                $("#ApptDateTime").data('dateTime',dateTime);
-                $("#ServiceInfo").text(details.services.names);
-                updateFormInfo(details.forms);
-                updateChartNoteBtn(details.chartNote);
-                updateInvoiceBtn(details.invoice);
-                // loadApptInfo(patientIds,practitionerId,serviceIds,dateTime,$("#editAppointment"));
-                blurElement($("body"),"#Appointment");                
-            }
-        },  
-        defaultView:"timeGridWeek",
-        allDaySlot: false,
-        minTime:$("#BizHours").data("earliest"),
-        maxTime:$("#BizHours").data("latest"),
-        // events: $("#ApptFeed").data("events")
-        eventSources: 
-        [
-            {
-                events: jsonIfValid($("#AppointmentsFullCall").data('schedule')),
-                id: "appointments"
-            },
-            {
-                events: jsonIfValid($("#NonEhr").data('schedule')),
-                id: "nonEHR"
-            }    
-        ],
-        businessHours: $("#BizHours").data('fullcal'),
-        eventRender: function(info){
-            var eventData = info.event, ele = info.el;
-            applyEventClasses(eventData,$(ele));
-        },
-        nowIndicator: true
-    })
-
-    calendar.render();
-    resizeFcCalendar();
-    var tb = target.find(".fc-toolbar");
-    $("#TimezoneWrap").insertAfter(tb).css('display','inline-block');
-    if (tz != clientTz){
-        $("#TimezoneWrap").html("Take note: you appear to be in a different timezone than your appointments will be held.<br><b>Appointments are displayed and scheduled in local "+location+" time.</b>");
-    }
-    $("#ChangeTitleWrap").insertAfter(tb).css('display','inline-block');
-    $("#ChangeTitleWrap").on('click','li',changeTitles);
-    $("#ChangeTitle").find("li").filter('[data-value="service"]').addClass('active');
-}
-
-// PRACTITIONER FUNCTIONS
-function changeTitles(){
-	var active = $("#ChangeTitle").find(".active"), hasActive = (active.length == 1), attr, events = calendar.getEvents();
-	if (!$(this).is('li')){
-		if (!hasActive){console.log("oh");return;}
-		attr = active.data('value');
-	}else{
-		attr = $(this).data('value');
-	}
-    if (attr == 'names'){
-        $.each(events,function(e,event){event.setProp('title', event.extendedProps.patient.name)})
-    }else if (attr == 'service'){
-        $.each(events,function(e,event){event.setProp('title', event.extendedProps.services.names.split(", ")[0])})
-    }else if (attr == 'no label'){
-        $.each(events,function(e,event){event.setProp('title', "")})
-    }
-    calendar.rerenderEvents();
-}
-function overrideService(){
-    serviceOverride = true;
-    updateAvailableServices();
-    $("#SelectServices").find(".conditionalLabel").text('showing all options');
-    $('.step').hide();
-    $("#CategoryDetails").find(".active").removeClass('active');
-    $("#CategoryDetails").fadeIn();
-}
-function checkForChartNote(){
-	var info = $("#ChartNoteBtn").data('info');
-	console.log(info);
-	if (info.id === null){
-		confirm('No Chart Note',"There is no chart note for this appointment yet. <h3 class='pink'>Create chart note now?</h3>", 'yes, create','not now', null, loadChartNoteInEditor);
-	}
-	else if (info.status == 'not signed'){
-		confirm('Unsigned Chart Note',"There's an unsigned chart note for this appointment. <h3 class='pink'>Do you want to edit it?</h3>",'yes, edit','not now', null, loadChartNoteInEditor);
-	}else{
-		// console.log("confirming");
-		confirm('Chart Note Complete',"The chart note for this appointment is already signed. <h3 class='pink'>View chart note?</h3>",'yes, view','not now',null, chartnote.view(info.id));
-	}
-	return false;
-}
-function checkForInvoice(){
-	var info = $("#InvoiceBtn").data('info');
-	console.log(info);
-	if (info.id === null){
-		confirm('No Invoice',"There is no invoice for this appointment yet. <h3 class='pink'>Create invoice now?</h3>", 'yes, create','not now', null, loadInvoiceInEditor);
-	}
-	else if (info.status == 'unsettled'){
-		confirm('Unpaid Invoice',"There's an unsettled invoice for this appointment. <h3 class='pink'>Do you want to edit it?</h3>",'yes, edit','not now',null,invoice.view.apptInfoClick);
-	}else{
-		confirm('Invoice Settled',"The invoice for this appointment is already settled. <h3 class='pink'>View invoice?</h3>",'yes, view','not now',null,function(){alert('hi')});
-	}
-	return false;
-}
-function loadChartNoteInEditor(){
-	console.log('use chartnote.view')
-	unblurAll(function(){clickTab("chart-note-create");});
-}
-function loadInvoiceInEditor(){
-	console.log('use invoice.char')
-	unblurAll(function(){clickTab("invoice-create");});
-}

@@ -1,4 +1,4 @@
-<div class="lineItem flexbox header invoiceTitle" data-type="{{$type}}">
+<div class="lineItem flexbox header invoiceTitle {{$type}}" data-type="{{$type}}">
 	<div class="description editable">
 		Description
 	</div>

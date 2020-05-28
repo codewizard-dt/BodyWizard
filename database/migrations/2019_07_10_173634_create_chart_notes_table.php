@@ -24,6 +24,7 @@ class CreateChartNotesTable extends Migration
             $table->mediumtext('points')->nullable();
             $table->longtext('autosave')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

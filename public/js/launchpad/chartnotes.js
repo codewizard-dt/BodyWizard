@@ -1,21 +1,28 @@
 var chartnote = {
 	current: {
-		id: null,
-		submissions: null,
+		uid: null,
+		autosave: null,
 		notes: null,
+		patient_id: null,
+		practitioner_id: null,
 		appointment_id: null,
-		signature: null
+		signature: null,
+		changes: null,
+	},
+	previous: {
+		autosave: null,
+		notes: null,
 	},
 	autosaveXHR: null,
 	forms: {
 		add: function(form){
-			blurTopMost('#loading');
+			blurTop('#loading');
 			$("<h2/>",
-				{
-					id:'LoadingChartForm',
-					class:'chartNoteTitle purple marginSmall topOnly hideTarget',
-					html:"Loading "+form.title+"<div style='position:absolute;left:0;top:0;width:100%;height:2.5em;background-color: var(--white50);'><div class='lds-ring dark' style='padding:0;'><div></div><div></div><div></div><div></div></div></div>"
-				}
+			{
+				id:'LoadingChartForm',
+				class:'chartNoteTitle purple marginSmall topOnly hideTarget',
+				html:"Loading "+form.title+"<div style='position:absolute;left:0;top:0;width:100%;height:2.5em;background-color: var(--white50);'><div class='lds-ring dark' style='padding:0;'><div></div><div></div><div></div><div></div></div></div>"
+			}
 			).insertBefore("#ChartFormsModalBtn");
 			$.ajax({
 				url:"/ChartNote/load-form/"+form.formid,
@@ -27,12 +34,12 @@ var chartnote = {
 					chartnote.forms.updateActiveList();
 					// initializeChartNoteAutoSave();
 					chartnote.initialize.all();
-					unblurTopMost();
+					unblur();
 				}
 			})			
 		},
 		remove: function(){
-			unblurTopMost();
+			unblur();
 			var btn = $(".removeTarget"), match = $(".chartNoteTitle").filter(function(){return $(this).data('formname') == btn.find('.label').text();}), formWrap = $("#"+match.data('target'));
 			// console.log(btn,match,formWrap);
 			btn.find('.removeForm, .UpDown').remove();
@@ -48,13 +55,13 @@ var chartnote = {
 					return $(this).text().includes(formName);
 				}), alreadyActive = match.closest('#LoadedForms').length == 1;
 				if (!alreadyActive) {match.append('<div class="UpDown"><div class="up"></div> <div class="down"></div></div><span class="removeForm flexbox">x</span>').addClass('flexbox rightSided');
-				}
-				match.appendTo("#LoadedForms");
-			})
+			}
+			match.appendTo("#LoadedForms");
+		})
 			if ($("#AvailableChartingForms").children().length == 0){
 				$("<div/>",{id:'NoMoreForms',text:'no more available forms'}).appendTo("#AvailableChartingForms");
 			}else{$("#NoMoreForms").remove();}
-			if (openModal) blurTopMost('#ChartFormsModal');
+			if (openModal) blurTop('#ChartFormsModal');
 		},
 		retrieve: function(form, autosave = false){
 			if (!form.is(":visible") && !autosave){
@@ -62,8 +69,8 @@ var chartnote = {
 			}
 			var formObj = forms.retrieve(form, autosave, autosave);
 			if (!formObj) return false;
-			if (!chartnote.current.submissions) chartnote.current.submissions = {};
-			chartnote.current.submissions[form.data('uid')] = formObj;
+			if (!chartnote.current.autosave) chartnote.current.autosave = {};
+			chartnote.current.autosave[form.data('uid')] = formObj;
 			return true;
 		},
 		autosave: function(ev){
@@ -74,15 +81,26 @@ var chartnote = {
 			setTimeout(autosave.trigger, 300);
 		}
 	},
-	autosave: function(){
-		chartnote.autosaveXHR = $.ajax({
-			url:'/ChartNote/'+$("#ApptInfo").data('noteid')+'/autosave',
+	autosave: () => {
+		let note = chartnote.current;
+		let data = {
+			uid: note.uid,
+			columns: {
+				patient_id: note.patient_id,
+				practitioner_id: note.practitioner_id,
+				appointment_id: note.appointment_id,
+				notes: note.notes,
+				autosave: note.autosave,
+			},
+			sync: [],
+		};
+		log(data,'chartnote autosave data');
+		return $.ajax({
+			url:'/save/ChartNote',
 			method: 'POST',
-			data: chartnote.current,
+			data: data,
 			success:function(data){
-				$("#ApptInfo").data('noteid',getUids('ChartNote'));
-				chartnote.autosaveXHR = null;
-				autosave.success();
+				note.uid = getUids('ChartNote');
 			}
 		})
 	},
@@ -108,19 +126,39 @@ var chartnote = {
 			setTimeout(chartnote.sign.ajaxCall, 300);
 		},
 		ajaxCall: function(){
-			console.log('5');
-			clearTimeout(autosave.settings.timer);
-			blurTopMost('#loading');
+			autosave.clearTimer();
+
+			let note = chartnote.current;
+			let data = {
+				uid: note.uid,
+				columns: {
+					patient_id: note.patient_id,
+					practitioner_id: note.practitioner_id,
+					appointment_id: note.appointment_id,
+					notes: note.notes,
+					signed_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+					signature: note.signature,
+				},
+				submissions: note.autosave,
+				sync: [],
+			};
+			log(data,'chartnote sign data');
+
+			blurTop('#loading');
 			$.ajax({
-				url:'/ChartNote/'+$("#ApptInfo").data('noteid')+'/sign',
+				url:'/save/ChartNote',
 				method: 'POST',
-				data: chartnote.current,
+				data: data,
 				success:function(data){
 					console.log(data);
-					blurTopMost("#checkmark",400,function(){
-						delayedUnblurAll();
-						clickTab("#chart-notes-index");
-					});
+					blurTop('#checkmark',{
+						callback: function(){
+							log({data},'should be callback');
+							unblur();
+							$("#chart-notes-index").click();
+						},
+						delay: 1000
+					})
 				}
 			})
 		}
@@ -128,26 +166,34 @@ var chartnote = {
 	autofill: {
 		onload: function(){
 			if ($("#ChartNote").dne()) return;
-			// var submissions = $("#ApptInfo").data('autosave');
-			chartnote.autofill.incompleteForms($("#ApptInfo").data('autosave'));
-			chartnote.autofill.completeForms();
-			chartnote.autofill.signature();
-			notes.autofill($("#ApptInfo").data('notes'));
-			setTimeout(function(){
-				console.log('clear');
-				clearTimeout(chartnote.autosaveTimer);
-				clearTimeout(autosave.settings.timer);
-			},2000)
+			if (!$("#ChartNote").hasClass('signed') && !$('#ApptInfo').data()) return;
+			
+			init('#ChartNote',function(){
+				// log({data:$("#ApptInfo").data()},'appt load');
+				let data = $("#ApptInfo").data();
+				for (attr in data){
+					chartnote.current[attr] = data[attr];
+					console.log(attr,data[attr]);
+				}
+				// console.log(chartnote.current.autosave);
+				chartnote.autofill.completeForms();
+				chartnote.autofill.signature();
+				chartnote.autofill.incompleteForms(chartnote.current.autosave);
+				notes.autofill(chartnote.current.notes);
+				setTimeout(autosave.clearTimer,2000);
+			});
 		},
 		incompleteForms: function(autosaveData){
 			if (autosaveData == '""' || autosaveData == undefined) return false;
 			$.each(autosaveData,function(formId,responses){
 				var form = $('form').filter("[data-uid='"+formId+"']");
 				forms.fill(form, responses);
+				// log({form,responses});
 			});
 		},
 		completeForms: function(){
 			var submissions = filterByData('.chartNoteTitle','type','submission');
+			log({submissions},'autofill submission data');
 			submissions = filterByData(submissions,'deactivated',false);
 			submissions.each(function(){
 				var target = $(this).data('target'), response = filterByData('.responses','target',target), form = $("#"+target);
@@ -168,23 +214,25 @@ var chartnote = {
 	view: function(uid = null){
 		if (!uid && !getUids('ChartNote')) return false;
 		else if (!uid && getUids('ChartNote')) uid = getUids('ChartNote');
-		blurTopMost("#loading");
+		if (modal.top().is('#Confirm')) unblur();
+		blurTop("#loading");
 		$.ajax({
 			url:'/ChartNote/'+uid+'/view',
 			method: "GET",
 			success: function(data){
 				if ($("#ChartNote").exists()) $("#ChartNote").html(data).attr('class', 'modalForm signed');
 				else $("<div/>",{id:"ChartNote",class:'modalForm signed',html:data}).appendTo('body');
-				blurTopMost('#ChartNote');
+				$("#ChartNote").data('initialized',false);
+				blurTop('#ChartNote');
 				initializeNewForms();
 				chartnote.initialize.all();
 			}
 		})		
 	},
-	edit: function(uid = 'new'){
-
+	edit: function(){
+		unblurAll({fade:800});
+		$("#chart-note-create").click();
 	},
-
 	initialize: {
 		all: function(){
 			if ($("#ChartNote").dne()) return;
@@ -192,44 +240,29 @@ var chartnote = {
 			$.each(chartnote.initialize, function(name, initFunc){
 				if (name != 'all' && typeof initFunc === 'function') initFunc();
 			})
-			chartnote.autofill.onload();
-			$("#SignChartBtn").on('click',chartnote.sign.check);
-			$('#ChartFormsModalBtn').on('click',function(){chartnote.forms.updateActiveList(true);})
-			if (!$("#CurrentAppt").exists()) $(".selectNewAppt").click();
-			else chartnote.current.appointment_id = $("#CurrentAppt").data('uid');
-		},
-		selectNewApptBtns: function(fadeTheseIn = "#ApptsWithoutNotes"){
-		    var selectBtn = filterUninitialized('.selectNewAppt');
-		    selectBtn.on('click',function(){
-		        showOtherAppts(fadeTheseIn);
-		    });
-		    selectBtn.data('initialized',true);			
-		},
-		confirmApptBtn: function(){
-			var btn = filterUninitialized($('#ConfirmApptForNote').find('.confirmApptBtn'));
-			btn.on('click',function(){
-				if ($(this).hasClass('disabled')) {
-					feedback('No Appointment Selected','Pick an appointment first, silly.');
-					return false;
-				}
-				var active = $(".appt, .unsignedNote").filter('.active'), apptId = (active.length == 0) ? getUids('Appointment') : active.data('uid');
-				$("#ConfirmApptForNote").slideFadeOut();
-				LoadingContent("#ChartNote","/appointment/"+apptId+"/edit-chart-note",chartnote.forms.updateActiveList);				
+			appointment.initialize.externalSelectAndLoad({
+				target: $("#ChartNote"),
+				url: "/appointment/apptId/edit-chart-note",
+				callback: chartnote.forms.updateActiveList,
+				btnText: {hasNote:'finish note',noNote:'start note'},
 			});
-			btn.data('initialized',true);
-		},
-		apptClick: function(){
-		    var appts = filterUninitialized('.appt');
-		    if (appts.dne()) return;
-		    appts.on('click',selectThisAppt);
-		    appts.data('initialized');
+			chartnote.autofill.onload();
+			init([
+				['#SignChartBtn',function(){$(this).on('click',chartnote.sign.check)}],
+				['#ChartFormsModalBtn',function(){$(this).on('click',chartnote.forms.updateActiveList.bind(null,true))}],
+				]);
+			if ($("#CurrentAppt").dne()) $(".selectNewAppt").click();
+			else {
+				chartnote.current.appointment_id = $("#CurrentAppt").data('uid');
+				uids.set({Appointment: $("#CurrentAppt").data('uid')});
+			}
 		},
 		noApptsBtn: function(message = 'All of your appointments from the last 30 days are settled.'){
-		    var btn = filterUninitialized("#NoEligibleApptsBtn");
-		    btn.on('click',function(){
-		        confirm('No Eligible Appointments',message,'create new appointment','dismiss',null,function(){clickTab("appointments-index");unblurAll();})
-		    });
-		    btn.data('initalized',true);			
+			var btn = filterUninitialized("#NoEligibleApptsBtn");
+			btn.on('click',function(){
+				confirm('No Eligible Appointments',message,'create new appointment','dismiss',null,function(){clickTab("appointments-index");unblurAll();})
+			});
+			btn.data('initalized',true);			
 		},
 		availableFormClicks: function(){
 			var btns = filterUninitialized('.availableChartForm');
@@ -240,7 +273,13 @@ var chartnote = {
 					var target = $(ev.target);
 					if (target.is(".removeForm")){
 						$(this).addClass('removeTarget');
-						confirm("Removing Form", "Any information you have entered will be lost.<h3 class='pink'>Remove Form and Data?</h3>", "yes, remove", 'no, do not remove', null, chartnote.forms.remove)				
+						confirm({
+							header: 'Removing Form',
+							message: "Any information you have entered will be lost.<h3 class='pink'>Remove Form and Data?</h3>",
+							yesBtnText: 'remove form',
+							noBtnText: 'go back',
+							affirmativeCallback: chartnote.forms.remove,
+						})
 					}else if (target.is(".up, .down")){
 						console.log("add this function yo");
 					}
@@ -251,30 +290,36 @@ var chartnote = {
 			btns.data('initialized',true);
 		},
 		pinnedNotes: function(){
-			var noteForm = filterByData($("#ChartNote").find("#AddNote"),'hasNoteFx',false);
-			if (noteForm.dne()) return;
-			minifyForm(noteForm);
-			notes.initialize.withModel(chartnote, autosave.trigger);
-			noteForm.data('hasNoteFx',true);			
+			log({form:$("#AddNote")});
+			initAlt('#AddNote','hasNoteFx',function(){
+				log({this:this},'note initialize');
+				minifyForm($(this));
+				notes.initialize.withModel(chartnote, autosave.trigger);
+			});
 		},
 		autosave: function(){
 			autosave.reset();
+			if ($("#ChartNote").hasClass('signed')) return;
 			autosave.initialize({
-		        saveBtn: $("#SignChartBtn"),
-		        ajaxCall: chartnote.autosave,
-		        callback: null,
-		        delay: 10000
+				saveBtn: $("#SignChartBtn"),
+				ajaxCall: chartnote.autosave,
+				callback: function(data){
+					log({data},'callback data');
+					if (data.uid) chartnote.current.uid = data.uid;
+					log(chartnote.current,'current');
+				},
+				delay: 10000
 			});
 			var needsAutosave = $("#ChartNote").find('form').not("#AddNote");
 			var textfields = filterByData(needsAutosave.find("input, textarea"),'autoSaveTrigger',false),
-				listItems = filterByData(needsAutosave.find('li'),'autoSaveTrigger',false),
-				numbers = filterByData(needsAutosave.find('.number'),'autoSaveTrigger',false),
-				dropdowns = filterByData(needsAutosave.find('.dropdown'),'autoSaveTrigger',false),
-				scale = filterByData(needsAutosave.find('.scale'),'autoSaveTrigger',false),
-				dates = filterByData(needsAutosave.find('.date'),'autoSaveTrigger',false),
-				times = filterByData(needsAutosave.find('.timePick'),'autoSaveTrigger',false),
-				imageClicks = filterByData(needsAutosave.find('.imageClick'),'autoSaveTrigger',false),
-				sigs = filterByData(needsAutosave.find('.signature'),'autoSaveTrigger',false);
+			listItems = filterByData(needsAutosave.find('li'),'autoSaveTrigger',false),
+			numbers = filterByData(needsAutosave.find('.number'),'autoSaveTrigger',false),
+			dropdowns = filterByData(needsAutosave.find('.dropdown'),'autoSaveTrigger',false),
+			scale = filterByData(needsAutosave.find('.scale'),'autoSaveTrigger',false),
+			dates = filterByData(needsAutosave.find('.date'),'autoSaveTrigger',false),
+			times = filterByData(needsAutosave.find('.timePick'),'autoSaveTrigger',false),
+			imageClicks = filterByData(needsAutosave.find('.imageClick'),'autoSaveTrigger',false),
+			sigs = filterByData(needsAutosave.find('.signature'),'autoSaveTrigger',false);
 			
 			textfields.on('keyup', chartnote.forms.autosave);
 			listItems.on('click', chartnote.forms.autosave);
@@ -305,7 +350,7 @@ function initializeChartNotePage(){
 	else chartnote.current.appointment_id = $("#CurrentAppt").data('uid');
 	$('#ChartFormsModalBtn').on('click',function(){
 		chartnote.forms.updateActiveList();
-		blurTopMost('#ChartFormsModal');
+		blurTop('#ChartFormsModal');
 	})
 	$("#SignChartBtn").on('click',chartnote.sign.check);
 	chartnote.autofill.onload();
@@ -324,14 +369,14 @@ function initializeChartNoteAutoSave(){
 	chartnote.autosave.initialize();
 	var needsAutosave = $("#ChartNote").find('form').not("#AddNote");
 	var textfields = filterByData(needsAutosave.find("input, textarea"),'autoSaveTrigger',false),
-		listItems = filterByData(needsAutosave.find('li'),'autoSaveTrigger',false),
-		numbers = filterByData(needsAutosave.find('.number'),'autoSaveTrigger',false),
-		dropdowns = filterByData(needsAutosave.find('.dropdown'),'autoSaveTrigger',false),
-		scale = filterByData(needsAutosave.find('.scale'),'autoSaveTrigger',false),
-		dates = filterByData(needsAutosave.find('.date'),'autoSaveTrigger',false),
-		times = filterByData(needsAutosave.find('.timePick'),'autoSaveTrigger',false),
-		imageClicks = filterByData(needsAutosave.find('.imageClick'),'autoSaveTrigger',false),
-		sigs = filterByData(needsAutosave.find('.signature'),'autoSaveTrigger',false);
+	listItems = filterByData(needsAutosave.find('li'),'autoSaveTrigger',false),
+	numbers = filterByData(needsAutosave.find('.number'),'autoSaveTrigger',false),
+	dropdowns = filterByData(needsAutosave.find('.dropdown'),'autoSaveTrigger',false),
+	scale = filterByData(needsAutosave.find('.scale'),'autoSaveTrigger',false),
+	dates = filterByData(needsAutosave.find('.date'),'autoSaveTrigger',false),
+	times = filterByData(needsAutosave.find('.timePick'),'autoSaveTrigger',false),
+	imageClicks = filterByData(needsAutosave.find('.imageClick'),'autoSaveTrigger',false),
+	sigs = filterByData(needsAutosave.find('.signature'),'autoSaveTrigger',false);
 	
 	textfields.on('keyup', chartnote.forms.autosave);
 	listItems.on('click', chartnote.forms.autosave);
@@ -378,7 +423,7 @@ function initializeConfirmApptForNoteBtn(){
 	// btn.data('initialized',true);
 }
 function editNoteFromOptionsNav(){
-	blurTopMost("#loading");
+	blurTop("#loading");
 	var uid = $("#CurrentChartNote").data('uid');
 	$.ajax({
 		url:'/ChartNote/'+uid+'/edit',
@@ -389,7 +434,7 @@ function editNoteFromOptionsNav(){
 			}else{
 				$("<div/>",{id:"ChartNote",class:'modalForm',html:"<h1 class='purple'>Edit Chart Note</h1>"+data}).appendTo('body');
 			}
-			blurTopMost('#ChartNote');
+			blurTop('#ChartNote');
 			$("<div/>",{text:'dismiss',class:'button cancel'}).insertAfter($("#SignChartBtn"));
 			initializeNewForms();
 			// initializeChartNotePage();
@@ -397,74 +442,20 @@ function editNoteFromOptionsNav(){
 		}
 	})
 }
-function viewNoteFromOptionsNav(){
-	var uid = $("#CurrentChartNote").data('uid');
-	viewNote(uid);
-}
-function viewNoteFromApptInfo(){
-	var uid = $("#ChartNoteBtn").data('info').id;
-	unblurAll(500,function(){
-		viewNote(uid);
-	});
-}
-function viewNote(uid){
-	console.log('use chartnote.view.modal');
-	// blurTopMost("#loading");
-	// $.ajax({
-	// 	url:'/ChartNote/'+uid+'/view',
-	// 	method: "GET",
-	// 	success: function(data){
-	// 		console.log('"viewNote" load');
-	// 		if ($("#ChartNote").exists()){
-	// 			$("#ChartNote").html(data);
-	// 		}else{
-	// 			$("<div/>",{id:"ChartNote",class:'modalForm signed',html:data}).appendTo('body');
-	// 		}
-	// 		blurTopMost('#ChartNote');
-	// 		initializeNewForms();
-	// 		initializeChartNotePage();
-	// 	}
-	// })	
-}
+// function viewNoteFromOptionsNav(){
+// 	var uid = $("#CurrentChartNote").data('uid');
+// 	viewNote(uid);
+// }
+// function viewNoteFromApptInfo(){
+// 	var uid = $("#ChartNoteBtn").data('info').id;
+// 	unblurAll(500,function(){
+// 		viewNote(uid);
+// 	});
+// }
 
 function signChart(){
 	console.log('use chartnote.sign');
-	var formsObj = createChartFormsObj(), pass = true;
-	if (!formsObj) return false;
-	clearInterval(autosaveNoteTimer);
-	blurTopMost('#loading');
-	if (autosaveNoteXHR) {
-		console.log(autosaveNoteXHR);
-		setTimeout(signChart,300);
-		return false;
-	}
-
-	var notes = [];
-	$("#NoteList").find(".note").each(function(){
-		notes.push($(this).data());
-	});
-	var sig = $("#PractitionerSignature");
-	sig.data('required',true);
-	if (!validateItem(sig,'signature')){return false;}
-	var postObj = {
-		submissions: formsObj,
-		signature: justResponse(sig,false,'signature'),
-		appointment_id: $("#ApptInfo").data('id'),
-		notes: notes
-	}
-	$.ajax({
-		url:'/ChartNote/'+$("#ApptInfo").data('noteid')+'/sign',
-		method: 'POST',
-		data: postObj,
-		success:function(data){
-			console.log(data);
-			blurTopMost("#checkmark",400,function(){
-				delayedUnblurAll();
-				clickTab("#chart-notes-index");
-			});
-		}
-	})
-	console.log(postObj);
+	return;
 }
 function confirmApptForNote(){
 	if ($(this).hasClass('disabled')) {

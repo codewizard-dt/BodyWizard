@@ -13,5 +13,5 @@
 			<div class="arrow"></div>
 		</div>
 	</div>
-	@include ('portal.list-update')
+	
 </div>

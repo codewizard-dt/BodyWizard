@@ -31,12 +31,12 @@ require('./bootstrap');
 //     el: '#app',
 // });
 
-import { Calendar } from '@fullcalendar/core';
-import dayGridPlugin from '@fullcalendar/daygrid';
-import interactionPlugin from '@fullcalendar/interaction';
-import listPlugin from '@fullcalendar/list';
-import timeGridPlugin from '@fullcalendar/timegrid';
-import timeLinePlugin from '@fullcalendar/timeline';
+// import { Calendar } from '@fullcalendar/core';
+// import dayGridPlugin from '@fullcalendar/daygrid';
+// import interactionPlugin from '@fullcalendar/interaction';
+// import listPlugin from '@fullcalendar/list';
+// import timeGridPlugin from '@fullcalendar/timegrid';
+// import timeLinePlugin from '@fullcalendar/timeline';
 
 // require('./functions');
 // require('./menu');

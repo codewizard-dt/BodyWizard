@@ -9,36 +9,39 @@ use Illuminate\Support\Facades\Log;
 
 class NotificationController extends Controller
 {
-    public function __construct(){
-        $this->middleware('auth');
-    }
+  public function __construct(){
+    $this->middleware('auth');
+  }
 
-    public function notificationCheck(Request $request){
-        return view('portal.user.notifications',['fetch'=>$request->fetch]);
+  public function getUnread(Request $request){
+
+    $json = Auth::user()->unreadNotifications->map(function($notification){
+      return ['data'=>notificationData($notification,'json'),'type'=>notificationType($notification),'id'=>$notification->id];
+    })->toJson();
+    // Log::info($json);
+    return $json;
+  }
+  public function update(Request $request){
+    $status = $request->status;
+    $ids = $request->ids;
+    $notifications = Auth::user()->notifications()->whereIn('id',$ids);
+    // Log::info($notifications);
+    try{
+      if ($status == 'unread') $notifications->update(['read_at' => null]);
+      elseif ($status == 'read') $notifications->update(['read_at' => now()]);
+    }catch(\Exception $e){
+      reportError($e,'NotificationController update');
     }
-    public function notificationUpdate(Request $request){
-    	$action = $request->action;
-    	$uids = $request->uids;
-        if ($uids == null){return;}
-    	try{
-    		$notifications = Auth::user()->notifications->filter(function($notification) use ($uids){
-    			return in_array($notification->id, $uids);
-    		});
-	    	if ($action == 'delete'){
-	    		foreach($notifications as $n){
-	    			$n->delete();
-	    		}
-	    	}elseif ($action == 'mark-unread'){
-	    		foreach($notifications as $n){
-	    			$n->read_at = null;
-	    			$n->save();
-	    		}
-	    	}elseif ($action == 'mark-read'){
-	    		$notifications->markAsRead();
-	    	}    		
-    	}catch(\Exception $e){
-            reportError($e,'NotificationController 40');
-    	}
-    	return isset($e) ? listReturn($e) : listReturn('checkmark');
+    return isset($e) ? $e : 'checkmark';
+  }
+  public function delete(Request $request){
+    try{
+      $ids = $request->ids;
+      $notifications = Auth::user()->notifications()->whereIn('id',$ids);
+      $notifications->delete();
+    }catch (\Exception $e){
+      reportError($e,'NotificationController delete');
     }
+    return isset($e) ? $e : 'checkmark';
+  }
 }

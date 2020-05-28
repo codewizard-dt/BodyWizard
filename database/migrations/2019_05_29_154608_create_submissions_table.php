@@ -23,7 +23,6 @@ class CreateSubmissionsTable extends Migration
             $table->unsignedInteger('form_id');
             $table->unsignedInteger('appointment_id')->nullable()->default(null);
             $table->string('submitted_by');
-            $table->boolean('self_submitted');
             $table->unsignedInteger('patient_id');
             $table->unsignedInteger('submitted_by_user_id');
             $table->longtext('responses')->nullable()->default(null);

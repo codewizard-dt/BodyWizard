@@ -40,6 +40,6 @@ class ArtisanController extends Controller
         }else{
     		$message = 'command not recognized';
     	}
-    	return listReturn($message);
+    	return $message;
     }
 }

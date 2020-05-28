@@ -10,7 +10,7 @@ foreach ($practitioners as $p){$nameAndId[$p->name] = $p->id;}
 ?>
 <div id="SelectPractitioner" class='progressiveSelection selector toModalHome'>
 	<div id="PractitionerSelector" class='step' data-details="{{json_encode($nameAndId)}}">
-		<h3 data-default='Practitioner'>Practitioner</h3>
+		<h2 class='purple center' style='text-align: center;' data-default='Practitioner'>Practitioner</h2>
 		{{$ctrl->answerDisp('radio',$names)}}
 	</div>
 </div>

@@ -392,8 +392,8 @@ a:hover {color:var(--pink);}
 }
 
 .siteMenu .title.active {
-    background-color: var(--yellow);
-    color:white;
+    /*background-color: var(--yellow);*/
+    /*color:black;*/
 }
 .siteMenu .underline {bottom:-0.5em}
 .siteMenu .dropDown {
@@ -494,6 +494,7 @@ a:hover {color:var(--pink);}
 .button:hover{
     color: var(--white70);
 }
+.button.smallMargin {margin: 0.1em 0.2em;}
 .button.large {font-size: 1.1em;}
 .button.medium {font-size: 1em;}
 .button.small {font-size: 0.9em;}
@@ -1229,19 +1230,11 @@ a:hover {color:var(--pink);}
 #Notifications .multiBtns {
     margin: 0.5em -10px 0 -10px;
 }
-.mobile #Notifications .dropDown{
-    /*transform-origin: top right;
-    right:0;
-    left:unset;
-    transform: scale(0);*/
-}
-.mobile #Notifications .dropDown.active{
-    /*transform: scale(1);*/
-}
 #Notifications .dropDown .title{
     padding-left: 18px;
     padding-right: 18px;
     box-sizing: border-box;
+    margin:auto;
 }
 #Notifications .title.active{
     color: var(--yellow);
@@ -1259,6 +1252,33 @@ a:hover {color:var(--pink);}
     border-radius: 1em;
     font-size: 0.8em;
     font-weight: bold;
+}
+#Notifications .dropDown .selector {
+    position: absolute;
+    display: none;
+    bottom: 0;
+    right: 0;
+    transform: translate(50%,50%);
+    /*background-color: var(--pink90);*/
+    padding: 0.1em 0.5em;
+    color: var(--green);
+    border: 1px solid var(--green);
+    border-radius: 1em;
+    font-size: 0.8em;
+    font-weight: bold;
+    top:50%;
+    transform: translate(-50%,-50%);
+    left:8px;
+    width:10px;
+    height:10px;
+    padding: 0;
+}
+#Notifications.multi .selector {
+    display: inline-block;
+}
+#Notifications .dropDown .active .selector {
+    box-shadow: 0 0 3px 3px var(--green70);
+    background-color: var(--green);
 }
 #Notifications .dropDown .indicator{
     top:50%;
@@ -1391,7 +1411,6 @@ a:hover {color:var(--pink);}
     background-color: rgba(250,250,250,0.97);
     border: 4px solid rgba(240,240,240,0.97);
     border-top-style: dotted;
-    margin-top:3px;
     z-index:51;
 }
 .subMenu1 {
@@ -1399,7 +1418,6 @@ a:hover {color:var(--pink);}
     top: calc(7em + 3px);
     background-color: rgba(240,240,240,0.97);
     box-shadow: 0 0 3px 3px rgba(240,240,240,0.95);
-    margin-top:3px;
     z-index:49;
 }
 .subMenu1 .dropDown{
@@ -1407,7 +1425,6 @@ a:hover {color:var(--pink);}
     box-shadow: 0 0 3px 3px rgba(240,240,240,0.95);
     border: 4px solid rgba(230,230,230,0.97);
     border-top-width: 0;
-    margin-top:3px;
     z-index:50;
 }
 .subMenu2 {
@@ -1415,7 +1432,6 @@ a:hover {color:var(--pink);}
     top: calc(10em + 6px);
     background-color: rgba(230,230,230,0.97);
     box-shadow: 0 0 3px 3px rgba(230,230,230,0.95);
-    margin-top:3px;
     z-index:48;
 }
 .subMenu2 .dropDown{
@@ -1423,7 +1439,6 @@ a:hover {color:var(--pink);}
     box-shadow: 0 0 3px 3px rgba(230,230,230,0.95);
     border: 4px solid rgba(220,220,220,0.97);
     border-top-width: 0;
-    margin-top:3px;
     z-index:49;
 }
 
@@ -1465,7 +1480,6 @@ a:hover {color:var(--pink);}
 .menuBar > .tab > .title.active{
     background-color: var(--yellow20) !important;
     border-color: var(--yellow30);
-    /*color: white;*/
 }
 .menuBar .title.showingDD {
     background-color: var(--yellow10) !important;
@@ -1483,8 +1497,8 @@ a:hover {color:var(--pink);}
     border-color: transparent;
 }
 .menuBar .dropDown .title.active{
-    background-color: var(--yellow30);
-    /*color:white;*/
+    background-color: var(--yellow10);
+    /*border-left-color: var(--yellow20)*/
 }
 
 .menuBar .underline{
@@ -1497,10 +1511,6 @@ a:hover {color:var(--pink);}
     transform: translateX(-50%);
     bottom: -1px;
 }
-/*.menuBar .tab:hover .underline{
-    width: calc(105% - 1.6em);
-}
-*/
 .menuBar .dropDown .underline{
     width: 0% !important;
 }

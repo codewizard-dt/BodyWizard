@@ -17,6 +17,7 @@ class Submission extends Model
     public $connectedModels;
 
     protected $with = ['form'];
+    protected $fillable = ['responses','form_uid','form_id','form_name','form_user_type','patient_id','appointment_id','self_submitted','submitted_by','submitted_by_user_id'];
 
     public function __construct($attributes = []){
         parent::__construct($attributes);

@@ -19,12 +19,12 @@
 				<div class="arrow"></div>
 			</div>
 		</div>
-		@include ('portal.list-update')
+		
 	</div>
 @else
 	<div class="optionsNavWrapper">
 		<h3 class="optionsNavHeader purple paddedSmall topOnly"></h3>
 		<div class="optionsNav"></div>
-		@include ('portal.list-update')
+		
 	</div>
 @endif

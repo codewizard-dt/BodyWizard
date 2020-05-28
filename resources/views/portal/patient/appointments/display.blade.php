@@ -58,4 +58,3 @@
     </div>
 </div>
 
-@include('portal.list-update')
