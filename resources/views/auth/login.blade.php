@@ -1,7 +1,4 @@
 @extends('layouts.site')
-@push('extracss')
-    <link rel="stylesheet" type="text/css" href="{{ asset('/css/forms.css') }} ">
-@endpush
 @push('metadata')
 <title>Body Wizard Portal Login</title>
 <meta name='description' content="Login for the Body Wizard Portal for patient, practitioner, and staff">

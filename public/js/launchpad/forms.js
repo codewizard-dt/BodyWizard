@@ -1858,7 +1858,7 @@ class InsertOptions {
     else this.show();
   }
 }
-$(document).ready(function(){class_map_all.merge({Answer,forms,FormEle,Section,Item})});
+// $(document).ready(function(){class_map_all.merge({Answer,forms,FormEle,Section,Item})});
 
 var forms = {
   current: null,
@@ -2421,7 +2421,7 @@ var notes = {
   },
 };
 
-
+export {forms};
 
 
 function initializeAdditionalNoteForm(targetObj = null, callback = null){

@@ -1,3 +1,5 @@
+// import { RRule, RRuleSet, rrulestr } from 'rrule';
+
 $(".jump").on("click",function(){
   var target = "#"+$(this).data("target");
   $.scrollTo(target);
@@ -1432,7 +1434,7 @@ const system = {
           }
         });            
       }catch(error){
-        message = error.message || null;
+        let message = error.message || null;
         error = error.error || error;
         if (debug.level(1)) log({error,message,options}, !message ? `Failed to initialize` : message);
         return;

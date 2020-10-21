@@ -681,15 +681,15 @@ class Calendar {
     let calendar = this, fullcal_options = {
       plugins: ['dayGrid','list', 'timeGrid', 'interaction', 'rrule', 'momentTimezone'],
       timeZone: tz,
-      header: {
+      headerToolbar: {
         left:"title",
         center:"",
         right:"prev,today,next dayGridMonth,timeGridWeek,timeGridDay",
       },
       height: 'auto',
-      defaultView:"timeGridWeek",
-      minTime:'08:00:00',
-      maxTime:'20:00:00',
+      initialView:"timeGridWeek",
+      slotMinTime:'08:00:00',
+      slotMaxTime:'20:00:00',
       editable: true,
       eventDrop: async function(info) {
         let result = await calendar.event_drop(info);
@@ -705,14 +705,14 @@ class Calendar {
       dateClick: function(info) {calendar.date_click(info)},
       eventMouseEnter: function(info) {calendar.event_mouseenter(info)},
       eventMouseLeave: function(info) {calendar.event_mouseleave(info)},
-      eventRender: function(info) {
-        if (calendar.event_render(info) === false) return false;
-      },
+      // eventRender: function(info) {
+      //   if (calendar.event_render(info) === false) return false;
+      // },
       eventSources: this.event_sources,
       eventOrder: "displayOrder,start,-duration,allDay,title",
     };
     if (this.options.fullcal) fullcal_options.merge(this.options.fullcal);
-    this.fullcal = new FullCalendar.Calendar(this.ele[0], fullcal_options);
+    this.fullcal = new FullCal(this.ele[0], fullcal_options);
     this.fullcal.render();
     let view = this.ele.find('.fc-view-container');
     blur(view,'loading',{loadingColor:'var(--pink)',blurCss:{backgroundColor:'var(--white50)'}});      
@@ -1522,9 +1522,9 @@ const class_map_linkable = {Patient,Practitioner,StaffMember,Service,Form};
 const linkable_lists = {};
 const linkable_lists_pending = {};
 
-const RRule = rrule.RRule, RRuleSet = rrule.RRuleSet;
+// const RRule = rrule.RRule, RRuleSet = rrule.RRuleSet;
 
-const table = {
+export const table = {
   list: () => $('.modelTable').get(),
   get: () => table.list().find(table => table.name == name) || null,
   initialize: {
@@ -1577,7 +1577,7 @@ const table = {
     }
   },
 };
-const model = {
+export const model = {
   current: null,
   actions: (action) => {
     try {

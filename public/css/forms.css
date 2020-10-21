@@ -120,47 +120,13 @@ textarea[data-followup]{
     border-color: var(--green);
 }
 #EditSchedule .open.hover { background-color: var(--green) }
-/*#miniSchedule .fc-today{
-    background-color: unset;
-}
-#miniSchedule .fc-day-header{
-    position: relative;
-    font-size: 1.5em;
-}
-#miniSchedule .fc-time{
-    position: relative;
-}
-#miniSchedule .fc-axis.fc-time span{
-    position: absolute;
-    top: 0;
-    right: 2px;
-    font-size: 1.5em;
-}*/
-/*#miniSchedule .fc-content .fc-time span{
-    font-size: 2em;
-    width:100%;
-    display: inline-block;
-    white-space: normal;
-}*/
-/*.miniCal .fc-event.hover{
-    background-color: var(--yellow) !important;
-}
-.miniCal .fc-event.hover, .miniCal .fc-bgevent.hover{
-    background-color: var(--yellow) !important;
-}*/
-/*#miniSchedule .fc-bgevent{
-    opacity: 0.9 !important;
-}
-#miniSchedule .breakTime{background-color: var(--pink70) !important}
-.scheduleTable .breakTime{color: var(--pink);font-size: 0.9em;}
-#miniSchedule .breakTime.hover{background-color: var(--pink) !important}*/
 .fc-toolbar > div {
     white-space: nowrap;
 }
-.fc-event, .fc-bgevent{
+.fc-event, .fc-bg-event{
     transition: background-color 500ms;
 }
-.calendar .fc-bgevent{
+.calendar .fc-bg-event{
     background-color: var(--yellow10);
     opacity: 1;
 }

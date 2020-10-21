@@ -31,14 +31,27 @@ require('./bootstrap');
 //     el: '#app',
 // });
 
-// import { Calendar } from '@fullcalendar/core';
-// import dayGridPlugin from '@fullcalendar/daygrid';
-// import interactionPlugin from '@fullcalendar/interaction';
-// import listPlugin from '@fullcalendar/list';
-// import timeGridPlugin from '@fullcalendar/timegrid';
+import { Calendar } from '@fullcalendar/core';
+window.FullCal = Calendar;
+import dayGridPlugin from '@fullcalendar/daygrid';
+import interactionPlugin from '@fullcalendar/interaction';
+import listPlugin from '@fullcalendar/list';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import rrulePlugin from '@fullcalendar/rrule';
+import momentTimezonePlugin from '@fullcalendar/moment-timezone';
+import { RRule, RRuleSet, rrulestr } from 'rrule';
+window.RRule = RRule; window.RRuleSet = RRuleSet; window.rrulestr = rrulestr;
+import moment from 'moment';
+window.moment = moment;
+
+
 // import timeLinePlugin from '@fullcalendar/timeline';
 
-// require('./functions');
+// import {forms} from './forms';
+require('./functions');
+require('./models');
+
+
 // require('./menu');
 // require('./menu-portal');
 // //require('./launchpad/forms2');
