@@ -78,20 +78,20 @@
                 </div>
             </div>
         </div>
-        <div id='CondDesc' class='small paddedXBig yellow10BG'>
+        <div id='CondDesc' class='small paddedXBig yellowBg10'>
             <div class='wrapper'>
                 <div class='icon stomach pink'></div>
-                <div class='divide hor yellowBG central xs'></div>
+                <div class='divide hor yellowBg central xs'></div>
                 <h4 class='paddedSmall'>Internal Medicine</h4>
             </div>
             <div class='wrapper'>
                 <div class='icon knee pink'></div>
-                <div class='divide hor yellowBG central xs'></div>
+                <div class='divide hor yellowBg central xs'></div>
                 <h4 class='paddedSmall'>Muscle + Joint Pain</h4>
             </div>
             <div class='wrapper'>
                 <div class='icon brain pink'></div>
-                <div class='divide hor yellowBG central xs'></div>
+                <div class='divide hor yellowBg central xs'></div>
                 <h4 class='paddedSmall'>Psychosocial Conditions</h4>
             </div>
             <br>

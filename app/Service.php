@@ -17,15 +17,17 @@ class Service extends Model
         'new_patients_ok' => 'boolean',
         'new_patients_only' => 'boolean'
     ];
-    protected $hidden = ['full_json'];
+    // protected $hidden = ['full_json'];
+    protected $visible = ['name','description_calendar','description_admin','service_category_id','duration','price'];
+    protected $guarded = [];
 
-    public function __construct(){
-        $this->connectedModels = array(
-            ['Code','many','morphToMany'],
-            ['ServiceCategory','one','belongsTo'],
-            ['Form','many','morphToMany']
-        );
-    }
+    // public function __construct(){
+    //     $this->connectedModels = array(
+    //         ['Code','many','morphToMany'],
+    //         ['ServiceCategory','one','belongsTo'],
+    //         ['Form','many','morphToMany']
+    //     );
+    // }
     public static function tableValues(){
         return [
             'tableId' => 'ServiceList',
@@ -49,13 +51,19 @@ class Service extends Model
         return 'nothing';
     }
     public function modelDetails(){
-        return 'nothing';
+        return [
+          'service name' => $this->name,
+          'category' => $this->category,
+          'description' => $this->description_calendar,
+          'duration' => $this->duration . ' minutes',
+          'price' => Practice::getFromSession()->currency['symbol'].$this->price,
+        ];
     }
     public function detailClick(){
         return 'nothing';
     }
     public function getCategoryAttribute(){
-        return $this->servicecategory->name;
+        return $this->servicecategory? $this->servicecategory->name : 'none';
     }
     public function getDisplayPriceAttribute(){
         $practice = Practice::getFromSession();

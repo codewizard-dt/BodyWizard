@@ -51,7 +51,7 @@ class SendApptConfirmation
         $patient = $appt->patient;
         // foreach ($patients as $patient){
             $msg = new Message;
-            $msg->recipient_id = $patient->userInfo->id;
+            $msg->recipient_id = $patient->user->id;
             $msg->message_id = uuid();
             $msg->type = 'Email';
             $msg->status = $msg->defaultStatus();
@@ -71,8 +71,8 @@ class SendApptConfirmation
             
             try{
                 $msg->save();
-                // $users = ($savedBy == 'patient') ? $appt->practitioner->userInfo : $appt->patient_user_models;
-                $users = ($savedBy == 'patient') ? $appt->practitioner->userInfo : $appt->patient->userInfo;
+                // $users = ($savedBy == 'patient') ? $appt->practitioner->user : $appt->patient_user_models;
+                $users = ($savedBy == 'patient') ? $appt->practitioner->user : $appt->patient->user;
                 if ($changes){
                     Notification::send($users, new AppointmentChange($appt, $changes));
                 }else{
@@ -84,7 +84,7 @@ class SendApptConfirmation
                             $submitted = $form->checkApptFormStatus($appt,$patient);
                             // Log::info($form->name." ".$submitted);
                             if (!$submitted){
-                                $patient->userInfo->notify(new NewRequiredForm($form, $appt));
+                                $patient->user->notify(new NewRequiredForm($form, $appt));
                             }
                         }
                     // }

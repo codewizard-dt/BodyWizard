@@ -23,8 +23,6 @@
 
 <h2 class="purple paddedSmall">Appointment Calendar</h2>
 <div id="ChangeTitleWrap">
-    <span class='liProxy'>event display:</span>
-{{$ctrl->answerDisp('radio',$changeTitleOptions)}}    
 </div>
 <div id="TimezoneWrap"></div>
 
@@ -39,12 +37,11 @@
     </div>
 </div>
 <div id="Appointment" class="modalForm prompt">
-    @include ('models.create-modal',["model" => "Appointment"])
-    @include ('models.edit-modal',["model" => "Appointment"])
+
 </div>
 
+@include ('models.create.appointment')
 
-@include ('schedules.services')
 @include ('schedules.practitioners')
 @include ('schedules.times')
 @include ('schedules.details')

@@ -1,23 +1,22 @@
 @if (isset($instance))
+	<?php 
+	$buttons = isset($buttons) ? $buttons : [];
+	$details = method_exists($instance, 'modelDetails') ? $instance->modelDetails() : $instance->attributesToArray();
+	if (!isset($model)) $model = getModel($instance);
+	$uid = $instance->getKey();
+	$attrs = $instance->attributesToArray();
+	$attrs = collect(array_merge($attrs,compact('model','uid')))->toJson();
+	?>
 	<div class="optionsNavWrapper">
-		<h3 class="optionsNavHeader purple paddedSmall topOnly">{{$instance->name}}</h3>
-		<div id="Current{{$model}}" class="optionsNav {{$extraClasses}}" data-model="{{$model}}" data-uid="{{$instance->getKey()}}">
-			<div class="navHead">
-				<span class="optionsBar">
-					<span class="name" data-uid="{{$instance->getKey()}}" @foreach ($dataAttrs as $data) data-{{$data['key']}}="{{$data['value']}}"@endforeach></span>
-				</span>
-			</div>
+		<h2 class="optionsNavHeader purple paddedSmall topOnly">{{$instance->name}}</h2>
+		<div id="Current{{$model}}" class="optionsNav" data-uid="{{$uid}}" data-model="{{$model}}" data-options='{{$attrs}}'>
 			<div class="navDetails">
-				<div class="navOptionsToggle down">
-					<div class="arrow"></div>
-				</div>
-				@include ('models.navOptions.nav-buttons',['buttons'=>$buttons])
-				@include ('models.navOptions.model-details',['details'=>$instance->modelDetails()])
+				@include ('models.navOptions.nav-buttons',compact('buttons'))
+				@include ('models.navOptions.model-details',compact('details'))
 			</div>
-			<div class="navOptionsToggle down">
-				<span class="label">more</span>
-				<div class="arrow"></div>
-			</div>
+		</div>
+		<div class="toggle_proxy up" data-arrow_position='below' data-target_ele='Current{{$model}}'>
+			<img class='arrow' style='width:2em;height:2em;opacity:0.6' src='/images/icons/arrow_down_purple.png'>
 		</div>
 		
 	</div>
@@ -25,6 +24,5 @@
 	<div class="optionsNavWrapper">
 		<h3 class="optionsNavHeader purple paddedSmall topOnly"></h3>
 		<div class="optionsNav"></div>
-		
 	</div>
 @endif

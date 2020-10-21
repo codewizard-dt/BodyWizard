@@ -12,4 +12,7 @@ class PracticeController extends Controller
     public function legalInfo(){
     	return "";
     }
+    public function create(){
+    	
+    }
 }

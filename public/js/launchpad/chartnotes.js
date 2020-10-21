@@ -276,9 +276,9 @@ var chartnote = {
 						confirm({
 							header: 'Removing Form',
 							message: "Any information you have entered will be lost.<h3 class='pink'>Remove Form and Data?</h3>",
-							yesBtnText: 'remove form',
-							noBtnText: 'go back',
-							affirmativeCallback: chartnote.forms.remove,
+							btntext_yes: 'remove form',
+							btntext_no: 'go back',
+							callback_affirmative: chartnote.forms.remove,
 						})
 					}else if (target.is(".up, .down")){
 						console.log("add this function yo");

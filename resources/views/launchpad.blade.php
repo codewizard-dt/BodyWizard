@@ -10,15 +10,35 @@
 
 @section('content')
 	<?php 
-	$usertype = Auth::user()->user_type; 
+	$usertype = usertype();
 	?>
 
-	@if (Auth::user()->require_new_pw)
-		@include('portal.user.password')
-	@elseif (Auth::user()->security_questions == null && !Auth::user()->is_admin)
-		@include('portal.user.security-questions')
-	@else
+	@if ($usertype)
+		<?php session(['usertype' => $usertype]); ?>
 		@include("portal.$usertype.home")
+	@else
+		<div id="RoleSelector" class='flexbox' style='padding-top:40vh;align-content: center'>
+			@include('layouts.forms.display.answer',[
+				'type'=>'list',
+				'name'=>'selected_role',
+				'options'=>[
+					'list'=>Auth::user()->roles['list'],
+					'listLimit'=>1,
+					'preLabel'=>'Log in as:',
+					'eleCss'=>'{"fontSize":"1.3em"}',
+					'eleClass'=>'!left',
+				]
+			])
+			@include('layouts.forms.display.answer',[
+				'type'=>'checkboxes',
+				'name' => 'options',
+				'options'=>[
+					'list'=>['save as default'],
+					'save_as_bool' => true,
+				]
+			])
+			<div class='button pink disabled'>continue</div>
+		</div>
 	@endif
 
 @endsection

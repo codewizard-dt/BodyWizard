@@ -19,7 +19,6 @@ class ArtisanController extends Controller
     			'practiceId' => session('practiceId'),
     		]);
     		$message = 'Appointments cleared.';
-            session()->forget('uidList');
     	}elseif($command == 'update-appointments'){
             $practice = Practice::getFromSession();
             $practice->updateEntireEventFeed();
@@ -40,6 +39,7 @@ class ArtisanController extends Controller
         }else{
     		$message = 'command not recognized';
     	}
-    	return $message;
+        session()->forget('uidList');
+    	return $message.' <div class="button pink" data-action="request.refresh_page">go back</div>';
     }
 }

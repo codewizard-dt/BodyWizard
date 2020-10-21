@@ -23,7 +23,7 @@
             <div class='split40' id ='EvaluationRates'>
                 <div class='splash'></div>
                 <div class='left paddedSides leftOnly'>
-                    <div class="divide hor yellowBG"></div>
+                    <div class="divide hor yellowBg"></div>
                     <h4 class='paddedSmall'>Evaluation + Diagnosis <span class='little italic'>(not for treatment)</span></h4>
                     <p><span class='price pink bold'>$120</span><span class='underlined'>New Patient Appointment (90 minute)</span> - initial appointment required for ALL new patients. A full medical exam is performed, including complete review of systems and, if necessary, musculoskeletal exam or psychosocial review. This appointment is for diagnosis and creating a treatment plan only.</p>
                     <p><span class='price pink bold'>$90</span><span class='underlined'>Case Review (60 minute)</span> - for reevaluation of existing patients including full exam and review of symptoms. During the course of treatment, this appointment is necessary about every 3 months. This appointment is for diagnosis and revising a treatment plan only.</p>
@@ -32,7 +32,7 @@
             <div class='split40' id ='AcuRates'>
                 <div class='splash'></div>
                 <div class='left paddedSides leftOnly'>
-                    <div class="divide hor yellowBG"></div>
+                    <div class="divide hor yellowBg"></div>
                     <h4 class='paddedSmall'>Acupuncture Treatment</h4>
                     <p><span class='price pink bold'>$80</span><span class='underlined'>Standard Acupuncture (60 minute)</span> - for regularly scheduled care related to internal medicine, muscle and joint pain, and psychosocial conditions</p>
                     <p><span class='price pink bold'>$45</span><span class='underlined'>Limited Acupuncture (30 minute)</span> - for specific cases of muscle and joint pain that only require a shorter office visit</p>
@@ -42,7 +42,7 @@
             <div class='split40' id ='BotanicalRates'>
                 <div class='splash'></div>
                 <div class='left paddedSides leftOnly'>
-                    <div class="divide hor yellowBG"></div>
+                    <div class="divide hor yellowBg"></div>
                     <h4 class='paddedSmall'>Botanical Medicine</h4>
                     <p><span class='price pink bold'>$45</span><span class='underlined'>Botanical Consultation (30 minute)</span> - for reevaluation of a botanical medicine after the initial New Patient Appointment</p>
                     <p><span class='price pink bold'>$28</span><span class='underlined'>Botanical Tincture (4 oz)</span> - customized medicinal botanical extract, approx. 2 week supply, price may vary</p>
@@ -54,7 +54,7 @@
             <div class='split40' id ='FascialRates'>
                 <div class='splash'></div>
                 <div class='left paddedSides leftOnly'>
-                    <div class="divide hor yellowBG"></div>
+                    <div class="divide hor yellowBg"></div>
                     <h4 class='paddedSmall'>Fasical Release</h4>
                     <p><span class='price pink bold'>$45</span><span class='underlined'>Fascial Release Only (30 minute)</span> - stand-alone appointment that generally includes scraping, cupping, and application of topical medicines</p>
                     <p><span class='price pink bold'>$25</span><span class='underlined'>Add-On to Acupuncture (+15 minutes)</span> - extension of any acupuncture session that may include scraping, cupping and/or application of topical medicines</p>
@@ -63,7 +63,7 @@
             <div class='split40' id ='MeditationRates'>
                 <div class='splash'></div>
                 <div class='left paddedSides leftOnly'>
-                    <div class="divide hor yellowBG"></div>
+                    <div class="divide hor yellowBg"></div>
                     <h4 class='paddedSmall'>Guided Meditation + Breathing</h4>
                     <p><span class='price pink bold'>$25</span><span class='underlined'>Meditation + Breathing Only (30 minute)</span> - stand-alone appointment that is a full guided experience, may include breathing exercises, visualizations, and/or internal (self-directed) energy work</p>
                     <p><span class='price pink bold'>$10</span><span class='underlined'>Add-On to Acupuncture (+0 minutes)</span> - a full guided experience layered on top of Standard or Extended Acupuncture treatments, may include breathing exercises, visualizations, and/or internal (self-directed) energy work</p>

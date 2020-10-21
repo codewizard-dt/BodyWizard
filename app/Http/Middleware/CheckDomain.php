@@ -19,17 +19,19 @@ class CheckDomain
      */
     public function handle($request, Closure $next)
     {
-        if (Auth::user() && session('practiceId') === null){
-            if (session('practiceId') === null){
+        if (Auth::user() && !getUid('Practice')){
+        // if (Auth::user() && session('practiceId') === null){
+            // if (session('practiceId') === null){
                 $practice = Practice::getFromRequest($request);
-                session([
-                    'domain' => $practice->host,
-                    'practiceId' => $practice->practice_id,
-                    'calendarId' => $practice->calendar_id,
-                    'timezone' => $practice->contact_info['timezone']
-                ]);
-                date_default_timezone_set($practice->contact_info['timezone']);
-            }
+                setUid('Practice',$practice->practice_id);
+                // session([
+                //     'domain' => $practice->host,
+                //     'practiceId' => $practice->practice_id,
+                //     'calendarId' => $practice->calendar_id,
+                //     'timezone' => $practice->contact_info['timezone']
+                // ]);
+                // date_default_timezone_set($practice->contact_info['timezone']);
+            // }
         }
         return $next($request);
     }

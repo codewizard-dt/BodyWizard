@@ -35,7 +35,7 @@ class InvoiceController extends Controller
         try{
             $appt = Appointment::findOrFail($apptId);
             $patient = $appt->patient();
-            $invoice->invoiced_to_user_id = $patient->userInfo->id;
+            $invoice->invoiced_to_user_id = $patient->user->id;
             $invoice->created_by_user_id = Auth::user()->id;
             $invoice->appointment_id = $apptId;
             $invoice->total_charge = $request->total_charge;
@@ -60,7 +60,7 @@ class InvoiceController extends Controller
         try{
             $appt = Appointment::findOrFail($apptId);
             $patient = $appt->patient();
-            $invoice->invoiced_to_user_id = $patient->userInfo->id;
+            $invoice->invoiced_to_user_id = $patient->user->id;
             $invoice->created_by_user_id = Auth::user()->id;
             $invoice->appointment_id = $apptId;
             $invoice->total_charge = $request->total_charge;

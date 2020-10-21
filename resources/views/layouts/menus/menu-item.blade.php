@@ -1,14 +1,16 @@
 <?php 
 	$uri = !$dropdown ? $uri : null;
-	$divide = ($id == 'divide') ? " divide" : "";
+	$divide = ($name == 'divide') ? " divide" : "";
+	$modal = isset($modal) && $modal ? 'true' : 'false';
 ?>
-@if ($id == 'notifications')
+@if ($name == 'notifications')
 	@include ('portal.user.notification-nav')
 @else
-	<div id="{{ $id }}" class="tab{{$divide}}" data-uri="{{$uri}}">
-		<div class="title" data-uri="{{ $uri }}">{{ $text }}</div>
+	<div id="{{ $name }}" class="tab{{$divide}}" data-uri="{{$uri}}" data-modal="{{$modal}}">
+		<div class="title" @if(isset($image_url))data-image='{{$image_url}}' @endif data-uri="{{ $uri }}">{{ $text }}</div>
 		<div class="underline"></div>
 		@if ($dropdown)
+		<?php unset($image_url); ?>		
 		<div class="dropDown">
 			@foreach ($dropdown as $name => $info)
 				@include('layouts.menus.menu-item',$info)

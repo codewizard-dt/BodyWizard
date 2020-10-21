@@ -46,7 +46,7 @@ class SendApptCancellation
             $patient = $appt->patient;
             $settings = $patient->settings;
             $msg = new Message;
-            $msg->recipient_id = $patient->userInfo->id;
+            $msg->recipient_id = $patient->user->id;
             $msg->message_id = uuid();
             $msg->type = 'Email';
             $msg->status = $msg->defaultStatus();
@@ -66,8 +66,8 @@ class SendApptCancellation
             
             try{
                 $msg->save();
-                // $users = ($cancelledBy == 'patient') ? $appt->practitioner->userInfo : $appt->patient_user_models;
-                $users = ($cancelledBy == 'patient') ? $appt->practitioner->userInfo : $appt->patient->userInfo;
+                // $users = ($cancelledBy == 'patient') ? $appt->practitioner->user : $appt->patient_user_models;
+                $users = ($cancelledBy == 'patient') ? $appt->practitioner->user : $appt->patient->user;
                 Notification::send($users, new CancelledAppointment($appt));
                 
                 // event(new OutgoingMessage($msg, $practiceId));

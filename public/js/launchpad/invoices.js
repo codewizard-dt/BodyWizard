@@ -319,9 +319,9 @@ var invoice = {
 			confirm({
 				header: 'Confirm Payment Summary',
 				message: invoice.summary(),
-				yesBtnText: 'settle and close invoice',
-				noBtnText: 'dismiss',
-				affirmativeCallback: invoice.save.ajax,
+				btntext_yes: 'settle and close invoice',
+				btntext_no: 'dismiss',
+				callback_affirmative: invoice.save.ajax,
 			})
 			$("#InvoiceSummary").replaceWith(invoice.summary);
 		},
@@ -349,7 +349,7 @@ var invoice = {
 				data: data,
 				success:function(data,status,request){
 					log({data,status,request});
-					menu.checkHeaders(request);
+					system.validation.xhr.headers.check(request);
 					blurTop('#checkmark',{
 						callback: function(){
 							// log({data},'should be callback');

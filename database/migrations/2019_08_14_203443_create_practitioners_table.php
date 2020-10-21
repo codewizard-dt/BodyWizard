@@ -17,7 +17,9 @@ class CreatePractitionersTable extends Migration
             $table->bigIncrements('id');
             $table->unsignedInteger('user_id')->nullable();
             $table->json('schedule')->nullable();
-            $table->json('schedule_exceptions')->nullable();
+            // $table->json('schedule_exceptions')->nullable();
+            $table->json('settings')->nullable();
+            $table->softDeletes();
             $table->timestamps();
         });
     }

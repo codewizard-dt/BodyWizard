@@ -32,19 +32,19 @@
         <div id='CondDesc'>
             <div class='wrapper'>
                 <div class='icon stomach pink'></div>
-                <div class='divide hor yellowBG central small'></div>
+                <div class='divide hor yellowBg central small'></div>
                 <h3 class='paddedSmall'>Internal Medicine</h3>
                 <p class='central small'>Digestive Issues<br>Hormonal + Reproductive Issues<br>Fatigue + Insomnia</p>
             </div>
             <div class='wrapper'>
                 <div class='icon knee pink'></div>
-                <div class='divide hor yellowBG central small'></div>
+                <div class='divide hor yellowBg central small'></div>
                 <h3 class='paddedSmall'>Muscle, Joint + Nerve Pain</h3>
                 <p class='central small'>Back pain + Sciatica<br>Shoulder + Neck Pain<br>Headaches + Migraines</p>
             </div>
             <div class='wrapper'>
                 <div class='icon brain pink'></div>
-                <div class='divide hor yellowBG central small'></div>
+                <div class='divide hor yellowBg central small'></div>
                 <h3 class='paddedSmall'>Psychosocial</h3>
                 <p class='central small'>Anxiety + Depression<br>Stress Related Disorders<br>Integrating Mind + Body</p>
             </div>
@@ -65,7 +65,7 @@
             </div>
         </div>
         <div class='quoteBlock'>
-            <div class='bar purpleBG'></div>
+            <div class='bar purpleBg'></div>
             <div id='crystals' class='splash'></div>
             <div class='quote central btnPopDown'>
                 <div class='logo popUp'></div>

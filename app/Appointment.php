@@ -6,7 +6,6 @@ use App\Traits\Encryptable;
 
 use App\Message;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -18,7 +17,6 @@ use App\Events\AppointmentSaved;
 class Appointment extends Model
 {
   use TrackChanges;
-  use SoftDeletes;
   use Encryptable;
 
   public $tableValues;
@@ -28,58 +26,62 @@ class Appointment extends Model
 
   protected $casts = [
     'status' => 'array',
-    'date_time' => 'datetime'
+    'recurrence' => 'array',
+    'date_time' => 'datetime',
   ];
-  protected $hidden = ['full_json'];
-  protected $fillable = ['patient_id', 'practitioner_id', 'date_time', 'duration'];
+  // protected $dateFormat = 'm/d/Y h:ia';  
+  // protected $hidden = ['full_json'];
+  // protected $fillable = ['patient_id', 'practitioner_id', 'date_time', 'duration'];
+  protected $guarded = [];
+  protected $visible = ['id','uuid','patient_id','practitioner_id','date_time','duration','status'];
 
-  public function __construct($attributes = []){
-    parent::__construct($attributes);
-    $this->auditOptions = [
-      'audit_table' => 'appointments_audit',
-      'includeFullJson' => false
-    ];
+//   public function __construct($attributes = []){
+//     parent::__construct($attributes);
+//     $this->auditOptions = [
+//       'audit_table' => 'appointments_audit',
+//       'includeFullJson' => false
+//     ];
 
-    $this->tableValues = array(
-      'tableId' => 'AppointmentList',
-      'index' => 'id',
-      'model' => "Appointment",
-      'columns' => [
-        'Patient' => 'name',
-        'Date + Time' => 'date_time',
-        'Services' => 'service_list',
-      ],
-      'hideOrder' => "",
-      'filtersColumn' => array(),
-      'filtersOther' => array(),
-      'destinations' => array(
-        'edit','delete'
-      ),
-      'btnText' => array(
-        'edit','delete'
-      ),
-      'extraBtns' => []
-    );
-    $this->optionsNavValues = array(
-      'model' => "Appointment",
-      'destinations' => array(
-        'edit','delete'
-      ),
-      'btnText' => array(
-        'edit','delete'
-      )
-    );
+//     $this->tableValues = array(
+//       'tableId' => 'AppointmentList',
+//       'index' => 'id',
+//       'model' => "Appointment",
+//       'columns' => [
+//         'Patient' => 'name',
+//         'Date + Time' => 'date_time',
+//         'Services' => 'service_list',
+//       ],
+//       'hideOrder' => "",
+//       'filtersColumn' => array(),
+//       'filtersOther' => array(),
+//       'destinations' => array(
+//         'edit','delete'
+//       ),
+//       'btnText' => array(
+//         'edit','delete'
+//       ),
+//       'extraBtns' => []
+//     );
+//     $this->optionsNavValues = array(
+//       'model' => "Appointment",
+//       'destinations' => array(
+//         'edit','delete'
+//       ),
+//       'btnText' => array(
+//         'edit','delete'
+//       )
+//     );
 
-// This will load a resource table for each connected model
-// into the create.blade view for THIS model, creating modals that
-// automatically popped up when required.
-// [Model, relationship]
-    $this->connectedModels = array(
-      ['Service','many','morphToMany'],
-      ['Patient','one','belongsTo'],
-      ['Practitioner','one','belongsTo']
-    );
-  }
+// // This will load a resource table for each connected model
+// // into the create.blade view for THIS model, creating modals that
+// // automatically popped up when required.
+// // [Model, relationship]
+//     $this->connectedModels = array(
+//       ['Service','many','morphToMany'],
+//       ['Patient','one','belongsTo'],
+//       ['Practitioner','one','belongsTo']
+//     );
+//   }
 
   public function moreOptions(){
 
@@ -92,11 +94,8 @@ class Appointment extends Model
     return "<span class='link appointment' data-model='$model' data-uid='$uid' data-chartnote='$chartnote' data-invoice='$invoice'>" . $this->name . "</span>";
   }
   static public function successResponse(){
-    $practice = Practice::getFromSession();
-    return [
-      'appointments' => $practice->appointments,
-      'anon' => $practice->anon_events
-    ];
+    $appt = Appointment::find(getUid('Appointment'));
+    return ['uuid'=>$appt->uuid,'uid'=>$appt->id];
   }
 
   static function allApptsStartingBetween(Carbon $min, Carbon $max, $eagerLoad = false){
@@ -139,7 +138,7 @@ class Appointment extends Model
     return Appointment::allApptsStartingBetween($start,$end,$eagerLoad);
   }
   static function allApptsNeedingReminder(){
-    $appts = Appointment::allApptsStartingWithin24hr('patient.userInfo')
+    $appts = Appointment::allApptsStartingWithin24hr('patient.user')
     ->filter(function($appt){
       $requested = $appt->patient->settings['reminders']['appointments'];
       $lastReminder = lastInArray($appt->status['reminders']['sentAt']);
@@ -255,7 +254,7 @@ class Appointment extends Model
   public function getPatientUserModelsAttribute(){
     reportError("don't use patient_user_models",'Appointment 259');
 // return $this->patients->map(function($patient){
-//     return $patient->userInfo;
+//     return $patient->user;
 // });
   }
   public function getLongDateTimeAttribute(){

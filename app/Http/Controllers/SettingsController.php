@@ -18,7 +18,7 @@ class SettingsController extends Controller
     public function userSettings(){
         return view('portal.user.settings');
     }
-    public function userInfo(){
+    public function user(){
     	return view('portal.user.info');
     }
     public function settingsHome(){

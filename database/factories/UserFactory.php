@@ -21,7 +21,6 @@ use Illuminate\Support\Carbon;
 
 $factory->define(User::class, function (Faker $faker) {
 	$email = $faker->unique()->safeEmail;
-	// $date = now();
     $phone = '';
     for ($x = 0; $x < 10; $x++){
         $phone .= $faker->randomDigitNotNull;
@@ -36,20 +35,17 @@ $factory->define(User::class, function (Faker $faker) {
         'date_of_birth' => $faker->dateTimeThisCentury,
         'phone' => $phone,
         'password' => '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // password
-        'full_json' => null
     ];
-    $new['full_json'] = '{"Sections": [{"Name": "Personal Information", "Items": [{"type": "date", "question": "Date of Birth", "response": ["'.Carbon::parse($new['date_of_birth'])->format('d/m/Y').'"]}, {"type": "text", "question": "First Name", "response": ["'.$new['first_name'].'"]}, {"type": "text", "question": "Middle Name", "response": ["'.$new['middle_name'].'"]}, {"type": "text", "question": "Last Name", "response": ["'.$new['last_name'].'"]}, {"type": "text", "question": "Preferred Name", "response": []}]}, {"Name": "Contact Information", "Items": [{"type": "text", "question": "Phone Number", "response": ["'.$new['phone'].'"]}, {"type": "text", "question": "Email Address", "response": ["'.$new['email'].'"]}]}, {"Name": "Login Information", "Items": [{"type": "narrative", "question": "", "response": []}, {"type": "text", "question": "Username", "response": []}, {"type": "text", "question": "Password", "response": []}, {"type": "text", "question": "Confirm Password", "response": []}]}]}';
-    // Log::info($new);
     return $new;
 });
 
 $factory->state(User::class, 'practitioner', [
-    'user_type' => 'practitioner'
+    'roles' => ['list'=>['practitioner'],'default'=>null]
 ]);
 $factory->state(User::class, 'patient', [
-    'user_type' => 'patient'
+    'roles' => ['list'=>['patient'],'default'=>null]
 ]);
 $factory->state(User::class, 'staff member', [
-    'user_type' => 'staff member'
+    'roles' => ['list'=>['staff member'],'default'=>null]
 ]);
 

@@ -1,7 +1,7 @@
 <?php 
 if (!isset($filters)){
 	$filters = [];
-	reportError("Define tableValue[filters] for $model",'table-new.blade 4');
+	// reportError("Define tableValue[filters] for $model",'table-new.blade 4');
 }
 if (!isset($extraData)) $extraData = [];
 if (!isset($extraBtns)) $extraBtns = [];
@@ -14,12 +14,15 @@ if ($tableType == 'secondary'){
 	$extraBtnColor = 'yellow';
 }
 
+$header = isset($header) ? $header : 'Most Recent '.title(pluralSpaces($model));
+// unset($initial);
 
 ?>
 <div class='wrapMe marginBig bottomOnly' style='display:inline-block'>
-	<div id="TableButtons">
-		@if (Auth::user()->is_admin && findFormId($model) && $tableType == 'primary')
-	    	<div class='button xsmall createNew pink70' data-model='{{$nospaces}}' data-target='#{{$tableId}}'>{{$createBtnText}}</div>    
+	<div id="TableButtons" data-type="{{$tableType}}">
+		@if (Auth::user()->is_admin && $tableType == 'primary' && $nospaces != 'Form')
+	    	<div class='button xsmall createNew pink70' data-model='{{$nospaces}}' data-mode='modal' data-target='CreateNew{{$nospaces}}' data-action='Answer.reset_all'>{{$createBtnText}}</div>
+	    	<div id='CreateNew{{$nospaces}}' class="modalForm">@include('models.create.'.camel($nospaces),['mode'=>'modal','instance'=>null])</div>
 	    @endif
 	    @if ($modal)
 	    	<h3 class="displaySelection pink nodisplay"></h3>
@@ -30,9 +33,9 @@ if ($tableType == 'secondary'){
     	@endforeach
 	</div>
 	@include ('layouts.table.filters', compact('filters','tableId'))
-	<div class="TableNav flexbox">
+	<div class="tableNav flexbox">
     	<div class="tableArrow left disabled"></div>
-    	<div class='label'>Most Recent {{title(pluralSpaces($model))}}</div>
+    	<div class='label'>{{$header}}</div>
     	<div class="tableArrow right disabled"></div>
 	</div>
 	<div>

@@ -114,20 +114,17 @@ class RefreshTables extends Model
 		    $admin->middle_name = "David";
 		    $admin->last_name = "Taylor";
 		    $admin->preferred_name = "David";
-		    $admin->user_type = "practitioner";
-            $admin->is_admin = 1;
-            $admin->require_new_pw = 0;
-            $admin->security_questions = null;
+		    // $admin->user_type = "practitioner";
+            $admin->roles = ['list'=>['practitioner','patient','staff member'],'default'=>'practitioner'];
 		    $admin->username = "david";
 		    $admin->date_of_birth = '1985-10-14';
 		    $admin->email = "david@bodywizardmedicine.com";
 		    $admin->phone = "512-514-3706";
 		    $admin->password = '$2y$10$chX/ZsWKiiEaLrI59N5nkuYYb.VZi9WXEf53DPmq.ko1iIGZVjyt2';
-		    $admin->full_json = '{"Sections": [{"Name": "Personal Information", "Items": [{"type": "date", "question": "Date of Birth", "response": ["10/14/1985"]}, {"type": "text", "question": "First Name", "response": ["Bryan"]}, {"type": "text", "question": "Middle Name", "response": ["David"]}, {"type": "text", "question": "Last Name", "response": ["Taylor"]}, {"type": "text", "question": "Preferred Name", "response": ["David"]}]}, {"Name": "Contact Information", "Items": [{"type": "text", "question": "Phone Number", "response": ["5125143706"]}, {"type": "text", "question": "Email Address", "response": ["david@bodywizardmedicine.com"]}]}, {"Name": "Login Information", "Items": [{"type": "narrative", "question": "", "response": []}, {"type": "text", "question": "Username", "response": ["david"]}, {"type": "text", "question": "Password", "response": []}, {"type": "text", "question": "Confirm Password", "response": []}]}]}';
     		$admin->save();
-	        $practitioner = new Practitioner;
-	        $practitioner->user_id = $admin->id;
-	        $practitioner->save();
+	        // $practitioner = new Practitioner;
+	        // $practitioner->user_id = $admin->id;
+	        // $practitioner->save();
 			return true;
     	}catch(\Exception $e){
     		reportError($e,'RefreshTables');
@@ -135,24 +132,9 @@ class RefreshTables extends Model
     	}
     }
     public static function seedUserTables(){
-        $patients = factory(User::class,10)->states('patient')->create()
-                    ->each(function($user){
-                        $user->patientInfo()->save(
-                            factory(Patient::class)->create()
-                        );
-                    });
-        $practitioners = factory(User::class,2)->states('practitioner')->create()
-                            ->each(function($user){
-                                $user->practitionerInfo()->save(
-                                    factory(Practitioner::class)->create()
-                                );
-                            });
-        $staffmembers = factory(User::class,2)->states('staff member')->create()
-                        ->each(function($user){
-                            $user->staffMemberInfo()->save(
-                                factory(StaffMember::class)->create()
-                            );
-                        });
+        $patients = factory(User::class,10)->states('patient')->create();
+        $practitioners = factory(User::class,2)->states('practitioner')->create();
+        $staffmembers = factory(User::class,2)->states('staff member')->create();
     }
     public static function seedApptTables($apptCount){
         $apptCount = (int)$apptCount;

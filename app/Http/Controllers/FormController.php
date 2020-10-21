@@ -27,9 +27,23 @@ class FormController extends Controller
         return view("portal.$usertype.forms.home");        
     }
 
-    public function preview($uid){
-        $usertype = Auth::user()->user_type;
-        return view("portal.$usertype.forms.preview",['uid'=>$uid]);
+    public function get_html(Form $form, Request $request){
+        // Log::info($form);
+        try{
+            return view("layouts.forms.display.form", compact('form','request'));
+        }catch(\Exception $e){
+            $error = handleError($e,'FormController get_html');
+            return compact('error');
+        }
+    }
+    public function get_html_preview(Form $form, Request $request) {
+        try{
+            $mode = 'preview';
+            return view("layouts.forms.display.form", compact('form','request','mode'));
+        }catch(\Exception $e){
+            $error = handleError($e,'FormController get_html_preview');
+            return compact('error');
+        }
     }
 
     public function settings($uid){
@@ -39,7 +53,7 @@ class FormController extends Controller
 
     public function submit($uid, Request $request){
         $usertype = Auth::user()->user_type;
-        $patientId = ($usertype == 'patient') ? Auth::user()->patientInfo->id : session('uidList')['Patient'];
+        $patientId = ($usertype == 'patient') ? Auth::user()->patient->id : session('uidList')['Patient'];
         $patient = Patient::find($patientId);
         $userId = Auth::user()->id;
         $submission = new Submission;
@@ -60,7 +74,7 @@ class FormController extends Controller
         try{
             $submission->patient_id = $patientId;
             $submission->submitted_by_user_id = $userId;
-            $submission->self_submitted = ($patient->userInfo->id == $userId);
+            $submission->self_submitted = ($patient->user->id == $userId);
             $submission->submitted_by = $usertype;
             $submission->appointment_id = $apptId;
             $submission->form_uid = $uid;
@@ -74,11 +88,11 @@ class FormController extends Controller
             if ($apptId){
                 $appt = Appointment::find($apptId);
                 $appt->saveToFullCal();
-                $users = $appt->practitioner->userInfo;
+                $users = $appt->practitioner->user;
             }else{
                 $users = User::where('user_type','practitioner')->get();
             }
-            if ($patient->userInfo->id == $userId){
+            if ($patient->user->id == $userId){
                 // $user->notify(new NewSubmission($submission));
                 Notification::send($users, new NewSubmission($submission));
             }
@@ -90,38 +104,13 @@ class FormController extends Controller
                 $columns = $request->columnObj;
                 $this->storeColumns($model, $modelUid, $columns, $request);
             }
-            return listReturn("checkmark");
+            $response = listReturn("checkmark");
         }catch(\Exception $e){
-            event(new BugReported(
-                [
-                    'description' => "Error Saving Submission", 
-                    'details' => $e, 
-                    'category' => 'Submissions', 
-                    'location' => 'FormController.php',
-                    'user' => null
-                ]
-            ));
-            return $e;
+            reportError($e,'FormController 95');
+            $response = 'error';
         }
+        return $response;
     }
-    public function storeColumns($model, $uid, $columnObj, Request $request){
-        $class = "App\\$model";
-        $instance = $class::find($uid);
-        // $trackChanges = usesTrait($instance,"TrackChanges");
-
-        // if ($trackChanges){
-        //     $includeFullJson = isset($instance->auditOptions['includeFullJson']) ? $instance->auditOptions['includeFullJson'] : false;
-        //     $changes = $instance->checkForChanges($instance,$request,$includeFullJson);
-        // }
-        foreach ($columnObj as $column => $value){
-            $instance->$column = $value;
-        }
-        $instance->save();
-        // if ($trackChanges && $changes){
-        //     $instance->saveTrackingInfo($instance, $changes, $request->getClientIp());
-        // }
-    }
-
     public function index()
     {
         //
@@ -134,54 +123,8 @@ class FormController extends Controller
 
     public function create()
     {
-        //
         $usertype = Auth::user()->user_type;
-
         return view("portal.$usertype.forms.create");        
-    }
-
-    public function store(Request $request)
-    {
-        // Log::info($request);
-        if ($request->form_id == "none"){
-            $maxFormId = Form::orderBy('form_id','desc')->take(1)->get();
-            $formId = count($maxFormId) > 0 ? $maxFormId[0]->form_id + 1 : 1;
-            $versionId = 1;
-            $saveAsNewVersion = true;   
-        }else{
-            $current = Form::find($request->form_uid);
-            $formId = $request->form_id;
-            $saveAsNewVersion = $current->has_submissions;
-            $versionId = $saveAsNewVersion ? $current->version_id + 1 : $current->version_id;
-        }
-        if ($saveAsNewVersion){
-            $form = new Form;
-            if (isset($current)){
-                $form->settings = $current->settings;
-                $form->settings_json = $current->settings_json;
-                // $current->current = false;
-                // $current->save();
-            }else{
-                $form->settings = Form::defaultSettings();
-                $form->active = true;
-            }
-        }else{
-            $form = $current;
-        }
-
-        $form->form_id = $formId;
-        $form->version_id = $versionId;
-        $form->form_name = $request->form_name;
-        $form->full_json = $this->extractImgsFromJson($request->full_json, $form);
-
-        if ($form->save()){
-            // session([$form->getKeyName()=>$form->id]);
-            setUid('Form',$form->form_uid);
-            return listReturn([$form->form_uid,$form->form_id]);
-            // return array($form->form_uid,$form->form_id);
-        }else{
-            return false;
-        }
     }
 
     public function extractImgsFromJson($fullJson,$form){
@@ -237,37 +180,17 @@ class FormController extends Controller
         $ctrl = new Form;
         return $ctrl->narrative($request);
     }
-    public function setAsActive($uid){
-        try{
-            $form = Form::find($uid);
-            $activeVersion = Form::where([['form_id',$form->form_id],['active',true]])->get()->first();
-            $form->active = true;
-            $activeVersion->active = false;
-            $form->save();
-            $activeVersion->save();            
-        }catch(\Exception $e){
-            reportError($e,'FormController 248');
-        }
-        return isset($e) ? $e : listReturn('checkmark');
-    }
 
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  \App\Form  $form
-     * @return \Illuminate\Http\Response
-     */
     public function edit(Form $form = null)
     {
         $usertype = Auth::user()->user_type;
-        $uid = getUid('Form');
-        if ($form == null && $uid == null){
-            return view('errors.no-form-selected');
-        }elseif ($form == null && $uid != null){
-            $form = Form::find($uid);
+        try {
+            $uid = getUid('Form');
+            $form = Form::findOrFail($uid);
+        } catch (\Exception $e) {
+            $error = handleError($e,'scriptcontroller save 100');
         }
-
-        return view("portal.$usertype.forms.create",['form'=>$form]);        
+        return isset($error) ? compact('error') : view("portal.$usertype.forms.create",['form'=>$form]);        
     }
 
     /**

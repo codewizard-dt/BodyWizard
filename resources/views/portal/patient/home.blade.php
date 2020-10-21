@@ -1,6 +1,6 @@
 <?php 
-$patient = Auth::user()->patientInfo;
-$patientInfo = [
+$patient = Auth::user()->patient;
+$patient = [
     'id' => $patient->id,
     'isNewPatient' => ($patient->isNewPatient() == 'true'),
     'name' => $patient->name
@@ -9,7 +9,7 @@ $patientInfo = [
 <div class='splash top' id='needle-tray-1'>
     <h1 class='purple white10 paddedSmall'>Portal Home</h1>
 </div>
-<div id="PatientInfo" data-patient='{{json_encode($patientInfo)}}'></div>
+<div id="patient" data-patient='{{json_encode($patient)}}'></div>
 <div id='ScheduleFeedTarget'>
 	@include('schedules.feeds')
 </div>
@@ -20,7 +20,6 @@ $patientInfo = [
 ])
 @include('models.create-modal',['model' => 'Appointment'])
 @include('models.edit-modal',['model' => 'Appointment'])
-@include ('schedules.services')
 @include ('schedules.practitioners')
 @include ('schedules.times')
 @include ('schedules.details')

@@ -59,7 +59,7 @@ class NewRequiredForm extends Notification
     {
         $appt = $this->appointment;
         $form = $this->form;
-        $patient = $notifiable->patientInfo;
+        $patient = $notifiable->patient;
         if ($appt){
             $type = "New Required Form";
             $description = 'Required by:<br>'.$appt->service_list."<br>".$appt->long_date_time;

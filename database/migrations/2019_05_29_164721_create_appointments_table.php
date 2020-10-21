@@ -15,17 +15,18 @@ class CreateAppointmentsTable extends Migration
     {
         Schema::create('appointments', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->string('uuid');
+            $table->string('google_id');
             $table->unsignedInteger('patient_id')->nullable();
             $table->unsignedInteger('practitioner_id')->nullable();
-            $table->dateTimeTz('date_time');
-            $table->unsignedInteger('duration');
+            $table->dateTimeTz('date_time_start');
+            $table->dateTimeTz('date_time_end');
+            $table->json('recurrence')->nullable();
+            $table->string('rrule')->nullable();
+            $table->unsignedInteger('recurring_id')->nullable();
             $table->mediumtext('notes')->nullable();
-            $table->json('status');
+            $table->json('status')->nullable();
             $table->string('appt_link')->nullable();
-            $table->json('full_json')->nullable();
             $table->timestamps();
-            $table->softDeletes();
         });
     }
 

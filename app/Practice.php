@@ -5,6 +5,8 @@ namespace App;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
+use App\Service;
+
 use Google\ApiCore\ApiException;
 use Google\Cloud\Kms\V1\CryptoKey;
 use Google\Cloud\Kms\V1\CryptoKey\CryptoKeyPurpose;
@@ -19,11 +21,14 @@ use Illuminate\Support\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use App\Traits\Encryptable;
+use App\Traits\HasSettings;
+
 
 
 class Practice extends Model
 {
   use Encryptable;
+  use HasSettings;
 
   protected $connection = 'practices';
   protected $table = 'practice_info';
@@ -35,6 +40,8 @@ class Practice extends Model
     'schedule' => 'array'
   ];
   protected $primaryKey = 'practice_id';
+  protected $visible = ['settings','name'];
+  protected $guarded = [];
   public $incrementing = false;
 
   public $practiceId;
@@ -60,10 +67,39 @@ class Practice extends Model
     }
     return $practice;
   }
+  public static function tableValues() {
+    $filters = [];
+    return [
+      'tableId' => 'PracticeList',
+      'header' => 'Available Practices',
+      'index' => 'id',
+      'model' => "Practice",
+      'columns' => [
+        'Name' => 'name',
+      ],
+      'hideOrder' => [],
+      'filters' => $filters,
+      'extraBtns' => [],
+    ];
+  }
+  function modelDetails() {
+    return [
+      'name' => $this->name,
+    ];
+  }
+  function nav_options() {
+    $data = [];
+    $data['buttons'] = [
+      'schedule' => 'schedule_edit'
+    ];
+    return $data;
+  }
 
   public function navBarInfo(){
+    // $tz = $this->contact_info ? $this->contact_info['timezone'] : 'America/Chicago';
     return [
       'currency' => $this->currency,
+      'tz' => $this->get_setting('contact_info.timezone', 'America/Chicago'),
     ];
   }
 
@@ -154,7 +190,7 @@ class Practice extends Model
     $appointments = array_values($appointments);
     if ($usertype == 'patient'){
       $appointments = collect($appointments)->filter(function($appt){
-        return $user->patientInfo->id == $appt['extendedProps']['patient']['id'];
+        return $user->patient->id == $appt['extendedProps']['patient']['id'];
       })->toArray();
     }
         // if ($usertype == 'practitioner'){
@@ -167,10 +203,10 @@ class Practice extends Model
         // }
         // elseif ($usertype == 'patient'){
         //     $array = [];
-        //     $patientId = $user->patientInfo->id;
+        //     $patientId = $user->patient->id;
         //     // $appointments
 
-        //     $userPatientId = $user->patientInfo->id;
+        //     $userPatientId = $user->patient->id;
         //     foreach($appointments as $id => $event){
         //         // RETURNS ONLY THIS PATIENT'S APPOINTMENTS
         //         $apptPatientId = $event['extendedProps']['patient']['id'];
@@ -378,15 +414,15 @@ class Practice extends Model
   public function savePractitionerSchedules(){
     $practitionerArr = [];
     foreach (Practitioner::where('schedule','!=','null')->get() as $practitioner){
-      $user_id = $practitioner->userInfo->id;
-      $practitionerInfo = [
+      $user_id = $practitioner->user->id;
+      $practitioner = [
         'user_id' => $user_id,
         'practitioner_id' => $practitioner->id,
         'name' => $practitioner->name,
         'schedule' => $practitioner->schedule,
         'exceptions' => $practitioner->schedule_exceptions
       ];
-      $practitionerArr[] = $practitionerInfo;
+      $practitionerArr[] = $practitioner;
     }
     $schedule = $this->schedule;
     if (!$schedule){
@@ -520,10 +556,10 @@ public function installBasicForms(){
   try{
    $forms = json_decode(Storage::get('/basicEhr/forms.json'),true);
    DB::table('forms')->insert($forms);
- }catch(\Exception $e){
-  reportError($e,'Practice.php 492');
-}
-return isset($e) ? $e : true;
+  }catch(\Exception $e){
+    reportError($e,'Practice.php 492');
+  }
+  return isset($e) ? $e : true;
 }
 public function clearCalendar($calendarId = null){
   if (!$calendarId){$calendarId = $this->calendar_id;}

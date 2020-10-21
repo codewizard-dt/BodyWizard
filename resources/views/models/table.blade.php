@@ -69,7 +69,7 @@ $displayName = isset($displayName) ? $displayName : "";
 	</div>
 	
 
-    <div class="TableNav flexbox">
+    <div class="tableNav flexbox">
     	<div class="tableArrow left disabled"></div>
     	<div class='label'>Most Recent {{title(pluralSpaces($model))}}</div>
     	<div class="tableArrow right disabled"></div>

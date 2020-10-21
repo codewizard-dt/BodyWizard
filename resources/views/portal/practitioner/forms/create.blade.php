@@ -4,355 +4,390 @@ Use App\Form;
 
 if (isset($form)){
     // dd($form);
-    $formUID = $form->getkey();
-    $formId = $form->form_id;
-    $data = str_replace("'","\u0027",$form->full_json);
-    $name = $form->form_name;
+  $formUID = $form->getkey();
+  $formId = $form->form_id;
+  $data = json_encode($form->full_json);
+  $sections = json_encode($form->sections);
+  $form_name = $form->form_name;
 }else{
-    $name = "";
+  $form_name = "";
 }
 
-$ctrl = new Form; 
-$requiredOptions = ['required','optional','ID*requiredbool'];
-
+$inputs = [];
+  set($inputs, 'number.min', new_input('number',
+    ['min', 'max', 'initial', 'step', 'units', 'preLabel'], 
+    [-99999, 99999, 0, 1, '', 'Minimum:']));
+  set($inputs, 'number.max',  new_input('number', 
+    ['min', 'max', 'initial', 'step', 'units', 'preLabel'], 
+    [-99999, 99999, 0, 1, '', 'Maximum:']));
+  set($inputs, 'number.initial',  new_input('number', 
+    ['min', 'max', 'initial', 'step', 'units', 'preLabel'], 
+    [-99999, 99999, 0, 1, '', 'Initial:']));
+  set($inputs, 'number.step',  new_input('number', 
+    ['min', 'max', 'initial', 'step', 'units', 'preLabel'], 
+    [-99999, 99999, 1, 0.1, 'units', 'Increment:']));
+  set($inputs, 'number.units',  new_input('text', 
+    ['preLabel','placeholder'], 
+    ['Units:','eg days, weeks, times/day, meals, etc']));
+  set($inputs,'number.units.settings.required','false');
+  set($inputs, 'number.preLabel',  new_input('text', 
+    ['preLabel','placeholder'], 
+    ['Text label:','optional']));
+  set($inputs,'number.preLabel.settings.required','false');
+  set($inputs, 'text.placeholder', new_input('text',
+    ['placeholder','preLabel'],
+    ['(optional) disappears when you type','Placeholder text:']));
+  set($inputs,'text.placeholder.settings.required','false');
+  set($inputs, 'textbox.placeholder', new_input('textbox',
+    ['placeholder','preLabel'],
+    ['(optional) disappears when you type','Placeholder text:']));
+  set($inputs,'textbox.placeholder.settings.required','false');
+  set($inputs, 'date.limit',  new_input('list', 
+    ['list', 'listLimit', 'preLabel'], 
+    [['one','two','three','five','ten','no limit'], 1, 'Limit selection to']));
+  set($inputs, 'date.min.num',  new_input('number', 
+    ['min', 'max', 'initial', 'step', 'units', 'preLabel', 'labelClass'], 
+    [0, 100, 0, 1, '', 'FROM', 'pink']));
+  set($inputs,'date.min.num.settings.required','false');
+  set($inputs, 'date.min.type',  new_input('dropdown', 
+    ['list'], 
+    [['days','weeks','months','years']]));
+  set($inputs,'date.min.type.settings.required','false');
+  set($inputs, 'date.min.dir',  new_input('dropdown', 
+    ['list','postLabel'], 
+    [['before','after'],'current date']));
+  set($inputs,'date.min.dir.settings.required','false');
+  set($inputs, 'date.max.num',  new_input('number', 
+    ['min', 'max', 'initial', 'step', 'units', 'preLabel', 'labelClass'], 
+    [0, 100, 0, 1, '', 'UNTIL', 'pink']));
+  set($inputs,'date.max.num.settings.required','false');
+  set($inputs, 'date.max.type',  new_input('dropdown', 
+    ['list'], 
+    [['days','weeks','months','years']]));
+  set($inputs,'date.max.type.settings.required','false');
+  set($inputs, 'date.max.dir',  new_input('dropdown', 
+    ['list','postLabel'], 
+    [['before','after'],'current date']));
+  set($inputs,'date.max.dir.settings.required','false');
+  set($inputs, 'bodyclick.size',  new_input('radio', 
+    ['list','preLabel'], 
+    [['small','medium','large','x-large'],'Image size:']));
+  set($inputs, 'bodyclick.bodyclickSample',  new_input('bodyclick', 
+    ['size'], 
+    ['small']));
+  set($inputs, 'scale.dispVal',  new_input('dropdown', 
+    ['list','preLabel'], 
+    [['yes','no'],'Show current value?']));
+  set($inputs, 'scale.dispLabel',  new_input('dropdown', 
+    ['list','preLabel'], 
+    [['yes','no'],'Show end values?']));
+  set($inputs, 'scale.leftLabel', new_input('text',
+    ['placeholder','preLabel'],
+    ['appears to left of scale','Left-side text:']));
+  set($inputs, 'scale.rightLabel', new_input('text',
+    ['placeholder','preLabel'],
+    ['appears to right of scale','Right-side text:']));
+  set($inputs, 'scale.min', new_input('number',
+    ['min','max','initial','step','preLabel'],
+    [-1000,1000,0,1,'Minimum value:']));
+  set($inputs, 'scale.max', new_input('number',
+    ['min','max','initial','step','preLabel'],
+    [-1000,1000,100,1,'Maximum value:']));
+  set($inputs, 'scale.initial', new_input('number',
+    ['min','max','initial','step','preLabel'],
+    [-1000,1000,50,1,'Initial value:']));
+  set($inputs, 'time.min', new_input('time',
+    ['preLabel'],
+    ['Earliest available:']));
+  set($inputs,'time.min.settings.required','false');
+  set($inputs, 'time.max', new_input('time',
+    ['preLabel'],
+    ['Latest available:']));
+  set($inputs,'time.max.settings.required','false');
+  set($inputs, 'time.step', new_input('number',
+    ['min','max','initial','step','units','preLabel'],
+    [1,1000,15,1,'minutes','Time increment:']));
+  set($inputs,'time.step.settings.required','false');
+  set($inputs, 'SectionName', new_input('text',
+    ['placeholder', 'no_shift', 'html_tag', 'inputCss'],
+    ['Section Name', true, 'h2', ['textAlign'=>'center']]));
+  set($inputs, 'SectionName.settings.placeholder_shift', 'false');
 ?>
 
 <div id='FormBuilder'>
-    @if (isset($form))
-        <div id='formdata' data-mode='edit' data-formuid='{{ $formUID }}' data-formid='{{ $formId }}' data-json='{{ $data }}'></div>
-    @else
-        <div id="formdata"></div>
-    @endif
-    <div id='FormInfo'>
-        <h2 id='FormName' class='editable'>
-            <div class='pair'>
-                <input class='input' id='FormName' type='text' placeholder='Form Name'>
-                <span class='value purple'> {{ $name }} </span>
-            </div>
-            <div class='toggle edit'>(edit form name)</div>
-            <div class='toggle save'>(save name)</div>
-            <div class='toggle cancel'>(cancel)</div>
-        </h2>
-        <div id="Sections">
-            <div id='SectionOptions' class='prompt displayOrder'>
-                <div class="message whiteBG">
-                    @if (isset($form))
-                        <h3>Loading Sections</h3>
-                    @else
-                        <h3>No Sections Yet</h3>
-                    @endif
-                    <span class='little'>click to scroll</span><br>
-                    <ul></ul>
-                </div>
-                <div class="options">
-                    <div class="addSectionBtn button pink medium">add section</div>
-                    <div id='PreviewFormBtn' class='button medium pink70'>preview form</div>
-                </div>
-            </div>
+  <div id="FormBuildProxy" @if(isset($form)) data-json='{{$form->toJson()}}' @endif data-mode='build'></div>
 
-            <div id='AddSection' class='prompt'>
-                <div class="message">
-                    <h2>Create New Section</h2>
-                    <h3><input id="SectionName" style='text-align: center;' type='text' placeholder='Enter Section Name'></h3>
-                </div>
-                <div class="options">
-                    <div class='button medium pink add'>add to form</div>
-                    <div class="button medium cancel">cancel</div>
-                </div>
-            </div>
-
-        </div> 
+  <div id='AddSection' class='prompt'>
+    <div class="message">
+      <h1>New Section</h1>
+      @include('layouts.forms.display.answer',array_merge($inputs['SectionName'],['name'=>'SectionName']))
     </div>
-    
-    
-    <div id="AddItem" class='prompt'>
-        <div id="AddItemProxy"></div>
-        <div class='message'>
-            <h2 class='purple'>New Question</h2>
-            <div>
-                <h3 class='black paddedXSmall'><span>Question Text: </span><input id='Text' type='text' placeholder='Ex: How are you today?'></h3>
-            </div>
-            <div>
-                <h4 class='black paddedXSmall'>
-                    <span>Answer Type:</span>
-                    <select id='Type'>
-                        <option value='text'>single line text</option>
-                        <option value='text box'>text box</option>
-                        <option value='number'>number</option>
-                        <option value='bodyclick'>body click</option>
-                        <option value='radio'>select one answer</option>
-                        <option value='checkboxes'>select one or more answers</option>
-                        <option value='dropdown'>dropdown menu</option>
-                        <option value='scale'>slider scale</option>
-                        <option value='date'>date</option>
-                        <option value='time'>time</option>
-                        <option value='signature'>signature</option>
-                    </select>
-                </h4>
-                <h4 class="black paddedXSmall">
-                    <span>Required:</span>
-                    <select id='Required'>
-                        <option value='true'>yes</option>
-                        <option value='false'>no, optional</option>
-                    </select>
-                </h4>
-            </div>
-
-            <div id='Options' class='itemOptionList'>
-                <span class="settingsLabel">List the Answers to Choose From</span>
-                <span class='little'>add as many as you'd like. use enter key to move down. use arrows to rearrange</span>
-                <div id='OptionsList' class='optionsList'>
-                    <div class='option'><input type='text' placeholder='Ex: cold, warm, hot'><div class="UpDown"><div class="up"></div><div class="down"></div></div></div>
-                    <div class='option'><input type='text' placeholder='Ex: cold, warm, hot'><div class="UpDown"><div class="up"></div><div class="down"></div></div></div>
-                    <div class='button xxsmall pink70 add'>add more</div>
-                </div>
-            </div>
-            <div id='TextOptions' class='itemOptionList'>
-                <?php 
-                $optionsText = ['name'=>'textPlaceholder','placeholder'=>'(optional) disappears when you type'];
-                $optionsTextBox = ['name'=>'textAreaPlaceholder','placeholder'=>'(optional) disappears when you type'];
-                ?>
-                <span class="settingsLabel">Options</span>
-                <div class="optionsList">
-                    <div><span>Placeholder text:</span>{{ $ctrl->answerDisp('text',$optionsText) }}</div>
-                </div>
-            </div>
-            <div id='TextBoxOptions' class='itemOptionList'>
-                <span class="settingsLabel">Options</span>
-                <div class="optionsList">
-                    <div><span>Placeholder text:</span>{{ $ctrl->answerDisp('text box',$optionsTextBox) }}</div>
-                </div>
-            </div>
-            <div id='NumberOptions' class='itemOptionList'>
-                <span class="settingsLabel">Options</span>
-                <div id='NumberList'  class='optionsList'>
-                    <?php
-                    $optionsMin = ["min"=>"-99999", "max"=>"99999", "initial"=>"0", "step"=>"1", "units"=>"","name"=>"min"];
-                    $optionsMax = ["min"=>"-99999", "max"=>"99999", "initial"=>"0", "step"=>"1", "units"=>"","name"=>"max"];
-                    $optionsInitial = ["min"=>"-99999", "max"=>"99999", "initial"=>"0", "step"=>"1", "units"=>"","name"=>"initial"];
-                    $optionsStep = ["min"=>"-99999", "max"=>"99999", "initial"=>"0", "step"=>"0.1", "units"=>"","name"=>"step"];
-                    $optionsUnits = ['name'=>'units','placeholder'=>'eg days, weeks, times/day, meals, etc'];
-                    ?>
-                    <div><span>Minimum: </span> {{ $ctrl->answerDisp('number',$optionsMin) }}</div>
-                    <div><span>Maximum: </span> {{ $ctrl->answerDisp('number',$optionsMax) }}</div>
-                    <div><span>Initial: </span> {{ $ctrl->answerDisp('number',$optionsInitial) }}</div>
-                    <div><span>Increment size: </span> {{ $ctrl->answerDisp('number',$optionsStep) }}</div>
-                    <div><span>Units: </span> {{ $ctrl->answerDisp('text',$optionsUnits) }}</div>
-                </div>
-            </div>
-            <div id='DateOptions' class='itemOptionList'>
-                <span class="settingsLabel">Options</span>
-                <div id='DateList' class='optionsList'>
-
-                    <?php 
-                    $d = date('Y');
-                    $m = $d + 1;
-                    $D = $d +10;
-                    $v = $d -10;
-                    unset($options);
-                    $optionsBegin = ['min'=>'1920','max'=>$D,'initial'=>$v,'step'=>'1','units'=>'','name'=>'begin'];
-                    $optionsEnd = ['min'=>'1920','max'=>$D,'initial'=>$d,'step'=>'1','units'=>'','name'=>'end'];
-                    $optionsMinNum = ['min'=>'0','max'=>'100','initial'=>'1','step'=>'1','units'=>'','name'=>'minNum'];
-                    $optionsMinType = ['days','weeks','months','years','ID*minType'];
-                    $optionsMinDir = ['before','after','ID*minDir'];
-                    $optionsMaxNum = ['min'=>'0','max'=>'100','initial'=>'1','step'=>'1','units'=>'','name'=>'maxNum'];
-                    $optionsMaxType = ['days','weeks','months','years','ID*maxType'];
-                    $optionsMaxDir = ['before','after','ID*maxDir'];
-                    ?>
-                    <div>
-                        <div data-settings='yearRange'>
-                            <!-- <h5>Which Years should be Available?<br><span>(always opens on current month)<span></h5>
-                            <div><span>beginning with</span> {{ $ctrl->answerDisp('number',$optionsBegin) }} 
-                                <label><input type='checkbox' id='currentYearBegin'>always use current year</label>
-                            </div>
-                            <div><span>ending with</span> {{ $ctrl->answerDisp('number',$optionsEnd) }} 
-                                <div>
-                                    <label><input type='checkbox' id='currentYearEnd'>always use current year</label><br>
-                                    <label><input type='checkbox' id='nextYearEnd'>always use next year</label>
-                                </div>
-                            </div> -->
-                        </div>
-                        <div data-settings='minMax'>
-                            <h5>Which Dates should be Available?<br><span>(ex: 1 week before/after current date)<span></h5>
-                            <label><input id='NoRestriction' type='checkbox'>no restrictions</label><br>
-                            <div class='blockable'>
-                                <span class='little'>to use current date, simply enter "0 days before current date"</span>
-                                <div>
-                                    <span class='pink'>from</span>
-                                    {{ $ctrl->answerDisp("number",$optionsMinNum) }}
-                                    {{ $ctrl->answerDisp("dropdown",$optionsMinType) }}
-                                    {{ $ctrl->answerDisp("dropdown",$optionsMinDir) }}
-                                    <span>current date</span>
-                                </div>
-                                <div>
-                                    <span class='pink'>to</span>
-                                    {{ $ctrl->answerDisp("number",$optionsMaxNum) }}
-                                    {{ $ctrl->answerDisp("dropdown",$optionsMaxType) }}
-                                    {{ $ctrl->answerDisp("dropdown",$optionsMaxDir) }}
-                                    <span>current date</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div id='TimeOptions' class='itemOptionList'>
-                <span class="settingsLabel">Options</span>
-                <div id="TimeList" class='optionsList'>
-                    <?php
-                    $optionsRestrict = ["allow any time","set range",'set initial value',"set interval","ID*TimeRestrict"];
-                    $optionsMinTime = ['setTime'=>"8:00am",'name'=>'minTime'];
-                    $optionsMaxTime = ['setTime'=>"8:00pm",'name'=>'maxTime'];
-                    $optionsInterval = ['min'=>'0','max'=>'180','initial'=>'5','step'=>'5','units'=>'minutes','name'=>'step'];
-                    $optionsInitial = ['setTime'=>'8:00am','name'=>'setTime','step'=>'5'];
-                    ?>
-                    <div id='TimeRestriction' data-condition='yes'><span>Time restrictions</span><br>
-                        {{ $ctrl->answerDisp("checkboxes",$optionsRestrict) }}
-                    </div>
-                    <div class="flexbox">
-                        <div id='TimeRange' data-condition='set range'><span>Allowed Range:</span>
-                            {{ $ctrl->answerDisp("time",$optionsMinTime) }}<span>to</span>
-                            {{ $ctrl->answerDisp("time",$optionsMaxTime) }}
-                        </div>
-                        <div id='TimeValue' data-condition='set initial value'><span>Initial time displayed:</span>
-                            {{ $ctrl->answerDisp("time",$optionsInitial) }}
-                        </div>
-                        <div id='TimeIntervalBox' data-condition='set interval'><span>Selection intervals:</span>
-                            {{ $ctrl->answerDisp("number",$optionsInterval) }}
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div id='BodyClickOptions' class='itemOptionList'>
-                <?php 
-                    $imageClickOptions1 = [
-                        'image' => '/images/body/rsz_body12.png',
-                        'height' => '27.5em',
-                        'name' => 'bodyClickSample'
-                    ];
-                    $imageClickSizeOptions = ['small','medium','large','x-large',"ID*imageClickSize"];
-                ?>
-                <span class="settingsLabel">Options</span>
-                <div id="BodyClickList" class="optionsList">
-                    <div><span>Image height:</span>{{$ctrl->radio($imageClickSizeOptions)}}</div>                
-                </div>
-                <div>{{$ctrl->imageClick($imageClickOptions1)}}</div>
-            </div>
-            <div id='ScaleOptions' class='itemOptionList'>
-                <span class="settingsLabel">Options</span>
-                <span class='little'>Labels will always show on each side, but you can choose to show the values or not.<br>To approximate a 'visual analog scale', hide the values and set the max to at least 100.</span>
-                <div id="ScaleList" class='optionsList'>
-                    <?php
-                    $optionsMin = ['min'=>'-9999','max'=>'9999','initial'=>'0','step'=>'1','units'=>'','name'=>'scalemin'];
-                    $optionsMax = ['min'=>'-9999','max'=>'9999','initial'=>'100','step'=>'1','units'=>'','name'=>'scalemax'];
-                    $optionsInitial = ['min'=>'-9999','max'=>'9999','initial'=>'50','step'=>'1','units'=>'','name'=>'initial'];
-                    $optionsMinLabel = ['name'=>'minLabel','placeholder'=>'ex: no pain, none, bad'];
-                    $optionsMaxLabel = ['name'=>'maxLabel','placeholder'=>'ex: excruciating, constant, good'];
-                    ?>
-                    <div><span>Show current value?</span><select name='dispVal'><option value="yes">yes</option><option value="no">no</option></select></div>
-                    <div><span>Show left/right values?</span><select name='dispLabel'><option value="yes">yes</option><option value="no">no</option></select></div>
-                    <div><span>Left-side Label:</span>{{ $ctrl->answerDisp("text",$optionsMinLabel) }}</div>
-                    <div><span>Right-side Label:</span>{{ $ctrl->answerDisp("text",$optionsMaxLabel) }}</div>
-                    <div><span>Left-side value:</span>{{ $ctrl->answerDisp("number",$optionsMin) }}</div>
-                    <div><span>Right-side value:</span>{{ $ctrl->answerDisp("number",$optionsMax) }}</div>
-                    <div><span>Initial value:</span>{{ $ctrl->answerDisp("number",$optionsInitial) }}</div>
-                </div>
-            </div>
-            <div id="FollowUpOptions" class='itemOptionList'>
-                <span class="settingsLabel switch">When To Ask This Question</span>
-                <div id='FollowUpList' class='optionsList'>
-                    <span>Only when reponse to <span id="DisplayQ"></span> <span id="Conditionality"></span>: </span><div id='condition' class='flexbox'></div>
-                </div>
-            </div>
-            <div id='SignatureOptions' class='itemOptionList'>
-                <span class="settingsLabel">Options</span>
-                <div id='SignatureList' class='optionsList'>
-                    <div>
-                        <span>Ask for typed name as well as signature?</span>
-                        <select name='typedName' id='typedName'>
-                            <option value='yes'>yes</option>
-                            <option value='no'>no</option>
-                        </select>                        
-                    </div>
-                </div>
-            </div>  
-        </div>
-        
-        <div class="wrapper options">
-	        <div class="button medium pink save">save question</div>
-	        <div class='button medium cancel'>cancel</div>
-        </div>
+    <div class="options">
+      <div class='button medium pink add'>add to form</div>
+      <div class="button medium cancel">cancel</div>
     </div>
-    <div id='AddText' class='prompt'>
-        <div class='message'>
-            <div id='NarrativeOptions' class='itemOptionList'>
-                <h2 class='purple'>Text and Image Display</h2>
-                <div class='central'>You can display any explanatory, descriptive, or instructive information you like. It will be displayed exactly as you see here, including images, links, and formatting.</div>
-                <div id='NarrativeList' class='optionsList'>
-                    <div class='summernote'></div>
-                </div>
-            </div>            
+  </div>
+
+  <div id="AddItem" class='prompt'>
+    <div class='message'>
+      <h2 class='purple'>New Question</h2>
+        @include('layouts.forms.display.answer',[
+          'type' => 'text',
+          'name' => 'text',
+          'options' => [
+            'id' => 'AddItemText',
+            'placeholder' => 'Ex: How are you today?',
+            'preLabel' => 'Question Text:',
+            'inputCss' => '{"width":"20em"}',
+            'labelClass' => 'black nowrap',
+            'labelCss' => '{"width":"6em","textAlign":"right"}',
+            'html_tag' => 'h3'
+          ]
+        ])
+        @include('layouts.forms.display.answer',[
+          'type' => 'dropdown',
+          'name' => 'type',
+          'options' => [
+            'id' => 'AddItemType',
+            'preLabel' => 'Answer Type:',
+            'labelClass' => 'black nowrap',
+            'labelCss' => '{"width":"7.8em","textAlign":"right"}',
+            'html_tag' => 'h4',
+            'list' => [
+              'text %% single line text',
+              'textbox %% text box',
+              'number %% number',
+              'bodyclick %% body click',
+              'list %% styled list',
+              'checkboxes %% checkboxes',
+              'dropdown %% dropdown menu',
+              'scale %% slider scale',
+              'date %% date',
+              'time %% time',
+              'signature %% signature',
+            ]
+          ]
+        ])
+        @include('layouts.forms.display.answer',[
+          'type' => 'dropdown',
+          'name' => 'required',
+          'options' => [
+            'id' => 'AddItemRequired',
+            'preLabel' => 'Required:',
+            'labelClass' => 'black nowrap',
+            'labelCss' => '{"width":"7.8em","textAlign":"right"}',
+            'html_tag' => 'h4',
+            'list' => [
+              'yes, required',
+              'no, optional',
+            ]
+          ]
+        ])
+
+      <div id='Options' class='itemOptionList' data-type='["list","checkboxes","dropdown"]'>
+        <span class="settingsLabel">List the Answers to Choose From</span>
+        <span class='little'>add as many as you'd like. use enter key to move down. use arrows to rearrange</span>
+        <div id='OptionsList' class='optionsList'>
+
+          @include('layouts.forms.display.answer',[
+            'type' => 'list',
+            'name' => 'listLimit',
+            'options' => [
+              'list' => ['1','2','3','5','10','no limit'],
+              'listLimit' => 1,
+              'preLabel' => 'Limit selection to:'
+            ],
+          ])
+          @include('layouts.forms.display.answer',[
+            'type' => 'text',
+            'name' => 'listOption',
+            'settings' => ['required' => 'false', 'warning' => 'false','placeholder_shift'=>'false'],
+            'options' => [
+              'placeholder' => 'Ex: cold, warm, hot',
+              'postLabel' => 'UpDownProxy',
+              'eleCss' => ['flexWrap' => 'nowrap'],
+              'inputCss' => ['width' => '20em'],
+            ]
+          ])<br>
+          <div class='button xxsmall pink70 add'>add more</div>
+          <div class='button xxsmall yellow' data-action='forms.create.editor.options.link_to_model'>link to category</div>
         </div>
-        <div class="options">
-            <div class="button medium pink save">save text</div>
-            <div class='button medium cancel'>cancel</div>
+      </div>
+
+      <div id='TextOptions' class='itemOptionList' data-type='text'>
+        <span class="settingsLabel">Options</span>
+        <div class="optionsList">
+          <div>
+            @foreach($inputs['text'] as $name => $options)
+            @include('layouts.forms.display.answer', array_merge($options,compact('name')))
+            @endforeach
+          </div>
         </div>
+        <div class='button xxsmall yellow' data-action='forms.create.editor.options.link_to_model'>link to category</div>
+      </div>
+
+      <div id='TextBoxOptions' class='itemOptionList' data-type='textbox'>
+        <span class="settingsLabel">Options</span>
+        <div class="optionsList">
+          @foreach($inputs['textbox'] as $name => $options)
+          @include('layouts.forms.display.answer', array_merge($options,compact('name')))
+          @endforeach
+        </div>        
+        <div class='button xxsmall yellow' data-action='forms.create.editor.options.link_to_model'>link to category</div>
+      </div>
+
+      <div id='NumberOptions' class='itemOptionList' data-type='number'>
+        <span class="settingsLabel">Options</span>
+        <div id='NumberList'  class='optionsList'>
+          @foreach($inputs['number'] as $name => $options)
+          @include('layouts.forms.display.answer', array_merge($options,compact('name')))
+          @endforeach
+        </div>
+      </div>
+
+      <div id='BodyClickOptions' class='itemOptionList' data-type='bodyclick'>
+        <span class="settingsLabel">Options</span>
+        <div id="BodyClickList" class="optionsList">
+          @foreach($inputs['bodyclick'] as $name => $options)
+          @include('layouts.forms.display.answer', array_merge($options,compact('name')))
+          @endforeach
+        </div>
+      </div>
+
+      <div id='ScaleOptions' class='itemOptionList' data-type='scale'>
+        <span class="settingsLabel">Options</span>
+        <span class='little'>Labels will always show on each side, but you can choose to show the values or not.<br>To approximate a 'visual analog scale', hide the values and set the range to '0 to 100'.</span>
+        <div id="ScaleList" class='optionsList'>
+          @foreach($inputs['scale'] as $name => $options)
+          @include('layouts.forms.display.answer', array_merge($options,compact('name')))
+          @endforeach
+        </div>
+      </div>
+
+      <div id='TimeOptions' class='itemOptionList' data-type='time'>
+        <span class="settingsLabel">Options</span>
+        <div class='purple'>These optional settings will restrict which times are available.</div>
+        <div id="TimeList" class='optionsList'>
+          @foreach($inputs['time'] as $name => $options)
+          @include('layouts.forms.display.answer', array_merge($options,compact('name')))
+          @endforeach
+        </div>
+      </div>
+
+      <div id='SignatureOptions' class='itemOptionList' data-type='signature'>
+        <span class="settingsLabel">Options</span>
+        <div id='SignatureList' class='optionsList'>
+          @include('layouts.forms.display.answer',[
+            'type' => 'dropdown',
+            'name' => 'typedName',
+            'options' => [
+              'list' => ['yes','no'],
+              'preLabel' => 'Require typed name?'
+            ]
+          ])
+        </div>
+      </div>  
+
+      <div id='DateOptions' class='itemOptionList' data-type='date'>
+        <span class="settingsLabel">Options</span>
+        <h5>Which Dates should be Available?<br><span>(ex: 1 week before/after current date)</span>
+        </h5>
+        <span class='pink'>Set 'From' date, 'Until' date, neither, or both</span><br>
+        <span class='little pink'>For current date, enter "0 days before or after"</span>
+        <div id='DateList' class='optionsList'>
+          @include('layouts.forms.display.answer',[
+            'type' => 'list',
+            'options' => ['list' => ['1','2','3','5','10','no limit'], 'listLimit'=>1,
+              'preLabel' => 'Limit selection to'],
+            'name' => 'date_limit'
+          ])
+          <div class='flexbox'>
+            @foreach($inputs['date']['min'] as $name => $options)
+            @include('layouts.forms.display.answer', array_merge($options,['name'=>'min_'.$name]))
+            @endforeach
+          </div>
+          <div class='flexbox'>
+            @foreach($inputs['date']['max'] as $name => $options)
+            @include('layouts.forms.display.answer', array_merge($options,['name'=>'max_'.$name]))
+            @endforeach
+          </div>
+        </div>
+      </div>
+
+      <div id="FollowUpOptions" class='itemOptionList followupOptionList' data-type='followup'>
+        <span class="settingsLabel switch">When To Ask This Question</span>
+        <div>
+          <div>
+            This question will only be asked when its parent question has a specific response.
+          </div>
+        </div>
+        <div id='FollowUpList' class='optionsList'>
+          <div class='parentInfo'></div>
+          <div class='flexbox condition' data-parent='["number","scale"]'>
+            @include('layouts.forms.display.answer', [
+              'type' => 'list',
+              'name' => 'conditionNumberComparator',
+              'options' => [
+                'list' => ['less than','equal to','greater than'],
+                'listLimit' => 'no limit'
+              ],
+            ])
+            @include('layouts.forms.display.answer',[
+              'type' => 'number',
+              'name' => 'conditionNumberVal',
+              'options' => ['min'=>0,'max'=>5,'initial'=>2,'step'=>1,'units'=>'units'],
+              ])
+          </div>
+          <div class='flexbox condition' data-parent='["list","dropdown","checkboxes"]'>
+            @include('layouts.forms.display.answer', [
+              'type' => 'list',
+              'name' => 'conditionList',
+              'options' => [
+                'list' => ['a','b'],
+              ],
+            ])
+          </div>
+          <div class='flexbox condition' data-parent='time'>
+            @include('layouts.forms.display.answer', [
+              'type' => 'list',
+              'name' => 'conditionTimeComparator',
+              'options' => [
+                'list' => ['before','exactly','after'],
+                'listLimit' => 'no limit'
+              ],
+            ])
+            @include('layouts.forms.display.answer', [
+              'type' => 'time',
+              'name' => 'conditionTime',
+            ])
+          </div>
+        </div>
+      </div>
     </div>
-            
-<div id='Templates'>
-    <?php 
-        $textOptions = [
-            'name'=>'textTemplate',
-            'placeholder'=>null
-        ];
-        $textboxOptions = [
-            'name'=>'textboxTemplate',
-            'placeholder'=>null
-        ];
-        $numberOptions = [
-            'min' => 0,'max' => 100,'initial' => 60,'step' => 1,'units' => 'units','name' => 'numberTemplate'
-        ];
-        $radioOptions = ["ID*radioTemplate"];
-        $checkboxesOptions = ["ID*checkboxesTemplate"];
-        $dropdownOptions = ["ID*dropdownTemplate"];
-        $scaleOptions = [
-            "min" => 0,"max" => 100,"initial" => 50,"minLabel" => "none","maxLabel" => "a lot","displayValue" => "yes","displayLabels" => "yes","name" => "scaleTemplate"
-        ];
-        $currentYear = date("Y");
-        $tenPast = $currentYear - 10;
-        $dateOptions = [
-            "yearrange" => $tenPast.":".$currentYear,
-            'name' => "dateTemplate"
-        ];
-        $timeOptions = [
-            'minTime' => "8:00am",'maxTime' => '8:00pm','setTime' => '3:00pm','step' => '15','name' => 'timeTemplate'
-        ];
-        $signatureOptions = [
-            'typedName' => 'yes'
-        ];
-        $narrativeOptions = [
-            'name' => 'narrativeTemplate',
-            'markupStr' => "demo"
-        ];
-        $bodyClickOptions = [
-            'image' => '/images/body/rsz_body12.png',
-            'height' => '35em',
-            'name' => 'bodyClickTemplate'
-        ];
-    ?>
-    <div class='template' data-type="narrative" data-defaultoptions="{{ json_encode($narrativeOptions) }}">{{ $ctrl->answerDisp('narrative',$narrativeOptions) }}</div>
-    <div class='template' data-type="text" data-defaultoptions="{{ json_encode($textOptions) }}">{{ $ctrl->answerDisp('text',$textOptions) }}</div>
-    <div class='template' data-type="text box" data-defaultoptions="{{ json_encode($textboxOptions) }}">{{ $ctrl->answerDisp('text box',$textboxOptions) }}</div>
-    <div class='template' data-type="number" data-defaultoptions="{{ json_encode($numberOptions) }}">{{ $ctrl->answerDisp('number',$numberOptions) }}</div>
-    <div class='template' data-type="radio" data-defaultoptions="{{ json_encode($radioOptions) }}">{{ $ctrl->answerDisp('radio',$radioOptions) }}</div>
-    <div class='template' data-type="checkboxes" data-defaultoptions="{{ json_encode($checkboxesOptions) }}">{{ $ctrl->answerDisp('checkboxes',$checkboxesOptions) }}</div>
-    <div class='template' data-type="bodyclick" data-defaultoptions="{{ json_encode($bodyClickOptions) }}">{{ $ctrl->answerDisp('bodyclick',$bodyClickOptions) }}</div>
-    <div class='template' data-type="dropdown" data-defaultoptions="{{ json_encode($dropdownOptions) }}">{{ $ctrl->answerDisp('dropdown',$dropdownOptions) }}</div>
-    <div class='template' data-type="scale" data-defaultoptions="{{ json_encode($scaleOptions) }}">{{ $ctrl->answerDisp('scale',$scaleOptions) }}</div>
-    <div class='template' data-type="date" data-defaultoptions="{{ json_encode($dateOptions) }}">{{ $ctrl->answerDisp('date',$dateOptions) }}</div>
-    <div class='template' data-type="time" data-defaultoptions="{{ json_encode($timeOptions) }}">{{ $ctrl->answerDisp('time',$timeOptions) }}</div>
-    <div class='template' data-type="signature" data-defaultoptions="{{ json_encode($signatureOptions) }}">{{ $ctrl->answerDisp('signature',$signatureOptions) }}</div>
-</div>
-<div id="FormPreview" class="modalForm">
-</div>
-<script type="text/javascript" src="{{ asset('/js/launchpad/form-builder.js') }}"></script>
+
+
+    <div class="wrapper options">
+      <div class="button medium pink save">save question</div>
+      <div class='button medium cancel'>cancel</div>
+    </div>
+  </div>
+
+
+
+  <div id='AddText' class='prompt'>
+    <div class='message'>
+      <div id='NarrativeOptions' class='itemOptionList' data-type='narrative'>
+        <h2 class='purple'>Text and Image Display</h2>
+        <div class='central'>You can display any explanatory, descriptive, or instructive information you like. It will be displayed exactly as you see here, including images, links, and formatting.</div>
+        <div id='NarrativeList' class='optionsList'>
+          <div class='summernote'></div>
+        </div>
+      </div>            
+    </div>
+    <div class="options">
+      <div class="button medium pink save">save text</div>
+      <div class='button medium cancel'>cancel</div>
+    </div>
+  </div>
+
+  <script type="text/javascript" src="{{ asset('/js/launchpad/form-builder.js') }}"></script>

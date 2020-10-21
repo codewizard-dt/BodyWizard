@@ -10,14 +10,17 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Carbon;
+use App\Traits\HasSettings;
 
 class Form extends Model
 {
-//
+  use HasSettings;
+
   protected $fillable = [
-    'form_id','version_id','form_name','questions','settings','has_submissions','full_json','locked','current'
+    'form_id','version_id','form_name','questions','settings','has_submissions','full_json','locked','current','sections'
   ];
   protected $primaryKey = 'form_uid';
+  protected $visible = ['form_uid','form_id','version_id','form_name','settings','sections'];
 
   public $tableValues;
   public $optionsNavValues;
@@ -25,7 +28,9 @@ class Form extends Model
   public $connectedModels;
 
   protected $casts = [
+    'sections' => 'array',
     'settings' => 'array',
+    'full_json' => 'json',
   ];
 
   public function __construct(){
@@ -33,6 +38,11 @@ class Form extends Model
     $this->connectedModels = [
       ['Service','many','morphToMany']
     ];
+  }
+  public static function defaultCollection(){
+    if (Auth::user()->is_superuser) $list = Form::all();
+    else $list = Form::whereNull('settings->system')->orWhere('settings->system','false')->get();
+    return $list;
   }
   public static function tableValues(){
     $usertype = Auth::user()->user_type;
@@ -44,60 +54,22 @@ class Form extends Model
       $arr = [
         'columns' => 
         [
-          ["label" => 'Form Name',
-          "className" => 'name',
-          "attribute" => 'name_with_version'],
-          ["label" => 'Type',
-          "className" => 'type',
-          "attribute" => 'form_type'],
-          ["label" => 'For',
-          "className" => 'usertype',
-          "attribute" => 'user_type'],
-          ["label" => 'Chart Use',
-          "className" => 'charting',
-          "attribute" => 'charting_value_for_table'],
+          'Form Name' => 'name_with_version',
+          'Type' => 'form_type',
+          'For' => 'user_type',
+          'Chart Usage' => 'charting_value_for_table',
         ],
-        'hideOrder' => "type,usertype,charting",
-        'filtersColumn' => [],
-        'filtersOther' => [
-          [
-            "label" => 'Form Type',
-            "filterName" => 'type',
-            "attribute" => 'form_type',
-            "markOptions" => null,
-            "filterOptions" => [
-              ["label" => 'practitioner',"value" => 'practitioner'],
-              ["label" => 'patient',"value" => 'patient'],
-              ["label" => 'admin',"value" => 'admin'],
-              ["label" => 'system',"value" => 'system']
-            ]
-          ],
-          [
-            "label" => 'Hide',
-            "filterName" => 'hide',
-            'attribute' => null,
-            'reverseFilter' => true,
-            "markOptions" => null,
-            "filterOptions" => [
-              [
-                "label" => 'inactive',
-                "value" => 'active:0',
-                'attribute'=>'active'
-              ],
-              ["label" => 'system forms',"value" => 'form_type:system','attribute'=>'form_type'],
-              ["label" => 'locked forms',"value" => 'locked:1','attribute'=>'locked']
-            ]
-          ]
-        ],
-        'optionsNavValues' => [
-          'destinations' => ["settings","form-preview","forms-edit","delete"],
-          'btnText' => ["settings","preview","edit","delete"]
+        'hideOrder' => ['Type','Chart Usage','For'],
+        'filters' => [],
+        'extraData' => [
+          'submissions' => 'has_submissions',
         ],
         'orderBy' => [
           ['form_name',"asc"],
           ['version_id',"desc"]
         ]
       ];
+      if (Auth::user()->is_superuser) set($arr,'columns.System','is_system');
     }elseif ($usertype == 'patient'){
       $arr = 
       [
@@ -132,7 +104,7 @@ class Form extends Model
     return Form::where([['settings->default_patient_portal_access','for all patients'],['active','1'],['hidden','0']])->orderBy('display_order')->get();
   }
   public static function neededByAnyAppointment($patientId = null){
-    if (Auth::user()->user_type == 'patient') $patientId = Auth::user()->patientInfo->id;
+    if (Auth::user()->user_type == 'patient') $patientId = Auth::user()->patient->id;
     if (!$patientId) return false;
 
     $patient = Patient::find($patientId);
@@ -158,7 +130,7 @@ class Form extends Model
   }
   public static function hasSubmissions($patientId = null){
     if (Auth::user()->user_type == 'patient'){
-      $patient = Auth::user()->patientInfo;
+      $patient = Auth::user()->patient;
       $formIds = [];
       $forms = Form::all()->filter(function($form, $f) use ($patient){
         $submissions = $patient->submissions->where('form_id',$form->form_id);
@@ -176,9 +148,6 @@ class Form extends Model
       "chart_inclusion" => false
     ];
   }
-  public static function createItemNameAttr($string){
-    return hyphentounderscore(replacespaces(removepunctuation(strtolower(cleaninput($string)))));
-  }
   public static function periodicFormsRequiredNow(Patient $patient){
     $forms = Form::where('settings->require_periodically',true)->get()->filter(function($form) use($patient){
       $now = Carbon::now(); $period = $form->required_interval;
@@ -187,13 +156,37 @@ class Form extends Model
       return $submissions->count() == 0;
     });
   }
+  public static function successResponse(){
+    $form = Form::find(getUid('Form'));
+    return ['form_uid'=>$form->form_uid,'form_id'=>$form->form_id,'version_id'=>$form->version_id];
+  }
+  public static function nextFormId(){
+    $max = Form::orderBy('form_id','desc')->limit(1)->get()->first();
+    $next = $max->form_id + 1;
+    return $next;
+  }
+  public function nextVersionId(){
+    $max = Form::where('form_id', $this->form_id)->orderBy('version_id','desc')->limit(1)->get()->first();
+    $next = $max ? $max->version_id + 1 : 1;
+    return $next;
+  }
 
+  public function nav_options() {
+    // defines any additional non-standard nav options
+    // buttons, extraClasses, dataAttr
+    $data = [
+      'buttons' => [
+        'preview' => 'preview'
+      ],
+    ];
+    return $data;
+  }
   public function navOptions(){
     $user = Auth::user();
     $dataAttrs = [
       [
         'key' => 'json',
-        'value' => str_replace("'","\u0027",$this->full_json)
+        'value' => json_encode($this->full_json),
       ],
     ];
     $extraClasses = '';
@@ -226,7 +219,10 @@ class Form extends Model
     return $data;
   }
   public function modelDetails(){
-    return [];
+    return [
+      'Form Name' => $this->form_name,
+      'Version' => $this->version_id
+    ];
   }
   public function detailClick(Appointment $appt = null, Patient $patient = null){
     $model = getModel($this);
@@ -269,6 +265,9 @@ class Form extends Model
     return Form::where([['form_id',$this->form_id],['active',1]])->limit(1)->get()->first();
   }
 
+  public function getIsSystemAttribute(){
+    return $this->get_setting_bool('system');
+  }
   public function getNameAttribute(){
     return $this->form_name;
   }
@@ -276,89 +275,89 @@ class Form extends Model
     return $this->version_id === 1 ? $this->form_name : $this->form_name." (v".$this->version_id.")";
   }
   public function getChartingValueForTableAttribute(){
-    if (isset($this->settings['chart_inclusion'])){
-      return $this->settings['chart_inclusion'] ? "for charts" : "no";
+    if ($this->settings && isset($this->settings['chart_inclusion'])){
+      return $this->settings['chart_inclusion'] ? "yes" : "no";
     }else{
       return 'no';
     }
   }
-  public function getNameAbbrAttribute(){
-    return str_replace(" ", "", $this->name);
-  }
-  public function getLastSubmittedAttribute(){
-    $submissions = $this->submissions();
+  // public function getNameAbbrAttribute(){
+  //   return str_replace(" ", "", $this->name);
+  // }
+  // public function getLastSubmittedAttribute(){
+  //   $submissions = $this->submissions();
 
-    if (Auth::user()->user_type == "patient"){
-      $id = Auth::user()->patientInfo->id;
-      $submission = $submissions->get()->filter(function($sub,$s) use($id){
-        return $sub->patient_id == $id;
-      })->last();
-    }elseif(session('uidList') !== null && isset(session('uidList')['Patient'])){
-      $id = session('uidList')['Patient'];
-      $submission = $submissions->get()->filter(function($sub,$s) use($id){
-        return $sub->patient_id == $id;
-      })->last();
-    }else{
-      $submission = $submissions->last();
-    }
+  //   if (Auth::user()->user_type == "patient"){
+  //     $id = Auth::user()->patient->id;
+  //     $submission = $submissions->get()->filter(function($sub,$s) use($id){
+  //       return $sub->patient_id == $id;
+  //     })->last();
+  //   }elseif(session('uidList') !== null && isset(session('uidList')['Patient'])){
+  //     $id = session('uidList')['Patient'];
+  //     $submission = $submissions->get()->filter(function($sub,$s) use($id){
+  //       return $sub->patient_id == $id;
+  //     })->last();
+  //   }else{
+  //     $submission = $submissions->last();
+  //   }
 
-    if ($submission){
-      return $submission->created_at;
-    }else{
-      return 'never';
-    }
-  }
-  public function getStatusAttribute(){
-    $requiredByAppointment = $this->neededByAnyAppointment()->map(function($form,$f){
-      return $form->form_id;
-    })->toArray();
-    $formCheck = in_array($this->form_id, $requiredByAppointment);
+  //   if ($submission){
+  //     return $submission->created_at;
+  //   }else{
+  //     return 'never';
+  //   }
+  // }
+  // public function getStatusAttribute(){
+  //   $requiredByAppointment = $this->neededByAnyAppointment()->map(function($form,$f){
+  //     return $form->form_id;
+  //   })->toArray();
+  //   $formCheck = in_array($this->form_id, $requiredByAppointment);
 
-    $timeperiod = isset($this->settings['required']) ? $this->settings['required'] : false;
+  //   $timeperiod = isset($this->settings['required']) ? $this->settings['required'] : false;
 
-    if ($timeperiod){
-      if ($timeperiod == 'never'){
-        if (!$formCheck){
-          // Log::info('1 '.$this->name);
-          return ($this->last_submitted == 'never') ? 'incomplete' : 'completed';
-        }else{
-          $requiredByTime = false;
-        }
-      }elseif(contains($timeperiod,'registration')){
-        if (!$formCheck){
-          // Log::info('2 '.$this->name);
-          return ($this->last_submitted == 'never') ? 'required' : 'completed';                    
-        }else{
-          $requiredByTime = false;
-        }
-      }else{
-        if (contains($timeperiod,'12 months')){$months = 12;}
-        elseif (contains($timeperiod,'6 months')){$months = 6;}
-        elseif (contains($timeperiod,'3 months')){$months = 3;}
-        elseif (contains($timeperiod,'2 months')){$months = 2;}
-        elseif (contains($timeperiod,'every month')){$months = 1;}
-        if ($this->last_submitted == 'never'){
-          $requiredByTime = true;
-        }else{
-          $requiredByTime = ($this->last_submitted->isBefore(Carbon::now()->subMonths($months)));
-        }                
-      }
-    }else{
-      $requiredByTime = false;
-    }
-    return ($requiredByTime || $formCheck) ? "required" : "completed";
-  }
-  public function getHasSubmissionsAttribute(){
-    $submissions = Submission::where('form_uid',$this->form_uid)->get();
-    if ($submissions->count() > 0){return true;
-    }else{return false;}
-  }
-  public function getNewestVersionIdAttribute(){
-    return $this->newestVersion()->version_id;
-  }
-  public function getNewestAttribute(){
-    return $this->newest_version_id == $this->version_id;
-  }
+  //   if ($timeperiod){
+  //     if ($timeperiod == 'never'){
+  //       if (!$formCheck){
+  //         // Log::info('1 '.$this->name);
+  //         return ($this->last_submitted == 'never') ? 'incomplete' : 'completed';
+  //       }else{
+  //         $requiredByTime = false;
+  //       }
+  //     }elseif(contains($timeperiod,'registration')){
+  //       if (!$formCheck){
+  //         // Log::info('2 '.$this->name);
+  //         return ($this->last_submitted == 'never') ? 'required' : 'completed';                    
+  //       }else{
+  //         $requiredByTime = false;
+  //       }
+  //     }else{
+  //       if (contains($timeperiod,'12 months')){$months = 12;}
+  //       elseif (contains($timeperiod,'6 months')){$months = 6;}
+  //       elseif (contains($timeperiod,'3 months')){$months = 3;}
+  //       elseif (contains($timeperiod,'2 months')){$months = 2;}
+  //       elseif (contains($timeperiod,'every month')){$months = 1;}
+  //       if ($this->last_submitted == 'never'){
+  //         $requiredByTime = true;
+  //       }else{
+  //         $requiredByTime = ($this->last_submitted->isBefore(Carbon::now()->subMonths($months)));
+  //       }                
+  //     }
+  //   }else{
+  //     $requiredByTime = false;
+  //   }
+  //   return ($requiredByTime || $formCheck) ? "required" : "completed";
+  // }
+  // public function getHasSubmissionsAttribute(){
+  //   $submissions = Submission::where('form_uid',$this->form_uid)->get();
+  //   if ($submissions->count() > 0){return true;
+  //   }else{return false;}
+  // }
+  // public function getNewestVersionIdAttribute(){
+  //   return $this->newestVersion()->version_id;
+  // }
+  // public function getNewestAttribute(){
+  //   return $this->newest_version_id == $this->version_id;
+  // }
 
   public function lastSubmittedBy(Patient $patient){
     $submissions = $this->submissions();
@@ -384,362 +383,5 @@ class Form extends Model
     return $this->hasMany('App\Submission', "form_id", 'form_id');
   }
   public function moreOptions(){
-  }
-//form functionality
-  public function formDisplay($modal = false, $allowSubmit = true, $edit = false, $usertype = false, $display = true){
-    $form = json_decode($this->full_json,true);
-// $sections = json_decode($this->questions,true);
-    $sections = $form['sections'];
-    $uid = $this->form_uid;
-    $formID = $this->form_id;
-    $formName = $this->form_name;
-    $formNameAbbrOriginal = str_replace(" ", "", $formName);
-    if ($edit){
-      $formNameAbbrReflectEdit = str_replace("New", "Edit", $formNameAbbrOriginal);
-      $formNameAbbrReflectEdit = str_replace("Add", "Edit", $formNameAbbrReflectEdit);
-    }else{$formNameAbbrReflectEdit = $formNameAbbrOriginal;
-    }
-    if ($usertype){$formNameAbbrReflectEdit = str_replace("User", $usertype, $formNameAbbrReflectEdit);}
-    $settings = $this->settings;
-// var_dump($settings);
-    $displayStr = $display ? "" : "style='display:none;'";
-    echo '<form id="'.$formNameAbbrReflectEdit.'" '.$displayStr.' data-formname="'.$formNameAbbrOriginal.'" data-formid="'.$formID.'" data-uid="'.$uid.'" data-filled="false" class="formDisp">';
-    for ($x=0;$x<count($sections);$x++){
-      $section = $sections[$x];
-      $name = $section['sectionName'];
-      $items = $section['items'];
-      if (isset($section['displayOptions'])){
-        $sectionDisplayOptions = $section['displayOptions'];
-        $optStr = json_encode($section['displayOptions']);
-        $nums = $sectionDisplayOptions['displayNumbers'];
-      }else{
-        $nums = 'false';
-        $optStr = "";
-      }
-      $nums = ($nums == 'true') ? "" : "noNums"; 
-
-      $secSettings = isset($section['settings']) ? $section['settings'] : "";
-      if ($secSettings != "" && isset($secSettings['dynamic']) && $secSettings['dynamic'][0] == 'only display to admins'){
-        if (!Auth::check()){
-          $show = false;
-        }elseif(Auth::user()->is_admin){
-          $show = true;
-        }else{
-          $show = false;
-        }
-      }else{
-        $show = true;
-      }
-      $secSettings = json_encode($secSettings);
-      if ($show){
-        echo "<div class='section display $nums' data-display='$optStr' data-settings='$secSettings'><h2 class='purple'>$name</h2><div class='requireSign'>* <i>required</i></div>";
-        $n = 0;
-        for ($i=0;$i<count($items);$i++){
-          $item = $items[$i];
-          $question = $item['question'];
-          $type = $item['type'];
-          $key = $item['key'];
-          $options = isset($item['options']) ? $item['options'] : [];
-  // $required = isset($item['required']) ? $item['required'] : true;
-          if ($type == 'narrative'){
-            $required = false;
-          }elseif (isset($item['required'])){
-            $required = $item['required'];
-          }else{
-            $required = true;
-          }
-          $requireStar = $required ? "*" : "";
-          $disp = $item['displayOptions'];
-          $dispStr = json_encode($item['displayOptions']);
-  // $inline = $disp['inline'];
-          $inline = (strpos($disp['inline'],"true") > -1) ? " inline" : "" ;
-          $newline = (strpos($disp['inline'],"BR") > -1) ? true : false;
-          $followups = $item['followups'];
-  // echo "<div class='item $inline' data-display='$dispStr' data-type='$type' data-required='$required' data-key='$key'>";
-          echo "<div class='item$inline' data-display='$dispStr' data-type='$type' data-required='$required' data-key='$i'>";
-          if ($type !== "narrative"){
-            $n++;
-            echo "<div class='question'><p><span class='n'>$n.</span><span class='q'>$question</span><span class='requireSign'>$requireStar</span></p></div><br>";
-          }
-  // include_once app_path("/php/functions.php");
-          $name = Form::createItemNameAttr($question);
-          if (in_array($type, ['radio','checkboxes','dropdown'])){
-            array_push($options,"ID*".$name);
-          }else{
-            $options['name'] = $name;
-          }
-          $this->answerDisp($type,$options);
-          if (count($followups)>0){
-            echo "<div class='itemFUList' data-condition='title'>";
-            for ($f=0;$f<count($followups);$f++){
-              $itemFU = $followups[$f];
-              $question = $itemFU['question'];
-              $FUkey = $itemFU['key'];
-              $type = $itemFU['type'];
-              if ($type == 'narrative'){
-                $required = false;
-              }elseif (isset($itemFU['required'])){
-                $required = $itemFU['required'];
-              }else{
-                $required = true;
-              }
-              $requireStar = $required ? "*" : "";
-              $options = isset($itemFU['options']) ? $itemFU['options'] : [];
-              $disp = json_encode($itemFU['displayOptions']);
-              $condition = $itemFU['condition'];
-              $condition = str_replace("'","&apos;",$condition);
-              $condition = join("***",$condition);
-              
-              $name = Form::createItemNameAttr($question);
-              if (in_array($type, ['radio','checkboxes','dropdown'])){
-                array_push($options,"ID*".$name);
-              }else{
-                $options['name'] = $name;
-              }
-              echo "<div class='itemFU' data-type='$type' data-required='$required' data-disp='$disp' data-condition='$condition' data-key='$f'>";
-              if ($type != "narrative"){
-                echo "<div class='question'><p><span class='q'>$question</span><span class='requireSign'>$requireStar</span></p></div><br>";
-              }
-              $this->answerDisp($type,$options);
-              echo "</div>";
-            }
-            echo "</div>";
-          }
-          echo "</div>";
-        }
-        echo "</div>";
-      }
-    }
-    echo "<div class='wrapper'>";
-    if ($allowSubmit){
-      echo "<div class='button small submitForm pink' data-formName='$formNameAbbrOriginal' data-submission='true'>submit</div>";
-    }
-    if ($modal){
-      echo "<div class='button small cancel'>dismiss</div>";
-    } 
-    echo "</form>";
-    echo "</div>";
-  }
-  public function radio($options){
-    unset($name);
-    for ($i=0;$i<count($options);$i++){
-      if (strpos($options[$i],"ID*")!==false){
-        $name = str_replace("ID*","",$options[$i]);
-        unset($options[$i]);
-      }
-    }
-    $options = array_values($options);
-    $name = isset($name) ? $name : "";
-// echo "<ul class='answer radio' id='$name' data-name='$name'>";
-    echo "<ul class='answer radio $name' data-name='$name'>";
-    for ($i=0;$i<count($options);$i++){
-      echo '<li tabindex="0" data-value="'.$options[$i].'">'.$options[$i].'</li>';
-    }
-    echo '</ul>';
-  }
-  public static function radioBlade($options,$name = null,$default = null){
-    return view('layouts.forms.radio',compact(['options','default','name']));            
-  }
-  public function text($options){
-    if (isset($options)){
-      $name = isset($options['name']) ? $options['name'] : "";
-      $placeholder = isset($options['placeholder'])?"placeholder='".$options['placeholder']."' ":"";
-      echo "<div class='answer text'>
-      <input class='$name' name='$name' $placeholder type='text' required>
-      </div>";
-    }else{
-      echo "<div class='answer text'>
-      <input type='text' required>
-      </div>";
-    }
-  }
-  public function imageClick($options){
-    echo view('layouts.forms.image-click',$options);
-  }
-  public function textbox($options){
-    if (isset($options) and isset($options['name'])){
-      $name = $options['name'];
-      $placeholder = isset($options['placeholder'])?"placeholder='".$options['placeholder']."' ":"";
-      echo "<div class='answer textbox'>
-      <textarea required class='$name' name='$name' $placeholder type='text' required></textarea>
-      </div>";
-    }else{
-      echo '<div class="answer textbox">
-      <textarea required></textarea>
-      </div>';
-    }
-  }
-  public function datePick($options){
-    $dataStr = null;
-    foreach ($options as $key => $option){
-      $dataStr .= "data-$key='$option' ";
-    }
-    $name = (isset($options['name'])) ? $options['name'] : "";
-    echo "<div class='answer date'><input class='$name datepicker' readonly placeholder='tap to pick date' $dataStr></div>";
-  }
-  public function number($options){
-    $dataStr = null;
-    foreach ($options as $key => $option){
-      $dataStr .= "data-$key='$option' ";
-    }
-    $label = isset($options['units']) ? $options['units'] : "";
-    $initial = $options['initial'];
-    $name = (isset($options['name'])) ? $options['name'] : "";
-    echo "<div class='answer number' ><input size='5' class='$name' name='$name' type='text' $dataStr placeholder='$initial'><span class='label'>$label</span>
-    <div class='numberUpDown'><div class='change up'></div><div class='change down'></div></div></div>";
-  }
-  public function checkboxes($options){
-    unset($name);
-    for ($i=0;$i<count($options);$i++){
-      if (strpos($options[$i],"ID*")!==false){
-        $name = str_replace("ID*","",$options[$i]);
-        unset($options[$i]);
-      }
-    }
-    $options = array_values($options);
-    $name = isset($name) ? $name : "";
-// echo '<ul class="answer checkboxes" id="'.$name.'" data-name="'.$name.'">';
-    echo '<ul class="answer checkboxes '.$name.'" data-name="'.$name.'">';
-    for ($i=0;$i<count($options);$i++){
-      echo '<li data-value="'.$options[$i].'">'.$options[$i].'</li>';
-    }
-    echo '</ul>';
-  }
-  public function dropdown($options){
-    unset($name);
-    for ($i=0;$i<count($options);$i++){
-      if (strpos($options[$i],"ID*")!==false){
-        $name = str_replace("ID*","",$options[$i]);
-        unset($options[$i]);
-      }
-    }
-    $options = array_values($options);
-    $name = isset($name) ? $name : "";
-    echo '<div class="answer dropdown"><select class="'.$name.'" data-name="'.$name.'">';
-    echo '<option value="">----</option>';
-    for ($i=0;$i<count($options);$i++){
-      echo '<option value="'.$options[$i].'">'.$options[$i].'</option>';
-    }
-    echo '</select></div>';
-  }
-  public function scale($options){
-    $min = $options['min'];
-    $max = $options['max'];
-    $initial = $options['initial'];
-    $minLabel = $options['minLabel'];
-    $maxLabel = $options['maxLabel'];
-    $displayValue = ($options['displayValue'] == "yes");
-    $displayLabel = ($options['displayLabels'] == "yes");
-    $name = (isset($options['name'])) ? $options['name'] : "";
-
-    if ($displayLabel){
-      $minLabelStr = "$min<br><b>$minLabel</b>";
-      $maxLabelStr = "$max<br><b>$maxLabel</b>";
-    }elseif (!$displayLabel){
-      $minLabelStr = "<b>$minLabel</b>";
-      $maxLabelStr = "<b>$maxLabel</b>";
-    }
-    $class="";
-    if ($displayValue){$class="showValue";}
-    echo "<div class='answer scale flexbox'>
-    <span class='left'>$minLabelStr</span>
-    <input class='slider targetInput $class $name' data-name='$name' value='$initial' type='range' min='$min' max='$max'>
-    <span class='right'>$maxLabelStr</span><div class='SliderValue' style='display:none;'></div></div>";
-  }
-  public function signature($options){
-// Log::info($options);
-    $printed = ($options['typedName']=='yes') ? "<span class='printed'>Type your full legal name here: <span class='text'><input type='text'></span></span>":"";
-    $name = (isset($options['name'])) ? $options['name'] : "";
-    echo "<div id='$name' data-name='$name' class='answer signHere'>$printed Sign your name in the box below
-    <div class='signature'><div class='clear'>reset</div></div>
-    </div>";
-  }
-  public function timePick($options){
-    $default['scrollDefault'] = 'now';
-    $default['forceRoundTime'] = 'true';
-    $default['step'] = 15;
-    foreach ($default as $key => $option){
-      if (!isset($options[$key])){
-        $options[$key] = $default[$key];
-      }
-    }
-    $name = isset($options['name']) ? $options['name'] : "";
-    $optJSON = json_encode($options);
-    $initial = isset($options['setTime'])?$options['setTime']:"";
-// echo "<div class='answer time'><input id='$name' class='timePick' size='8' placeholder='HH:MM' value='$initial' data-options='$optJSON' type='text'></div>";
-    echo "<div class='answer time'><input class='timePick $name' size='8' placeholder='HH:MM' value='$initial' data-options='$optJSON' type='text'></div>";
-  }
-  public function narrative($options){
-    $id = isset($options['name'])?$options['name']:"";
-    $html = $this->checkForImgs($options['markupStr']);
-
-    echo "<div id='$id' class='narrative'>$html</div>";
-  }
-  public function checkForImgs($markup){
-    $n = preg_match_all('/src="%%EMBEDDED:([^%]*)%%"/', $markup, $imgs, PREG_PATTERN_ORDER);
-    $newMarkup = false;
-    if ($n!==false && $n > 0){
-      for ($i = 0; $i < count($imgs[1]); $i++){
-        $fullMatch = $imgs[0][$i];
-        $uuid = $imgs[1][$i];
-        $img = Image::find($uuid);
-        $mimeType = $img->mime_type; 
-        $dataStr = $img->data_string;
-        $fileName = $img->file_name;
-        $imgStr = 'src="data:'.$mimeType.';'.$dataStr.'" data-uuid="'.$uuid.'" data-filename="'.$fileName.'"';
-        $newMarkup = $newMarkup ? $newMarkup : $markup;
-        $newMarkup = str_replace($fullMatch,$imgStr,$newMarkup);
-      }
-      $markup = $newMarkup;
-    }
-    return $markup;
-  }
-  public function answerDisp($type,$options){
-    if ($type != "narrative"){
-      foreach ($options as &$option){
-        $option = e($option);
-      }
-      unset($option);
-    }
-    if ($type=='radio'){
-      $this->radio($options);
-    }
-    elseif ($type=="narrative"){
-      $this->narrative($options);
-    }
-    elseif ($type=='number'){
-      $this->number($options);
-    }
-    elseif ($type=='checkboxes'){
-      $this->checkboxes($options);
-    }
-    elseif ($type=='dropdown'){
-      $this->dropdown($options);
-    }
-    elseif ($type=='scale'){
-      $this->scale($options);
-    }
-    elseif ($type=='bodyclick'){
-      $options['image'] = '/images/body/rsz_body12.png';
-      $this->imageClick($options);
-    }
-    elseif ($type=='date'){
-      $this->datePick($options);
-    }
-    elseif ($type=='text'){
-      $this->text($options);
-    }
-    elseif ($type=='text box'){
-      $this->textbox($options);
-    }
-    elseif ($type=='signature'){
-      $this->signature($options);
-    }
-    elseif ($type=='time'){
-      $this->timePick($options);
-    }
-  }
-  public function displaySettings($json){
-    return "saved settings";
   }
 }

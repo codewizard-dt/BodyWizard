@@ -7,5 +7,4 @@
 <script type='text/javascript' src="{{ asset('/fullcalendar4.1/timegrid/main.js') }}"></script>
 <script type='text/javascript' src="{{ asset('/fullcalendar4.1/moment/main.min.js') }}"></script>
 <script type='text/javascript' src="{{ asset('/fullcalendar4.1/moment-timezone/main.min.js') }}"></script>
-<script type='text/javascript' src="{{ asset('/js/launchpad/appointments.js') }}"></script>
 <script type='text/javascript' src="{{ asset('/js/launchpad/schedules.js') }}"></script>

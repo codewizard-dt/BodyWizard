@@ -19,11 +19,11 @@ class CreatePatientsTable extends Migration
             $table->string("gender")->nullable();
             $table->string("sex")->nullable();
             $table->string("pronouns")->nullable();
-            $table->string("phone_number")->nullable();
-            $table->string("mailing_address")->nullable();
-            $table->boolean("is_new_patient")->default(true);
+            // $table->string("phone_number")->nullable();
+            // $table->string("mailing_address")->nullable();
+            // $table->boolean("is_new_patient")->default(true);
             $table->json("settings")->nullable();
-            $table->json("settings_json")->nullable();
+            $table->softDeletes();
             $table->timestamps();
         });
     }

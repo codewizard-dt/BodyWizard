@@ -346,13 +346,13 @@ function checkConnectedModels(model){
 			return false;
 		}
 	}
-	if (model == 'Appointment' && defaultPatientInfo != undefined){
+	if (model == 'Appointment' && defaultpatient != undefined){
 		var obj = {
 			connectedto: 'Appointment',
 			model: 'Patient',
 			number: 'one',
 			relationship: 'morphedByMany',
-			uidArr: [defaultPatientInfo.id]
+			uidArr: [defaultpatient.id]
 		};
 		arr.push(obj);
 	}

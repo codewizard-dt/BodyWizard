@@ -1,24 +1,32 @@
     
-input, select, textarea {
+/*input, select, textarea {
     vertical-align: top;
     font-size: 1em;
-}
+    padding: 0.5em;
+}*/
 
 textarea {
     overflow: auto;
 }
 
-input, textarea {
-    /*border-style: inset; */
+input, textarea, select {
+    position:relative;
     border-width: 2px;
     border-color: rgba(210,210,210,0.8);
     border-style: solid;
     border-radius: 5px;
-    padding: 2px;
+    padding: 0.5em;
     margin:0 1px;
     box-sizing: border-box;
-    max-width: calc(100% - 2px);
+    max-width: 100%;
+    font-family: inherit;
+    font-size: inherit;
+    z-index: 1;
 }
+input.slider {
+    padding: 2px;
+}
+
 form.disabled input, form.disabled textarea{
     /*border-color: transparent;*/
     background-color: var(--yellow10);
@@ -102,7 +110,17 @@ textarea[data-followup]{
 .datepick .datepick-today {
     border-color: var(--purple30);
 }
-#miniSchedule .fc-today{
+#EditSchedule .blocked {
+    background-color: var(--pink80);
+    border-color: var(--pink);
+}
+#EditSchedule .blocked.hover { background-color: var(--pink) }
+#EditSchedule .open {
+    background-color: var(--green80);
+    border-color: var(--green);
+}
+#EditSchedule .open.hover { background-color: var(--green) }
+/*#miniSchedule .fc-today{
     background-color: unset;
 }
 #miniSchedule .fc-day-header{
@@ -117,40 +135,41 @@ textarea[data-followup]{
     top: 0;
     right: 2px;
     font-size: 1.5em;
-}
-#miniSchedule .fc-content .fc-time span{
+}*/
+/*#miniSchedule .fc-content .fc-time span{
     font-size: 2em;
     width:100%;
     display: inline-block;
     white-space: normal;
-}
-.miniCal .fc-event.hover{
+}*/
+/*.miniCal .fc-event.hover{
     background-color: var(--yellow) !important;
 }
 .miniCal .fc-event.hover, .miniCal .fc-bgevent.hover{
     background-color: var(--yellow) !important;
-}
-#miniSchedule .fc-bgevent{
+}*/
+/*#miniSchedule .fc-bgevent{
     opacity: 0.9 !important;
 }
 #miniSchedule .breakTime{background-color: var(--pink70) !important}
 .scheduleTable .breakTime{color: var(--pink);font-size: 0.9em;}
-#miniSchedule .breakTime.hover{background-color: var(--pink) !important}
+#miniSchedule .breakTime.hover{background-color: var(--pink) !important}*/
 .fc-toolbar > div {
     white-space: nowrap;
 }
 .fc-event, .fc-bgevent{
     transition: background-color 500ms;
 }
-.calendar.practitioner .fc-bgevent{
-    background-color: var(--yellow30);
+.calendar .fc-bgevent{
+    background-color: var(--yellow10);
+    opacity: 1;
 }
 .calendar .fc-event{
     background-color: var(--pink80);
     border-color: var(--pink);
     cursor: pointer;
 }
-.calendar .fc-event:hover{
+.calendar .fc-event:hover, .calendar .fc-event.hover{
     background-color: var(--pink);
     border-color: var(--pink);
 }
@@ -245,148 +264,123 @@ td.fc-today{background-color: var(--purple10) !important;}
     top:-2em;
     font-weight: 700;
 }
-
-.scale {
-    display: block;
-    margin: 0em 0 0.5em 2.7em;
-    vertical-align: top;
-}
-
-.ScaleLeft {
-    display:inline-block;
-    margin-right:10px;
-    vertical-align: top;
-    color:rgb(189, 48, 40);
-}
-.ScaleRight {
+.tooltip {
+    position: absolute;
     display: inline-block;
-    margin-left:10px;
-    color:rgb(189, 48, 40);
-    vertical-align: top;
+    opacity: 0;
+    top: 10em;
+    padding: 0.5em 1em;
+    text-align: left;
+    left: 50%;
+    z-index: 100;
+    background-color: var(--white97);
+    border: 1px solid var(--gray93);
+    border-radius: 3px;
+    width: max-content;
+    max-width: calc(min(600px, 100%) - 40px);
 }
-
-.ItemNumber {
-    display: inline-block;
-    width:1.6em;
-    height:1.1em;
-    text-align: right;
-    margin-left: 10px;
-    margin-right: 10px;
-    vertical-align: top;
-}
-
-/*.PrimaryConcern {
-    display: inline-block;
-    font-size: 1.1em;
-    font-weight:bold;
-    width:9em;
-    text-align: right;
-    margin-left: 0px;
-    margin-right: 10px;
-    vertical-align: top;
-}
-
-.ConcernScale {
-    color:rgb(189, 48, 40);
-}
-*/
-#formdata{
-    color:green;
-}
-
-/*.Question {
-    display: inline-block;
-    max-width:500px;
-    margin-right:20px;
-    vertical-align: top;
-}
-
-.Answer {
-    position:relative;
-    color:rgb(189, 48, 40);
-    display: inline-block;
-}
-
-.Answer.UnderQuestion {
-    display: block;
-    width:100%;
-}
-
-.Item {
-    display:block;
-    margin:1em 0;
-}
-
-
-.Item.inline {
-    display:inline-block;
-    margin:0.25em;
-}
-
-#noIssues {
-    padding: 5px;
-    font-size: 0.9em;
-}
-*/
-/*.CCItem {
-    display: block;
-    border-style: solid;
-    border-width: 0 0 1px 0;
-    border-color: rgb(170,170,170);
-    background-color: rgb(220,220,220);
-}
-*/
-
-.scaleoption {
-    display: inline-block;
-    color:rgb(189, 48, 40);
-    position: relative;
-    text-align:center;
-    margin:0 .1em;
-}
-
-#menseschart {
-    font-size: 0.9em;
-    display: inline-block;
-    margin: 0 0 1em 3em;
-}
-
-#menseschart h3 {
-    margin-top:0;
-}
-
-#menseschart td{
-    padding:3px 5px;
-    border-style: solid;
-    border-width: 1px;
-    border-color: rgb(170,170,170);
-}
-
-#menseschart th{
-    text-align: center;
-}
-
-#menseschart input, #menseschart select{
-    color:rgb(189, 48, 40);
-    font-size: 0.8em;
-
-}
-
-.sectionRow {
+.flexbox{
     display: flex;
-    margin:0 3em;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+}
+.flexbox.inline{
+    display: inline-flex;
+}
+.flexbox.column{
+    flex-direction: column;
+}
+/*.flexbox.column > * {flex-grow: 1; width:100%;}*/
+.flexbox.column .key {
+    /*width: 33%;*/
+    display: inline-block;
+    padding: 0 0.4em 0 0;
+    text-align: right;
+    /*background-color: var(--gray30);*/
+}
+.flexbox.column .value {
+    /*width: 66%;*/
+    display: inline-block;
+    text-align: left;
+    /*background-color: var(--gray70);*/
+}
+.flexbox.nowrap{
+    flex-wrap: nowrap;
+    white-space: inherit;
+}
+.flexbox.spread{
+    justify-content: space-between;
+}
+.flexbox.left{
+    justify-content: flex-start;
+}
+.flexbox.lineItem {
+    justify-content: space-between;
+    flex-wrap: nowrap;
+    text-align: left;
+}
+.flexbox.lineItem .description{
+    flex-grow: 1;
+}
+.flexbox.lineItem .price{
+    margin: 0 8px;
+    text-align: right;
+    min-width: 5em;
+}
+.flexbox.lineItem .price .numberUpDown{
+    font-size: 0.8em;
+}
+.flexbox.lineItem .lineTotal{
+    min-width: 5em;
+    text-align: right;
+    color: var(--pink);
+}
+.flexbox.lineItem .discount{
+    margin: 0 5px;
+    text-align: right;
+    min-width: 3.5em;
+}
+.flexbox.lineItem .tax{
+    margin: 0 5px;
+    text-align: right;
+    min-width: 3.5em;
+}
+.flexbox.lineItem .total{
+    margin: 0 5px;
+}
+.flexbox.lineItem.header {
+    font-size: 1.1em;
+}
+.flexbox.lineItem.header > div {
+    margin:0 2px 0 0;
+}
+.flexbox.rightSided{
+    justify-content: flex-end;
+}
+.flexbox.leftSided{
+    justify-content: flex-start;
+}
+.flexbox > .flexbox{
+    display: inline-flex;
+}
+.flexbox > * {
+    display: inline-block;
+}
+.flexbox.styled > * {
+    margin: 5px 5px 0 5px;
+    padding: 0.2em 0.5em;
+    border: 1px solid var(--gray80);
+    background-color: var(--gray10);
+    border-radius: 0.3em;
 }
 
-.sectionRow > div, .sectionRow > label {
-    flex:auto;
-    border-style: dotted;
-    border-width: 1px;
+.flexbox > .answer.text, .flexbox > .answer.date, .flexbox > .answer.time {
+    max-width: calc(33% - 0.4em);
 }
-
-.sectionRow.Ind>div{max-width: 33%;}
-
-.sectionRow span {
-    margin-left:5px;
+.flexbox > .answer.textbox, .flexbox > .answer.number {
+    max-width: calc(50% - 0.4em);
+    min-width: unset;
 }
 
 label {
@@ -399,7 +393,7 @@ label input {
     margin: 0 3px 1px 0;
 }
 
-.Item > .comment {
+/*.Item > .comment {
     display: none;
     margin: 0.5em 0 0.5em 3.5em;
     vertical-align: top;
@@ -411,7 +405,7 @@ label input {
     margin: 0.5em;
     vertical-align: top;
     font-size: 0.9em;
-}
+}*/
 
 form, .indent, .report, .w95 {
     display: block;
@@ -479,6 +473,7 @@ form, .indent, .report, .w95 {
 #LoginForm {
     width: auto;
 }
+#LoginForm .answer {flex-wrap: nowrap;}
 #LoginForm .submit{
     margin: 0.5em 0 0 0;
 }
@@ -488,7 +483,7 @@ form, .indent, .report, .w95 {
     display: none;
 }
 
-.importantFormInfo{
+/*.importantFormInfo{
     display: block;
     width: 80%;
     max-width: 810px;
@@ -518,12 +513,9 @@ form, .indent, .report, .w95 {
 }
 .formDisp.minified .numberUpDown{
     font-size: 0.8em;
-}
+}*/
 .partialPayment{
     position: relative;
-}
-.partialPayment .checkmark {
-    margin-left: 0.5em;
 }
 .note{
     position: relative;
@@ -582,7 +574,40 @@ form, .indent, .report, .w95 {
 .CardBrandIcon{
     font-size: 1.5em;
 }
-
+#CreateAppointment .options{
+    font-size: 0.8em;
+    color:var(--yellow);
+    position: relative;
+}
+#CreateAppointment .options span {
+    text-decoration: underline;
+    opacity: 0.7;
+    transition: opacity 400ms, letter-spacing 400ms;
+    cursor:pointer;
+}
+#CreateAppointment .options span:hover{
+    opacity:1;
+    letter-spacing: 1px;
+}
+#CreateAppointment .options span::before{
+    content: '(';
+}
+#CreateAppointment .options span::after{
+    content: ')';
+}
+#CreateAppointment .attr {
+    font-weight: 700;
+    text-align: right;
+    width:20%;
+    min-width: 7em;
+    margin:0.2em 0.4em;
+}
+#CreateAppointment .value {
+    color: black;
+    text-align: left;
+    position: relative;
+    margin: 0 0.3em;
+}
 #ApptLegend .appt {
     font-size: 0.8em;
     cursor: default;
@@ -611,7 +636,7 @@ form, .indent, .report, .w95 {
     border-width: 1px;
     border-radius: 5px;
     border-color: var(--purple30); 
-    margin: 1em 0 0 0;
+    margin: 1em auto 0 auto;
     background-color: rgb(255,255,255);
     padding:1em;
     position: relative;
@@ -624,7 +649,7 @@ form, .indent, .report, .w95 {
     margin-left: -1px;
 }*/
 
-.section > h3 {
+.section > h3:not(.toggle_ele) {
     margin:1em 0 0 0;
 }
 
@@ -658,206 +683,17 @@ form, .indent, .report, .w95 {
 .detail {
     margin:0 !important;
 }
-#ApptSummary{
-    font-size: 1.2em;
-    margin: 10px 0;
-}
-#ApptsWithoutNotes, #ApptsWithoutInvoices, #ApptLegend{
-    display: none;
-}
-#ApptsList > div{
-    border-color: var(--yellow);
-    cursor: pointer;
-    transition: background-color 500ms;
-}
-#ApptsList > div:hover{
-    background-color: var(--yellow10);
-}
-#ApptsList > div.active{
-    background-color: var(--yellow30);
-}
-#ApptDetails{
-    display: none;
-    margin: 0 0 0.5em 0;
-}
-#ApptDetails .type{
-    width: 6em;
-    text-align: right;
-    margin: 0 0.5em 0 0;
-    display: inline-block;
-}
-#ApptDetails .info{
-    display: inline-block;
-    width: calc(100% - 9em);
-}
-#ApptDetails .edit, .conditionalLabel .override{
-    cursor: pointer;
-    vertical-align: baseline;
-    margin-left: 0.5em;
-    font-size: 0.7em;
-    font-weight: 400;
-    text-decoration: underline;
-}
 .conditionalLabel .button{
     margin-bottom: -1em;
 }
 .calendar #ChangeTitleWrap{
     float:right;
 }
-#ChangeTitleWrap{
-    position: relative;
-    display: inline-block;
-    border-radius: 5px;
-    border: 1px solid var(--purple10);
-    /*height: 2.25em;*/
-    /*float: right;*/
-    width:auto;
-    margin: -1em 0 0.5em 0;
-    z-index: 5;
-}
-#ChangeTitleWrap span{
-    font-size: 0.9em;
-    margin-left: 5px;
-    color: var(--purple);
-}
 .liProxy{
     padding: 0.2em 0.5em;
     border: 2px solid transparent;
     margin: 1px;
     display: inline-block;
-}
-#ChangeTitle{
-    background-color: var(--purple10);
-    margin:0;
-    border-radius: 3px;
-}
-#ChangeTitle li{
-    margin: 1px;
-    background-color: transparent;
-}
-#ChangeTitle li.active{
-    background-color: var(--purple70);
-    color: white;
-    border-color: transparent !important;
-    font-size: 0.9em;
-}
-/*
-.errorreport {
-    display: inline-block;
-    border-style: solid;
-    border-width: 1px;
-    border-radius: 5px;
-    margin-left: 20%;
-    background-color: rgba(210,210,210,0.9);
-}
-
-.errorreport span {
-    padding:1em;
-    margin:0.5em;
-}*/
-
-/*#model {
-    position: relative;
-    width:600px;
-    height: 500px;
-    background-image: url(/images/model/newman.png);
-    margin:auto;
-    background-repeat: no-repeat;
-    background-position: center;
-}
-
-#model input[type="checkbox"]{
-    opacity:0.7;
-    position:absolute;
-    z-index: 2;
-}
-
-#savePain {display: none;}
-
-.painItem{
-    position: relative;
-}
-
-.painbox{
-    position: absolute;
-    width: 16px;
-    height: 16px;
-}
-
-.paincircle{
-    width:40px;
-    height: 40px;
-    position:absolute;
-    transform: translate(-50%,-50%);
-    opacity:0.75;
-    background-image: url(/images/model/paincircle.png);
-    background-size: contain;
-    z-index: 1;
-}
-
-.paincircle.show{
-    display:inline-block;
-}
-
-#painratings > .Item, #painratingOverall > .Item {
-    padding: 1em;
-    margin:1em;
-    background-color: rgb(230,230,230);
-    border-style: solid;
-    border-width: 1px ;
-    border-radius: 1.5em;
-}
-
-#painratings {text-align: center;}
-
-#painwrapper {text-align: center;}
-
-#IndividualRatings {display:none;}
-
-#exitreview .scaleoption {
-    font-size: 0.9em;
-}
-*/
-/*#CaseReview .Answer {
-    padding: 0.5em;
-    margin:0 0 0 1em;
-    position: relative;
-    top:-0.5em;
-    background-color: rgb(230,230,230);
-    border-style: solid;
-    border-width: 1px ;
-    border-radius: 6px;
-    border-color: black;
-}
-
-#CaseReview .Answer.bare{
-    padding:0;
-    margin:1em 1em 1em 3em;
-    background-color: none;
-    border-style: none;
-    border-width: none;
-}
-*/
-
-
-.SeparateRating {
-    display: none;
-}
-
-.SeparateRating > .Item {
-    display: none;
-    padding: 1em;
-    margin: 1em 1em 1em 4em;
-    background-color: rgb(230,230,230);
-    border-style: solid;
-    border-width: 1px ;
-    border-radius: 1.5em;
-}
-
-#painwrapper h2 {
-    border-style: none;
-    margin:1em auto;
-    background-color: rgba(230,230,230,0.8);
 }
 
 .instructions {
@@ -955,14 +791,8 @@ form, .indent, .report, .w95 {
 
 #ActionList, #SymptomList, #FormulaDesc, #CategoryList ul, #NewHerb {display: none;}
 
-#Filters span {display: none;}
-#NameF {display: inline;}
-
-#HerbList, #CategoryList, #SymptomList, #ActionList, #CurrentFormula, #FormulaDesc, #NewHerb, .FormulaDisplay, #PrevFormulas{
-    padding:1em;
-}
 #PaymentMethod .answer {font-size: 0.9em;}
-.answer li{
+.answer.list li{
     list-style: none;
     display:inline-block;
     background-color: white;
@@ -1066,7 +896,7 @@ li[data-response='no response']{
 }
 
 .answer li.active{
-    background-color: white;
+    background-color: var(--yellow10);
     border-color: var(--yellow) !important;
     font-size: 1em;
     /*color: var(--yellow);*/
@@ -1078,7 +908,7 @@ li[data-response='no response']{
     border-color: var(--yellow);
     border-width: 0 0 1px 0;
     font-size: 1.1em;
-    margin-bottom:0.5em;
+    margin: 0.25em 0;
 }
 
 .question span.n {
@@ -1098,48 +928,36 @@ li[data-response='no response']{
     display: none;
 }
 
-.question.CC{
-    border-width: 0;
-    padding:5px 10px;
-}
 
 [data-followup="followup"]{
     display: none;
 }
-.item, .itemFU {
+.item {
     position: relative;
     margin:0.25em 0 1em 0;
     vertical-align: top;
     text-align: left;
 }
-.item.inline, .itemFU.inline{
-    display: inline-block; 
-    padding-right: 2em;
-    max-width: calc(50% - 2em);
-}
-.item.inline input{
-    max-width: 110%;
-}
 .item input:not(.slider, .datePick, .timePick){
-    width: calc(100% - 0.4em);
-    max-width: 450px;
+    /*width: calc(100% - 0.4em);*/
+    /*max-width: 450px;*/
 }
-.item textarea{
+/*.item textarea{
     width: calc(100% - 0.4em);
     max-width:450px;
     height:5em;
-}
-.ownLine textarea{
+}*/
+/*.ownLine textarea{
     max-width: unset;
-}
+}*/
 .number input{
-    width:4em;
+    width:6em;
 }
-.item.ownLine, .itemFU.ownLine{
+/*.item.ownLine, .itemFU.ownLine{
     display: block; 
     padding-right: 0px; 
     width: 100%;
-}
+}*/
 
 .answer {
     position: relative;
@@ -1148,9 +966,12 @@ li[data-response='no response']{
     border-color: rgb(210,210,210);
     display: inline-block;
     margin:5px 0.2em;
-    width: calc(100% - 0.5em);
+    width: max-content;
+    max-width: calc(100% - 0.5em);
     /*overflow: hidden;*/
 }
+.answer.flexbox { display: flex; }
+/*.item .answer {display:block;}*/
 form.disabled .answer{
     margin-top:0;
 }
@@ -1163,18 +984,18 @@ form.disabled .plzCheck{
 #Templates{
     display: none;
 }
-.item.inline .text, .item.inline .textbox{
+/*.item.inline .text, .item.inline .textbox{
     width:100%;
 }
 .item.inline .answer{
     width:auto;
     max-width: 95%;
-}
+}*/
 
-.answer.text, .answer.date, .answer.textbox, .answer.dropdown, .answer.time{
+/*.answer.text, .answer.date, .answer.textbox, .answer.dropdown, .answer.time{
     border-color: transparent;
     background-color: transparent;
-}
+}*/
 .answer.textbox{
     min-width: 65%;
 }
@@ -1183,63 +1004,21 @@ form.disabled .plzCheck{
     height: 4em;
 }
 
-.answer.checkboxes, .answer.radio {
-    background-color: var(--yellow20);
-    width: auto;
-    border: 1px solid var(--yellow30);    
+ul.checkboxes, ul.radio {
+    display: inline-flex;
+    align-items: center;
+    /*background-color: var(--yellow20);*/
+    border: 1px solid var(--purple30);
+    border-radius: 5px;
+    max-width: 100%;
+    width: max-content;
+    flex-wrap: wrap;    
 }
 
 .answer.signHere{
     display: block;
 }
 
-#CaseReview .answer,#PsychReview .answer{
-    margin: 0 2em 0.3em 2em;
-}
-
-#CaseReview .question,#PsychReview .question{
-    margin-top:0.3em;
-}
-
-#CaseReview .followup .answer,#PsychReview .followup .answer{
-    margin: 5px;
-}
-
-
-.followup {
-    margin: 0 2em;
-    padding: 5px;
-    border-radius: 3px;
-    border-style: solid;
-    border-width: 1px;
-    border-color: rgb(170,170,170);
-    background-color: rgb(235,235,235);
-    vertical-align: middle;
-}
-
-.followup .question{
-    display: inline-block;
-    margin: 0.7em 0.7em 0.3em 0.7em;
-}
-
-.followup .answer {
-    max-width: 500px;
-}
-
-.per {
-    display: inline-block;
-    margin: 0.9em 0.7em;
-}
-
-.formReport .answer {
-    margin: 0.5em 0;
-}
-
-.plzselect {
-    margin: 0 0 -.25em 0;
-    font-size: 0.8em;
-    color: var(--purple);
-}
 
 .answer.scale {
     width: 100%;
@@ -1319,12 +1098,12 @@ form.disabled .plzCheck{
     z-index: -1;
 }
 
-.SliderValue{
+.sliderValue{
     position: absolute;
     display: none;
     padding:.4em .5em;
     left:50%;
-    top:-0.5em;
+    top:-1.5em;
     font-size: 1.2em;
     line-height: 1;
     transform: translateX(-50%);
@@ -1338,7 +1117,7 @@ form.disabled .plzCheck{
     color: var(--purple);
     z-index: 1;
 }
-/*.SliderValue::before{
+/*.sliderValue::before{
     content: "";
     position:absolute;
     width:100%;
@@ -1349,7 +1128,7 @@ form.disabled .plzCheck{
     z-index: -1;
 }*/
 
-.answer.scale > span{
+.answer.scale .left, .answer.scale .right{
     display: inline-block;
     font-size: 0.9em;
     vertical-align: top;
@@ -1366,7 +1145,7 @@ form.disabled .plzCheck{
     text-align: left;
 }*/
 
-.section h2{
+.form .section h2{
     text-align: left;
     margin:0;
 }
@@ -1472,16 +1251,6 @@ form.disabled .plzCheck{
     font-size: 0.8em;
     left:-1.5em;
     top:0.25em;
-}
-
-
-#Filters span{
-    font-size: 0.8em;
-    background-color: rgb(210,210,210);
-    padding: 0 10px;
-    margin: 0 3px;
-    border-radius: 3px;
-    text-transform: lowercase;
 }
 
 li.inactive{
@@ -1685,13 +1454,48 @@ input#PatientName {
 }
 
 .button.next, .button.prev, .optionsNav .button {
-    font-size: 0.7em;
+    font-size: 0.7rem;
     margin: 2px 5px;
+}
+.navDetails .column {
+    text-align: left;
+    /*width: 95%;*/
+    /*max-width: 700px;*/
+}
+.navDetails .key, .navDetails .value {
+    font-size: 1.3em;
+}
+.navDetails .key {
+    font-weight: 700;
+    color: var(--purple);    
+}
+.navDetails .value {
+    max-width: 600px;
+}
+.navDetails .value > * {
+    display: inline-block;
 }
 
 .optionsNav .optionsBar{
     white-space: nowrap;
 }
+.navOption {
+    display: inline-block;
+    font-size: 0.9em;
+    color: var(--pink70);
+    transition: color 400ms, letter-spacing 400ms;
+    letter-spacing: normal;
+    align-self: flex-end;
+    user-select: none;
+    cursor: pointer;
+    margin: 0 0.5em;
+}
+.navOption:hover {
+    color: var(--pink);
+    letter-spacing: 0.02em;
+}
+
+.noWrap {white-space: nowrap;}
 
 .optionsNav .navHead{
     display: none;
@@ -1707,11 +1511,13 @@ input#PatientName {
   background-size: contain;
   background-repeat: no-repeat;
   border: 1px solid transparent;
-  /*width: 100%;*/
   max-width: 100%;
   max-height: 90vh;
-  cursor: crosshair;
   transition: height 500ms, width 500ms;
+  text-align: center;
+}
+.img_wrap {
+   cursor: crosshair;
 }
 .imageClick.disabled{
     cursor: default;
@@ -1757,23 +1563,17 @@ input#PatientName {
 
 
 .number {
-    /*padding: 0.4em 0.5em;*/
-    /*margin: 0.2em 0;*/
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     touch-action: manipulate;
-    margin-right:0;
     white-space: nowrap;
 }
-.inline .number{
-    padding-right: 3em;
-}
-
+/*.number.flexbox {flex-wrap: nowrap; }*/
 .number .label{
     margin: 0 0.25em;
 }
 
-.number div, .number input, .number span, .secName div, .secName span{
+.number.answer div, .number.answer input, .number.answer span{
     vertical-align: middle;
     text-align: right;
     touch-action: manipulate;
@@ -1781,17 +1581,17 @@ input#PatientName {
 .number input::placeholder{
     opacity: 0.3;
 }
-.text input{
-    width:20em;
-    max-width: 98%;
+.text input, .textbox textarea{
+    width: 100%;
+    /*max-width: 98%;*/
 }
-#TextOptions .answer, #TextBoxOptions .answer{
+/*#TextOptions .answer, #TextBoxOptions .answer{
     display: inline-block;
     width:auto;
     margin:0;
 }
-
-.secName, .itemName, .itemFUName {
+*/
+/*.secName, .itemName, .itemFUName {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -1813,23 +1613,12 @@ input#PatientName {
     font-size: 1.1em;
     font-weight: 700;
 }
-
-.UpDown {
-    display: inline-block;
-    position: relative;
-    right: 0;
-}
+*/
 .number.disabled .numberUpDown{
     display: none;
 }
 
-.UpDown .selectChkBx{
-    font-size: 1.2em;
-    position: relative;
-    right:15px;
-}
-
-.item > .UpDown, .itemFU > .UpDown {
+.item > .UpDown{
     position: absolute;
     top:5px;
     right:5px;
@@ -1842,7 +1631,7 @@ input#PatientName {
 .numberUpDown{
     /*margin: -1em 0;*/
 }
-.number .up, .number .down, .UpDown .up, .UpDown .down {
+/*.number .up, .number .down, .UpDown .up, .UpDown .down {
     width: 2.1em;
     height: 1.4em;
     border-width: 1px;
@@ -1859,20 +1648,16 @@ input#PatientName {
 .number .up:hover, .number .down:hover, .UpDown .up:hover, .UpDown .down:hover {
     box-shadow: 0 0 3px 0.1px rgb(150,150,150) inset;
 }
-
-.number .up, .UpDown .up {
+*/
+/*.number .up, .UpDown .up, .toggle_ele .up {
     border-radius: 5px 5px 0 0 ;
     background-image: url(/images/icons/arrow-up.png);
 }
 
-.number .down, .UpDown .down {
+.number .down, .UpDown .down, .toggle_ele .down {
     border-radius: 0 0 5px 5px ;
     background-image: url(/images/icons/arrow-down.png);
-}
-
-.number > div {
-    display: inline-block;
-}
+}*/
 
 .signHere {
     position: relative;
@@ -1914,8 +1699,8 @@ input#PatientName {
     background-color: transparent;
     /*border-radius: 5px;*/
     border-style: solid;
-    border-width: 0 0 1px 0;
-    border-color: var(--purple30);
+/*    border-width: 0 0 1px 0;
+    border-color: var(--purple30);*/
     transition: height 1200ms;
     vertical-align: middle;
 }
@@ -1926,12 +1711,12 @@ input#PatientName {
     padding:0 !important;
     display: inline-block;
     position: relative;    
-    min-width: 25em;
+    /*min-width: 25em;*/
     max-width: 96%;
-    overflow: hidden;
+    overflow: auto;
     max-height: 96%;
     text-align: center;
-    background-color: rgb(240,240,240) !important;
+    background-color: rgb(250,250,250) !important;
     border-radius: 5px;
     border: 1px solid rgb(190,190,190);
     transition: height 1200ms;
@@ -1941,10 +1726,16 @@ input#PatientName {
     min-width: 70%;
     max-width: 90%;
 }
-.prompt > div {
+.prompt > .body, .prompt > .message {
     padding: 1.5em;
 }
-.prompt .options{
+.prompt .header {
+    width: max-content;
+    max-width: 80vw;
+    margin: 0 auto 0.5em auto;
+    line-height: 1.2;
+}
+.prompt > .options{
     padding: 0.4em;
     font-size: 0.8em;
     background-color: rgb(230,230,230);
@@ -1952,14 +1743,10 @@ input#PatientName {
     border-style: solid;
     border-color: rgb(190,190,190);
     transition: background-color 400ms;
-}
-.prompt .message > .flexbox > * {
-    display: inline-block;
-    padding: 0.1em 0.3em;
-    margin: 0.2em 0;
-    border-radius: 5px;
-    border: 1px solid var(--purple);
-    background-color: var(--purple5);
+    width: max-content;
+    /*max-width: 100%;*/
+    min-width: 100%;
+    box-sizing: border-box;    
 }
 .optionsNav.hide{
     height: 0;
@@ -1971,60 +1758,26 @@ input#PatientName {
     margin-bottom: 1.5em;    
 }
 .optionsNav .navDetails{
-    /*max-width: 500px;*/
-    display: none;
-    /*padding: 1em 0;*/
-    /*border: 1px solid var(--purple);*/
-    /*border-width: 1px 0 0 0;*/
     font-size: 0.9em;
 }
-.optionsNav .navOptionsToggle{
+.optionsNavWrapper .toggle_proxy{
     padding: 0.4em;
+    display: block;
     cursor: pointer;
     font-size: 0.8em;
     background: linear-gradient( transparent, var(--purple10));
-    /*background-color: var(--purple10);*/
-    /*border-width: 1px 0 0 0;*/
     border-style: solid;
     border-color: var(--purple30);
+    border-width: 0 0 1px 0;
     color: var(--purple);
-    /*transition: background-color 400ms;*/
-}
-.optionsNav .navOptionsToggle .arrow{
-    height: 1.2em;
-    background-size: contain;
-    background-position: center;
-    background-repeat: no-repeat;
-    opacity: 0.5;
-    transition: opacity 0.5s;
-}
-.optionsNav .navOptionsToggle.down .arrow{
-    background-image: url(/images/icons/arrow-down.png);
-}
-.optionsNav .navOptionsToggle.up .arrow{
-    background-image: url(/images/icons/arrow-up.png);
-}
-.optionsNav .navOptionsToggle:hover .arrow{
-    opacity: 1;
+    margin-bottom: 1em;
 }
 .optionsNav .name {
     position: relative;
     display: inline-block;
-    /*padding: 0.5em;*/
-    /*margin: 0 10px 10px 10px;*/
     font-weight: 700;
     font-size: 1.2em;
-    /*background-color: var(--purple);*/
-    /*color: white;*/
     color: var(--purple);
-    /*border-radius: 5px;*/
-    /*border-style: solid;*/
-    /*border-width: 1px;*/
-    /*border-color: var(--purple);*/
-}
-.optionsNavHeader{
-    /*display: none;*/
-    /*margin-bottom: -1em;*/
 }
 .optionsNavHeader .hide{
     display: inline-block;
@@ -2050,9 +1803,6 @@ input#PatientName {
     margin-top: 1em;
 }*/
 
-#CurrentForm {
-    margin: 0 0 1em 0;
-}
 
 .patientName, .formName, .serviceName {
 }
@@ -2081,105 +1831,31 @@ input#PatientName {
     width:85%;
     max-width: 85%;
 }
-#AddItemProxy{display: none;}
-#AddItem {text-align:left;}
+/*#AddItemProxy{display: none;}*/
+#AddItem {
+    text-align:left;
+    width: 50em;
+    max-width: 96%;
+}
 #AddItem h2{text-align: center;}
 #AddItem h4{font-weight: normal;}
-#AddItem h3 span{
-    display: inline-block;
-    width: 6.8em;
-    text-align: right;
-    padding-right: 0.5em;
-    box-sizing: border-box;
-}
-#AddItem h4 span{
-    display: inline-block;
-    width: 9.1em;
-    text-align: right;
-    padding-right: 0.5em;
-    box-sizing: border-box;
-}
-#TextOptions span, #TextBoxOptions span {
-    vertical-align: text-top;
-    padding-right: 0.5em;
-}
-#ScaleList > div {
-    /*padding: 1em 0;*/
-}
-#ScaleList > div.smalller {
-    padding: 1em 0;
-}
-#ScaleList > div > span{
-    display: inline-block;
-    font-size: 0.9em;
-    position: relative;
-    margin-right: 1em;
-    text-align: right;
-    /*width:16em;*/
-}
 
-.displayOrder {
+
+#SectionList, #ItemList, #ItemFUList, .List ul {
     border-radius: 5px;
     border-width: 1px;
     border-style: solid;
     border-color: rgb(120,120,120);
-    background-color: white;
-    display: inline-block;
-}
-.displayOrder span{
-    position: relative;
-}
-.displayOrder li {
-    padding: 0 10px;
-    cursor: pointer;
-    border-width: 0 !important;
-    position: relative;
-    display: flex;
-    align-items: center;
-    transition: width 400ms;
-}
-.displayOrder li span {
-    transition: width 400ms;
-}
-
-.displayOrder .name{
-    display: inline-block;
-    text-align: right;
-}
-.displayOrder .UpDown{
-    font-size: 0.8em;
-    margin: 0.2em -0.6em 0.2em 0.2em;
-}
-.displayOrder .up, .displayOrder .down{
-    background-color: transparent;    
-}
-
-.displayOrder ul{
-    display: inline-block;
-    width: auto;
-    list-style: none;
-    border-radius: 5px;
-    border: 1px solid rgb(190,190,190);
-    background-color: rgb(255,255,255) !important;
-}
-.displayOrder .details{
-    display: inline-block;
-    text-align: left;
-    font-size: 0.9em;
-    vertical-align: baseline;
-    margin-left: 20px;
-    background-color: var(--white10);
-}
-
-#SectionList, #ItemList, #ItemFUList {
-    border-radius: 5px;
-    border-width: 1px;
-    border-style: solid;
-    border-color: rgb(120,120,120);
-    background-color: rgb(230,230,230);
     margin: 0.5em;
     position: relative;
     overflow: hidden;
+}
+
+.List li {
+    transition: background-color 400ms;
+}
+.List span {
+    padding: 0.25em 0.75em;
 }
 
 #SectionOrder > div > span, #ItemOrder > div > span, #ItemFUOrder > div > span {
@@ -2275,87 +1951,43 @@ input#PatientName {
 #FormName input{
     text-align: center;
 }
-#FormName .value {
-    text-transform: capitalize;
-}
 
 #Sections > h4 {
     text-transform: capitalize;
 }
-
+/*
 #Sections .section {
     display: none;
-}
+}*/
 
-.Items, .ItemsFU {
+.Items {
     position: relative;
     text-align: left;
+    border-radius: 3px;
+    justify-content: flex-start;
+    align-items: stretch;
+    /*border: 1px solid var(--gray93);*/
+    /*margin: 0.3em;*/
 }
 
-.Items .target, .ItemsFU .targetFUs{
-    margin: 1em;
-    border-radius: 5px;
-    border-style: solid;
-    border-width: 1px;
-    border-color: rgb(120,120,120);
-    overflow: hidden;
-    position: relative;
-    text-align: left;
-}
-.requireSign {
-    color: var(--pink);
-    font-size: 0.9em;
-}
-.question .requireSign {
-    display: inline-block;
-    vertical-align: top;
-    padding: 0 3px;
-}
-.section.display > .requireSign{
-    position: absolute;
-    top: 1em;
-    right: 2em;
-    text-align: right;
-}
-.Items > .requireSign {
-    text-align: right;
-    margin: -1em 2em 0 0;
-}
-
-
-.Items .selectMultiple {
-    position: relative;
-    margin: -1em 1em;
-    top:1em;
-    right:0;
-    float: right;
-    z-index: 21;
-}
-
-.selectMultiple .button {
-    display: inline-block;
-    float:right;
-    margin:0 1em;
-}
-.selectMultiple .delete, .selectMultiple .hide, .selectMultiple .copy {
-    display: none;
-}
-
-.ItemsFU .targetFUs {
-    display: none;
-}
-
-.Items .item, .ItemsFU .itemFU {
+.Items > .item{
     position: relative;
     margin: 0;
     padding: 0.5em 1em;
     border-style: solid;
-    border-width: 1px 0 0 0;
-    border-color: rgb(120,120,120);
+    border-width: 0 0 1px 0;
+    border-color: var(--gray93);
+    transition: background-color 1000ms;
+    background-color: var(--gray10);
+    border: 1px solid var(--gray50);
+    border-radius: 3px;
+    margin: 0.3em;
+    width: calc(100% - 0.5em);
+    box-sizing: border-box;
 }
 
-.Items .item:first-of-type, .ItemsFU .itemFU:first-of-type {
-    border-width: 0;
+.Items > div:last-child{
+    /*border-width: 0;*/
 }
 
 .section.display .itemFUList {
@@ -2371,19 +2003,6 @@ input#PatientName {
 #examples {
 /*    display: none;
 */}
-
-.example {
-    margin: 1em;
-    border-style: solid;
-    border-width: 1px;
-    border-color: rgb(190,190,190);
-    padding: 10px;
-}
-
-.exampleType {
-    font-size: 1.15em;
-    font-weight: 700;
-}
 
 .confirm .confirmY, .confirm .confirmN, .alert .confirmY, .alert .confirmN {
     cursor: pointer;
@@ -2411,24 +2030,23 @@ input#PatientName {
     cursor: pointer;
     font-size: 0.85em;
     margin: 0 0 0 5px;
-    color: rgb(120,120,120);
+    color: rgb(190,190,190);
     transition: color 400ms;
     text-transform: lowercase !important;
     font-weight: 400 !important;
     vertical-align: middle;
 }
+.toggle.pink {color: var(--pink);}
 
-.toggle:hover {
-    color: rgb(0,0,0);
-}
+.toggle:hover {color: rgb(0,0,0);}
 
-.editable .input, .editable .save, .editable .cancel {
+/*.editable .input, .editable .save, .editable .cancel {
     display: none;
 }
 
 .editable .pair {
     display: inline;
-}
+}*/
 .lineItem .pair {
     display: block;
 }
@@ -2447,12 +2065,16 @@ input#PatientName {
     display: inline-block !important;
 }
 
-/*#Options, #NumberOptions, #DateOptions, #FollowUpOptions, #ScaleOptions, #SignatureOptions, #TimeOptions {
-    display: none;
-}*/
 .itemOptionList {
-    display:none;
     text-align: center;
+}
+.itemOptionList .parentInfo {
+    background-color: var(--purple10);
+    color: var(--purple);
+    border-color: var(--purple50);
+}
+.insert_item_options {
+    transition: border-2244 color 500ms;
 }
 .insertProxy{
     display: inline-block;
@@ -2517,17 +2139,20 @@ input#PatientName {
     width:100%;
     color: var(--yellow);
     border-bottom: 2px solid var(--yellow);
-    margin: 10px 0 0 0;
+    /*margin: 10px 0 0 0;*/
 }
-.TableNav {
+.itemOptionList.followupOptionList .settingsLabel{
+    color: var(--pink);
+    border-bottom: 2px solid var(--pink);
+}
+.tableNav {
     border-radius: 5px;
     border: 1px solid var(--purple);
     background-color: var(--purple10);
     color: var(--purple);
     margin: 0.5em 0;
-    min-width: 70vw;
 }
-.TableNav .label{flex-grow: 1;}
+.tableNav .label{flex-grow: 1;}
 .Filters{
     margin: 0.5em 0;
     padding: 0.5em 0;
@@ -2553,80 +2178,27 @@ input#PatientName {
 .tableArrow.disabled:hover{background-color: var(--purple80);}
 .tableArrow.left::before{content: "\003c";}
 .tableArrow.right::before{content: "\003e";}
-.flexbox .checkmark {
-    position: relative;
-    top: 0;
-    transform: unset;
-    margin: -0.4em 0;    
-}
-.flexbox{
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: center;
-}
-.flexbox.nowrap{
-    flex-wrap: nowrap;
-}
-.flexbox.lineItem {
-    justify-content: space-between;
-    flex-wrap: nowrap;
-    text-align: left;
-}
-.flexbox.lineItem .description{
-    flex-grow: 1;
-}
-.flexbox.lineItem .price{
-    margin: 0 8px;
-    text-align: right;
-    min-width: 5em;
-}
-.flexbox.lineItem .price .numberUpDown{
-    font-size: 0.8em;
-}
-.flexbox.lineItem .lineTotal{
-    min-width: 5em;
-    text-align: right;
-    color: var(--pink);
-}
-.flexbox.lineItem .discount{
-    margin: 0 5px;
-    text-align: right;
-    min-width: 3.5em;
-}
-.flexbox.lineItem .tax{
-    margin: 0 5px;
-    text-align: right;
-    min-width: 3.5em;
-}
-.flexbox.lineItem .total{
-    margin: 0 5px;
-}
-.flexbox.lineItem.header {
-    font-size: 1.1em;
-}
-.flexbox.lineItem.header > div {
-    margin:0 2px 0 0;
-}
-.flexbox.rightSided{
-    justify-content: flex-end;
-}
-.flexbox.leftSided{
-    justify-content: flex-start;
-}
-.flexbox > .flexbox{
-    display: inline-flex;
-}
-.flexbox > * {
-    /*flex: auto;*/
+
+.item.condensed {display: inline-block; max-width:100%; box-sizing: border-box; width: min-content;}
+.item.condensed.auto {flex-grow: unset;}
+.item.condensed.full {width: calc(100% - 0.6em);}
+.item.condensed.half {width: calc(50% - 0.6em);}
+.item.condensed.third {width: calc(33% - 0.6em);}
+.Items.justify .item.condensed.auto {flex-grow: 1;}
+.Items.right {justify-content: flex-end;}
+.Items.center {justify-content: center;}
+.Items.autoItemHeight {align-items: flex-start;}
+/*.Items.stretchItemHeight {}*/
+.flexbox .newLine {flex-basis: 100%; height:0;}
+.item.text, .item.textbox {min-width: 20em;}
+
+
+#linked_to {
     display: inline-block;
-}
-.flexbox.styled > * {
-    margin: 5px 5px 0 5px;
-    padding: 0.2em 0.5em;
-    border: 1px solid var(--gray80);
-    background-color: var(--gray10);
-    border-radius: 0.3em;
+    background-color: var(--pink10);
+    border: 1px solid var(--pink50);
+    padding: 0.2em 1.4em;
+    border-radius: 3px;    
 }
 
 .optionsList{
@@ -2634,6 +2206,7 @@ input#PatientName {
     flex-wrap: wrap;
     align-items: center;
     justify-content: center;
+    margin: 0.5em 0;
 }
 .optionsList > div {
     margin: 5px 5px 0 5px;
@@ -2641,33 +2214,15 @@ input#PatientName {
     border: 1px solid var(--gray80);
     background-color: var(--gray10);
     border-radius: 0.3em;
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
 }
-.optionsList > div > * {
-    /*flex: auto;
-    display: inline-block;*/
-}
-.optionsList > div > span {
-    /*display: inline-block;*/
-    font-size: 0.9em;
-    margin: 0 0.5em;
-    /*top: 50%;*/
-    /*position: relative;*/
-    /*transform: translateY(-50%);*/
-    /*margin-right: 5px;*/
-}
-#OptionsList > div {
-    display: block;
-}
+
 #NarrativeList > div {
     display: block;
     padding: 0;
     border-radius: 0;
 }
 #OptionsList {
-    display: block;
+    flex-direction: column;
 }
 #OptionsList .option{
     width: 60%;
@@ -2684,11 +2239,12 @@ input#PatientName {
 #Text{
     width: 30em;
     max-width: calc(100% - 9em);
+    font-size: inherit;
 }
 .option input{
-    margin-top: 0.2em;
+    /*margin-top: 0.2em;*/
     width: calc(100% - 6em);
-    max-width: 250px;
+    /*max-width: 250px;*/
 }
 .displayOptions[data-type='section']{
     padding: 1px 3px;
@@ -2741,76 +2297,6 @@ input#PatientName {
     border-radius: 1em;
     cursor: pointer;
 }
-/*.dispOptions {
-    white-space: nowrap;
-    position: absolute;
-    font-size:0.5em !important;
-    height: 0.6em;
-    width: 0.6em;
-    background-image: url(/images/icons/simple-plus-white.png);
-    background-size: contain;
-    background-repeat: no-repeat;
-    margin:0.25em 1em;
-    padding:5px;
-    border-radius:2em;
-    opacity:0.5;
-    transition:opacity 0.5s, width 0.5s, height 0.5s;
-    z-index: 1;
-}
-.dispOptions:hover{
-    opacity:1;
-}
-.dispOptions.active{
-    width:auto;
-    height:auto;
-    opacity:1;
-    background-image: none;
-    padding: 1px;
-}
-.dispOptions > .button{
-    background-color:rgb(130,130,130);
-    background-image: url(/images/icons/simple-x-white.png);
-    background-size: contain;
-    background-position: center;
-    background-repeat: no-repeat;
-    border-radius:2em;
-    width:1.1em;
-    height:1.1em;
-    margin:2px;
-}
-*/
-/*#DateList > div, #TimeList > div {
-    padding: 0.5em;
-    margin: 0.5em;
-    border-width: 1px;
-    border-radius: 5px;
-    border-style: solid;
-    border-color: rgb(150,150,150);
-    vertical-align: middle;
-}*/
-
-/*#DateList > div > span, #TimeList > div > span {
-    font-weight: 700;
-}*/
-#TimeList .answer{width:auto;}
-#TimeList > .flexbox {
-    border-color: transparent;
-    background-color: transparent;
-}
-#TimeList > .flexbox > div {
-    margin: 5px 5px 0 5px;
-    padding: 0.2em 0.5em;
-    border: 1px solid var(--gray80);
-    background-color: var(--gray10);
-    border-radius: 0.3em;
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
-}
-
-/*#condition span, #FollowUpList select, #FollowUpList .answer, #ScaleList span, #ScaleList .answer{
-    vertical-align: middle;
-}*/
 
 #FollowUpList select, #SignatureList select{
     display: inline-block;
@@ -2825,6 +2311,15 @@ input#PatientName {
     border-style: solid;
     overflow: visible;
 }
+.answer.signature{
+    padding: 0.5em;
+    margin: 0.5em;
+    width: calc(100% - 2em);
+    border-width: 1px;
+}
+.j_sig{
+    margin: 0.5em;
+}
 .signature .jSignature{
     border-radius: 5px;
 }
@@ -2837,102 +2332,12 @@ input#PatientName {
     text-align: left;
 }
 
-#condition .answer, #ScaleList .answer, #NarrativeList .answer {
-    margin: 0;
-    overflow: visible;
-    width: auto;
-}
-.optionsList .answer {
-    width: auto;
-}
-#DateList > div > div > div > span {
-    /*display: inline-block;*/
-    position: relative;
-    /*top: 50%;*/
-    /*transform: translateY(-50%);*/
-    /*width: 7em;*/
-    /*text-align: right;*/
-    font-size: 0.9em;
-}
-#DateList > div > div > div > label{
-    display: inline-block;
-    position: relative;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 0.9em;    
-    margin-left: 10px;
-}
-#DateList > div > div > div > div > label{
-    font-size: 0.9em;
-    margin-left: 10px;
-}
-#DateList > div > div > div > div{
-    /*display: inline-block;*/
-    /*position: relative;*/
-    /*top: 50%;*/
-    /*transform: translateY(-50%);*/
-    /*margin: 0;*/
-    /*text-align: left;*/
-    margin: 5px 5px 0 5px;
-    padding: 0.2em 0.5em;
-    border: 1px solid var(--gray80);
-    background-color: var(--gray10);
-    border-radius: 0.3em;
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
-    flex-wrap: wrap;
-}
-#DateList > div > div > div > div > *{
-    margin: 0 5px;
-}
-#DateList .blockable > div > span{
-    /*position: relative;*/
-    /*top: 50%;*/
-    /*transform: translateY(-50%);*/
-    /*display: inline-block;*/
-}
-#DateList .dropdown{
-    /*position: relative;*/
-    /*top: 50%;*/
-    /*transform: translateY(-70%);*/
-    /*display: inline-block;*/
-}
-/*#NumberList > div, */#DateList > div > div > div:not(.blockable), #DateList .blockable > div {
-    /*position: relative;*/
-    /*height:3.5em;*/
-}
-#TimeList{
-    display: block;
-}
-#TimeList > div {
-    display:block;
-    background-color: transparent;
-    border-color: transparent;
-}
-#NumberList > div > span{
-    /*display: inline-block;
-    width: 7em;
-    font-size: 0.9em;
-    text-align: right;
-    top: 50%;
-    position: relative;
-    transform: translateY(-50%);
-    margin-right: 5px;*/
-}
-#NumberList > span{
-    /*display: inline-block;
-    width: 6em;
-    font-size: 0.9em;
-    vertical-align: middle;
-    text-align: right;*/
+#ScaleList .text input {
+    max-width: 12em;
 }
 
-#DateList > span{
-    display: inline-block;
-    vertical-align: top;
-    width: 8em;
-    font-size: 0.9em;
+.optionsList .answer {
+    width: auto;
 }
 
 #NarrativeList .answer {
@@ -2960,38 +2365,10 @@ input#PatientName {
     font-size: 0.9em;
 }
 
-#FollowUpList .condition{
+/*#FollowUpList .condition{
     display: inline-block;
-}
+}*/
 
-.number {
-    overflow: visible;
-}
-
-#ScaleList span {
-    display: inline-block;
-}
-
-#DisplayQ {
-    font-weight: 700;
-}
-
-#DisplayQ::before{
-    content: "\"";
-}
-#DisplayQ::after{
-    content: "\"";
-}
-
-.ItemsFU > .target{
-    display: none;
-}
-
-#DateList > div{
-    display: inline-block;
-    background-color: transparent;
-    border-color: transparent;
-}
 
 .tdSizeControl {
     max-height: 4em;
@@ -3006,6 +2383,10 @@ table .indicator {
     right: 0.25em;
     bottom: 0;
     font-size: 0.8em;
+}
+table img.checkmark {
+    width:1em;
+    height:1em;
 }
 
 .styledTable {
@@ -3213,21 +2594,21 @@ table .indicator {
     margin: 0 6px;
 }
 
-#CurrentForm .formName{
+/*#CurrentForm .formName{
     font-weight: 700;
 }
 
 #CurrentForm .settings{
     margin-left:1.5em;
     font-size: 0.9em;
-}
+}*/
 
 .styledTable.clickable tr.active{
-    background-color: var(--purple70) !important;
+    background-color: var(--purple50) !important;
     color: white;
     z-index: 4;
 }
-.displayOrder li.active{
+/*.displayOrder li.active{
     background-color: var(--purple70) !important;
     color: white;
     z-index: 4;
@@ -3241,7 +2622,7 @@ table .indicator {
 #authorize-button {
     display: none;
 }
-
+*/
 /*#NewService, #EditService, #NewCode, #EditCode, #EditFormSettings, #UnlockForm, #NewDiagnosis, #EditDiagnosis, #NewComplaint, #EditComplaint {
     display: none;
 }*/
@@ -3249,16 +2630,16 @@ table .indicator {
 .modalForm {
     display:none;
     max-height: 96%;
-    width: 96%;
+    width: max-content;
     max-width: 96%;
     box-sizing: border-box;
     overflow-y: auto;
     transition: width 1000ms, height 1000ms;
 }
-.modalForm.expanded{
+/*.modalForm.expanded{
     width:96%;
     height:96%;
-}
+}*/
 #ModalHome{
     display: none;
 }

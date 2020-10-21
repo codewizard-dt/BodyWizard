@@ -19,10 +19,6 @@ use App\Form;
 use App\Practitioner;
 
 $menuJson = json_decode(file_get_contents(app_path("/json/menu-data.json")),true);
-function listReturn($requestStatus, $url = null){
-  reportError(new \Exception(`Don't be usin listReturn no more`),'functions 23');
-  return;
-}
 function notificationData($notification, $format = 'string'){
   $data = [];
   $data['id'] = $notification->id;
@@ -43,6 +39,7 @@ function notificationType($notification){
 }
 function dataAttrStr($collection){
   return implode(" ", array_values($collection->map(function($value,$attr){
+    if (is_array($value)) $value = json_encode($value);
     return "data-$attr='".e($value)."'";
   })->toArray()));
 }
@@ -73,24 +70,6 @@ function handleModelDetail($value){
   elseif (is_object($value)) $result = "<span>".json_encode($value)."</span>";
   return $result;
 }
-// $defaultHeaders = function(){
-//   ret
-// }
-// function defaultHeaders(){
-//   $user = Auth::user();
-//   return [
-//     'X-UIDS' => session('uidList'),
-//     'X-TABS' => session('CurrentTabs'),
-//     'X-USER' => [
-//       'id' => $user->id,
-//       'type' => $user->user_type,
-//       'is_admin' => $user->is_admin,
-//       'is_super' => $user->is_superuser,
-//       // 'practitioner_id' => $user->practitionerInfo->id,
-//       'name' => $user->name
-//     ],
-//   ];
-// }
 
 function getPractice($practiceId){
   $practice = Practice::where('practice_id',$practiceId)->get();
@@ -102,23 +81,27 @@ function reportError($exception,$location=null){
     if (is_a($exception, 'Exception')){
       $event->setMessage("PHP Notice: ".(string)$exception);
     }else{
-      // $context = new ErrorContext();
-      // $location = new SourceLocation();
-      // $location->setFunctionName( [UPDATE] );
-      // $location->setLineNumber( [UPDATE] );
-      // $location->setFilePath( [UPDATE] );
-      // $context->setReportLocation($location);
     }
     $project = app('GoogleErrors')->projectName('bodywizard');
     app('GoogleErrors')->reportErrorEvent($project,$event);
   }else{
-    Log::error($exception);
-    $desc = (is_a($exception, 'Exception')) ? explode("Stack", $exception)[0] : 'Error';
+    if (is_a($exception, 'Exception')){
+      $desc = explode("Stack", $exception)[0];
+      $details = $exception->getTrace();
+    }elseif (is_string($exception)){
+      $e = new \Exception($exception);
+      $desc = $exception;
+      $details = $e->getTrace();
+    }else{
+      $desc = 'Error';
+      $details = $exception;
+    }
+    // Log::error($details);
     $user = Auth::user();
     event(new BugReported(
       [
         'description' => $desc, 
-        'details' => $exception, 
+        'details' => $details, 
         'category' => 'Caught Exceptions', 
         'location' => $location,
         'user' => $user ? $user->id : null
@@ -126,14 +109,22 @@ function reportError($exception,$location=null){
     ));
   }
 }
-// function checkForSync($model){
-//   if (request()->has('sync')){
-//     foreach(request()->sync as $relationship => $ids){
-//       $model->$relationship()->sync($ids);
-//     }
-//     // if (method_exists($model, 'postSyncFx')) $model->postSyncFx();
-//   }
-// }
+function handleError($exception,$location=null) {
+  $msg = $exception->getMessage(); $error = null;
+  if (strpos($msg, 'constraint violation: 1062 Duplicate entry')) {
+    $re = "/Duplicate entry '(.*)' for key '(.*)_(.*)_.*' \(SQL/m";
+    preg_match_all($re, $msg, $matches, PREG_SET_ORDER, 0);
+    Log::info(compact('matches','msg'));
+    $type = singular(title($matches[0][2])); $value = $matches[0][1]; $attr = $matches[0][3];
+    $error = ['header' => "Duplicate $type",'message' => title($attr)." '$value' is already taken. Please try another $attr.", 'attr' => $attr];
+  } elseif ($msg == 'no changes') {
+    $error = ['header' => 'Error', 'message' => 'No changes were made.'];
+  } else{
+    reportError($exception,$location);
+    $error = ['header' => 'Error','message'=>$msg];
+  }
+  return $error;
+}
 
 // String related functions
   function plural($str){
@@ -170,6 +161,13 @@ function reportError($exception,$location=null){
     }else{
       return Str::title($str);
     }
+  }
+  function lettersOnly($str) {
+    $str = preg_replace('/[^a-zA-Z]/','',$str);
+    return $str;
+  }
+  function toKeyString($str) {
+    return lettersOnly(removespaces(title($str)));
   }
   function proper($str){
     if (is_array($str)){
@@ -284,30 +282,67 @@ function reportError($exception,$location=null){
       $data = str_replace(" ","",$data);
       return $data;
   }
-  // function removenull($data){
-  //     $key = array_search('-',$data);
-  //     if ($key>0){
-  //         unset($data[$key]);
-  //     }
-  //     return $data;
-  // }
-  // function formatDate($date){
-  //     $formatDate = date_create($date);
-  //     $formatDate = date_format($formatDate,"M j, Y");
-  //     return $formatDate;
-  // }
 
 // Array related functions
 
   function randomElement($array){
     return Arr::random($array);
   }
-
   function addTo(&$addToArray,$keyValueArray){
     foreach ($keyValueArray as $key => $value){
       Arr::add($addToArray,$key,$value);
     }
-    // return Arr::add($addToArray,$key,$value);
+  }
+  function get($array, $key, $default = null) {
+    return Arr::get($array,$key,$default);
+  }
+  function set(&$array, $key, $value) {
+    try{
+      if (is_array($key) && is_array($value)){
+        if (count($key) != count($value)) throw new \Exception('mismatched array counts');
+        for ($x = 0; $x < count($key); $x++){
+          Arr::set($array, $key[$x], $value[$x]);
+        }
+      }else {
+        Arr::set($array, $key, $value);
+        $addl = array_slice(func_get_args(),3);
+        while (!empty($addl)) {
+          $key = array_shift($addl); $value = array_shift($addl);
+          Arr::set($array, $key, $value);
+        }
+      }
+    }catch(\Exception $e){
+      reportError($e,'fx set() in functions.php');
+    }
+    return $array;
+  }
+  function new_input($type, $options, $values){
+    $input = [];
+    set($input, 'type', $type);
+    try{
+      for ($x = 0; $x < count($options); $x++){
+        set($input, "options.".$options[$x], $values[$x]);
+      }
+    }catch(\Exception $e){
+      reportError($e,'new_input failure');
+    }
+    return $input;
+  }
+  function implodeOr($array){
+    for ($x = 0; $x < count($array); $x++){
+      if ($x == 0) $str = $array[$x];
+      elseif ($x == count($array) - 1) $str .= ', or '.$array[$x];
+      else $str .= ', '.$array[$x];
+    }
+    return $str;
+  }
+  function implodeAnd($array){
+    for ($x = 0; $x < count($array); $x++){
+      if ($x == 0) $str = $array[$x];
+      elseif ($x == count($array) - 1) $str .= ', and '.$array[$x];
+      else $str .= ', '.$array[$x];
+    }
+    return $str;
   }
 
 // Date / Schedule related functions
@@ -588,6 +623,31 @@ function reportError($exception,$location=null){
   }
 
 // Model related functions
+  function basicList($model, $columns = ['name','uid']){
+    $model = removespaces(title(unreplacespaces($model)));
+    $class = "App\\$model";
+    $list = method_exists($class,'defaultCollection') ? $class::defaultCollection() : $class::all();
+    $list = $list->map(function($item,$uid) use ($columns){
+      $attrs = [];
+      collect($columns)->each(function($column) use (&$attrs, $item){
+        if ($column == 'uid') $attrs['uid'] = $item->getKey();
+        else $attrs[$column] = $item->$column;
+      });
+      return $attrs;
+    });
+    return $list->toArray();     
+  }
+  function successResponse($model) {
+    $instance = getInstanceFromUid($model); $name = $instance->name;
+    // if (session('model_action') == 'create') $str = '"' . $instance->name . '" successfully added as a new '.title(unreplacespaces(snake($model))).'!';
+    // else $str = $instance->name . ' information updated';
+    if (session('model_action') == 'create') $str = "\"$name\" successfully added!";
+    else $str = "\"$name\" information updated";
+    $response = "<h1 class='paddedBig'>$str</h1>";
+    $response .= "<div class='button pink' data-mode='click' data-target='".Str::kebab($model)."-index'>continue</div>";
+    return $response;
+  }
+  function usertype() {return session('usertype') !== null ? session('usertype') : Auth::user()->default_role;}
   function usesTrait($instance,$trait){
     $allTraits = class_uses($instance);
     $trait = 'App\Traits\\'.$trait;
@@ -606,20 +666,34 @@ function reportError($exception,$location=null){
     $uidList = (session('uidList') !== null) ? session('uidList') : [];
     if ($uid){
       $uidList[$model] = $uid;
+      if ($model == 'Practice') {
+        $practice = App\Practice::find($uid);
+        session([
+          'domain' => $practice->host,
+          'practiceId' => $practice->practice_id,
+          'calendarId' => $practice->calendar_id,
+          'timezone' => $practice->contact_info['timezone']
+        ]);
+        date_default_timezone_set($practice->contact_info['timezone']);
+      }
     }else{
       if (getUid($model)) unset($uidList[$model]);
     }
     session(['uidList' => $uidList]);
   }
   function getUid($model){
-    // Log::info($model);
     $uidList = session('uidList');
     if ($uidList) return isset($uidList[$model]) ? $uidList[$model] : null;
     else return null;
-    // Log::info(session('uidList'),['location'=>'functions 578']);
-    // if (session('uidList')===null || empty(session('uidList'))){return null;}
-    // elseif (session('uidList')[$model] === undefined){return null;}
-    // else{return session('uidList')[$model];}
+  }
+  function getInstanceFromUid($model){
+    $uidList = session('uidList');
+    if ($uidList) {
+      $uid = isset($uidList[$model]) ? $uidList[$model] : null;
+      $class = "App\\$model";
+      return $uid ? $class::find($uid) : null;
+    }
+    else return null;
   }
   function getModel($instance, $spaces = false){
     $name = substr(strrchr(get_class($instance), "\\"), 1); 
@@ -906,4 +980,3 @@ function reportError($exception,$location=null){
     throw new Exception('using getPracticeId');
   }
 ?>
-

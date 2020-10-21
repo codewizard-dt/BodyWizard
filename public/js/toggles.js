@@ -213,7 +213,7 @@
     
 //     $("input[type='range']").on("change", function(){
 //         var value = $(this).val();
-//         var valuebox = '<div id="SliderValue">'+value+'</div>';
+//         var valuebox = '<div id="sliderValue">'+value+'</div>';
 // //        if (value == -5){var valStr = "Significantly Worse (-50%)";} 
 //   //      else if (value == -4){var valStr = "Much Worse (-40%)";} 
 //     //    else if (value == -3){var valStr = "Worse (-30%)";} 

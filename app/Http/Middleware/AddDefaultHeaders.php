@@ -14,27 +14,39 @@ public function handle($request, Closure $next)
 	$response = $next($request);
 
 	$user = Auth::check() ? Auth::user() : null;
-	$userInfo = $user ? json_encode([
-	    'id' => $user->id,
-	    'type' => $user->user_type,
-	    'is_admin' => $user->is_admin,
-	    'is_super' => $user->is_superuser,
-	    'practitioner_id' => $user->practitionerInfo->id,
-	    'name' => $user->name		
-		]) : null;
 
 	if ($user){
 		$notifications = $user->unreadNotifications;
-		$response->withHeaders([
+    $isNotificationCheck = ($request->path() == 'notification-check');
+    $notification_json = $notifications->map(function($n){
+	    	return ['type'=>notificationType($n),'data'=>notificationData($n,'json'),'id'=>$n->id];
+	   })->toJson();
+    $forceLogout = false;
+    if (!$isNotificationCheck) session(['realTimestamp' => time()]);
+    else {
+        $difference = time() - session('realTimestamp');
+        $forceLogout = ($difference > 20*60);
+    }
+    $headers = [
 	    'X-Current-Uids' => json_encode(session('uidList')),
 	    'X-Current-Tabs' => json_encode(session('CurrentTabs')),
-	    'X-Unread-Notifications' => $notifications->count() < 50 ? $notifications->map(function($n){
-	    	return ['type'=>notificationType($n),'data'=>notificationData($n,'json'),'id'=>$n->id];
-	    })->toJson() : 'send ajax',
-	    'X-CSRF-TOKEN' => csrf_token()
+	    'X-CSRF-TOKEN' => csrf_token(),
+	    'X-FORCE-LOGOUT' => $forceLogout ? 'true' : 'false',
+		];
+			    // 'X-Unread-Notifications' => strlen($notification_json) < 15000 ? $notification_json : 'send ajax',
+
+		if (!$isNotificationCheck) $headers['X-Unread-Notifications'] = strlen($notification_json) < 1500 ? $notification_json : 'send ajax';
+		$response->withHeaders($headers);
+	}else{
+		$response->withHeaders([
+	    'X-Current-Uids' => null,
+	    'X-Current-Tabs' => null,
+	    'X-CSRF-TOKEN' => null,
+	    'X-FORCE-LOGOUT' => null,
+	    'X-Unread-Notifications' => null,
 		]);
 	}
-	// Log::info($response);
+
 	return $response;
 }
 }

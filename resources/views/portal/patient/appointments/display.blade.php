@@ -20,9 +20,9 @@
 
     $type = camel(Auth::user()->user_type);
     if ($type == 'patient'){
-        // $patient = Patient::find(Auth::user()->patientInfo->id);
-        // $patient = Auth::user()->patientInfo;
-        // $patientInfo = [
+        // $patient = Patient::find(Auth::user()->patient->id);
+        // $patient = Auth::user()->patient;
+        // $patient = [
         //     'id' => $patient->id,
         //     'isNewPatient' => ($patient->isNewPatient() == 'true'),
         //     // 'name' => getNameFromUid('Patient',$patient->id)

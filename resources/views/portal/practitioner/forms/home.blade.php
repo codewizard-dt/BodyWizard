@@ -1,12 +1,7 @@
-<?php 
-    // include_once app_path("/php/functions.php");
-?>
 @include('layouts.menus.menu-bar',[
     "menu_name" => 'formsMenu',
-    'menu_data' => 'PortalMenuList',
+    'menu_data' => 'PortalTabOptions',
     'items' => [
-        'forms-index', 'forms-edit','forms-create'
+        'forms-index', 'forms-create', 'forms-edit'
     ]
 ])
-
-<!-- <script type="text/javascript">$(document).ready(function(){initializeNewMenus();})</script> -->

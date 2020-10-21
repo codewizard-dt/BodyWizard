@@ -10,18 +10,6 @@
     if ($type == 'site'){
         $classes = "menuBar website siteMenu";
         $target = "window";
-        $mobile = [
-            "id" => 'MobileMenu',
-            'text' => '',
-            'dropdown' => [
-                [
-                    'id' => 'mobilePlaceholder',
-                    'text' => '',
-                    'dropdown' => false,
-                    'uri' => ''
-                ]
-            ]
-        ];
     }elseif ($type == 'portal'){
         $classes = "menuBar portal wrapper";
         $target = "#".$menu_name."Target";
@@ -38,13 +26,13 @@
      data-target="{{ $target }}"
      {{ $scroll }}>
     @if ($type == 'site')
-        @include ('layouts.menus.menu-item',$mobile)
+        @include ('layouts.menus.menu-item',array_merge($menuJson['MobileMenu']['MobilePlaceholder'],['name'=>'MobileMenu']))
     @endif
     @forelse ($items as $name)
-        @include ('layouts.menus.menu-item',$allTabs[$name])
+        @include ('layouts.menus.menu-item',array_merge($allTabs[$name],compact('name')))
     @empty
         @foreach ($allTabs as $name)
-            @include ('layouts.menus.menu-item',$allTabs[$name])
+            @include ('layouts.menus.menu-item',array_merge($allTabs[$name],compact('name')))
         @endforeach
     @endforelse
 </div>

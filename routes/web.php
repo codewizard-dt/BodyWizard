@@ -38,15 +38,11 @@ Route::get('/treatments', 'PagesController@treatments');
 Route::get('/conditions', 'PagesController@conditions');
 Route::get('/rates', 'PagesController@rates');
 Route::get('/checkmark', 'PagesController@checkmark');
-Route::get('/portal/logout', 'PagesController@logout');
 Route::get('/home/patients', 'PatientController@home');
 Route::get("/booknow", 'PagesController@booknow');
 
-Route::get("/loadDxForm/{type}", 'DiagnosisController@loadDxForm');
-Route::post("/narrativeImgData", 'FormController@checkNarrativeImgs');
-
-Route::get('/schedule/Practice', 'ScheduleController@EditPracticeSchedule');
-Route::post('/schedule/Practice/save', 'ScheduleController@SavePracticeSchedule');
+// Route::get('/schedule/Practice', 'ScheduleController@EditPracticeSchedule');
+// Route::post('/schedule/Practice/save', 'ScheduleController@SavePracticeSchedule');
 Route::get('/schedule/appointments', 'ScheduleController@appointmentEventFeed');
 Route::get('/schedule/non-ehr', 'ScheduleController@nonEhrEventFeed');
 
@@ -54,23 +50,23 @@ Route::get('/schedule/non-ehr', 'ScheduleController@nonEhrEventFeed');
 	Route::get('/optionsNav/{model}/{uid}', 'ScriptController@OptionsNav');
 	Route::get('/options-nav/{model}/{uid}', 'ScriptController@OptionsNavNew');
 	Route::get('/display/table/{model}', 'ScriptController@ResourceTable');
+	Route::post('/{model}/list', 'ScriptController@BasicList');
 	Route::get('/{model}/index', 'ScriptController@ListWithNav');
-	Route::get('/{model}/index/{uid}', 'ScriptController@ListWithNav');
+	Route::get('/portal/practices', 'ScriptController@ListWithNav');
 	Route::get('/{model}/modal', 'ScriptController@ListAsModal');
-	Route::get('/settings/{model}/{uid}', 'ScriptController@EditSettings');
-	Route::get('/schedule/{model}/{uid}', 'ScheduleController@EditUserSchedule');
-	// Route::get('/create/{model}', 'ScriptController@CreateNewModel');
-	// Route::get('/edit/{model}/{uid}', 'ScriptController@EditModel');
-	Route::delete('/delete/{model}/{uid}', 'ScriptController@DeleteModel');
+	Route::get('/create/{model}', 'ScriptController@CreateNewModel');
+	Route::delete('/delete/{model}/{uid}', 'ScriptController@delete');
 	Route::get('/addNote/{model}/{uid}', 'ScriptController@AddNotes');
-	// Route::patch('/save/settings/{model}/{uid}', 'ScriptController@SaveSettings');
-	// Route::patch('/save/{model}/{uid}', 'ScriptController@UpdateModel');
 	Route::post('/save/{model}', 'ScriptController@save');
+	Route::get('/edit/{model}/{uid}', 'ScriptController@edit');
+	Route::get('/schedule/{model}/{uid}', 'ScriptController@schedule');
+	Route::get('/settings/{model}/{uid}', 'ScriptController@settings');
+	Route::get('/schedule/Practice', 'ScriptController@schedulePractice');
 	Route::get('/retrieve/{model}/{uid}', 'ScriptController@fetchModel');
 	Route::post('/savePinnedNotes/{model}/{uid}', 'ScriptController@savePinnedNotes');
 
-
 Route::get('/home/appointments', 'AppointmentController@home');
+Route::get('/appointments/calendar', 'AppointmentController@calendar');
 Route::get('/appointment/{uid}/get-chart-note', 'AppointmentController@getChartNote');
 Route::get('/appointment/{uid}/edit-chart-note', 'AppointmentController@editChartNote');
 Route::get('/ChartNote/create','ChartNoteController@create');
@@ -96,6 +92,8 @@ Route::get('/home/codes', 'CodeController@home');
 Route::get('/home/complaints', 'ComplaintController@home');
 Route::get('/home/diagnoses', 'DiagnosisController@home');
 
+Route::match(['get','post'],'/form/display/{form}','FormController@get_html');
+Route::get('/form/preview/{form}','FormController@get_html_preview');
 Route::post('/form/{uid}/submit','FormController@submit');
 Route::get('/home/forms', 'FormController@home');
 Route::get('/forms/{uid}/preview', 'FormController@preview');
@@ -113,31 +111,25 @@ Route::get('/home/submissions', 'SubmissionController@home');
 Route::get('/home/treatment_plans', 'TreatmentPlanController@home');
 Route::get('/home/users', 'UserController@home');
 
-Route::post('/setvar', 'ScriptController@SetVar');
-Route::post('/getvar', 'ScriptController@GetVar');
 Route::get('/schedule/feed', 'ScheduleController@scheduleFeed');
 
-Route::get('/portal', 'Auth\LoginController@showLoginForm')->name('portal') ;
+Route::get('/portal', 'Auth\LoginController@showLoginForm')->name('portal');
+Route::post('/portal/select_role', 'PagesController@setRole')->middleware('auth');
 Route::get('/portal/launchpad', 'PagesController@launchpad')->middleware('auth');
-Route::get('/portal/settings', 'PagesController@portalsettings')->middleware('auth');
-Route::get('/portal/practices', 'PagesController@practicesettings')->middleware('auth');
-Route::get('/portal/settings/display/{model}', 'SettingsController@displaySettings')->middleware('auth');
+// Route::get('/portal/settings', 'PagesController@portalsettings')->middleware('auth');
+// Route::get('/portal/practices', 'PagesController@practicesettings')->middleware('auth');
+// Route::get('/portal/settings/display/{model}', 'SettingsController@displaySettings')->middleware('auth');
 Route::get('/portal/settings/panel', 'SettingsController@panel')->middleware('auth');
 Route::post('/portal/settings/display-order', 'SettingsController@displayOrderUpdate')->middleware('auth');
 
 Route::get('/practice/contact-info','PracticeController@contactInfo')->middleware('auth');
 Route::get('/practice/legal-info','PracticeController@legalInfo')->middleware('auth');
+Route::get('/practice/create','PracticeController@create')->middleware('auth');
 
 Route::resource('bugs', 'BugController');
 
-Route::get('/portal/user/settings', 'SettingsController@userSettings');
-Route::get('/user/info', 'SettingsController@userInfo');
-Route::get('/user/password', 'SettingsController@password');
-Route::get('/user/security-questions', 'SettingsController@securityQuestions');
-Route::get('/security-questions/confirmed', 'SettingsController@changeSecQuestions');
-Route::post('/security-questions/update', 'SettingsController@updateSecQ');
-Route::post('/password/update', 'SettingsController@changePw');
-Route::post('/password/check', 'SettingsController@checkPw');
+Route::any('/keep-session', function(){return 'ok';});	
+Route::any('/portal/logout', 'PagesController@logout')->name('logout');
 
 Route::get('/artisan/execute/{command}', 'ArtisanController@execute');
 

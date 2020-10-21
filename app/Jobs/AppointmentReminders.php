@@ -57,7 +57,7 @@ class AppointmentReminders implements ShouldQueue
                         if ($patient->settings['reminders']['appointments']['text']){
                             $sms = new Message;
                             $sms->sender_id = 1;
-                            $sms->recipient_id = $patient->userInfo->id;
+                            $sms->recipient_id = $patient->user->id;
                             $sms->message_id = uuid();
                             $sms->type = 'SMS';
                             $sms->status = $sms->defaultStatus();
@@ -70,7 +70,7 @@ class AppointmentReminders implements ShouldQueue
                             $body = str_replace("%%date_time%%",$date,$body);
                             $body = str_replace("%%appt_link%%","<a href='".$appt->appt_link."' target='_blank'>link</a>",$body);
                             $email->sender_id = 1;
-                            $email->recipient_id = $patient->userInfo->id;
+                            $email->recipient_id = $patient->user->id;
                             $email->template_id = $template->id;
                             $email->message_id = uuid();
                             $email->type = 'Email';

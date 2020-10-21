@@ -30,7 +30,7 @@
                 </div>
             </div>
             <div class='paddedSides leftOnly left'>
-                <div class='divide hor yellowBG'></div>
+                <div class='divide hor yellowBg'></div>
                 <h3 class='paddedSmall'>Education + Training</h3>
                 <h5>Chinese Medicine (Masters)</h5>
                 <p class='little'>Acupuncture, herbs, meditation, qigong<br><span class='italic'>AOMA Graduate School of Integrative Medicine, 2013</span></p>
@@ -38,7 +38,7 @@
                 <p class='little'>Neuroscience, hormone regulation, and how the brain sculpts our experience<br><span class='italic'>University of Masschusetts, 2008</span></p>
                 <h5>Biochemistry (Bachelors)</h5>
                 <p class='little'>The chemistry that is at the foundation of human metabolism<br><span class='italic'>University of Masschusetts, 2008</span></p>
-                <div class='divide hor yellowBG'></div>
+                <div class='divide hor yellowBg'></div>
             </div>
         </div>
 @endsection

@@ -30,7 +30,6 @@
 		axis:'xy',
 		duration: 400,
 		limit:true,
-        offset:-200
 	};
 
 	function isWin(elem) {

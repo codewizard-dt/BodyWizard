@@ -1,6 +1,11 @@
-// var action = undefined, appointmentDetails = {services:null,date:null,time:null,datetime:null,patient:null,practitioner:null}, defaultPatientInfo = null, defaultPractitionerInfo = null, activeForm = null, category = null, practitioners, practiceTz, clientTz, patientInfo = {}, calendar, serviceConfirmBtn, dateTimeConfirmBtn, allowOverride = false, serviceOverride = false;
+class Appointment {
+	constructor (options) {
+		
+	}
+}
 
-var appointment = {
+
+const appointment = {
 	current: {
 		uid: null,
 		uuid: null,
@@ -24,7 +29,7 @@ var appointment = {
 		},
 		set: function(updateObj){
 			for (let attr in updateObj){appointment.previous.attributes[attr] = updateObj[attr]}
-			log({previous:appointment.previous.attributes},'previous settings');
+				log({previous:appointment.previous.attributes},'previous settings');
 		},
 		updateChanges: function(){
 			let now = appointment.current, then = appointment.previous.attributes;
@@ -32,13 +37,24 @@ var appointment = {
 				['practitioner_id',then.practitioner,now.practitioner],
 				['services',then.services,now.services],
 				['date_time',then.datetime,now.datetime],
-			]);
+				]);
 			appointment.current.changes = changes;
 			return changes;
 		},
 	},
 	list: [],
-
+	info: {
+		modal: new OptionBox({
+			header: 'New Appointment',
+			header_html_tag: 'h1',
+		}),
+		open: () => {blurTop(appointment.info.modal.ele)},
+	},
+	editor: {
+		modal: null,
+		open: () => {blurTop(appointment.editor.modal)},
+		current: null,
+	},
 	get: function(uid){
 		return appointment.list.find(appt => appt.extendedProps.uid == uid);
 	},
@@ -229,7 +245,7 @@ var appointment = {
 			// log({duration,availability,date,time});
 			timeSlots.each(function(s,slot){
 				let thisTime = $(slot).data('value'), momentObj = moment(`${date} ${thisTime}`,'M/D/YYYY hh:mm:ss'),
-						timeOk = availability.includes(thisTime) && appointment.schedules.check.this(momentObj, duration);
+				timeOk = availability.includes(thisTime) && appointment.schedules.check.this(momentObj, duration);
 				// log({thisTime,momentObj});
 				if (timeOk) $(slot).data({errors:null,conflicts:null}).removeClass('disabled');
 				else $(slot).data({errors:appointment.schedules.check.errors,conflicts:appointment.schedules.check.conflicts}).addClass('disabled');
@@ -291,12 +307,13 @@ var appointment = {
 		},
 		calendar: {
 			feed: function(info){
-				if (typeof info == 'string'){
-					var feed = jsonIfValid(info);
-					if (!feed){return;}
-				}else if (typeof info == 'object'){
-					var feed = info;
-				}
+				// if (typeof info == 'string'){
+				// 	var feed = jsonIfValid(info);
+				// 	if (!feed){return;}
+				// }else if (typeof info == 'object'){
+				// 	var feed = info;
+				// }
+				feed = info.json_if_valid();
 				if (feed.appointments == undefined){return;}
 				var appts = feed.appointments;
 				appointment.list = appts;
@@ -316,27 +333,27 @@ var appointment = {
 				else attr = $(this).data('value');
 
 				if (attr == 'names') $.each(events,function(e,event){event.setProp('title', event.extendedProps.patient.name)})
-				else if (attr == 'service') $.each(events,function(e,event){event.setProp('title', event.extendedProps.services.names)})
-				else if (attr == 'no label') $.each(events,function(e,event){event.setProp('title', "")})
+					else if (attr == 'service') $.each(events,function(e,event){event.setProp('title', event.extendedProps.services.names)})
+						else if (attr == 'no label') $.each(events,function(e,event){event.setProp('title', "")})
 
-				appointment.calendar.element.rerenderEvents();
-			}
-		}
-		
-	},
-	save: {
-		btn: null,
-		confirm: function(){
-			let missing = appointment.requires(), changes = appointment.current.changes,
-					isChanged = model.attr.changesIncludes.bind(changes),
-					changed = model.attr.changedFrom.bind(changes);
-			if (missing.isEmpty()){
-				if (changes !== null && changes.isEmpty()){
-					feedback('Unable To Save',"You haven't changed the appointment.");
-					return;
+							appointment.calendar.element.rerenderEvents();
+					}
 				}
 
-				let date = appointment.current.datetime,
+			},
+			save: {
+				btn: null,
+				confirm: function(){
+					let missing = appointment.requires(), changes = appointment.current.changes,
+					isChanged = model.attr.changesIncludes.bind(changes),
+					changed = model.attr.changedFrom.bind(changes);
+					if (missing.isEmpty()){
+						if (changes !== null && changes.isEmpty()){
+							feedback('Unable To Save',"You haven't changed the appointment.");
+							return;
+						}
+
+						let date = appointment.current.datetime,
 						dateStr = `${appointment.current.time} on ${appointment.current.date}`,
 						dateRelStr = appointment.schedules.relDateString(),
 						services = appointment.form.active.find(".services.value").text(),
@@ -345,16 +362,16 @@ var appointment = {
 						message = $(`<h3 class='pink'></h3>`),
 						dateChange = isChanged('date_time'),
 						oldDateTime = dateChange ? moment(changed('date_time'),'YYYY-MM-DD HH:mm:ss') : null;
-				message.append(`<div class='patient'>${patient}</div>`);
-				message.append(`<div class='services'>${services}</div>`);
-				if (isChanged('services')) {
-					$(`<div style='text-decoration:line-through;'>${table.get('ServiceList').getNameById(changed('services'))}</div>`).insertBefore(message.find('.services'));
-				}
-				message.append(`<div class='date_time'>${dateStr} (${dateRelStr})</div>`);
-				if (dateChange) {
-					let oldRelString = appointment.schedules.relDateString(oldDateTime);
-					$(`<div style='text-decoration:line-through;'>${oldDateTime.format('h:mma')} on ${oldDateTime.format('M/D/YYYY')} (${oldRelString})</div>`).insertBefore(message.find('.date_time'));
-				}
+						message.append(`<div class='patient'>${patient}</div>`);
+						message.append(`<div class='services'>${services}</div>`);
+						if (isChanged('services')) {
+							$(`<div style='text-decoration:line-through;'>${table.get('ServiceList').getNameById(changed('services'))}</div>`).insertBefore(message.find('.services'));
+						}
+						message.append(`<div class='date_time'>${dateStr} (${dateRelStr})</div>`);
+						if (dateChange) {
+							let oldRelString = appointment.schedules.relDateString(oldDateTime);
+							$(`<div style='text-decoration:line-through;'>${oldDateTime.format('h:mma')} on ${oldDateTime.format('M/D/YYYY')} (${oldRelString})</div>`).insertBefore(message.find('.date_time'));
+						}
 				// message.append(`<div class='bold date_time_rel'>appointment ${dateRelStr}</div>`);
 				// if (dateChange) {
 				// 	oldRelString = appointment.schedules.relDateString(oldDateTime).replace('is','was');
@@ -363,29 +380,10 @@ var appointment = {
 				confirm({
 					header: newAppt ? 'Confirm New Appointment' : 'Confirm Changes to Appointment',
 					message: message,
-					yesBtnText: newAppt ? 'confirm new appointment' : 'confirm changes',
-					noBtnText: 'cancel',
-					affirmativeCallback: appointment.save.ajax,
+					btntext_yes: newAppt ? 'confirm new appointment' : 'confirm changes',
+					btntext_no: 'cancel',
+					callback_affirmative: appointment.save.ajax,
 				})
-				// if (changes && !changes.isEmpty()){
-				// 	changes.forEach(change => {
-				// 		for (attr in change){
-				// 			let old = change[attr].old, ele = $("#Confirm").find(`.${attr}`);
-				// 			if (attr == 'date_time') {
-				// 				let oldMoment = moment(old,'YYYY-MM-DD HH:mm:ss'),
-				// 						oldRel = `was ${oldMoment.fromNow()}`,
-				// 						eleRel = $("#Confirm").find(`.date_time_rel`);
-				// 				old = oldMoment.format('h:mma [on] M/D/YYYY');
-				// 				eleRel.css('text-decoration','line-through');
-				// 				// $(`<div class='bold'>appointment ${oldRel}</div>`).insertBefore(eleRel);
-				// 			}
-				// 			ele.css('text-decoration','line-through');
-				// 			$(`<div>${old}</div>`).insertBefore(ele);
-				// 			log({ele,old,attr,change});
-				// 		}
-				// 	})
-				// }
-				// appointment.save.ajax();
 			}else{
 				let message = $("<div/>",{html:"<h3 class='pink'>Cannot save:</h3><ul></ul>",css:{textAlign:'left',display:'inline-block'}});
 				for (let detail of missing){
@@ -419,9 +417,15 @@ var appointment = {
 				data: data,
 				success:function(result){
 					appointment.update.calendar.feed(result);
-					blurTop('#checkmark');
+					blurTop('#checkmark',{
+						callback: function(){
+							unblurAll({fade:400});
+							appointment.schedules.check.updateDayAvailability(date,true);
+						},
+						delay: 1200,
+					});
 					let date = appointment.current.datetime.format('M/D/YYYY');
-					unblurAll(appointment.schedules.check.updateDayAvailability.bind(null,date,true), 1000);
+					// unblurAll(appointment.schedules.check.updateDayAvailability.bind(null,date,true), 1000);
 				}
 			})
 		},
@@ -429,13 +433,13 @@ var appointment = {
 	delete: {
 		confirm: function(){
 			let date = appointment.current.datetime,
-					status = ifu(appointment.current.chartnote.status,null);
+			status = ifu(appointment.current.chartnote.status,null);
 			log({note:appointment.current.chartnote,status:status});
 			let options = {
 				header: 'Delete Appointment?',
-				yesBtnText: 'yes delete now',
-				noBtnText: 'dismiss',
-				affirmativeCallback: appointment.delete.ajax,
+				btntext_yes: 'yes delete now',
+				btntext_no: 'dismiss',
+				callback_affirmative: appointment.delete.ajax,
 			}
 			if (status !== null && status !== 'not signed'){
 				feedback('Unable to Delete','You are unable to delete any appointment with a signed chart note');
@@ -587,17 +591,17 @@ var appointment = {
 			dayAvailability: {},
 			displayErrors: function(options){
 				let errors = ifu(options.errors, appointment.schedules.check.errors, true), 
-						datetime = ifu(options.datetime, appointment.schedules.check.momentObj),
-						conflicts = ifu(options.conflicts, appointment.schedules.check.conflicts, true),
-						callbackAffirm = ifu(options.callback, null),
-						callbackNegate = ifu(options.goback, null),
-						duration = ifu(options.duration, appointment.schedules.check.duration);
+				datetime = ifu(options.datetime, appointment.schedules.check.momentObj),
+				conflicts = ifu(options.conflicts, appointment.schedules.check.conflicts, true),
+				callbackAffirm = ifu(options.callback, null),
+				callbackNegate = ifu(options.goback, null),
+				duration = ifu(options.duration, appointment.schedules.check.duration);
 				log({errors,datetime,conflicts,callbackAffirm,callbackNegate,duration},'displaying errors');
 				let display = $("<div/>",{
-						class: 'scheduleErrors',
-						html:`<h3 class='pink'>${datetime.format('h:mma')}${(duration ? moment(datetime).add(duration,'m').format('[-] h:mma') : "") + ' on ' + datetime.format('M/D/YY')}</h3><ul style='text-align:left'></ul>`,
-						css:{display:'inline-block'}
-					});
+					class: 'scheduleErrors',
+					html:`<h3 class='pink'>${datetime.format('h:mma')}${(duration ? moment(datetime).add(duration,'m').format('[-] h:mma') : "") + ' on ' + datetime.format('M/D/YY')}</h3><ul style='text-align:left'></ul>`,
+					css:{display:'inline-block'}
+				});
 				errors.reverse().forEach(error => display.find('ul').append(`<li>${error.toTitleCase()}</li>`));
 				
 				if (user.is('practitioner')) {
@@ -605,10 +609,10 @@ var appointment = {
 					confirm({
 						header: 'Schedule Conflict',
 						message: display,
-						yesBtnText: 'continue despite conflict',
-						noBtnText: 'go back',
-						affirmativeCallback: callbackAffirm,
-						negativeCallback: callbackNegate,
+						btntext_yes: 'continue despite conflict',
+						btntext_no: 'go back',
+						callback_affirmative: callbackAffirm,
+						callback_negative: callbackNegate,
 						resolveOnClick: $("#Confirm").find('li'),
 					});
 					if (conflicts) {
@@ -619,10 +623,10 @@ var appointment = {
 							$("#Confirm").find('li').filter((l,li) => $(li).text().includes('Another Appointment')).append(`<br><i>${appt.extendedProps.patient.name} (${moment(appt.start).format('h:mma')} - ${moment(appt.end).format('h:mma')})<br>${appt.title}</i>`);													
 						})
 						let firstBeforeConflict = appointment.schedules.find.firstBeforeConflict(datetime),
-								firstAfterConflict = appointment.schedules.find.firstAfterConflict(datetime);
+						firstAfterConflict = appointment.schedules.find.firstAfterConflict(datetime);
 						if (firstBeforeConflict.exists()){
 							let firstTimeBeforeBtn = new Button({
-								classList: 'small yellow70 smallMargin resolve',
+								class_list: 'small yellow70 smallMargin resolve',
 								action: function(){firstBeforeConflict.click();},
 								id: 'firstTimeBeforeBtn',
 								text: firstBeforeConflict.text(),
@@ -631,7 +635,7 @@ var appointment = {
 						}
 						if (firstAfterConflict.exists()){
 							let firstTimeAfterBtn = new Button({
-								classList: 'small yellow70 smallMargin resolve',
+								class_list: 'small yellow70 smallMargin resolve',
 								action: function(){firstBeforeConflict.click();},
 								id: 'firstTimeAfterBtn',
 								text: firstAfterConflict.text(),
@@ -660,18 +664,18 @@ var appointment = {
 			within: function(limits,test){
 				if (test.duration) test.end = moment(test.start).add(test.duration,'m');
 				let startWithin = (test.start.isSameOrAfter(limits.start) && test.start.isBefore(limits.end)),
-					endWithin = test.end ? (test.end.isAfter(limits.start) && test.end.isSameOrBefore(limits.end)) : true;
+				endWithin = test.end ? (test.end.isAfter(limits.start) && test.end.isSameOrBefore(limits.end)) : true;
 				if (debug.level(0)) console.log(`${moment(test.start).format('h:mma')} & ${moment(test.end).format('h:mma')} within ${moment(limits.start).format('h:mma')} - ${moment(limits.end).format('h:mma')}?`);
 				if (debug.level(0)) console.log(`start:${startWithin?'true':'false'} end:${endWithin?'true':'false'}, both:${(startWithin&&endWithin)?'true':'false'}`)
-				return startWithin && endWithin;
+					return startWithin && endWithin;
 			},
 			overlaps: function(limits,test){
 				if (test.duration) test.end = moment(test.start).add(test.duration,'m');
 				let startWithin = (test.start.isSameOrAfter(limits.start) && test.start.isBefore(limits.end)),
-					endWithin = test.end ? (test.end.isAfter(limits.start) && test.end.isSameOrBefore(limits.end)) : false;
+				endWithin = test.end ? (test.end.isAfter(limits.start) && test.end.isSameOrBefore(limits.end)) : false;
 				if (debug.level(0)) console.log(`${moment(test.start).format('h:mma')} & ${moment(test.end).format('h:mma')} within ${moment(limits.start).format('h:mma')} - ${moment(limits.end).format('h:mma')}?`);
 				if (debug.level(0)) console.log(`start:${startWithin?'true':'false'} end:${endWithin?'true':'false'}, both:${(startWithin&&endWithin)?'true':'false'}`)
-				return startWithin || endWithin;
+					return startWithin || endWithin;
 			},
 			all: function(){
 				if (!appointment.schedules.check.momentObj) {
@@ -714,7 +718,7 @@ var appointment = {
 			},
 			againstCurrentAppts: function(){
 				var appts = appointment.schedules.anonEvents, test = appointment.schedules.check.momentObj, duration = appointment.schedules.check.duration,
-						practitioner = appointment.current.practitioner, uid = appointment.current.uid;
+				practitioner = appointment.current.practitioner, uid = appointment.current.uid;
 				let testObj = {start:test,duration:duration};
 				if (debug.level(0)) console.groupCollapsed(`check ${testObj.start.format('M/D')} start:${testObj.start.format("h:mma")}, duration:${testObj.duration} againstCurrentAppts`);
 				if (debug.level(0)) log(testObj,'test obj');
@@ -752,10 +756,10 @@ var appointment = {
 			},
 			againstTimeOfDay: function(timeBlock){
 				var testStart = appointment.schedules.check.momentObj, within = appointment.schedules.check.within,
-					blockStart = moment(testStart.format("MM-DD-YYYY") + " " + timeBlock.start_time, "MM-DD-YYYY hh:mma"),
-					blockEnd = moment(testStart.format("MM-DD-YYYY") + " " + timeBlock.end_time, "MM-DD-YYYY hh:mma"),
-					duration = appointment.schedules.check.duration,
-					testEnd = duration ? moment(testStart).add(duration,'m') : null;
+				blockStart = moment(testStart.format("MM-DD-YYYY") + " " + timeBlock.start_time, "MM-DD-YYYY hh:mma"),
+				blockEnd = moment(testStart.format("MM-DD-YYYY") + " " + timeBlock.end_time, "MM-DD-YYYY hh:mma"),
+				duration = appointment.schedules.check.duration,
+				testEnd = duration ? moment(testStart).add(duration,'m') : null;
 				var startOk = (testStart.isSameOrAfter(blockStart) && testStart.isBefore(blockEnd)),
 				endOk = testEnd ? (testEnd.isAfter(blockStart) && testEnd.isSameOrBefore(blockEnd)) : true;
 				return within({start:blockStart,end:blockEnd},{start:testStart,end:testEnd});
@@ -775,8 +779,8 @@ var appointment = {
 				if (!date) date = moment().format('M/D/YYYY');
 				appointment.reset();
 				let workingDate = moment(date,'M/D/YYYY'), lastDate = moment(date,'M/D/YYYY'),
-						slots = appointment.form.timeSlots.get().map(slot => $(slot).data('value').split(":")),
-						duration = appointment.current.duration || null;
+				slots = appointment.form.timeSlots.get().map(slot => $(slot).data('value').split(":")),
+				duration = appointment.current.duration || null;
 				if (!thisDayOnly){
 					workingDate.startOf('month').subtract(1,'M').subtract(7,'d');
 					lastDate.endOf('month').add(1,'M').add(7,'d');
@@ -793,7 +797,7 @@ var appointment = {
 			},
 			dayHasAvailability: function(date){
 				let findMe = moment(date).format('M/D/YYYY'), availability = appointment.schedules.check.dayAvailability[findMe],
-						durationCheck = true;
+				durationCheck = true;
 				if (availability == undefined) {
 					appointment.schedules.check.updateDayAvailability(findMe);
 					availability = appointment.schedules.check.dayAvailability[findMe]
@@ -808,7 +812,7 @@ var appointment = {
 		find: {
 			firstBeforeConflict: function(datetime){
 				let match = appointment.form.timeSlots.get().find(slot => $(slot).text() == datetime.format("h:mm a")),
-						previous = $(match).prev();
+				previous = $(match).prev();
 				while(previous.hasClass('disabled')){
 					previous = previous.prev();
 				}
@@ -816,7 +820,7 @@ var appointment = {
 			},
 			firstAfterConflict: function(datetime){
 				let match = appointment.form.timeSlots.get().find(slot => $(slot).text() == datetime.format("h:mm a")),
-						next = $(match).next();
+				next = $(match).next();
 				while(next.hasClass('disabled')){
 					next = next.next();
 				}
@@ -960,26 +964,26 @@ var appointment = {
 					confirm({
 						header: 'No Chart Note',
 						message: 'There is no chart note for this appointment yet.<h3 class="pink">Create Charte Note Now?</h3>',
-						yesBtnText: 'create note',
-						noBtnText: 'dismiss',
-						affirmativeCallback: chartnote.edit,
+						btntext_yes: 'create note',
+						btntext_no: 'dismiss',
+						callback_affirmative: chartnote.edit,
 					})
 				}
 				else if (info.status == 'not signed'){
 					confirm({
 						header: 'Unfinished Chart Note',
 						message: 'There is an existing chart note that has not been finished and signed.<h3 class="pink">Edit + Finish Chart Note?</h3>',
-						yesBtnText: 'edit note',
-						noBtnText: 'dismiss',
-						affirmativeCallback: chartnote.edit,
+						btntext_yes: 'edit note',
+						btntext_no: 'dismiss',
+						callback_affirmative: chartnote.edit,
 					})
 				}else{
 					confirm({
 						header: 'Chart Note Complete',
 						message: 'The chart note for this appointment is finished and signed.<h3 class="pink">View chart note?</h3>',
-						yesBtnText: 'view note',
-						noBtnText: 'dismiss',
-						affirmativeCallback: chartnote.view.bind(null,info.id),
+						btntext_yes: 'view note',
+						btntext_no: 'dismiss',
+						callback_affirmative: chartnote.view.bind(null,info.id),
 					})
 				}
 				return false;
@@ -995,9 +999,9 @@ var appointment = {
 					confirm({
 						header: 'No Invoice Yet',
 						message: 'There has been no invoice created for this appointment.<h3 class="pink">Create invoice now?</h3>',
-						yesBtnText: 'create invoice',
-						noBtnText: 'dismiss',
-						affirmativeCallback: invoice.edit,
+						btntext_yes: 'create invoice',
+						btntext_no: 'dismiss',
+						callback_affirmative: invoice.edit,
 					})
 
 				}
@@ -1006,9 +1010,9 @@ var appointment = {
 					confirm({
 						header: 'Pending Invoice',
 						message: 'This invoice is missing payment and has not been settled.<h3 class="pink">Edit + Settle Invoice?</h3>',
-						yesBtnText: 'edit invoice',
-						noBtnText: 'dismiss',
-						affirmativeCallback: invoice.edit,
+						btntext_yes: 'edit invoice',
+						btntext_no: 'dismiss',
+						callback_affirmative: invoice.edit,
 					})
 				}else{
 					// console.log("confirming");
@@ -1016,9 +1020,9 @@ var appointment = {
 					confirm({
 						header: 'Settled Invoice',
 						message: 'This invoice is complete with payments and is settled.<h3 class="pink">View Invoice?</h3>',
-						yesBtnText: 'view invoice',
-						noBtnText: 'dismiss',
-						affirmativeCallback: invoice.view.modal.bind(null,info.id),
+						btntext_yes: 'view invoice',
+						btntext_no: 'dismiss',
+						callback_affirmative: invoice.view.modal.bind(null,info.id),
 					})
 				}
 				return false;
@@ -1042,18 +1046,21 @@ var appointment = {
 	},
 	initialize: {
 		all: function(){
-			if ($("#Appointment").dne()) return;
-			appointment.list = jsonIfValid($("#AppointmentsFullCall").data('schedule'));
-			appointment.reset();
-			notes.resetForm();
-			if (user.is('patient')) appointment.defaultPatient = user.current;
-			appointment.schedules.businessHours = $("#BizHours").data();
-			appointment.schedules.practitioners = $("#Practitioners").data('schedule');
-			appointment.schedules.anonEvents = $("#AnonFeed").data('schedule');
-			appointment.form.timeSlots = $("#TimeSelector").find("li");
-			$.each(appointment.initialize, function(name, initFunc){
-				if (!['all','externalSelectAndLoad'].includes(name) && typeof initFunc === 'function') initFunc();
-			})
+			init('#Appointment',function(){
+				appointment.list = $("#AppointmentsFullCall").data('schedule').json_if_valid();
+				appointment.reset();
+				notes.resetForm();
+				if (user.is('patient')) appointment.defaultPatient = user.current;
+				appointment.schedules.businessHours = $("#BizHours").data();
+				appointment.schedules.practitioners = $("#Practitioners").data('schedule');
+				appointment.schedules.anonEvents = $("#AnonFeed").data('schedule');
+				appointment.form.timeSlots = $("#TimeSelector").find("li");
+				let editor = appointment.editor, informational = appointment.info;
+				appointment.editor.modal = $("#CreateAppointment");
+				$.each(appointment.initialize, function(name, initFunc){
+					if (!['all','externalSelectAndLoad'].includes(name) && typeof initFunc === 'function') initFunc();
+				})
+			});
 		},
 		calendar: function(){
 			$(".ChangeTitle").attr('id','ChangeTitle');
@@ -1067,7 +1074,7 @@ var appointment = {
 				[$(".datepick").on('click','.unavailable', function(){
 					console.log('hi');
 				})]
-			]);
+				]);
 			if (user.is('patient')){
 				console.log('loading patient calendar lol');
 			}else if (user.is('practitioner')){
@@ -1078,7 +1085,6 @@ var appointment = {
 				};
 				appointment.calendar.element = new FullCalendar.Calendar(target[0], {
 					plugins: ['dayGrid','list', 'timeGrid', 'interaction', 'rrule', 'momentTimezone'],
-					timeZone: tz,
 					header: header,
 					height: "auto",
 					dateClick: function(info){
@@ -1086,70 +1092,67 @@ var appointment = {
 						if (!check){
 							appointment.schedules.check.displayErrors({callback: function(){
 								let date = moment(info.date).format("M/D/YYYY"), time = moment(info.date).format("h:mma");
-				        appointment.form.open.create({date:date,time:time});							
+								appointment.editor.open();
 							}})
 						}else{
 							let date = moment(info.date).format("M/D/YYYY"), time = moment(info.date).format("h:mma");
-			        appointment.form.open.create({date:date,time:time});							
+							appointment.editor.open();
 						}
-		      },
-	        eventClick: function(info){
-	        	var ev = info.event, details = $.extend(true, {}, ev.extendedProps), clonedProps = $.extend(true, {}, ev.extendedProps), ele = $(info.el);
-            appointment.bypassCheck = true;
-            if (ele.hasClass('appointment')){
-              uids.set({
-              	Appointment: details.uid,
-              	Practitioner: details.practitioner.id,
-              	ChartNote: details.chartNote.id
-              });
-              appointment.previous.set({
-              	patient: clonedProps.patient.id,
-              	practitioner: clonedProps.practitioner.id,
-              	services: clonedProps.services.ids,
-              	datetime: moment(ev.start),
-              });
-              try{
-	              appointment.form.open.edit({
-	              	uid: details.uid,
-	              	uuid: details.googleUuid,
-	              	patient: details.patient.id,
-	              	practitioner: details.practitioner.id,
-	              	services: details.services.ids,
-	              	datetime: moment(ev.start),
-	              	chartnote: details.chartNote,
-	              	invoice: details.invoice,
-	              	forms: details.forms,
-	              });
-              }catch(error){
-              	log({error});
-              }
-            }
-            appointment.bypassCheck = false;
-	        },  
-	        defaultView:"timeGridWeek",
-	        allDaySlot: false,
-	        minTime:$("#BizHours").data("earliest"),
-	        maxTime:$("#BizHours").data("latest"),
-	        eventSources: 
-	        [
-		        {
-		        	events: jsonIfValid($("#AppointmentsFullCall").data('schedule')),
-		        	id: "appointments"
-		        },
-		        {
-		        	events: jsonIfValid($("#NonEhr").data('schedule')),
-		        	id: "nonEHR"
-		        }    
-	        ],
-	        businessHours: $("#BizHours").data('fullcal'),
-	        eventRender: function(info){
-	     //    	var eventData = info.event, ele = info.el;
-						// var extProps = details.extendedProps, type = extProps.type, types = type.split(":").join(" ");
+					},
+					eventClick: function(info){
+						var ev = info.event, details = $.extend(true, {}, ev.extendedProps), clonedProps = $.extend(true, {}, ev.extendedProps), ele = $(info.el);
+						appointment.bypassCheck = true;
+						if (ele.hasClass('appointment')){
+							uids.set({
+								Appointment: details.uid,
+								Practitioner: details.practitioner.id,
+								ChartNote: details.chartNote.id
+							});
+							appointment.previous.set({
+								patient: clonedProps.patient.id,
+								practitioner: clonedProps.practitioner.id,
+								services: clonedProps.services.ids,
+								datetime: moment(ev.start),
+							});
+							try{
+								appointment.form.open.edit({
+									uid: details.uid,
+									uuid: details.googleUuid,
+									patient: details.patient.id,
+									practitioner: details.practitioner.id,
+									services: details.services.ids,
+									datetime: moment(ev.start),
+									chartnote: details.chartNote,
+									invoice: details.invoice,
+									forms: details.forms,
+								});
+							}catch(error){
+								log({error});
+							}
+						}
+						appointment.bypassCheck = false;
+					},  
+					defaultView:"timeGridWeek",
+					allDaySlot: false,
+					minTime:$("#BizHours").data("earliest"),
+					maxTime:$("#BizHours").data("latest"),
+					eventSources: 
+					[
+					{
+						events: system.validation.json($("#AppointmentsFullCall").data('schedule')),
+						id: "appointments"
+					},
+					{
+						events: system.validation.json($("#NonEhr").data('schedule')),
+						id: "nonEHR"
+					}    
+					],
+					businessHours: $("#BizHours").data('fullcal'),
+					eventRender: function(info){
 						$(info.el).addClass(info.event.extendedProps.type.split(":").join(' '));
-	        	// applyEventClasses(eventData,$(ele));
 	        },
 	        nowIndicator: true
-		    })
+	      })
 
 				appointment.calendar.element.render();
 				resizeFcCalendar();
@@ -1229,9 +1232,9 @@ var appointment = {
 							confirm({
 								header: 'Select Patient First',
 								message: 'A patient must be selected to determine which services are available',
-								yesBtnText: 'select patient now',
-								noBtnText: 'go back',
-								affirmativeCallback: function(){
+								btntext_yes: 'select patient now',
+								btntext_no: 'go back',
+								callback_affirmative: function(){
 									unblur();
 									appointment.form.details.open('patient');
 								}
@@ -1239,76 +1242,52 @@ var appointment = {
 						}
 					})
 				}]
-			]);
+				]);
 		},
 		forms: function(){
-			let forms = $("#createAppointment, #editAppointment");
-			forms.find(".item").hide();
-			appointment.save.btn = forms.find(".submitForm");
-			appointment.save.btn.addClass('disabled').off('click',saveModel).on('click',appointment.save.confirm).text("save appointment");
-			appointment.form.service.addOnBtn = $("#ServiceSummary").find(".button.add");
-			appointment.form.service.removeBtn = $("#ServiceSummary").find(".button.remove");
-			appointment.delete.btn = new Button({
-				url: 'Appointment/delete',
-				classList: 'small pink70',
-				id: 'DeleteApptBtn',
-				action: appointment.delete.confirm,
-				text: 'delete',
-				insertAfter: $("#editAppointment").find('.button.submitForm')
-			})
-			appointment.form.chartnote.btn = new Button({
-				url: 'ChartNote/index',
-				classList: 'small yellow',
-				id: 'CheckNoteBtn',
-				action: appointment.form.chartnote.check,
-				text: 'chart note',
-				insertAfter: $("#DeleteApptBtn")
-			})
-			appointment.form.invoice.btn = new Button({
-				url: 'Invoice/index',
-				classList: 'small yellow70',
-				id: 'InvoiceBtn',
-				action: appointment.form.invoice.check,
-				text: 'invoice',
-				insertAfter: $("#CheckNoteBtn")
-			})
-			appointment.form.details.selectors = $("#SelectServices, #SelectPractitioner, #SelectDate, #SelectTime");
-			appointment.form.details.display = $("#ApptDetails");
-			appointment.form.details.openers = $("#ApptDetails").find('.edit');
-			init([
-				['#editAppointment',function(){$(this).find("h1").first().remove()}],
-				[appointment.form.service.addOnBtn, function(){$(this).on('click',appointment.form.service.chooseAddOn)}],
-				[appointment.form.service.removeBtn, function(){$(this).on('click',appointment.form.service.remove)}],
-				[$("#SelectServices").find(".conditionalLabel"), function(){
-						$(this).on('click','.override',function(){
-							appointment.services.override = true;
-							appointment.update.servicesLabel();
-							appointment.services.removeFilter('patient');
-							appointment.update.categories();
-						})					
-				}],
-				["#EditApptBtn", function(){$(this).on('click',appointment.form.open.edit)}],
-				[appointment.form.details.openers, 'openFx', function(){
-					let addon = appointment.has('services');
-					$(this).on('click', appointment.form.details.open.bind(null,$(this).data('value'),addon));
-				}],
-				[$(".progressBar"), function(){
-					$(this).on('click','.back',function(){
-						let box = $(this).closest(".selector"), steps = box.find('.step'), thisStep = steps.filter(':visible'), lastStep = thisStep.prev('.step');
-						steps.hide();
-						if (lastStep.is("#CategoryDetails")) appointment.services.removeFilter('category');
-						lastStep.resetActives().fadeIn();
-						if (lastStep.prev('.step').dne()) $(this).fadeOut();
-					});
-				}],
-			]);
+			// let forms = $("#createAppointment, #editAppointment");
+			// forms.find(".item").hide();
+			// appointment.save.btn = forms.find(".submitForm");
+			// appointment.save.btn.addClass('disabled').off('click',saveModel).on('click',appointment.save.confirm).text("save appointment");
+			// appointment.form.service.addOnBtn = $("#ServiceSummary").find(".button.add");
+			// appointment.form.service.removeBtn = $("#ServiceSummary").find(".button.remove");
+			// appointment.form.details.selectors = $("#SelectServices, #SelectPractitioner, #SelectDate, #SelectTime");
+			// appointment.form.details.display = $("#ApptDetails");
+			// appointment.form.details.openers = $("#ApptDetails").find('.edit');
+			// init([
+				// ['#editAppointment',function(){$(this).find("h1").first().remove()}],
+				// [appointment.form.service.addOnBtn, function(){$(this).on('click',appointment.form.service.chooseAddOn)}],
+				// [appointment.form.service.removeBtn, function(){$(this).on('click',appointment.form.service.remove)}],
+				// [$("#SelectServices").find(".conditionalLabel"), function(){
+				// 	$(this).on('click','.override',function(){
+				// 		appointment.services.override = true;
+				// 		appointment.update.servicesLabel();
+				// 		appointment.services.removeFilter('patient');
+				// 		appointment.update.categories();
+				// 	})					
+				// }],
+				// ["#EditApptBtn", function(){$(this).on('click',appointment.form.open.edit)}],
+				// [appointment.form.details.openers, 'openFx', function(){
+				// 	let addon = appointment.has('services');
+				// 	$(this).on('click', appointment.form.details.open.bind(null,$(this).data('value'),addon));
+				// }],
+				// [$(".progressBar"), function(){
+				// 	$(this).on('click','.back',function(){
+				// 		let box = $(this).closest(".selector"), steps = box.find('.step'), thisStep = steps.filter(':visible'), lastStep = thisStep.prev('.step');
+				// 		steps.hide();
+				// 		if (lastStep.is("#CategoryDetails")) appointment.services.removeFilter('category');
+				// 		lastStep.resetActives().fadeIn();
+				// 		if (lastStep.prev('.step').dne()) $(this).fadeOut();
+				// 	});
+				// }],
+				// ]);
 		},
 		externalSelectAndLoad: function(options = {}){
 			let target = ifu(options.target, null),
-					url = ifu(options.url, null),
-					callback = ifu(options.callback, null),
-					btnText = ifu(options.btnText, null),
-					errors = [];
+			url = ifu(options.url, null),
+			callback = ifu(options.callback, null),
+			btnText = ifu(options.btnText, null),
+			errors = [];
 			if (!target) errors.push('invalid target');
 			if (!url) errors.push('invalid url');
 			if (callback && typeof callback != 'function') errors.push('invalid callback');
@@ -1321,10 +1300,10 @@ var appointment = {
 			init([
 				['.selectNewAppt',function(){
 					$(this).on('click',function(){
-				    $(".selectNewAppt").hide();
-				    $("#ApptLegend, #ApptsList").slideFadeIn();
-				    $("#CurrentAppt").slideFadeOut();
-				    $('.confirmApptBtn').addClass('disabled');						
+						$(".selectNewAppt").hide();
+						$("#ApptLegend, #ApptsList").slideFadeIn();
+						$("#CurrentAppt").slideFadeOut();
+						$('.confirmApptBtn').addClass('disabled');						
 					})
 				}],
 				['.confirmApptBtn',function(){
@@ -1335,7 +1314,7 @@ var appointment = {
 							return false;
 						}
 						var active = $(".appt").filter('.active'), 
-								apptId = active.data('uid') || uids.get('Appointment');
+						apptId = active.data('uid') || uids.get('Appointment');
 						if (!apptId) {
 							feedback('No Appointment Selected','Pick an appointment first, silly.');
 							return;
@@ -1352,11 +1331,11 @@ var appointment = {
 					let appt = $(this);
 					$(this).on('click',function(ev){
 						log({ev:ev,this:this,appt:appt,isactive:appt.hasClass('active'),legend:appt.closest("#ApptLegend")},'appt');
-				    if (appt.hasClass('active') || $("#ApptLegend").dne()){
-				        return;
-				    }else{
-				        $(".appt").removeClass('active');
-				        log({appt:appt, data:appt.data()},'MADE IT');
+						if (appt.hasClass('active') || $("#ApptLegend").dne()){
+							return;
+						}else{
+							$(".appt").removeClass('active');
+							log({appt:appt, data:appt.data()},'MADE IT');
 				        // return;	
 				        appt.addClass('active');     
 				        $("#ApptSummary").html($(this).html().split("<br>").join(", ") + "<br>" + $(this).data('services'));
@@ -1368,15 +1347,10 @@ var appointment = {
 				        		if ($(this).hasClass(searchClass)) $(".confirmApptBtn").text(btnText[searchClass]);
 				        	}
 				        }else	log(options,'define btnText for more flex');
-				    }						
-					})
+				      }						
+				    })
 				}],
-			]);
+				]);
 		},
-		// formLink: function(){
-		// 	var info = filterUninitialized('#FormInfo');
-		// 	info.on('click','.link',checkFormStatus);
-		// 	info.data('initialized',true);			
-		// }
 	},
 };

@@ -24,7 +24,7 @@ class ScheduleController extends Controller
     }
 
     //SCHEDULES
-        public function EditUserSchedule($model, $uid){
+        public function EditSchedule($model, $uid){
             return view('portal.admin.schedule-edit',[
                 'model' => $model,
                 "uid" => $uid
@@ -33,6 +33,7 @@ class ScheduleController extends Controller
         public function EditPracticeSchedule(){
             return view('portal.admin.schedule-edit',[
                 'model' => 'Practice',
+                'uid' => Practice::getFromSession()->id
             ]);
         }
         public function SavePracticeSchedule(Request $request){

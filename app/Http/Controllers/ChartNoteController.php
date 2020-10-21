@@ -41,7 +41,7 @@ class ChartNoteController extends Controller
   //   $patient = $appt->patient;
   //   try{
   //     $chartNote->patient_id = $patient->id;
-  //     $chartNote->practitioner_id = Auth::user()->practitionerInfo->id;
+  //     $chartNote->practitioner_id = Auth::user()->practitioner->id;
   //     $chartNote->appointment_id = $appt->id;
   //     $chartNote->autosave = $request->submissions;
   //     $chartNote->notes = $request->notes;
@@ -80,7 +80,7 @@ class ChartNoteController extends Controller
         $submissionIds[] = $submission->id;
       }
       $chartNote->patient_id = $patient->id;
-      $chartNote->practitioner_id = Auth::user()->practitionerInfo->id;
+      $chartNote->practitioner_id = Auth::user()->practitioner->id;
       $chartNote->appointment_id = $appt->id;
       $chartNote->signature = $signature;
       $chartNote->notes = $request->notes;

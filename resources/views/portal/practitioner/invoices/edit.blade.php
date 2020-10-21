@@ -24,7 +24,7 @@
 		'appointment_id' => $apptId,
 		'uid' => $invoice ? $invoice->id : 'null',
 		'autosave' => $invoice ? json_encode($invoice->autosave) : 'null',
-		'invoiced_to_user_id' => $patient->userInfo->id,
+		'invoiced_to_user_id' => $patient->user->id,
 		'patient_id' => $patient->id,
 		'notes' => $invoice ? $invoice->notes : 'null',
 	];

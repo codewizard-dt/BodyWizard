@@ -21,8 +21,8 @@ class CreateFormsTable extends Migration
             $table->string('form_type');
             $table->string('user_type');
             $table->json('settings')->nullable()->default(null);
-            $table->json('settings_json')->nullable()->default(null);
-            $table->json('full_json');
+            $table->json('sections')->nullable()->default(null);
+            $table->json('full_json')->nullable()->default(null);
             $table->unsignedInteger('display_order')->default(1);
             $table->boolean('hidden')->default(false);
             $table->boolean('active')->default(false);

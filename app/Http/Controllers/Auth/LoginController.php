@@ -25,7 +25,7 @@ class LoginController extends Controller
      *
      * @var string
      */
-    protected $redirectTo = '/checkmark';
+    protected $redirectTo = '/portal/launchpad';
 
     /**
      * Create a new controller instance.
