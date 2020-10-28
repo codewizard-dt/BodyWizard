@@ -1,11 +1,12 @@
-// import { RRule, RRuleSet, rrulestr } from 'rrule';
 import {forms, Forms} from './forms';
 import {model, table, Models} from './models';
+import Moment from 'moment';
 
-$(".jump").on("click",function(){
-  var target = "#"+$(this).data("target");
-  $.scrollTo(target);
-});
+
+// $(".jump").on("click",function(){
+//   var target = "#"+$(this).data("target");
+//   $.scrollTo(target);
+// });
 export const debug = {
   get y() {return debug.bool},
   get d() {return debug.depth},
@@ -204,7 +205,7 @@ class OptionBox {
     this.info.append(ele);
     return this;
   }
-  reset_header (str) {log({str}); this.header.html(str)}
+  reset_header (str) {this.header.html(str)}
   reset_info (ele = null) {
     this.info.html('');
     if (ele) this.add_info(ele);
@@ -480,6 +481,7 @@ class ToolTip {
     this.on_hide = options.on_hide || null;
     this.match_border = options.match_border || false;
     this.hide_on = options.hide_on || '';
+    this.tracking = options.tracking || false;
     this.ele.data('class_obj',this).slideFadeOut(0);
     this.hide_btn = ifu(options.hide_btn,true);
     if (this.hide_btn) {
@@ -502,7 +504,7 @@ class ToolTip {
       let target = $(ev.relatedTarget), next_tip = ToolTip.find_closest_tooltip(target);
       if (!target.is(tip.target)) tip.hide(ev);
       if (next_tip) next_tip.show(ev);
-    }).on('mouseenter',this.mousein.bind(this));
+    }).on('mouseenter', this.mousein.bind(this));
   }
   message_append (msg) {
     if (typeof msg == 'object') {
@@ -522,16 +524,14 @@ class ToolTip {
     this.move(ev, false);
   }
   move (ev, animate = true) {
-    let target = $(ev.toElement);
-    if (target.isInside('.tooltip')) return;
-    // this.mouse_pos = ev;
-    let ele = this.ele[0].getBoundingClientRect();
-    // log({view:view(),body:body(),ele,pos:this.position});
-    if (animate) this.ele.animate(this.position, 250);
-    else this.ele.css(this.position);
-    // this.check_overflow();
+    let target = ev ? $(ev.toElement) : null;
+    if (target && target.isInside('.tooltip')) return;
+    let pos = this.tracking ? this.position_track : this.position_fixed;
+    if (animate) this.ele.animate(pos, 250);
+    else this.ele.css(pos);
   }
   track (ev) {
+    if (!this.tracking) return;
     let move = this.move.bind(this,ev), tooltip = this;
     this.mouse_pos = ev;
     if (!tooltip.track_timeout) {
@@ -554,25 +554,31 @@ class ToolTip {
     // this.track_timeout = null;
     // if (this.on_hide && typeof this.on_hide == 'function') this.on_hide();
   }
-  check_overflow () {
-    // let is_visible = this.ele.isVisible(), scroll_bar_width = system.ui.scroll.bar_width();
-    // if (!is_visible.right || !is_visible.bottom) {
-    //   if (!is_visible.right) this.left -= (is_visible.ele_box.right - is_visible.parent_box.right);
-    //   if (!is_visible.bottom) this.top -= (is_visible.ele_box.height + 40);
-    //   this.ele.css({top:this.top,left:this.left});      
-    // }
+  check_right () {
+    let box = this.ele[0].getBoundingClientRect(), v = view(),
+      border = {right: this.mouse.x + box.width + system.ui.scroll.bar_width()};
+    if (border.right > v.width) this.ele.css({right: 10, left:'unset'});
   }
-  get position () {
+  get position_track () {
     let box = this.ele[0].getBoundingClientRect(), v = view(),
       border = {right: this.mouse.x + box.width + system.ui.scroll.bar_width(), bottom: this.mouse.y + box.height},
       pos_adjusted = {top: (border.bottom > v.height) ? this.mouse.y - box.height - 20 : this.mouse.y};
     if (border.right > v.width) {
       pos_adjusted.right = 10; this.ele.css({left: 'unset'});
-    }
-    else {
+    } else {
       this.ele.css({right: 'unset'}); pos_adjusted.left = this.mouse.x;
     }
-    // log({box,border,pos_adjusted})
+    return pos_adjusted;
+  }
+  get position_fixed () {
+    let box_ele = this.ele[0].getBoundingClientRect(), box_target = this.target[0].getBoundingClientRect(), v = view(),    border = {right: box_target.x + box_ele.width + system.ui.scroll.bar_width(), bottom: box_target.bottom + box_ele.height, top: box_target.top - box_ele.height - 10}, pos_adjusted = {top: (border.top > 10) ? border.top : box_target.bottom + 10};
+    if (border.right > v.width) {
+      pos_adjusted.right = 10; this.ele.css({left: 'unset'});
+    } else {
+      this.ele.css({right: 'unset'}); pos_adjusted.left = box_target.x;
+    }
+    // log({pos_adjusted,view:v, border, box_target, relPos: box_target.y / v.height});
+
     return pos_adjusted;
   }
   set mouse_pos (ev) {
@@ -584,6 +590,10 @@ class ToolTip {
   static hide_all (time = 0) {
     let tip = $('.tooltip').filter(':visible');
     if (tip.exists()) tip.each((t,tip) => $(tip).data('class_obj').hide(undefined,time));
+  }
+  static find_containing_tooltip (ele) {
+    let tt = ele.closest('.tooltip');
+    return tt.exists() ? tt.getObj() : null;
   }
   static find_closest_tooltip (ele) {
     let tooltip = ele.data('tooltip'), parents = ele.parents();
@@ -608,7 +618,7 @@ class Warning {
   }
 };
 class Autosave {
-  constructor (options) {
+  constructor (options = {}) {
     try {
       for (let option in options) {this[option] = options[option]}
       if (!this.send) throw new Error(`Autosave must have a 'send' ajax call`);
@@ -616,38 +626,46 @@ class Autosave {
         this.indicator = $(`<div/>`,{class:'autosave_indicator flexbox left'}).css({
           position: 'sticky', top: this.ele.getTopOffset(), left: 0, zIndex: 49, height: 0,
         }).slideFadeOut(0);
-        this.ele.prepend(this.indicator);
+        // this.ele.prepend(this.indicator);
+        this.indicator.prependTo(this.ele);
       }
       this.delay = this.delay || 10000;
       this.size = options.size || 2;
       this.message = options.message || 'changes saved';
+      this.spinner = null;
     } catch (error) {
       log({error});
     }
     log({autosave:this});
   }
 
-  async trigger (easing_fx = 'easeInOutSine') {
+  async trigger (options = {}) {
+    let easing_fx = options.easing_fx || 'easeInOutSine', message = options.message || null,
+      xhr = this.xhr;
+    if (message) this.message = message;
     log({autosave:this},'autosave trigger');
-    let autosave = this, spinner = null, five_seconds_less = (this.delay - 5000 >= 0) ? this.delay - 5000 : this.delay;
+    let autosave = this, five_seconds_less = (this.delay - 5000 >= 0) ? this.delay - 5000 : this.delay;
     if (this.timer_outer) clearTimeout(this.timer_outer)
     if (this.timer_inner) clearTimeout(this.timer_inner)
     if (this.bg) this.bg.slideFadeOut();
+    if (autosave.fadeout_timer != undefined) clearTimeout(autosave.fadeout_timer);
     this.timer_outer = setTimeout(async function(){
-      if (autosave.indicator) autosave.circle_create();
+      if (autosave.indicator && autosave.spinner == null) autosave.circle_create();
       autosave.timer_inner = setTimeout(async function(){
-        if (autosave.indicator) spinner = autosave.circle.spin(easing_fx);
-        let result = await autosave.send();
+        if (autosave.indicator) autosave.spinner = autosave.circle.spin(easing_fx);
+        autosave.xhr = await autosave.send();
+        let result = autosave.xhr;
         if (autosave.indicator) {
-          clearInterval(spinner);
+          clearInterval(autosave.spinner);
+          autosave.spinner = null;
           if (!result.error) {
             let checkmark = new Features.Icon({type:'checkmark',size:autosave.size});
             autosave.bg.html('').append(checkmark.img,$(`<span/>`,{text: autosave.message}).css({fontSize:`${autosave.size/2}em`,marginLeft: '5px'})).on('click',function(){$(this).slideFadeOut(1000)});
-            setTimeout(function(){autosave.bg.slideFadeOut(1000,function(){$(this).remove()})},5000);            
+            autosave.fadeout_timer = setTimeout(function(){autosave.bg.slideFadeOut(1000,function(){$(this).remove()})},5000);            
           } else {
             let x = new Features.Icon({type:'red_x',size:autosave.size});
             autosave.bg.html('').css({backgroundColor:'var(--pink10o)',borderColor:'var(--pink50)',color:'var(--pink)'}).append(x.img,$(`<span/>`,{text: result.error.message}).css({fontSize:`${autosave.size/2}em`,marginLeft: '5px'})).on('click',function(){$(this).slideFadeOut(1000)});
-            setTimeout(function(){autosave.bg.slideFadeOut(1000,function(){$(this).remove()})},5000);            
+            autosave.fadeout_timer = setTimeout(function(){autosave.bg.slideFadeOut(1000,function(){$(this).remove()})},5000);            
           }
         }        
         if (autosave.callback) autosave.callback(result);        
@@ -689,6 +707,7 @@ class Icon {
     for (let attr in this.data) {
       this[attr] = this.data[attr];
     }
+    // let ele = this.ele || this.
   }
 
   spin (easing_fx = 'easeInOutSine') {
@@ -708,7 +727,7 @@ class Icon {
         let percent = a / b.end;
         circle.g.css({transform:`rotate(${rotate_start*percent}deg)`});
         circle.dot.css({transform:`rotate(${rotate_start*percent}deg)`});
-      },complete: function(){
+      }, complete: function(){
         spinner = setInterval(function(){
           let increase_dash = (count % 200 < 100), up_percent = ease(0,count%100,1,100,100)/100;
           let percent = increase_dash ? up_percent : ease(0,count%100,100,-99,100)/100, arc_delta = circum*0.7*percent, radian_delta = 360*0.7*percent;
@@ -718,10 +737,15 @@ class Icon {
           circle.g.css({transform:`rotate(${group_angle}deg)`});
           count++;
         },interval/100);
+        circle.svg.addClass('spinner').data('class_obj',circle);
+        circle.spinner = spinner;
+
       }
     });
-    this.spinner = spinner;
-    return spinner;
+    return this.spinner;
+  }
+  clear_spinner () {
+    clearInterval(this.spinner);
   }
   static circle (options) {
     let size = options.size || 3, color = options.color || 'var(--gray97)';
@@ -797,6 +821,12 @@ class Icon {
     x.src = `/images/icons/x_styled_red.png`;
     $(x).css({width:`${size}em`,height:`${size}em`});
     return {img:$(x)};    
+  }
+  static clear_spinners_all () {
+    $('.spinner').each((s,spinner) => {$(spinner).getObj().clear_spinner()});
+  }
+  static clear_spinners_within (ele) {
+    $(ele).find('.spinner').each((s,spinner) => {$(spinner).getObj().clear_spinner()});
   }
 };
 
@@ -904,11 +934,12 @@ export const menu = {
   initialize: {
     all: function(){
       init('.menuBar', function() { new Menu($(this), $(this).data()) })
-      let x = 0, menu_list = menu.list();
+      let x = 0, menu_list = menu.list(), count = menu_list.length;
       while (x < menu_list.length){
         if (x == 0) menu_list[x].element.addClass('siteMenu');
         else if (x == 1) menu_list[x].element.addClass('topMenu');
         else menu_list[x].element.addClass(`subMenu${x-1}`);
+        menu_list[x].element.css({marginBottom: x == count - 1 ? '1em':'unset'});
         x++;
       }
     },
@@ -927,12 +958,12 @@ export const menu = {
         if (new_modal) {
           let split = target.split(':'), id = split[1] || null, 
             modal = id && $(`#${id}`).exists() ? $(`#${id}`) : $(`<div class='modalForm'${id ? `id='${id}'`:''}></div>`);
-          $(`#${id}`).find('.loading').each((c,circle) => clearInterval($(circle).data('spinner')));
+          Icon.clear_spinners_all();
           log({target,modal,response});
           modal.html(response);
           blurTop(modal);
         } else {
-          $(target).find('.loading').each((c,circle) => clearInterval($(circle).data('spinner')));
+          Icon.clear_spinners_all();
           if (replace_target) $(target).replaceWith(response);
           else $(target).html(response);
         }
@@ -958,8 +989,9 @@ export const menu = {
       log({error:{url:url,target:target}},'missing at least one: url || target');
       return;
     }
-    if (blurred) blur(target,'#loading');
-    else target.html().append(system.blur.modal.loading(loadingColor).svg);
+    blur(target,'#loading');
+    // if (blurred) blur(target,'#loading');
+    // else target.html().append(system.blur.modal.loading(loadingColor).svg);
     let result = await menu.fetch(url, target);
     if (callback && typeof callback == 'function') callback();
   }
@@ -985,7 +1017,13 @@ export const system = {
     isAdmin: function(){return (user.current && user.current.is_admin != undefined) ? user.current.is_admin : false;},
     set: function(userData){
       if (Object.isFrozen(user)) return;
-      user.current = userData;
+      user.current = new Models.User(userData);
+      if (user.current.is_super) {
+        window.system = system;
+        window.Models = Models;
+        window.Features = Features;
+        window.Forms = Forms;
+      }
       Object.freeze(user);
     },
     login: async () => {
@@ -1546,7 +1584,7 @@ export const system = {
       loading: (options) => {
         let loadingColor = options.loadingColor || 'var(--darkgray97)', size = options.size || 4;
         let circle = new Features.Icon({type:'circle', size:size, color:loadingColor});
-        circle.spin();
+        menu.spinner = circle.spin();
         circle.svg.addClass('loading').data('spinner',circle.spinner);
         return circle.svg;
       },
@@ -1635,6 +1673,7 @@ export const system = {
       if (ele) {
         if ($(ele).dne()) throw new Error(`can't unblur because ele doesn't exist`);
         else if ($(ele).find('.blur').dne()) return;
+        Icon.clear_spinners_within(ele);
       }
       if (fade) {
         top.fadeOut(fade,function(){
@@ -1654,6 +1693,7 @@ export const system = {
         repeat--;
         system.blur.undo({delay,fade,callback,repeat});
       } else if (callback && typeof callback == 'function') setTimeout(callback, delay);
+      Icon.clear_spinners_within('#ModalHome');
     },
     undoAll: (options) => {
       let callback = options.callback || null,
@@ -1720,7 +1760,7 @@ export const system = {
         let key_allowed = false;
         if (typeof values == 'string') key_allowed = system.ui.keyboard.allow.string_characters(values, key);
         if (typeof values == 'object') key_allowed = system.ui.keyboard.allow.regex(values, key);
-        meta_keys = system.ui.keyboard.allow.meta_keys(key);
+        let meta_keys = system.ui.keyboard.allow.meta_keys(key);
         return key_allowed || meta_keys;
       },
       allow: {
@@ -1918,6 +1958,59 @@ export const system = {
           }
         }
       },
+      moment_array: (dates, format = 'MM/DD/YYYY') => {
+        return dates.map(date => {
+          if (date instanceof Moment) return date;
+          else if (date instanceof Date) return moment(date);
+          else return Models.Schedule.string_to_moment(date, format);
+        })
+      },
+      sort: (dates, options = {}) => {
+        let dir = options.dir || 'asc',
+          format = options.format || 'MM/DD/YYYY',
+          separator = options.separator || ', ',
+          as_moment = options.as_moment || false;
+        if (typeof dates == 'string') return system.validation.date.sort_string(dates, separator, dir, format);
+        let moments = system.validation.date.moment_array(dates, format), 
+          ascending = system.validation.date.sort_moment(moments);
+        if (!as_moment) ascending = ascending.map(d => d.format(format));
+        return dir == 'desc' ? ascending.reverse() : ascending;
+      },
+      sort_moment: (moment_array) => moment_array.sort((a,b) => a.valueOf() - b.valueOf()),
+      sort_string: (date_str, separator = ', ', dir = 'asc', format = 'MM/DD/YYYY') => {
+        let array = date_str.split(separator), sorted = system.validation.date.sort(array, {dir, format});
+        return sorted.join(separator);
+      },
+      after: (dates, reference_date, options = {}) => {
+        let format = options.format || 'MM/DD/YYYY',
+          separator = options.separator || ', ',
+          sort = options.sort || null;
+        reference_date = reference_date instanceof Moment ? reference_date : Models.Schedule.string_to_moment(reference_date, format);
+        if (typeof dates == 'string') return system.validation.date.after_string(dates, reference_date, separator, format);
+        let moments = moments = system.validation.date.moment_array(dates, format), 
+          filtered = system.validation.date.after_moment(moments, reference_date);
+        if (sort) filtered = system.validation.date.sort(filtered, {dir:sort, as_moment:true});
+        return filtered.map(d => d.format(format));
+      },
+      after_moment: (moment_array, reference_moment) => moment_array.filter(m => m.isAfter(reference_moment)),
+      after_string: (moment_array, reference_moment, separator = ', ', format = 'MM/DD/YYYY') => {
+        throw new Error('after_string function not defined');
+      },
+      before: (dates, reference_date, options = {}) => {
+        let format = options.format || 'MM/DD/YYYY',
+          separator = options.separator || ', ',
+          sort = options.sort || null;
+        reference_date = reference_date instanceof Moment ? reference_date : Models.Schedule.string_to_moment(reference_date, format);
+        if (typeof dates == 'string') return system.validation.date.before_string(dates, reference_date, separator, format);
+        let moments = moments = system.validation.date.moment_array(dates, format), 
+          filtered = system.validation.date.before_moment(moments, reference_date);
+        if (sort) filtered = system.validation.date.sort(filtered, {dir:sort, as_moment:true});
+        return filtered.map(d => d.format(format));
+      },
+      before_moment: (moment_array, reference_moment) => moment_array.filter(m => m.isBefore(reference_moment)),
+      before_string: (moment_array, reference_moment, separator = ', ', format = 'MM/DD/YYYY') => {
+        throw new Error('before_string function not defined');
+      },
       comparison: (comparison_date, reference_date = null) => {
         if (!reference_date) reference_date = moment(); 
         return {
@@ -1926,8 +2019,8 @@ export const system = {
           is_after: comparison_date.isAfter(reference_date),
         }
       },
-      is_invalid: str => {
-        let date = moment(str,'MM/DD/YYYY',true), invalid = (!date._isValid && str != '');
+      is_invalid: (str, format = 'MM/DD/YYYY') => {
+        let date = moment(str,format,true), invalid = (!date._isValid && str != '');
         return invalid;
       },
       is_in_range: (moment, min, max) => {
@@ -2124,6 +2217,7 @@ export const system = {
     }
   },
 };
+// window.system = system;
 
 // export {menu,tabs,system,Menu,Icon,Autosave,Warning,ToolTip,Toggle,UpDown,List}
 
@@ -2243,9 +2337,7 @@ $(document).ready(function(){
   // const_map = {user,menu,model};
 })
 
-var systemModalList = ['Confirm','Warn','Error','Feedback','Refresh','Notification','ErrorMessageFromClient','AutoSaveWrap'],
-systemModals = $('#Confirm, #Warn, #Error, #Feedback, #Refresh, #Notification, #ErrorMessageFromClient, #AutoSaveWrap'), usertype,
-defaultTemplateInfo;
+var systemModalList = ['Confirm','Warn','Error','Feedback','Refresh','Notification','ErrorMessageFromClient','AutoSaveWrap'];
 
 (function($) {
   $.sanitize = function(input) {
@@ -2472,7 +2564,14 @@ Object.defineProperties(Array.prototype, {
   isEmpty: {value: function(){return this.length === 0}},
   notEmpty: {value: function(){return this.length > 0}},
   notSolo: {value: function(){return this.length > 1}},
-  smartJoin: {value: function(str = 'and', oxford = true){return system.validation.array.join(this,str,oxford)}},
+  smartJoin: {value: function(str, options = {}){
+    if (typeof str == 'object') options = str;
+    else options.merge({str});
+    str = ifu(options.str, 'and');
+    let oxford = options.oxford || true, map = options.map || null, array = this;
+    if (map) array = this.map(map);
+    return system.validation.array.join(array,str,oxford)}
+  },
   smartPush: {value: function(){
     let count = this.length, values = [...arguments];
     while (values.notEmpty()) {
@@ -2531,7 +2630,13 @@ Object.defineProperties(Object.prototype, {
   to_key_value_html: {value: function(){
     let wrapper = $('<div/>');
     for (let key in this) {
-      if (this.hasOwnProperty(key)) wrapper.append(`<div><b style='padding-right:5px'>${key}:</b><span>${this[key]}</span></div>`);
+      let item = $('<div/>',{class:key.toKeyString()});
+      if (this.hasOwnProperty(key)) wrapper.append(
+        item.append(
+          `<b style='padding-right:5px'>${key}:</b>`,
+          this[key] instanceof jQuery ? this[key].clone(true) : `<span>${this[key]}</span>`
+          )
+        );
     }
     return wrapper;
   }},
@@ -2596,7 +2701,8 @@ Object.defineProperties(String.prototype, {
     let split = this.valueOf().split('.'), obj_val = null;
     try{
       let first = split.shift();
-      obj_val = obj ? obj[first] : Models[first] || Forms[first] || Features[first] || system[first] || window[first];
+      if (first == 'system') obj_val = system;
+      else obj_val = obj ? obj[first] : Models[first] || Forms[first] || Features[first] || system[first] || window[first];
       if (!obj_val) throw new Error(`${first} not given or found in window or class_map`);
       if (obj_val) {
         while (split.length > 0) {

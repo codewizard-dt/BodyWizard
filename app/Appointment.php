@@ -27,6 +27,7 @@ class Appointment extends Model
   protected $casts = [
     'status' => 'array',
     'recurrence' => 'array',
+    'exclusions' => 'array',
     'date_time' => 'datetime',
   ];
   // protected $dateFormat = 'm/d/Y h:ia';  
@@ -95,7 +96,7 @@ class Appointment extends Model
   }
   static public function successResponse(){
     $appt = Appointment::find(getUid('Appointment'));
-    return ['uuid'=>$appt->uuid,'uid'=>$appt->id];
+    return ['google_id'=>$appt->google_id,'uid'=>$appt->id,'recurring_id'=>$appt->recurring_id];
   }
 
   static function allApptsStartingBetween(Carbon $min, Carbon $max, $eagerLoad = false){

@@ -44,12 +44,11 @@ window.RRule = RRule; window.RRuleSet = RRuleSet; window.rrulestr = rrulestr;
 import moment from 'moment';
 window.moment = moment;
 
-
-// import timeLinePlugin from '@fullcalendar/timeline';
+// import {Features} from
 
 // import {forms} from './forms';
 require('./functions');
-require('./models');
+// require('./models');
 
 
 // require('./menu');

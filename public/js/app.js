@@ -15502,21 +15502,24 @@ function parseRRule(input, dateEnv) {
 }
 function preparseRRuleStr(str, dateEnv) {
     var isTimeUnspecified = null;
-    function processAndReplace(whole, introPart, datePart) {
-        var res = dateEnv.parse(datePart);
+    function replaceRRuleDate () {
+        let args = [...arguments], separator = args[2], str = args[3];
+        var res = dateEnv.parse(str);
         if (res) {
             if (res.isTimeUnspecified) {
                 isTimeUnspecified = true;
             }
-            return introPart + formatRRuleDate(res.marker);
+            return separator + formatRRuleDate(res.marker);
         }
         else {
-            return whole;
+            return args[1];
         }
     }
-    str = str.replace(/\b(DTSTART:)([^\n]*)/, processAndReplace);
-    str = str.replace(/\b(EXDATE:)([^\n]*)/, processAndReplace);
-    str = str.replace(/\b(UNTIL=)([^;]*)/, processAndReplace);
+    str = str.replace(/(([:,])(2[^,\n]*))/g, replaceRRuleDate);
+    // console.log({str});
+    // str = str.replace(/\b(DTSTART:)([^\n]*)/, processAndReplace);
+    // str = str.replace(/\b(EXDATE:)([^\n]*)/, processAndReplace);
+    // str = str.replace(/\b(UNTIL=)([^;]*)/, processAndReplace);
     return { outStr: str, isTimeUnspecified: isTimeUnspecified };
 }
 function formatRRuleDate(date) {
@@ -90585,12 +90588,11 @@ window.RRule = rrule__WEBPACK_IMPORTED_MODULE_7__["RRule"];
 window.RRuleSet = rrule__WEBPACK_IMPORTED_MODULE_7__["RRuleSet"];
 window.rrulestr = rrule__WEBPACK_IMPORTED_MODULE_7__["rrulestr"];
 
-window.moment = moment__WEBPACK_IMPORTED_MODULE_8___default.a; // import timeLinePlugin from '@fullcalendar/timeline';
+window.moment = moment__WEBPACK_IMPORTED_MODULE_8___default.a; // import {Features} from
 // import {forms} from './forms';
 
-__webpack_require__(/*! ./functions */ "./resources/js/functions.js");
-
-__webpack_require__(/*! ./models */ "./resources/js/models.js"); // require('./menu');
+__webpack_require__(/*! ./functions */ "./resources/js/functions.js"); // require('./models');
+// require('./menu');
 // require('./menu-portal');
 // //require('./launchpad/forms2');
 // //require('./login');
@@ -90765,10 +90767,7 @@ var FormEle = /*#__PURE__*/function () {
       delay: 10000,
       send: this.autosave_send.bind(this),
       callback: this.autosave_callback.bind(this)
-    });
-    Object(_functions__WEBPACK_IMPORTED_MODULE_1__["log"])({
-      form: this
-    }, "new FormEle");
+    }); // log({form:this}, `new FormEle`);
   }
 
   _createClass(FormEle, [{
@@ -90790,7 +90789,7 @@ var FormEle = /*#__PURE__*/function () {
         });
         this.ele.removeClass('central full');
         this.header = this.header_editable.ele.appendTo(this.ele);
-        this.section_options = new OptionBox();
+        this.section_options = new _functions__WEBPACK_IMPORTED_MODULE_1__["Features"].OptionBox();
         this.section_options.ele.appendTo(this.ele);
         this.section_options.add_button({
           text: 'add section',
@@ -90832,7 +90831,7 @@ var FormEle = /*#__PURE__*/function () {
     key: "add_buttons",
     value: function add_buttons() {
       if (this.mode == 'modal') {
-        this.modal = new OptionBox({
+        this.modal = new _functions__WEBPACK_IMPORTED_MODULE_1__["Features"].OptionBox({
           css: {
             width: '100%',
             border: '0',
@@ -92302,7 +92301,9 @@ var Item = /*#__PURE__*/function () {
           c = this.options.condition;
 
       if (['number', 'scale'].includes(c.type)) {
-        str = "".concat(c.conditionNumberComparator.smartJoin('or'), " ").concat(c.conditionNumberVal);
+        str = "".concat(c.conditionNumberComparator.smartJoin({
+          str: 'or'
+        }), " ").concat(c.conditionNumberVal);
       } else if (["list", "dropdown", "checkboxes"].includes(c.type)) {
         // log({c});
         if (this.parent.options.linked_to) {
@@ -92313,9 +92314,13 @@ var Item = /*#__PURE__*/function () {
 
         str = c.conditionList.map(function (condition) {
           return Answer.split_values_and_text(condition).text;
-        }).smartJoin('or');
+        }).smartJoin({
+          str: 'or'
+        });
       } else if (c.type == 'time') {
-        str = "".concat(c.conditionTimeComparator.smartJoin('or'), " ").concat(c.conditionTime);
+        str = "".concat(c.conditionTimeComparator.smartJoin({
+          str: 'or'
+        }), " ").concat(c.conditionTime);
       }
 
       if (str == 'null') Object(_functions__WEBPACK_IMPORTED_MODULE_1__["log"])(this, "condition type not found");
@@ -93848,7 +93853,7 @@ var Answer = /*#__PURE__*/function () {
                 this.get = function () {
                   var v = _this18.input.val();
 
-                  return v != '' ? v : null;
+                  return v != '' ? _functions__WEBPACK_IMPORTED_MODULE_1__["system"].validation.date.sort(v) : null;
                 };
 
               case 17:
@@ -95192,6 +95197,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var _forms__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./forms */ "./resources/js/forms.js");
 /* harmony import */ var _models__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./models */ "./resources/js/models.js");
+/* harmony import */ var moment__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! moment */ "./node_modules/moment/moment.js");
+/* harmony import */ var moment__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(moment__WEBPACK_IMPORTED_MODULE_3__);
 
 
 function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread(); }
@@ -95218,13 +95225,13 @@ function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _d
 
 function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
-// import { RRule, RRuleSet, rrulestr } from 'rrule';
 
 
-$(".jump").on("click", function () {
-  var target = "#" + $(this).data("target");
-  $.scrollTo(target);
-});
+ // $(".jump").on("click",function(){
+//   var target = "#"+$(this).data("target");
+//   $.scrollTo(target);
+// });
+
 var debug = {
   get y() {
     return debug.bool;
@@ -95606,9 +95613,6 @@ var OptionBox = /*#__PURE__*/function () {
   }, {
     key: "reset_header",
     value: function reset_header(str) {
-      log({
-        str: str
-      });
       this.header.html(str);
     }
   }, {
@@ -96130,6 +96134,7 @@ var ToolTip = /*#__PURE__*/function () {
     this.on_hide = options.on_hide || null;
     this.match_border = options.match_border || false;
     this.hide_on = options.hide_on || '';
+    this.tracking = options.tracking || false;
     this.ele.data('class_obj', this).slideFadeOut(0);
     this.hide_btn = ifu(options.hide_btn, true);
 
@@ -96205,16 +96210,15 @@ var ToolTip = /*#__PURE__*/function () {
     key: "move",
     value: function move(ev) {
       var animate = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
-      var target = $(ev.toElement);
-      if (target.isInside('.tooltip')) return; // this.mouse_pos = ev;
-
-      var ele = this.ele[0].getBoundingClientRect(); // log({view:view(),body:body(),ele,pos:this.position});
-
-      if (animate) this.ele.animate(this.position, 250);else this.ele.css(this.position); // this.check_overflow();
+      var target = ev ? $(ev.toElement) : null;
+      if (target && target.isInside('.tooltip')) return;
+      var pos = this.tracking ? this.position_track : this.position_fixed;
+      if (animate) this.ele.animate(pos, 250);else this.ele.css(pos);
     }
   }, {
     key: "track",
     value: function track(ev) {
+      if (!this.tracking) return;
       var move = this.move.bind(this, ev),
           tooltip = this;
       this.mouse_pos = ev;
@@ -96254,13 +96258,17 @@ var ToolTip = /*#__PURE__*/function () {
       // if (this.on_hide && typeof this.on_hide == 'function') this.on_hide();
     }
   }, {
-    key: "check_overflow",
-    value: function check_overflow() {// let is_visible = this.ele.isVisible(), scroll_bar_width = system.ui.scroll.bar_width();
-      // if (!is_visible.right || !is_visible.bottom) {
-      //   if (!is_visible.right) this.left -= (is_visible.ele_box.right - is_visible.parent_box.right);
-      //   if (!is_visible.bottom) this.top -= (is_visible.ele_box.height + 40);
-      //   this.ele.css({top:this.top,left:this.left});      
-      // }
+    key: "check_right",
+    value: function check_right() {
+      var box = this.ele[0].getBoundingClientRect(),
+          v = view(),
+          border = {
+        right: this.mouse.x + box.width + system.ui.scroll.bar_width()
+      };
+      if (border.right > v.width) this.ele.css({
+        right: 10,
+        left: 'unset'
+      });
     }
   }, {
     key: "hide_all_others",
@@ -96268,7 +96276,7 @@ var ToolTip = /*#__PURE__*/function () {
       $('.tooltip').filter(':visible').not(this.ele).hide();
     }
   }, {
-    key: "position",
+    key: "position_track",
     get: function get() {
       var box = this.ele[0].getBoundingClientRect(),
           v = view(),
@@ -96290,7 +96298,36 @@ var ToolTip = /*#__PURE__*/function () {
           right: 'unset'
         });
         pos_adjusted.left = this.mouse.x;
-      } // log({box,border,pos_adjusted})
+      }
+
+      return pos_adjusted;
+    }
+  }, {
+    key: "position_fixed",
+    get: function get() {
+      var box_ele = this.ele[0].getBoundingClientRect(),
+          box_target = this.target[0].getBoundingClientRect(),
+          v = view(),
+          border = {
+        right: box_target.x + box_ele.width + system.ui.scroll.bar_width(),
+        bottom: box_target.bottom + box_ele.height,
+        top: box_target.top - box_ele.height - 10
+      },
+          pos_adjusted = {
+        top: border.top > 10 ? border.top : box_target.bottom + 10
+      };
+
+      if (border.right > v.width) {
+        pos_adjusted.right = 10;
+        this.ele.css({
+          left: 'unset'
+        });
+      } else {
+        this.ele.css({
+          right: 'unset'
+        });
+        pos_adjusted.left = box_target.x;
+      } // log({pos_adjusted,view:v, border, box_target, relPos: box_target.y / v.height});
 
 
       return pos_adjusted;
@@ -96313,6 +96350,12 @@ var ToolTip = /*#__PURE__*/function () {
       if (tip.exists()) tip.each(function (t, tip) {
         return $(tip).data('class_obj').hide(undefined, time);
       });
+    }
+  }, {
+    key: "find_containing_tooltip",
+    value: function find_containing_tooltip(ele) {
+      var tt = ele.closest('.tooltip');
+      return tt.exists() ? tt.getObj() : null;
     }
   }, {
     key: "find_closest_tooltip",
@@ -96360,7 +96403,9 @@ var Warning = /*#__PURE__*/function () {
 ;
 
 var Autosave = /*#__PURE__*/function () {
-  function Autosave(options) {
+  function Autosave() {
+    var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
     _classCallCheck(this, Autosave);
 
     try {
@@ -96379,13 +96424,15 @@ var Autosave = /*#__PURE__*/function () {
           left: 0,
           zIndex: 49,
           height: 0
-        }).slideFadeOut(0);
-        this.ele.prepend(this.indicator);
+        }).slideFadeOut(0); // this.ele.prepend(this.indicator);
+
+        this.indicator.prependTo(this.ele);
       }
 
       this.delay = this.delay || 10000;
       this.size = options.size || 2;
       this.message = options.message || 'changes saved';
+      this.spinner = null;
     } catch (error) {
       log({
         error: error
@@ -96401,44 +96448,51 @@ var Autosave = /*#__PURE__*/function () {
     key: "trigger",
     value: function () {
       var _trigger = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee4() {
-        var easing_fx,
+        var options,
+            easing_fx,
+            message,
+            xhr,
             autosave,
-            spinner,
             five_seconds_less,
             _args4 = arguments;
         return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee4$(_context4) {
           while (1) {
             switch (_context4.prev = _context4.next) {
               case 0:
-                easing_fx = _args4.length > 0 && _args4[0] !== undefined ? _args4[0] : 'easeInOutSine';
+                options = _args4.length > 0 && _args4[0] !== undefined ? _args4[0] : {};
+                easing_fx = options.easing_fx || 'easeInOutSine', message = options.message || null, xhr = this.xhr;
+                if (message) this.message = message;
                 log({
                   autosave: this
                 }, 'autosave trigger');
-                autosave = this, spinner = null, five_seconds_less = this.delay - 5000 >= 0 ? this.delay - 5000 : this.delay;
+                autosave = this, five_seconds_less = this.delay - 5000 >= 0 ? this.delay - 5000 : this.delay;
                 if (this.timer_outer) clearTimeout(this.timer_outer);
                 if (this.timer_inner) clearTimeout(this.timer_inner);
                 if (this.bg) this.bg.slideFadeOut();
+                if (autosave.fadeout_timer != undefined) clearTimeout(autosave.fadeout_timer);
                 this.timer_outer = setTimeout( /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee3() {
                   return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee3$(_context3) {
                     while (1) {
                       switch (_context3.prev = _context3.next) {
                         case 0:
-                          if (autosave.indicator) autosave.circle_create();
+                          if (autosave.indicator && autosave.spinner == null) autosave.circle_create();
                           autosave.timer_inner = setTimeout( /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee2() {
                             var result, checkmark, x;
                             return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee2$(_context2) {
                               while (1) {
                                 switch (_context2.prev = _context2.next) {
                                   case 0:
-                                    if (autosave.indicator) spinner = autosave.circle.spin(easing_fx);
+                                    if (autosave.indicator) autosave.spinner = autosave.circle.spin(easing_fx);
                                     _context2.next = 3;
                                     return autosave.send();
 
                                   case 3:
-                                    result = _context2.sent;
+                                    autosave.xhr = _context2.sent;
+                                    result = autosave.xhr;
 
                                     if (autosave.indicator) {
-                                      clearInterval(spinner);
+                                      clearInterval(autosave.spinner);
+                                      autosave.spinner = null;
 
                                       if (!result.error) {
                                         checkmark = new Features.Icon({
@@ -96453,7 +96507,7 @@ var Autosave = /*#__PURE__*/function () {
                                         })).on('click', function () {
                                           $(this).slideFadeOut(1000);
                                         });
-                                        setTimeout(function () {
+                                        autosave.fadeout_timer = setTimeout(function () {
                                           autosave.bg.slideFadeOut(1000, function () {
                                             $(this).remove();
                                           });
@@ -96475,7 +96529,7 @@ var Autosave = /*#__PURE__*/function () {
                                         })).on('click', function () {
                                           $(this).slideFadeOut(1000);
                                         });
-                                        setTimeout(function () {
+                                        autosave.fadeout_timer = setTimeout(function () {
                                           autosave.bg.slideFadeOut(1000, function () {
                                             $(this).remove();
                                           });
@@ -96485,7 +96539,7 @@ var Autosave = /*#__PURE__*/function () {
 
                                     if (autosave.callback) autosave.callback(result);
 
-                                  case 6:
+                                  case 7:
                                   case "end":
                                     return _context2.stop();
                                 }
@@ -96501,7 +96555,7 @@ var Autosave = /*#__PURE__*/function () {
                   }, _callee3);
                 })), five_seconds_less);
 
-              case 7:
+              case 10:
               case "end":
                 return _context4.stop();
             }
@@ -96603,7 +96657,8 @@ var Icon = /*#__PURE__*/function () {
 
     for (var attr in this.data) {
       this[attr] = this.data[attr];
-    }
+    } // let ele = this.ele || this.
+
   }
 
   _createClass(Icon, [{
@@ -96666,10 +96721,16 @@ var Icon = /*#__PURE__*/function () {
             });
             count++;
           }, interval / 100);
+          circle.svg.addClass('spinner').data('class_obj', circle);
+          circle.spinner = spinner;
         }
       });
-      this.spinner = spinner;
-      return spinner;
+      return this.spinner;
+    }
+  }, {
+    key: "clear_spinner",
+    value: function clear_spinner() {
+      clearInterval(this.spinner);
     }
   }], [{
     key: "circle",
@@ -96774,6 +96835,20 @@ var Icon = /*#__PURE__*/function () {
       return {
         img: $(x)
       };
+    }
+  }, {
+    key: "clear_spinners_all",
+    value: function clear_spinners_all() {
+      $('.spinner').each(function (s, spinner) {
+        $(spinner).getObj().clear_spinner();
+      });
+    }
+  }, {
+    key: "clear_spinners_within",
+    value: function clear_spinners_within(ele) {
+      $(ele).find('.spinner').each(function (s, spinner) {
+        $(spinner).getObj().clear_spinner();
+      });
     }
   }]);
 
@@ -96970,10 +97045,14 @@ var menu = {
         new Menu($(this), $(this).data());
       });
       var x = 0,
-          menu_list = menu.list();
+          menu_list = menu.list(),
+          count = menu_list.length;
 
       while (x < menu_list.length) {
         if (x == 0) menu_list[x].element.addClass('siteMenu');else if (x == 1) menu_list[x].element.addClass('topMenu');else menu_list[x].element.addClass("subMenu".concat(x - 1));
+        menu_list[x].element.css({
+          marginBottom: x == count - 1 ? '1em' : 'unset'
+        });
         x++;
       }
     }
@@ -96997,9 +97076,7 @@ var menu = {
           var split = target.split(':'),
               id = split[1] || null,
               modal = id && $("#".concat(id)).exists() ? $("#".concat(id)) : $("<div class='modalForm'".concat(id ? "id='".concat(id, "'") : '', "></div>"));
-          $("#".concat(id)).find('.loading').each(function (c, circle) {
-            return clearInterval($(circle).data('spinner'));
-          });
+          Icon.clear_spinners_all();
           log({
             target: target,
             modal: modal,
@@ -97008,9 +97085,7 @@ var menu = {
           modal.html(response);
           blurTop(modal);
         } else {
-          $(target).find('.loading').each(function (c, circle) {
-            return clearInterval($(circle).data('spinner'));
-          });
+          Icon.clear_spinners_all();
           if (replace_target) $(target).replaceWith(response);else $(target).html(response);
         }
 
@@ -97055,7 +97130,9 @@ var menu = {
               return _context5.abrupt("return");
 
             case 5:
-              if (blurred) blur(target, '#loading');else target.html().append(system.blur.modal.loading(loadingColor).svg);
+              blur(target, '#loading'); // if (blurred) blur(target,'#loading');
+              // else target.html().append(system.blur.modal.loading(loadingColor).svg);
+
               _context5.next = 8;
               return menu.fetch(url, target);
 
@@ -97110,7 +97187,15 @@ var system = {
     },
     set: function set(userData) {
       if (Object.isFrozen(user)) return;
-      user.current = userData;
+      user.current = new _models__WEBPACK_IMPORTED_MODULE_2__["Models"].User(userData);
+
+      if (user.current.is_super) {
+        window.system = system;
+        window.Models = _models__WEBPACK_IMPORTED_MODULE_2__["Models"];
+        window.Features = Features;
+        window.Forms = _forms__WEBPACK_IMPORTED_MODULE_1__["Forms"];
+      }
+
       Object.freeze(user);
     },
     login: function () {
@@ -98018,7 +98103,7 @@ var system = {
           size: size,
           color: loadingColor
         });
-        circle.spin();
+        menu.spinner = circle.spin();
         circle.svg.addClass('loading').data('spinner', circle.spinner);
         return circle.svg;
       },
@@ -98121,6 +98206,7 @@ var system = {
 
       if (ele) {
         if ($(ele).dne()) throw new Error("can't unblur because ele doesn't exist");else if ($(ele).find('.blur').dne()) return;
+        Icon.clear_spinners_within(ele);
       }
 
       if (fade) {
@@ -98157,6 +98243,8 @@ var system = {
           repeat: repeat
         });
       } else if (callback && typeof callback == 'function') setTimeout(callback, delay);
+
+      Icon.clear_spinners_within('#ModalHome');
     },
     undoAll: function undoAll(options) {
       var callback = options.callback || null,
@@ -98236,7 +98324,7 @@ var system = {
         var key_allowed = false;
         if (typeof values == 'string') key_allowed = system.ui.keyboard.allow.string_characters(values, key);
         if (_typeof(values) == 'object') key_allowed = system.ui.keyboard.allow.regex(values, key);
-        meta_keys = system.ui.keyboard.allow.meta_keys(key);
+        var meta_keys = system.ui.keyboard.allow.meta_keys(key);
         return key_allowed || meta_keys;
       },
       allow: {
@@ -98494,6 +98582,96 @@ var system = {
           }
         }
       },
+      moment_array: function moment_array(dates) {
+        var format = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'MM/DD/YYYY';
+        return dates.map(function (date) {
+          if (date instanceof moment__WEBPACK_IMPORTED_MODULE_3___default.a) return date;else if (date instanceof Date) return moment(date);else return _models__WEBPACK_IMPORTED_MODULE_2__["Models"].Schedule.string_to_moment(date, format);
+        });
+      },
+      sort: function sort(dates) {
+        var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+        var dir = options.dir || 'asc',
+            format = options.format || 'MM/DD/YYYY',
+            separator = options.separator || ', ',
+            as_moment = options.as_moment || false;
+        if (typeof dates == 'string') return system.validation.date.sort_string(dates, separator, dir, format);
+        var moments = system.validation.date.moment_array(dates, format),
+            ascending = system.validation.date.sort_moment(moments);
+        if (!as_moment) ascending = ascending.map(function (d) {
+          return d.format(format);
+        });
+        return dir == 'desc' ? ascending.reverse() : ascending;
+      },
+      sort_moment: function sort_moment(moment_array) {
+        return moment_array.sort(function (a, b) {
+          return a.valueOf() - b.valueOf();
+        });
+      },
+      sort_string: function sort_string(date_str) {
+        var separator = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : ', ';
+        var dir = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'asc';
+        var format = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 'MM/DD/YYYY';
+        var array = date_str.split(separator),
+            sorted = system.validation.date.sort(array, {
+          dir: dir,
+          format: format
+        });
+        return sorted.join(separator);
+      },
+      after: function after(dates, reference_date) {
+        var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+        var format = options.format || 'MM/DD/YYYY',
+            separator = options.separator || ', ',
+            sort = options.sort || null;
+        reference_date = reference_date instanceof moment__WEBPACK_IMPORTED_MODULE_3___default.a ? reference_date : _models__WEBPACK_IMPORTED_MODULE_2__["Models"].Schedule.string_to_moment(reference_date, format);
+        if (typeof dates == 'string') return system.validation.date.after_string(dates, reference_date, separator, format);
+        var moments = moments = system.validation.date.moment_array(dates, format),
+            filtered = system.validation.date.after_moment(moments, reference_date);
+        if (sort) filtered = system.validation.date.sort(filtered, {
+          dir: sort,
+          as_moment: true
+        });
+        return filtered.map(function (d) {
+          return d.format(format);
+        });
+      },
+      after_moment: function after_moment(moment_array, reference_moment) {
+        return moment_array.filter(function (m) {
+          return m.isAfter(reference_moment);
+        });
+      },
+      after_string: function after_string(moment_array, reference_moment) {
+        var separator = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : ', ';
+        var format = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 'MM/DD/YYYY';
+        throw new Error('after_string function not defined');
+      },
+      before: function before(dates, reference_date) {
+        var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+        var format = options.format || 'MM/DD/YYYY',
+            separator = options.separator || ', ',
+            sort = options.sort || null;
+        reference_date = reference_date instanceof moment__WEBPACK_IMPORTED_MODULE_3___default.a ? reference_date : _models__WEBPACK_IMPORTED_MODULE_2__["Models"].Schedule.string_to_moment(reference_date, format);
+        if (typeof dates == 'string') return system.validation.date.before_string(dates, reference_date, separator, format);
+        var moments = moments = system.validation.date.moment_array(dates, format),
+            filtered = system.validation.date.before_moment(moments, reference_date);
+        if (sort) filtered = system.validation.date.sort(filtered, {
+          dir: sort,
+          as_moment: true
+        });
+        return filtered.map(function (d) {
+          return d.format(format);
+        });
+      },
+      before_moment: function before_moment(moment_array, reference_moment) {
+        return moment_array.filter(function (m) {
+          return m.isBefore(reference_moment);
+        });
+      },
+      before_string: function before_string(moment_array, reference_moment) {
+        var separator = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : ', ';
+        var format = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 'MM/DD/YYYY';
+        throw new Error('before_string function not defined');
+      },
       comparison: function comparison(comparison_date) {
         var reference_date = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
         if (!reference_date) reference_date = moment();
@@ -98504,7 +98682,8 @@ var system = {
         };
       },
       is_invalid: function is_invalid(str) {
-        var date = moment(str, 'MM/DD/YYYY', true),
+        var format = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'MM/DD/YYYY';
+        var date = moment(str, format, true),
             invalid = !date._isValid && str != '';
         return invalid;
       },
@@ -98791,7 +98970,8 @@ var system = {
       }
     } catch (error) {}
   }
-}; // export {menu,tabs,system,Menu,Icon,Autosave,Warning,ToolTip,Toggle,UpDown,List}
+}; // window.system = system;
+// export {menu,tabs,system,Menu,Icon,Autosave,Warning,ToolTip,Toggle,UpDown,List}
 // const class_map_all = {};
 // $(document).ready(function(){class_map_all.merge({system,menu,notifications})})
 
@@ -99027,10 +99207,7 @@ $(document).ready(function () {
   if (practiceInfo) practice.set(practiceInfo);
   initialize.newContent(); // const_map = {user,menu,model};
 });
-var systemModalList = ['Confirm', 'Warn', 'Error', 'Feedback', 'Refresh', 'Notification', 'ErrorMessageFromClient', 'AutoSaveWrap'],
-    systemModals = $('#Confirm, #Warn, #Error, #Feedback, #Refresh, #Notification, #ErrorMessageFromClient, #AutoSaveWrap'),
-    usertype,
-    defaultTemplateInfo;
+var systemModalList = ['Confirm', 'Warn', 'Error', 'Feedback', 'Refresh', 'Notification', 'ErrorMessageFromClient', 'AutoSaveWrap'];
 
 (function ($) {
   $.sanitize = function (input) {
@@ -99388,10 +99565,17 @@ Object.defineProperties(Array.prototype, {
     }
   },
   smartJoin: {
-    value: function value() {
-      var str = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 'and';
-      var oxford = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
-      return system.validation.array.join(this, str, oxford);
+    value: function value(str) {
+      var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+      if (_typeof(str) == 'object') options = str;else options.merge({
+        str: str
+      });
+      str = ifu(options.str, 'and');
+      var oxford = options.oxford || true,
+          map = options.map || null,
+          array = this;
+      if (map) array = this.map(map);
+      return system.validation.array.join(array, str, oxford);
     }
   },
   smartPush: {
@@ -99491,7 +99675,10 @@ Object.defineProperties(Object.prototype, {
       var wrapper = $('<div/>');
 
       for (var key in this) {
-        if (this.hasOwnProperty(key)) wrapper.append("<div><b style='padding-right:5px'>".concat(key, ":</b><span>").concat(this[key], "</span></div>"));
+        var item = $('<div/>', {
+          "class": key.toKeyString()
+        });
+        if (this.hasOwnProperty(key)) wrapper.append(item.append("<b style='padding-right:5px'>".concat(key, ":</b>"), this[key] instanceof jQuery ? this[key].clone(true) : "<span>".concat(this[key], "</span>")));
       }
 
       return wrapper;
@@ -99606,7 +99793,7 @@ Object.defineProperties(String.prototype, {
 
       try {
         var first = split.shift();
-        obj_val = obj ? obj[first] : _models__WEBPACK_IMPORTED_MODULE_2__["Models"][first] || _forms__WEBPACK_IMPORTED_MODULE_1__["Forms"][first] || Features[first] || system[first] || window[first];
+        if (first == 'system') obj_val = system;else obj_val = obj ? obj[first] : _models__WEBPACK_IMPORTED_MODULE_2__["Models"][first] || _forms__WEBPACK_IMPORTED_MODULE_1__["Forms"][first] || Features[first] || system[first] || window[first];
         if (!obj_val) throw new Error("".concat(first, " not given or found in window or class_map"));
 
         if (obj_val) {
@@ -101845,12 +102032,9 @@ var Model = /*#__PURE__*/function () {
 
     if (this.attr_list.uid) {
       this.uid = this.attr_list.uid; // delete this.attr_list.uid;
-    }
+    } // this.dont_save(['model','id']);
+    // log({model:this},`new ${type}`);
 
-    this.dont_save(['model', 'id']);
-    Object(_functions__WEBPACK_IMPORTED_MODULE_1__["log"])({
-      model: this
-    }, "new ".concat(type));
   }
 
   _createClass(Model, [{
@@ -101899,8 +102083,7 @@ var Model = /*#__PURE__*/function () {
           form_ele: form_ele
         });
         all_pass = false;
-      } // log({attr_list});
-
+      }
 
       return all_pass;
     }
@@ -102006,24 +102189,23 @@ var Model = /*#__PURE__*/function () {
             columns,
             relationships,
             addl_post_data,
+            proceed,
             clear_on_success,
-            _model2,
             save_blur,
-            uid,
+            db_obj,
             callback,
             result,
             _args4 = arguments;
-
         return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee4$(_context4) {
           while (1) {
             switch (_context4.prev = _context4.next) {
               case 0:
                 options = _args4.length > 0 && _args4[0] !== undefined ? _args4[0] : {};
                 type = this.type, model = this, columns = {}, relationships = {}, addl_post_data = {};
-                clear_on_success = options.clear_on_success || true;
+                proceed = true, clear_on_success = ifu(options.clear_on_success || true);
 
                 if (!this.on_save) {
-                  _context4.next = 6;
+                  _context4.next = 7;
                   break;
                 }
 
@@ -102031,32 +102213,22 @@ var Model = /*#__PURE__*/function () {
                 return this.on_save();
 
               case 6:
-                _context4.prev = 6;
+                proceed = _context4.sent;
+
+              case 7:
+                if (proceed) {
+                  _context4.next = 9;
+                  break;
+                }
+
+                return _context4.abrupt("return");
+
+              case 9:
+                _context4.prev = 9;
 
                 if (!this.valid) {
                   _context4.next = 20;
                   break;
-                }
-
-                if (this.db_columns) {
-                  _context4.next = 10;
-                  break;
-                }
-
-                throw new Error("db_columns not defined for ".concat(type));
-
-              case 10:
-                this.db_columns.forEach(function (column) {
-                  if (model.attr_list[column]) columns[column] = model.attr_list[column];
-                });
-
-                if (this.db_relationships) {
-                  for (_model2 in this.db_relationships) {
-                    if (this.attr_list[_model2]) relationships[_model2] = {
-                      uids: this.attr_list[_model2],
-                      method: this.db_relationships[_model2]
-                    };
-                  }
                 }
 
                 save_blur = this.save_blur || false;
@@ -102064,24 +102236,18 @@ var Model = /*#__PURE__*/function () {
                   loadingColor: 'var(--green)',
                   loadingFade: true
                 });
-                uid = this.save_uid || this.uid || this.attr_list.uid || null, callback = this.save_callback ? this.save_callback.bind(this) : null;
-                if (type == 'User') uid = this.attr_list.user_id;
+                db_obj = this.db_save_obj, callback = this.save_callback ? this.save_callback.bind(this) : null;
+                if (type == 'User') db_obj.uid = this.attr_list.user_id;
                 Object(_functions__WEBPACK_IMPORTED_MODULE_1__["log"])({
-                  columns: columns,
-                  relationships: relationships,
-                  obj: this,
+                  db_obj: db_obj,
                   attr_list: this.attr_list
-                }, "saving new ".concat(this.type)); // return;
+                }, "saving new SINGLE ".concat(this.type)); // return;
 
-                _context4.next = 19;
+                _context4.next = 18;
                 return $.ajax({
                   url: "/save/".concat(type),
                   method: 'POST',
-                  data: {
-                    uid: uid,
-                    columns: columns,
-                    relationships: relationships
-                  },
+                  data: db_obj,
                   success: function success(response) {
                     if (_functions__WEBPACK_IMPORTED_MODULE_1__["system"].validation.xhr.error.exists(response)) return;
 
@@ -102107,8 +102273,9 @@ var Model = /*#__PURE__*/function () {
                   }
                 });
 
-              case 19:
+              case 18:
                 result = _context4.sent;
+                return _context4.abrupt("return", result);
 
               case 20:
                 _context4.next = 25;
@@ -102116,7 +102283,7 @@ var Model = /*#__PURE__*/function () {
 
               case 22:
                 _context4.prev = 22;
-                _context4.t0 = _context4["catch"](6);
+                _context4.t0 = _context4["catch"](9);
                 Object(_functions__WEBPACK_IMPORTED_MODULE_1__["log"])({
                   error: _context4.t0,
                   attr_list: this.attr_list
@@ -102127,7 +102294,7 @@ var Model = /*#__PURE__*/function () {
                 return _context4.stop();
             }
           }
-        }, _callee4, this, [[6, 22]]);
+        }, _callee4, this, [[9, 22]]);
       }));
 
       function save() {
@@ -102232,6 +102399,33 @@ var Model = /*#__PURE__*/function () {
       if (typeof attrs == 'string') list.push(attrs);else if (attrs.is_array()) list = [].concat(_toConsumableArray(list), _toConsumableArray(attrs));
       this.attrs_not_to_save = list;
     }
+  }, {
+    key: "db_save_obj",
+    get: function get() {
+      var model = this,
+          columns = {},
+          relationships = {},
+          uid = this.save_uid || this.uid || this.attr_list.uid || null;
+      if (!this.db_columns) throw new Error("db_columns not defined for ".concat(type));
+      this.db_columns.forEach(function (column) {
+        if (model.attr_list[column]) columns[column] = model.attr_list[column];
+      });
+
+      if (this.db_relationships) {
+        for (var _model2 in this.db_relationships) {
+          if (this.attr_list[_model2]) relationships[_model2] = {
+            uids: this.attr_list[_model2],
+            method: this.db_relationships[_model2]
+          };
+        }
+      }
+
+      return {
+        uid: uid,
+        columns: columns,
+        relationships: relationships
+      };
+    }
   }], [{
     key: "construct_from_form",
     value: function construct_from_form(selector) {
@@ -102257,8 +102451,7 @@ var Model = /*#__PURE__*/function () {
           selector: selector
         });
         all_pass = false;
-      } // log({attr_list,all_pass});
-
+      }
 
       return all_pass ? attr_list : false;
     }
@@ -102438,6 +102631,143 @@ var Model = /*#__PURE__*/function () {
         return [];
       }
     }
+  }, {
+    key: "save_multi_callback",
+    value: function () {
+      var _save_multi_callback = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee9(model_arr, data_arr) {
+        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee9$(_context9) {
+          while (1) {
+            switch (_context9.prev = _context9.next) {
+              case 0:
+                model_arr.forEach(function (model, m) {
+                  Object(_functions__WEBPACK_IMPORTED_MODULE_1__["log"])({
+                    model: model,
+                    data: data_arr[m]
+                  });
+                  if (model.save_callback && !_functions__WEBPACK_IMPORTED_MODULE_1__["system"].validation.xhr.error.exists(data_arr[m])) model.save_callback(data_arr[m], true);
+                });
+
+              case 1:
+              case "end":
+                return _context9.stop();
+            }
+          }
+        }, _callee9);
+      }));
+
+      function save_multi_callback(_x3, _x4) {
+        return _save_multi_callback.apply(this, arguments);
+      }
+
+      return save_multi_callback;
+    }()
+  }, {
+    key: "save_multi",
+    value: function () {
+      var _save_multi = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee11(model_array) {
+        var options,
+            db_array,
+            blur_ele,
+            loadingColor,
+            data,
+            result,
+            _args11 = arguments;
+        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee11$(_context11) {
+          while (1) {
+            switch (_context11.prev = _context11.next) {
+              case 0:
+                options = _args11.length > 1 && _args11[1] !== undefined ? _args11[1] : {};
+                db_array = model_array.map(function (model) {
+                  return model.db_save_obj.merge({
+                    type: model.type
+                  });
+                }), blur_ele = options.blur_ele || null, loadingColor = options.loadingColor || 'var(--darkgray97)';
+                if (blur_ele) blur(blur_ele, 'loading', {
+                  loadingColor: loadingColor
+                });else blurTop('loading', {
+                  loadingColor: loadingColor
+                });
+                data = {
+                  models: db_array
+                };
+                Object(_functions__WEBPACK_IMPORTED_MODULE_1__["log"])({
+                  data: data,
+                  model_array: model_array,
+                  options: options
+                }, 'save MULTI');
+                if (options.wants_checkmark) data.merge({
+                  wants_checkmark: true
+                });
+                _context11.prev = 6;
+                _context11.next = 9;
+                return $.ajax({
+                  url: "/save/multi",
+                  method: 'POST',
+                  data: data,
+                  success: function () {
+                    var _success = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee10(response) {
+                      return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee10$(_context10) {
+                        while (1) {
+                          switch (_context10.prev = _context10.next) {
+                            case 0:
+                              if (!_functions__WEBPACK_IMPORTED_MODULE_1__["system"].validation.xhr.error.exists(response)) {
+                                _context10.next = 2;
+                                break;
+                              }
+
+                              return _context10.abrupt("return");
+
+                            case 2:
+                              _context10.next = 4;
+                              return Model.save_multi_callback(model_array, response);
+
+                            case 4:
+                              if (blur_ele) unblur({
+                                ele: blur_ele
+                              });else unblurAll();
+
+                            case 5:
+                            case "end":
+                              return _context10.stop();
+                          }
+                        }
+                      }, _callee10);
+                    }));
+
+                    function success(_x6) {
+                      return _success.apply(this, arguments);
+                    }
+
+                    return success;
+                  }()
+                });
+
+              case 9:
+                result = _context11.sent;
+                return _context11.abrupt("return", result);
+
+              case 13:
+                _context11.prev = 13;
+                _context11.t0 = _context11["catch"](6);
+                Object(_functions__WEBPACK_IMPORTED_MODULE_1__["log"])({
+                  error: _context11.t0
+                });
+                return _context11.abrupt("return", false);
+
+              case 17:
+              case "end":
+                return _context11.stop();
+            }
+          }
+        }, _callee11, null, [[6, 13]]);
+      }));
+
+      function save_multi(_x5) {
+        return _save_multi.apply(this, arguments);
+      }
+
+      return save_multi;
+    }()
   }]);
 
   return Model;
@@ -102617,9 +102947,9 @@ var SettingsManager = /*#__PURE__*/function () {
     value: function convert_obj_values_to_bool(obj) {
       try {
         for (var attr in obj) {
-          var type = _typeof(obj[attr]);
+          var _type = _typeof(obj[attr]);
 
-          if (type == 'string') obj[attr] = obj[attr].toBool();else if (type == 'object' && !attr.is_array()) SettingsManager.convert_obj_values_to_bool(obj[attr]);
+          if (_type == 'string') obj[attr] = obj[attr].toBool();else if (_type == 'object' && !attr.is_array()) SettingsManager.convert_obj_values_to_bool(obj[attr]);
         }
       } catch (error) {
         Object(_functions__WEBPACK_IMPORTED_MODULE_1__["log"])({
@@ -102647,25 +102977,20 @@ var Practice = /*#__PURE__*/function (_Model) {
   _createClass(Practice, [{
     key: "schedule_edit",
     value: function () {
-      var _schedule_edit = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee9() {
-        var calendar, schedule;
-        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee9$(_context9) {
+      var _schedule_edit = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee12() {
+        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee12$(_context12) {
           while (1) {
-            switch (_context9.prev = _context9.next) {
+            switch (_context12.prev = _context12.next) {
               case 0:
-                _context9.next = 2;
+                _context12.next = 2;
                 return menu.fetch("/schedule/Practice/".concat(this.uid), 'new_modal:EditSchedule');
 
               case 2:
-                calendar = $('#EditSchedule').find('.calendar').getObj();
-                schedule = $('#EditSchedule').find('.schedule').getObj();
-
-              case 4:
               case "end":
-                return _context9.stop();
+                return _context12.stop();
             }
           }
-        }, _callee9, this);
+        }, _callee12, this);
       }));
 
       function schedule_edit() {
@@ -102677,21 +103002,21 @@ var Practice = /*#__PURE__*/function (_Model) {
   }, {
     key: "schedule_save",
     value: function () {
-      var _schedule_save = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee10() {
-        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee10$(_context10) {
+      var _schedule_save = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee13() {
+        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee13$(_context13) {
           while (1) {
-            switch (_context10.prev = _context10.next) {
+            switch (_context13.prev = _context13.next) {
               case 0:
-                if (this.schedule.add_response()) {
-                  this.schedule.save('Practice', this.uid);
-                }
+                this.schedule.add_response(); // if (this.schedule.add_response()) {
+                //   this.schedule.save('Practice', this.uid);
+                // }
 
               case 1:
               case "end":
-                return _context10.stop();
+                return _context13.stop();
             }
           }
-        }, _callee10, this);
+        }, _callee13, this);
       }));
 
       function schedule_save() {
@@ -102725,9 +103050,7 @@ var User = /*#__PURE__*/function (_Model2) {
     if (!_this4.attr_list.roles) _this4.attr_list.roles = {
       list: [type],
       "default": null
-    };
-
-    _this4.dont_save(['name', 'user_id']);
+    }; // this.dont_save(['name','user_id']);
 
     _this4.save_uid = _this4.user_id;
     return _this4;
@@ -102736,11 +103059,11 @@ var User = /*#__PURE__*/function (_Model2) {
   _createClass(User, [{
     key: "delete_unique",
     value: function () {
-      var _delete_unique = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee12() {
+      var _delete_unique = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee15() {
         var instance;
-        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee12$(_context12) {
+        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee15$(_context15) {
           while (1) {
-            switch (_context12.prev = _context12.next) {
+            switch (_context15.prev = _context15.next) {
               case 0:
                 Object(_functions__WEBPACK_IMPORTED_MODULE_1__["log"])({
                   "this": this
@@ -102752,21 +103075,21 @@ var User = /*#__PURE__*/function (_Model2) {
                   btntext_yes: 'permanently delete',
                   btntext_no: 'cancel',
                   callback_affirmative: function () {
-                    var _callback_affirmative2 = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee11() {
+                    var _callback_affirmative2 = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee14() {
                       var result;
-                      return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee11$(_context11) {
+                      return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee14$(_context14) {
                         while (1) {
-                          switch (_context11.prev = _context11.next) {
+                          switch (_context14.prev = _context14.next) {
                             case 0:
                               blur('body', 'loading');
-                              _context11.next = 3;
+                              _context14.next = 3;
                               return $.ajax({
                                 url: '/delete/' + instance.attr_list.model + '/' + instance.uid,
                                 method: 'DELETE'
                               });
 
                             case 3:
-                              result = _context11.sent;
+                              result = _context14.sent;
 
                               if (result == 'checkmark') {
                                 blurTop('checkmark', {
@@ -102781,10 +103104,10 @@ var User = /*#__PURE__*/function (_Model2) {
 
                             case 5:
                             case "end":
-                              return _context11.stop();
+                              return _context14.stop();
                           }
                         }
-                      }, _callee11);
+                      }, _callee14);
                     }));
 
                     function callback_affirmative() {
@@ -102797,10 +103120,10 @@ var User = /*#__PURE__*/function (_Model2) {
 
               case 3:
               case "end":
-                return _context12.stop();
+                return _context15.stop();
             }
           }
-        }, _callee12, this);
+        }, _callee15, this);
       }));
 
       function delete_unique() {
@@ -102812,19 +103135,19 @@ var User = /*#__PURE__*/function (_Model2) {
   }, {
     key: "edit_unique",
     value: function () {
-      var _edit_unique = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee13() {
-        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee13$(_context13) {
+      var _edit_unique = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee16() {
+        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee16$(_context16) {
           while (1) {
-            switch (_context13.prev = _context13.next) {
+            switch (_context16.prev = _context16.next) {
               case 0:
-                return _context13.abrupt("return", menu.fetch("/edit/".concat(this.usertype.toKeyString(), "/").concat(this.uid), 'new_modal:EditUser'));
+                return _context16.abrupt("return", menu.fetch("/edit/".concat(this.usertype.toKeyString(), "/").concat(this.uid), 'new_modal:EditUser'));
 
               case 1:
               case "end":
-                return _context13.stop();
+                return _context16.stop();
             }
           }
-        }, _callee13, this);
+        }, _callee16, this);
       }));
 
       function edit_unique() {
@@ -102841,19 +103164,19 @@ var User = /*#__PURE__*/function (_Model2) {
   }, {
     key: "roles_edit",
     value: function () {
-      var _roles_edit = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee14() {
-        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee14$(_context14) {
+      var _roles_edit = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee17() {
+        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee17$(_context17) {
           while (1) {
-            switch (_context14.prev = _context14.next) {
+            switch (_context17.prev = _context17.next) {
               case 0:
                 Object(_functions__WEBPACK_IMPORTED_MODULE_1__["log"])("EDITING");
 
               case 1:
               case "end":
-                return _context14.stop();
+                return _context17.stop();
             }
           }
-        }, _callee14);
+        }, _callee17);
       }));
 
       function roles_edit() {
@@ -102865,16 +103188,16 @@ var User = /*#__PURE__*/function (_Model2) {
   }, {
     key: "roles_save",
     value: function () {
-      var _roles_save = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee15() {
-        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee15$(_context15) {
+      var _roles_save = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee18() {
+        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee18$(_context18) {
           while (1) {
-            switch (_context15.prev = _context15.next) {
+            switch (_context18.prev = _context18.next) {
               case 0:
               case "end":
-                return _context15.stop();
+                return _context18.stop();
             }
           }
-        }, _callee15);
+        }, _callee18);
       }));
 
       function roles_save() {
@@ -102886,28 +103209,22 @@ var User = /*#__PURE__*/function (_Model2) {
   }, {
     key: "schedule_edit",
     value: function () {
-      var _schedule_edit2 = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee16() {
-        var UserType, user, calendar, schedule;
-        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee16$(_context16) {
+      var _schedule_edit2 = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee19() {
+        var UserType, user;
+        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee19$(_context19) {
           while (1) {
-            switch (_context16.prev = _context16.next) {
+            switch (_context19.prev = _context19.next) {
               case 0:
                 UserType = this.usertype.toKeyString(), user = this;
-                _context16.next = 3;
+                _context19.next = 3;
                 return menu.fetch("/schedule/".concat(UserType, "/").concat(this.uid), 'new_modal:EditSchedule');
 
               case 3:
-                calendar = $('#EditSchedule').find('.calendar').getObj();
-                schedule = $('#EditSchedule').find('.schedule').getObj(); // init('.calendar.schedule',function(){
-                //   user.schedule = new Schedule({ele:$(this),model:UserType,uid:user.uid});
-                // })
-
-              case 5:
               case "end":
-                return _context16.stop();
+                return _context19.stop();
             }
           }
-        }, _callee16, this);
+        }, _callee19, this);
       }));
 
       function schedule_edit() {
@@ -102919,21 +103236,21 @@ var User = /*#__PURE__*/function (_Model2) {
   }, {
     key: "schedule_save",
     value: function () {
-      var _schedule_save2 = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee17() {
-        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee17$(_context17) {
+      var _schedule_save2 = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee20() {
+        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee20$(_context20) {
           while (1) {
-            switch (_context17.prev = _context17.next) {
+            switch (_context20.prev = _context20.next) {
               case 0:
-                if (this.schedule.add_response()) {
-                  this.schedule.save(this.usertype.toKeyString(), this.uid);
-                }
+                this.schedule.add_response(); // if (this.schedule.add_response()) {
+                //   this.schedule.save(this.usertype.toKeyString(), this.uid);
+                // }
 
               case 1:
               case "end":
-                return _context17.stop();
+                return _context20.stop();
             }
           }
-        }, _callee17, this);
+        }, _callee20, this);
       }));
 
       function schedule_save() {
@@ -102942,6 +103259,16 @@ var User = /*#__PURE__*/function (_Model2) {
 
       return schedule_save;
     }()
+  }, {
+    key: "is_super",
+    get: function get() {
+      return this.attr_list.is_super || false;
+    }
+  }, {
+    key: "is_admin",
+    get: function get() {
+      return this.attr_list.is_admin || false;
+    }
   }]);
 
   return User;
@@ -103015,22 +103342,14 @@ var Calendar = /*#__PURE__*/function () {
     var schedule_eles = this.ele.find('.schedule'),
         schedules = [];
     schedule_eles.each(function (s, schedule) {
-      var obj = new Schedule(schedule, s);
+      var obj = new Schedule(schedule, s, _this5.ele);
       schedules.push(obj);
       obj.calendar = _this5;
     });
-    this.schedules = schedules;
-    Object(_functions__WEBPACK_IMPORTED_MODULE_1__["log"])({
-      cal: this,
-      practice: _functions__WEBPACK_IMPORTED_MODULE_1__["practice"].info,
-      tz: _functions__WEBPACK_IMPORTED_MODULE_1__["practice"].info.tz
-    }, 'new calendar'); // let tz = practice.info.tz;
-    // alert(tz);
+    this.schedules = schedules; // log({cal:this,practice:practice.info,tz:practice.info.tz}, 'new calendar');
 
     var tz = _functions__WEBPACK_IMPORTED_MODULE_1__["practice"].info.tz,
-        client_tz = moment.tz.guess(); // alert (`${tz}... ${client_tz}`);
-    // return;
-
+        client_tz = moment.tz.guess();
     var calendar = this,
         fullcal_options = {
       plugins: [_fullcalendar_daygrid__WEBPACK_IMPORTED_MODULE_3__["default"], _fullcalendar_list__WEBPACK_IMPORTED_MODULE_5__["default"], _fullcalendar_timegrid__WEBPACK_IMPORTED_MODULE_6__["default"], _fullcalendar_interaction__WEBPACK_IMPORTED_MODULE_4__["default"], _fullcalendar_rrule__WEBPACK_IMPORTED_MODULE_7__["default"], _fullcalendar_moment_timezone__WEBPACK_IMPORTED_MODULE_8__["default"]],
@@ -103046,46 +103365,48 @@ var Calendar = /*#__PURE__*/function () {
       slotMaxTime: '20:00:00',
       editable: true,
       eventDrop: function () {
-        var _eventDrop = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee18(info) {
+        var _eventDrop = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee21(info) {
           var result;
-          return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee18$(_context18) {
+          return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee21$(_context21) {
             while (1) {
-              switch (_context18.prev = _context18.next) {
+              switch (_context21.prev = _context21.next) {
                 case 0:
-                  _context18.next = 2;
+                  _context21.next = 2;
                   return calendar.event_drop(info);
 
                 case 2:
-                  result = _context18.sent;
-                  // log({result});
-                  if (result != 'checkmark') info.revert();
+                  result = _context21.sent;
+                  Object(_functions__WEBPACK_IMPORTED_MODULE_1__["log"])({
+                    result: result
+                  }, 'dropping event');
+                  if (!result) info.revert();
 
-                case 4:
+                case 5:
                 case "end":
-                  return _context18.stop();
+                  return _context21.stop();
               }
             }
-          }, _callee18);
+          }, _callee21);
         }));
 
-        function eventDrop(_x3) {
+        function eventDrop(_x7) {
           return _eventDrop.apply(this, arguments);
         }
 
         return eventDrop;
       }(),
       eventResize: function () {
-        var _eventResize = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee19(info) {
+        var _eventResize = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee22(info) {
           var result;
-          return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee19$(_context19) {
+          return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee22$(_context22) {
             while (1) {
-              switch (_context19.prev = _context19.next) {
+              switch (_context22.prev = _context22.next) {
                 case 0:
-                  _context19.next = 2;
+                  _context22.next = 2;
                   return calendar.event_resize(info);
 
                 case 2:
-                  result = _context19.sent;
+                  result = _context22.sent;
                   Object(_functions__WEBPACK_IMPORTED_MODULE_1__["log"])({
                     result: result
                   }, 'resize result');
@@ -103093,13 +103414,13 @@ var Calendar = /*#__PURE__*/function () {
 
                 case 5:
                 case "end":
-                  return _context19.stop();
+                  return _context22.stop();
               }
             }
-          }, _callee19);
+          }, _callee22);
         }));
 
-        function eventResize(_x4) {
+        function eventResize(_x8) {
           return _eventResize.apply(this, arguments);
         }
 
@@ -103149,16 +103470,22 @@ var Calendar = /*#__PURE__*/function () {
         }, 100);
       }
     }, 100);
+    if (this.schedule_active.modal.id == 'Appointment') this.schedule_active.autosave = new _functions__WEBPACK_IMPORTED_MODULE_1__["Features"].Autosave({
+      send: this.schedule_active.save.bind(this.schedule_active),
+      delay: 5000,
+      message: 'All schedule changes saved',
+      ele: this.ele
+    });
   }
 
   _createClass(Calendar, [{
     key: "event_drop",
     value: function () {
-      var _event_drop = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee20(info) {
-        var group_id, event_source_id, source, schedule, response, delta;
-        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee20$(_context20) {
+      var _event_drop = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee23(info) {
+        var group_id, event_source_id, source, schedule, response, delta, result;
+        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee23$(_context23) {
           while (1) {
-            switch (_context20.prev = _context20.next) {
+            switch (_context23.prev = _context23.next) {
               case 0:
                 group_id = info.event.groupId, event_source_id = info.event.source.id, source = this.fullcal.getEventSourceById(event_source_id), schedule = this.schedule_by_source_id(event_source_id), response = schedule.response_by_group_id(group_id), delta = info.delta;
                 Object(_functions__WEBPACK_IMPORTED_MODULE_1__["log"])({
@@ -103170,26 +103497,32 @@ var Calendar = /*#__PURE__*/function () {
                 }, 'event drop');
 
                 if (!schedule) {
-                  _context20.next = 6;
+                  _context23.next = 10;
                   break;
                 }
 
-                return _context20.abrupt("return", schedule.update_by_delta(response, {
+                schedule.edit_recur = 'all';
+                _context23.next = 6;
+                return schedule.update_by_delta(response, {
                   delta: delta
-                }));
+                });
 
               case 6:
-                return _context20.abrupt("return", false);
+                result = _context23.sent;
+                return _context23.abrupt("return", !_functions__WEBPACK_IMPORTED_MODULE_1__["system"].validation.xhr.error.exists(result));
 
-              case 7:
+              case 10:
+                return _context23.abrupt("return", false);
+
+              case 11:
               case "end":
-                return _context20.stop();
+                return _context23.stop();
             }
           }
-        }, _callee20, this);
+        }, _callee23, this);
       }));
 
-      function event_drop(_x5) {
+      function event_drop(_x9) {
         return _event_drop.apply(this, arguments);
       }
 
@@ -103198,11 +103531,11 @@ var Calendar = /*#__PURE__*/function () {
   }, {
     key: "event_resize",
     value: function () {
-      var _event_resize = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee21(info) {
+      var _event_resize = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee24(info) {
         var group_id, event_source_id, source, schedule, response, startDelta, endDelta;
-        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee21$(_context21) {
+        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee24$(_context24) {
           while (1) {
-            switch (_context21.prev = _context21.next) {
+            switch (_context24.prev = _context24.next) {
               case 0:
                 group_id = info.event.groupId, event_source_id = info.event.source.id, source = this.fullcal.getEventSourceById(event_source_id), schedule = this.schedule_by_source_id(event_source_id), response = schedule.response_by_group_id(group_id), startDelta = info.startDelta, endDelta = info.endDelta;
                 Object(_functions__WEBPACK_IMPORTED_MODULE_1__["log"])({
@@ -103214,27 +103547,27 @@ var Calendar = /*#__PURE__*/function () {
                 }, 'event resize');
 
                 if (!schedule) {
-                  _context21.next = 6;
+                  _context24.next = 6;
                   break;
                 }
 
-                return _context21.abrupt("return", schedule.update_by_delta(response, {
+                return _context24.abrupt("return", schedule.update_by_delta(response, {
                   startDelta: startDelta,
                   endDelta: endDelta
                 }));
 
               case 6:
-                return _context21.abrupt("return", false);
+                return _context24.abrupt("return", false);
 
               case 7:
               case "end":
-                return _context21.stop();
+                return _context24.stop();
             }
           }
-        }, _callee21, this);
+        }, _callee24, this);
       }));
 
-      function event_resize(_x6) {
+      function event_resize(_x10) {
         return _event_resize.apply(this, arguments);
       }
 
@@ -103272,14 +103605,16 @@ var Calendar = /*#__PURE__*/function () {
   }, {
     key: "event_mount",
     value: function event_mount(info) {
+      $(info.el).data({
+        fc_event: info.event
+      });
       if (info.isMirror || info.event.display == 'background') return;
-      Object(_functions__WEBPACK_IMPORTED_MODULE_1__["log"])({
-        info: info
-      }, 'event mount');
       var calendar = this;
 
       if (info.event.extendedProps.description) {
-        var message = info.event.extendedProps.description.to_key_value_html();
+        var message = info.event.extendedProps.description.to_key_value_html(); // log({message,has_modified:message.find('.modified_indicator').exists()});
+
+        if (message.find('.modified_indicator').exists()) message.append("<div class='little pink modified_note'>Modified from original*</div>");
         this.apply_event_info_to_tooltip(message, info);
         new _functions__WEBPACK_IMPORTED_MODULE_1__["Features"].ToolTip({
           target: $(info.el),
@@ -103293,42 +103628,13 @@ var Calendar = /*#__PURE__*/function () {
       }
     }
   }, {
-    key: "event_render",
-    value: function event_render(info) {
-      try {
-        var calendar = this,
-            schedule = this.schedule_by_source_id(info.event.source.id),
-            display = schedule.display;
-        if (display == 'none') return false;else if (display == 'background') return;
-
-        if (info.event.extendedProps.description && !info.isMirror) {
-          Object(_functions__WEBPACK_IMPORTED_MODULE_1__["log"])({
-            event: info.event
-          });
-          var message = info.event.extendedProps.description.to_key_value_html();
-          this.apply_event_info_to_tooltip(message, info);
-          new _functions__WEBPACK_IMPORTED_MODULE_1__["Features"].ToolTip({
-            target: $(info.el),
-            message: message,
-            match_border: true,
-            on_hide: function on_hide() {
-              if (info.event.groupId) calendar.event_eles_by_group_id(info.event.groupId).removeClass('hover');else $(info.el).removeClass('hover');
-            },
-            hide_on: 'mousedown touchstart'
-          });
-        }
-      } catch (error) {
-        // log({error,info,event:info.event});
-        return false;
-      }
-    }
-  }, {
     key: "event_mouseenter",
     value: function event_mouseenter(info) {
-      if (info.event.display == 'background') return; // log({info});
+      if (info.event.display == 'background') return;
+      var group_id = info.event.groupId; // log({info},'mouseenter info');
 
-      var group_id = info.event.groupId;
-      if (group_id && group_id != '') this.event_eles_by_group_id(group_id).addClass('hover'); // eles.addClass('hover');
+      $(info.el).removeClass('pinkBgFlash');
+      if (group_id && group_id != '') this.event_eles_by_group_id(group_id).addClass('hover');
     }
   }, {
     key: "event_mouseleave",
@@ -103345,10 +103651,13 @@ var Calendar = /*#__PURE__*/function () {
       var groupId = info.event.groupId,
           schedule = this.schedule_by_event(info.event);
       if (schedule.is_background) return;
-      var response = schedule.response_by_group_id(groupId);
+      var response = schedule.response_by_group_id(groupId),
+          ids = info.event.extendedProps.ids;
       Object(_functions__WEBPACK_IMPORTED_MODULE_1__["log"])({
-        info: info
-      }); // schedule.edit_moment_start = moment(info.event.start);
+        info: info,
+        response: response,
+        ids: ids
+      }, "event click uid: ".concat(ids.uid, ", recurring_id: ").concat(ids.recurring_id)); // schedule.edit_moment_start = moment(info.event.start);
       // schedule.edit_moment_end = moment(info.event.end);
 
       schedule.edit_event = info.event;
@@ -103359,11 +103668,8 @@ var Calendar = /*#__PURE__*/function () {
   }, {
     key: "date_click",
     value: function date_click(info) {
-      var schedule = this.schedule_active;
-      Object(_functions__WEBPACK_IMPORTED_MODULE_1__["log"])({
-        date: moment(info.date),
-        schedule: schedule
-      }, 'date click');
+      var schedule = this.schedule_active; // log({date:moment(info.date),schedule}, 'date click');
+
       if (schedule) schedule.date_click_to_form(info);else Object(_functions__WEBPACK_IMPORTED_MODULE_1__["log"])({
         error: new Error('schedule not selected')
       });
@@ -103371,8 +103677,8 @@ var Calendar = /*#__PURE__*/function () {
   }, {
     key: "apply_event_info_to_tooltip",
     value: function apply_event_info_to_tooltip(message, render_info) {
-      this.apply_tooltip_info_by_class(message, render_info);
       this.apply_tooltip_info_generic(message, render_info);
+      this.apply_tooltip_info_by_class(message, render_info);
     }
   }, {
     key: "apply_tooltip_info_generic",
@@ -103381,7 +103687,7 @@ var Calendar = /*#__PURE__*/function () {
           start = moment(event.start),
           end = moment(event.end);
       var description = "".concat(start.format('MMM D h:mma'), " - ").concat(end.format('h:mma'));
-      message.prepend("<div><b>".concat(description, "</b></div>"));
+      message.prepend("<div class='generic'><b>".concat(description, "</b></div>"));
     }
   }, {
     key: "apply_tooltip_info_by_class",
@@ -103405,10 +103711,7 @@ var Calendar = /*#__PURE__*/function () {
           action: function action() {
             var groupId = render_info.event.groupId,
                 schedule = cal.schedule_by_event(render_info.event);
-            var response = schedule.response_by_group_id(groupId); // log({render_info});
-            // schedule.edit_moment_start = moment(render_info.event.start);
-            // schedule.edit_moment_end = moment(render_info.event.end);
-
+            var response = schedule.response_by_group_id(groupId);
             schedule.edit_event = render_info.event;
             schedule.form_open({
               response: response
@@ -103424,6 +103727,9 @@ var Calendar = /*#__PURE__*/function () {
             var response = schedule.response_by_group_id(groupId);
             schedule["delete"](response);
           }
+        });
+        message.find('.generic, .Patient, .Practitioner, .Services').css({
+          fontSize: '1.2em'
         });
         message.append(edit_btn.ele, delete_btn.ele);
       }
@@ -103454,7 +103760,7 @@ var Calendar = /*#__PURE__*/function () {
 }();
 
 var Schedule = /*#__PURE__*/function () {
-  function Schedule(schedule_ele, cal_index) {
+  function Schedule(schedule_ele, cal_index, cal_ele) {
     _classCallCheck(this, Schedule);
 
     this.ele = $(schedule_ele);
@@ -103490,7 +103796,21 @@ var Schedule = /*#__PURE__*/function () {
         collection: collection,
         match: match,
         uid: uid
-      });
+      }, 'find model by uid');
+      return match;
+    }
+  }, {
+    key: "find_by_recurring_id",
+    value: function find_by_recurring_id(recurring_id) {
+      var collection = this.responses || this.models,
+          match = collection.filter(function (x) {
+        return x.recurring_id == recurring_id;
+      }) || null;
+      Object(_functions__WEBPACK_IMPORTED_MODULE_1__["log"])({
+        collection: collection,
+        match: match,
+        recurring_id: recurring_id
+      }, 'find model by recurring id');
       return match;
     }
   }, {
@@ -103516,11 +103836,9 @@ var Schedule = /*#__PURE__*/function () {
           SelectDates: date,
           SelectWeekDays: Schedule.integer_to_weekday(Schedule.date_moment(date).day())
         });
-      }
+      } // log({fill});
 
-      Object(_functions__WEBPACK_IMPORTED_MODULE_1__["log"])({
-        fill: fill
-      });
+
       this.form_open({
         fill: fill
       });
@@ -103562,16 +103880,20 @@ var Schedule = /*#__PURE__*/function () {
         if (this.edit) this.replace_response(this.edit, response);else this.responses.push(response);
         this.refresh_events();
         unblur();
+        this.save(); // this.autosave.trigger('Schedule updated');
       }
 
       return response !== false;
     }
   }, {
-    key: "add_model",
-    value: function add_model(instance) {
+    key: "model_add",
+    value: function model_add(instance) {
       try {
         if (this.models === null) this.models = [];
-        if (this.edit) this.replace_model(this.edit, instance.schedule_obj);else this.models.push(instance.schedule_obj);
+        var uid = instance.uid,
+            existing = this.find(uid);
+        if (existing) this.replace_model(existing, instance.schedule_obj);else this.models.push(instance.schedule_obj);
+        this.autosave.trigger();
       } catch (error) {
         Object(_functions__WEBPACK_IMPORTED_MODULE_1__["log"])({
           error: error,
@@ -103584,37 +103906,45 @@ var Schedule = /*#__PURE__*/function () {
       return instance.schedule_obj;
     }
   }, {
+    key: "model_find_related",
+    value: function model_find_related(model) {
+      var models = this.models.filter(function (m) {
+        return m.recurring_id && m.recurring_id == model.recurring_id && m.uid != model.uid;
+      });
+      return models;
+    }
+  }, {
     key: "delete",
     value: function () {
-      var _delete3 = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee22(response) {
+      var _delete3 = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee25(response) {
         var _model3, index, appt, delete_result;
 
-        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee22$(_context22) {
+        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee25$(_context25) {
           while (1) {
-            switch (_context22.prev = _context22.next) {
+            switch (_context25.prev = _context25.next) {
               case 0:
                 Object(_functions__WEBPACK_IMPORTED_MODULE_1__["log"])({
                   response: response
                 });
 
                 if (!this.models) {
-                  _context22.next = 10;
+                  _context25.next = 10;
                   break;
                 }
 
                 _model3 = this.find(response.uid), index = this.models.indexOf(_model3); // log({models:this.models,model,index},'pre delete');
 
                 if (!(this.modal.id == 'Appointment')) {
-                  _context22.next = 10;
+                  _context25.next = 10;
                   break;
                 }
 
                 appt = new Appointment(response);
-                _context22.next = 7;
+                _context25.next = 7;
                 return appt["delete"]("");
 
               case 7:
-                delete_result = _context22.sent;
+                delete_result = _context25.sent;
                 Object(_functions__WEBPACK_IMPORTED_MODULE_1__["log"])({
                   delete_result: delete_result
                 });
@@ -103628,13 +103958,13 @@ var Schedule = /*#__PURE__*/function () {
 
               case 10:
               case "end":
-                return _context22.stop();
+                return _context25.stop();
             }
           }
-        }, _callee22, this);
+        }, _callee25, this);
       }));
 
-      function _delete(_x7) {
+      function _delete(_x11) {
         return _delete3.apply(this, arguments);
       }
 
@@ -103643,24 +103973,24 @@ var Schedule = /*#__PURE__*/function () {
   }, {
     key: "replace_response",
     value: function () {
-      var _replace_response = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee23(response_old, response_new) {
+      var _replace_response = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee26(response_old, response_new) {
         var index;
-        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee23$(_context23) {
+        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee26$(_context26) {
           while (1) {
-            switch (_context23.prev = _context23.next) {
+            switch (_context26.prev = _context26.next) {
               case 0:
                 index = this.responses.indexOf(response_old);
                 this.responses.splice(index, 1, response_new);
 
               case 2:
               case "end":
-                return _context23.stop();
+                return _context26.stop();
             }
           }
-        }, _callee23, this);
+        }, _callee26, this);
       }));
 
-      function replace_response(_x8, _x9) {
+      function replace_response(_x12, _x13) {
         return _replace_response.apply(this, arguments);
       }
 
@@ -103669,24 +103999,24 @@ var Schedule = /*#__PURE__*/function () {
   }, {
     key: "replace_model",
     value: function () {
-      var _replace_model = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee24(model_old, model_new) {
+      var _replace_model = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee27(model_old, model_new) {
         var index;
-        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee24$(_context24) {
+        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee27$(_context27) {
           while (1) {
-            switch (_context24.prev = _context24.next) {
+            switch (_context27.prev = _context27.next) {
               case 0:
                 index = this.models.indexOf(model_old);
                 this.models.splice(index, 1, model_new);
 
               case 2:
               case "end":
-                return _context24.stop();
+                return _context27.stop();
             }
           }
-        }, _callee24, this);
+        }, _callee27, this);
       }));
 
-      function replace_model(_x10, _x11) {
+      function replace_model(_x14, _x15) {
         return _replace_model.apply(this, arguments);
       }
 
@@ -103695,15 +104025,15 @@ var Schedule = /*#__PURE__*/function () {
   }, {
     key: "update_by_delta",
     value: function () {
-      var _update_by_delta = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee25(response, delta_obj) {
+      var _update_by_delta = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee28(response, delta_obj) {
         var response_obj, delta, time_start, time_end, start, end, weekdays, weekday_item, _delta, _time_start, _delta2, _time_end, _time_start2, _time_end2, _delta3, recur_obj, dates, days, _delta4, _delta5, _end, _start, duration, new_appointment;
 
-        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee25$(_context25) {
+        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee28$(_context28) {
           while (1) {
-            switch (_context25.prev = _context25.next) {
+            switch (_context28.prev = _context28.next) {
               case 0:
                 if (!(this.modal.id == 'ScheduleBlock')) {
-                  _context25.next = 9;
+                  _context28.next = 9;
                   break;
                 }
 
@@ -103744,17 +104074,14 @@ var Schedule = /*#__PURE__*/function () {
                 }
 
                 this.refresh_events();
-                return _context25.abrupt("return", this.save());
+                return _context28.abrupt("return", this.save());
 
               case 9:
                 if (!(this.modal.id == 'Appointment')) {
-                  _context25.next = 23;
+                  _context28.next = 20;
                   break;
                 }
 
-                Object(_functions__WEBPACK_IMPORTED_MODULE_1__["log"])({
-                  response: response
-                }, 'initial response');
                 _time_start2 = response.time_start, _time_end2 = response.time_end;
 
                 if (delta_obj.delta) {
@@ -103776,47 +104103,37 @@ var Schedule = /*#__PURE__*/function () {
                       if (days) recur_obj.set_response_for('SelectWeekDays', Schedule.shift_weekdays(days, _delta3.days));
                       response.recurrence = recur_obj.json;
                     }
-                  } // log({response,time_start,time_end}, 'delta');
-
+                  }
                 }
 
                 if (delta_obj.startDelta) {
                   _delta4 = delta_obj.startDelta;
-                  if (_delta4.milliseconds) response.time_start = moment(_time_start2, 'h:mma').add(_delta4.milliseconds, 'milliseconds').format('h:mma'); // log({response,time_start,time_end,delta}, 'start delta');
+                  if (_delta4.milliseconds) response.time_start = moment(_time_start2, 'h:mma').add(_delta4.milliseconds, 'milliseconds').format('h:mma');
                 }
 
                 if (delta_obj.endDelta) {
                   _delta5 = delta_obj.endDelta;
-                  if (_delta5.milliseconds) response.time_end = moment(_time_end2, 'h:mma').add(_delta5.milliseconds, 'milliseconds').format('h:mma'); // log({response,time_start,time_end,delta}, 'end delta');
+                  if (_delta5.milliseconds) response.time_end = moment(_time_end2, 'h:mma').add(_delta5.milliseconds, 'milliseconds').format('h:mma');
                 }
 
                 _end = Schedule.time_moment(response.time_end), _start = Schedule.time_moment(response.time_start), duration = _end.diff(_start, 'minutes');
-                Object(_functions__WEBPACK_IMPORTED_MODULE_1__["log"])({
-                  start: _start,
-                  end: _end,
-                  duration: duration
-                });
                 response.duration = duration;
-                Object(_functions__WEBPACK_IMPORTED_MODULE_1__["log"])({
-                  response: response,
-                  delta_obj: delta_obj
-                });
                 new_appointment = new Appointment(response.merge({
                   time: response.time_start
                 }));
                 new_appointment.save_blur = this.save_blur_model;
                 this.edit = response;
-                return _context25.abrupt("return", new_appointment.save());
+                return _context28.abrupt("return", new_appointment.save());
 
-              case 23:
+              case 20:
               case "end":
-                return _context25.stop();
+                return _context28.stop();
             }
           }
-        }, _callee25, this);
+        }, _callee28, this);
       }));
 
-      function update_by_delta(_x12, _x13) {
+      function update_by_delta(_x16, _x17) {
         return _update_by_delta.apply(this, arguments);
       }
 
@@ -103859,10 +104176,7 @@ var Schedule = /*#__PURE__*/function () {
         var recur_toggle = this.modal.ele.find('.toggle_ele').getObj();
 
         if (this.edit) {
-          Object(_functions__WEBPACK_IMPORTED_MODULE_1__["log"])({
-            edit: this.edit
-          });
-
+          // log({edit:this.edit});
           var ev = this.edit_event,
               description = ev.extendedProps.description,
               answers = _forms__WEBPACK_IMPORTED_MODULE_2__["Forms"].Answer.get_all_within(this.modal.ele, false),
@@ -103872,11 +104186,9 @@ var Schedule = /*#__PURE__*/function () {
             });
           },
               recur_form = this.form,
-              header_text = "".concat(description.Patient, "<br>").concat(moment(ev.start).format('MMM D h:mma'), " - ").concat(moment(ev.end).format('h:mma'));
+              header_text = "".concat(description.Patient, "<br>").concat(moment(ev.start).format('MMM D h:mma'), " - ").concat(moment(ev.end).format('h:mma')); // log({ev});
 
-          Object(_functions__WEBPACK_IMPORTED_MODULE_1__["log"])({
-            ev: ev
-          });
+
           header.html(header_text);
           answers.forEach(function (answer) {
             return answer.to_initial_value();
@@ -103901,7 +104213,7 @@ var Schedule = /*#__PURE__*/function () {
             if (this.edit.dates) recur_str = "<h3>All Dates: ".concat(this.edit.description['Linked Dates'], "</h3>");else recur_str = "<h3>".concat(this.edit.description['Recurring'], "<br><b>From</b> ").concat(this.edit.date_start, " <b style='margin-left:5px'>Until</b> ").concat(this.edit.date_end ? this.edit.date_end : 'forever', "</h3>");
 
             if ($('#RecurEditOptions').dne()) {
-              this.recur_options = new OptionBox({
+              this.recur_options = new _functions__WEBPACK_IMPORTED_MODULE_1__["Features"].OptionBox({
                 id: 'RecurEditOptions',
                 header: header_str,
                 header_html_tag: 'h2'
@@ -103975,6 +104287,304 @@ var Schedule = /*#__PURE__*/function () {
         }
       }
     }
+  }, {
+    key: "upcoming",
+    value: function upcoming(model) {
+      var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+      var schedule = this;
+      var limit = options.limit || 3,
+          format = options.format || 'M/D/YYYY',
+          sort = options.sort || null,
+          rrule_set = model.rrule ? rrulestr(model.rrule, {
+        forceset: true
+      }) : null,
+          include_related = ifu(options.include_related, true),
+          related = null,
+          related_dates = [],
+          related_uids = [];
+
+      if (include_related) {
+        related = this.model_find_related(model);
+        var related_map = this.model_find_related(model).map(function (model_related) {
+          return {
+            uid: model_related.uid,
+            dates: schedule.upcoming(model_related, {
+              sort: {
+                dir: 'asc'
+              },
+              include_related: false
+            }).dates,
+            time_start: model_related.time_start
+          };
+        }); // log({related_map,related_uids,related_dates,rrule_set},'UPCOMING RELATED');
+
+        related_map.forEach(function (model_related) {
+          model_related.dates.forEach(function (date) {
+            var rdate = Schedule.moment_to_rdate(date); // log({rdate});
+
+            related_dates.push(rdate);
+            related_uids.push(model_related.uid);
+          });
+        });
+      }
+
+      var working_rdate = Schedule.moment_to_rdate(moment()),
+          dates = [],
+          self_data = [];
+
+      if (rrule_set) {
+        var self = true;
+
+        while (working_rdate && dates.length < limit) {
+          working_rdate = rrule_set.after(working_rdate);
+          self = true;
+
+          if (!working_rdate && related_dates.notEmpty()) {
+            working_rdate = related_dates.shift();
+            self = related_uids.shift();
+          } else if (related_dates.notEmpty() && related_dates[0].valueOf() < working_rdate.valueOf()) {
+            working_rdate = related_dates.shift();
+            self = related_uids.shift();
+          }
+
+          if (working_rdate) {
+            dates.push(working_rdate);
+            self_data.push(self);
+          }
+        }
+      } else {
+        var rdate = Schedule.datetime_to_rdate("".concat(model.date, " ").concat(model.time_start));
+
+        if (rdate.valueOf() > moment().valueOf()) {
+          dates.push(rdate);
+          self_data.push(false);
+        }
+      }
+
+      if (sort) dates = _functions__WEBPACK_IMPORTED_MODULE_1__["system"].validation.date.sort(dates, sort.merge({
+        as_moment: true
+      }));else dates = dates.map(function (date) {
+        return moment(date);
+      });
+      return {
+        model: model,
+        limit: limit,
+        dates: dates,
+        self_data: self_data,
+        max: working_rdate != null,
+        rrule_set: rrule_set
+      };
+    }
+  }, {
+    key: "upcoming_ele",
+    value: function upcoming_ele(result) {
+      var sched = this;
+
+      var update = function update(ev) {
+        var more = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 3;
+        var ele = $(this).closest('.upcoming'),
+            prev_result = ele.data(),
+            limit = prev_result.limit,
+            rrule_set = prev_result.rrule_set,
+            new_result = sched.upcoming(prev_result.model, {
+          limit: limit + more,
+          sort: {
+            dir: 'asc'
+          }
+        }),
+            new_ele = sched.upcoming_ele(new_result);
+        ele.replaceWith(new_ele);
+        _functions__WEBPACK_IMPORTED_MODULE_1__["Features"].ToolTip.find_containing_tooltip(new_ele).check_right();
+      };
+
+      var see_more = $('<span/>', {
+        css: {
+          cursor: 'pointer',
+          color: 'var(--pink)',
+          textDecoration: 'underline',
+          fontSize: '0.9em'
+        },
+        text: 'see more'
+      }).on('click', update),
+          list = $("<span/>", {
+        "class": 'upcoming'
+      }).data(result);
+      list.append(sched.date_links(result));
+      if (result.max) list.append(see_more);
+      return list;
+    }
+  }, {
+    key: "recent",
+    value: function recent(model) {
+      var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+      var schedule = this;
+      var limit = options.limit || 3,
+          format = options.format || 'M/D/YYYY',
+          sort = options.sort || null,
+          rrule_set = model.rrule ? rrulestr(model.rrule, {
+        forceset: true
+      }) : null,
+          include_related = ifu(options.include_related, true),
+          related = null,
+          related_dates = [],
+          related_uids = [];
+
+      if (include_related) {
+        related = this.model_find_related(model);
+        var related_map = this.model_find_related(model).map(function (model_related) {
+          return {
+            uid: model_related.uid,
+            dates: schedule.recent(model_related, {
+              sort: {
+                dir: 'desc'
+              },
+              include_related: false
+            }).dates,
+            time_start: model_related.time_start
+          };
+        }); // log({related_map,related_uids,related_dates,rrule_set},'UPCOMING RELATED');
+
+        related_map.forEach(function (model_related) {
+          model_related.dates.forEach(function (date) {
+            var rdate = Schedule.moment_to_rdate(date); // log({rdate});
+
+            related_dates.push(rdate);
+            related_uids.push(model_related.uid);
+          });
+        });
+      }
+
+      var working_rdate = Schedule.moment_to_rdate(moment()),
+          dates = [],
+          self_data = [];
+
+      if (rrule_set) {
+        var self = true;
+
+        while (working_rdate && dates.length < limit) {
+          working_rdate = rrule_set.before(working_rdate);
+          self = true;
+
+          if (!working_rdate && related_dates.notEmpty()) {
+            working_rdate = related_dates.shift();
+            self = related_uids.shift();
+          } else if (related_dates.notEmpty() && related_dates[0].valueOf() > working_rdate.valueOf()) {
+            working_rdate = related_dates.shift();
+            self = related_uids.shift();
+          }
+
+          if (working_rdate) {
+            dates.push(working_rdate);
+            self_data.push(self);
+          }
+        }
+      } else {
+        var rdate = Schedule.datetime_to_rdate("".concat(model.date, " ").concat(model.time_start));
+
+        if (rdate.valueOf() < moment().valueOf()) {
+          dates.push(rdate);
+          self_data.push(false);
+        }
+      }
+
+      if (sort) dates = _functions__WEBPACK_IMPORTED_MODULE_1__["system"].validation.date.sort(dates, sort.merge({
+        as_moment: true
+      }));else dates = dates.map(function (date) {
+        return moment(date);
+      });
+      return {
+        model: model,
+        limit: limit,
+        dates: dates,
+        self_data: self_data,
+        max: working_rdate != null,
+        rrule_set: rrule_set
+      };
+    }
+  }, {
+    key: "recent_ele",
+    value: function recent_ele(result) {
+      var sched = this;
+
+      var update = function update(ev) {
+        var more = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 3;
+        var ele = $(this).closest('.recent'),
+            prev_result = ele.data(),
+            limit = prev_result.limit,
+            rrule_set = prev_result.rrule_set,
+            new_result = sched.recent(prev_result.model, {
+          limit: limit + more,
+          sort: {
+            dir: 'desc'
+          }
+        }),
+            new_ele = sched.recent_ele(new_result);
+        ele.replaceWith(new_ele);
+        _functions__WEBPACK_IMPORTED_MODULE_1__["Features"].ToolTip.find_containing_tooltip(new_ele).check_right();
+      };
+
+      var see_more = $('<span/>', {
+        css: {
+          cursor: 'pointer',
+          color: 'var(--pink)',
+          textDecoration: 'underline',
+          fontSize: '0.9em'
+        },
+        text: 'see more'
+      }).on('click', update),
+          list = $("<span/>", {
+        "class": 'recent'
+      }).data(result);
+      list.append(sched.date_links(result));
+      if (result.max) list.append(see_more);
+      return list;
+    }
+  }, {
+    key: "date_links",
+    value: function date_links(result) {
+      var append_arr = [],
+          dates = result.dates,
+          max = result.max,
+          count = dates.length,
+          self = result.self_data,
+          sched = this;
+      dates.forEach(function (date, d) {
+        var uid = self[d] === true ? result.model.uid : self[d];
+        append_arr.push(sched.date_link(date, uid));
+        if (self[d] !== true) append_arr.push("<span class='modified_indicator'>*</span>");
+        if (d < count - 1 && count > 2) append_arr.push(', ');
+        if (d == count - 2 && !max && count > 1) append_arr.push("".concat(count == 2 ? ' and ' : 'and '));
+        if (d == count - 1 && max) append_arr.push('... ');
+      });
+      return append_arr;
+    }
+  }, {
+    key: "date_link",
+    value: function date_link(date, uid) {
+      return $("<span class='date_link'>".concat(date.format('M/D/YYYY'), "</span>")).data({
+        date: date,
+        uid: uid
+      }).on('click', this.date_link_click.bind(this));
+    }
+  }, {
+    key: "date_link_click",
+    value: function date_link_click(ev) {
+      var target = $(ev.target),
+          tt = _functions__WEBPACK_IMPORTED_MODULE_1__["Features"].ToolTip.find_containing_tooltip(target);
+      var data = target.data(),
+          date = data.date,
+          uid = data.uid,
+          fc = this.calendar.fullcal;
+      tt.hide(100);
+      fc.gotoDate(date.toISOString());
+      var event_ele = $('.fc-event').filter(':visible').filter(function (e, ele) {
+        var fc_event = $(ele).data('fc_event'),
+            this_uid = fc_event.extendedProps.ids ? fc_event.extendedProps.ids.uid : null;
+        return date.isSame(fc_event.start, 'day') && this_uid == uid;
+      });
+      event_ele.addClass('pinkBgFlash');
+    } // related_models
+
   }, {
     key: "response_to_obj",
     value: function response_to_obj(json) {
@@ -104084,20 +104694,20 @@ var Schedule = /*#__PURE__*/function () {
   }, {
     key: "models_to_events",
     value: function () {
-      var _models_to_events = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee26(models) {
+      var _models_to_events = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee29(models) {
         var events, source_id, schedule, display, services, patients, practitioners;
-        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee26$(_context26) {
+        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee29$(_context29) {
           while (1) {
-            switch (_context26.prev = _context26.next) {
+            switch (_context29.prev = _context29.next) {
               case 0:
                 events = [], source_id = this.event_source_id, schedule = this, display = this.display;
-                _context26.next = 3;
+                _context29.next = 3;
                 return Model.get_list({
                   model: 'service'
                 });
 
               case 3:
-                services = _context26.sent;
+                services = _context29.sent;
                 patients = Model.get_list({
                   model: 'patient'
                 });
@@ -104132,21 +104742,48 @@ var Schedule = /*#__PURE__*/function () {
                     event.merge({
                       title: title,
                       classNames: classNames,
-                      description: _description
+                      description: _description,
+                      ids: {
+                        uid: model.uid,
+                        recurring_id: model.recurring_id
+                      }
                     });
                   }
 
                   try {
                     if (model.rrule) {
+                      var rrule_set = rrulestr(model.rrule, {
+                        forceset: true
+                      });
                       var start = moment("".concat(model.date, " ").concat(model.time_start), 'MM-DD-YYYY hh:mma'),
                           end = moment("".concat(model.date, " ").concat(model.time_end), 'MM-DD-YYYY hh:mma'),
-                          duration = end.diff(start);
+                          duration = end.diff(start),
+                          today = Schedule.moment_to_rdate(moment()),
+                          upcoming = schedule.upcoming(model, {
+                        limit: 3,
+                        format: 'M/D/YYYY',
+                        sort: {
+                          dir: 'asc'
+                        }
+                      }),
+                          recent = schedule.recent(model, {
+                        limit: 3,
+                        format: 'M/D/YYYY',
+                        sort: {
+                          dir: 'desc'
+                        }
+                      }),
+                          upcoming_ele = schedule.upcoming_ele(upcoming),
+                          recent_ele = schedule.recent_ele(recent);
                       event.merge({
                         duration: duration,
                         rrule: model.rrule,
                         start: start.toISOString()
-                      }); // alert(start.toISOString());
-
+                      });
+                      event.description.merge({
+                        'Upcoming': upcoming_ele,
+                        'Most Recent': recent_ele
+                      });
                       events.push(event);
                     } else {
                       var date = model.date,
@@ -104156,7 +104793,33 @@ var Schedule = /*#__PURE__*/function () {
                       event.merge({
                         start: _start2,
                         end: _end2
-                      }); // alert(start);
+                      });
+
+                      if (model.recurring_id) {
+                        var original_model = schedule.find(model.recurring_id),
+                            _upcoming = schedule.upcoming(original_model, {
+                          limit: 3,
+                          format: 'M/D/YYYY',
+                          sort: {
+                            dir: 'asc'
+                          }
+                        }),
+                            _recent = schedule.recent(original_model, {
+                          limit: 3,
+                          format: 'M/D/YYYY',
+                          sort: {
+                            dir: 'desc'
+                          }
+                        }),
+                            _upcoming_ele = schedule.upcoming_ele(_upcoming),
+                            _recent_ele = schedule.recent_ele(_recent);
+
+                        event.description.merge(Appointment.recurring_description(original_model.recurrence));
+                        event.description.merge({
+                          'Upcoming': _upcoming_ele,
+                          'Most Recent': _recent_ele
+                        });
+                      }
 
                       events.push(event);
                     }
@@ -104168,20 +104831,21 @@ var Schedule = /*#__PURE__*/function () {
                   }
                 });
                 Object(_functions__WEBPACK_IMPORTED_MODULE_1__["log"])({
+                  models: models,
                   events: events
-                });
+                }, 'models to events');
                 this.loading = false;
-                return _context26.abrupt("return", events);
+                return _context29.abrupt("return", events);
 
               case 10:
               case "end":
-                return _context26.stop();
+                return _context29.stop();
             }
           }
-        }, _callee26, this);
+        }, _callee29, this);
       }));
 
-      function models_to_events(_x14) {
+      function models_to_events(_x18) {
         return _models_to_events.apply(this, arguments);
       }
 
@@ -104190,28 +104854,28 @@ var Schedule = /*#__PURE__*/function () {
   }, {
     key: "save",
     value: function () {
-      var _save2 = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee27() {
+      var _save2 = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee30() {
         var columns, model, uid, view, result;
-        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee27$(_context27) {
+        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee30$(_context30) {
           while (1) {
-            switch (_context27.prev = _context27.next) {
+            switch (_context30.prev = _context30.next) {
               case 0:
                 if (this.model) {
-                  _context27.next = 3;
+                  _context30.next = 3;
                   break;
                 }
 
                 feedback('No Model', 'Cannot save schedule, no instance attached');
-                return _context27.abrupt("return");
+                return _context30.abrupt("return");
 
               case 3:
                 if (this.uid) {
-                  _context27.next = 6;
+                  _context30.next = 6;
                   break;
                 }
 
                 feedback('No ID', 'Cannot save schedule, no instance attached');
-                return _context27.abrupt("return");
+                return _context30.abrupt("return");
 
               case 6:
                 columns = {}, model = this.model, uid = this.uid, view = this.calendar.ele.find('.fc-view');
@@ -104222,7 +104886,7 @@ var Schedule = /*#__PURE__*/function () {
                   columns: columns,
                   wants_checkmark: true
                 });
-                blur(view, 'loading', {
+                if (!this.autosave) blur(view, 'loading', {
                   loadingColor: 'var(--pink)'
                 });
                 result = $.ajax({
@@ -104235,19 +104899,19 @@ var Schedule = /*#__PURE__*/function () {
                   },
                   success: function success(response) {
                     if (_functions__WEBPACK_IMPORTED_MODULE_1__["system"].validation.xhr.error.exists(response)) return;
-                    unblur({
+                    if (!this.autosave) unblur({
                       ele: view
                     });
                   }
                 });
-                return _context27.abrupt("return", result);
+                return _context30.abrupt("return", result);
 
               case 13:
               case "end":
-                return _context27.stop();
+                return _context30.stop();
             }
           }
-        }, _callee27, this);
+        }, _callee30, this);
       }));
 
       function save() {
@@ -104259,35 +104923,35 @@ var Schedule = /*#__PURE__*/function () {
   }, {
     key: "refresh_events",
     value: function () {
-      var _refresh_events = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee28() {
-        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee28$(_context28) {
+      var _refresh_events = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee31() {
+        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee31$(_context31) {
           while (1) {
-            switch (_context28.prev = _context28.next) {
+            switch (_context31.prev = _context31.next) {
               case 0:
                 this.loading = true;
                 this.events = [];
 
                 if (!this.responses) {
-                  _context28.next = 6;
+                  _context31.next = 6;
                   break;
                 }
 
                 this.events = this.form_responses_to_events(this.responses);
-                _context28.next = 13;
+                _context31.next = 13;
                 break;
 
               case 6:
                 if (!this.models) {
-                  _context28.next = 12;
+                  _context31.next = 12;
                   break;
                 }
 
-                _context28.next = 9;
+                _context31.next = 9;
                 return this.models_to_events(this.models);
 
               case 9:
-                this.events = _context28.sent;
-                _context28.next = 13;
+                this.events = _context31.sent;
+                _context31.next = 13;
                 break;
 
               case 12:
@@ -104298,10 +104962,10 @@ var Schedule = /*#__PURE__*/function () {
 
               case 14:
               case "end":
-                return _context28.stop();
+                return _context31.stop();
             }
           }
-        }, _callee28, this);
+        }, _callee31, this);
       }));
 
       function refresh_events() {
@@ -104409,7 +105073,9 @@ var Schedule = /*#__PURE__*/function () {
     key: "string_to_moment",
     value: function string_to_moment(string) {
       var format = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'MM/DD/YYYY h:mma';
-      return moment(string, format, true);
+      var m = moment(string, format, true);
+      if (!m._isValid) throw new Error("Invalid moment creation with str = ".concat(string, " and format = ").concat(format));
+      return m;
     }
   }, {
     key: "string_to_db_datetime",
@@ -104445,12 +105111,14 @@ var Schedule = /*#__PURE__*/function () {
   }, {
     key: "date_moment",
     value: function date_moment(string) {
-      return Schedule.string_to_moment(string, 'MM/DD/YYYY');
+      var format = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'MM/DD/YYYY';
+      return Schedule.string_to_moment(string, format);
     }
   }, {
     key: "time_moment",
     value: function time_moment(string) {
-      return Schedule.string_to_moment(string, 'h:mma');
+      var format = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'h:mma';
+      return Schedule.string_to_moment(string, format);
     }
   }]);
 
@@ -104470,9 +105138,6 @@ var Appointment = /*#__PURE__*/function (_Model3) {
     _classCallCheck(this, Appointment);
 
     attr_list = attr_list || Model.construct_from_form('#Appointment');
-    Object(_functions__WEBPACK_IMPORTED_MODULE_1__["log"])({
-      attr_list: attr_list
-    });
     _this6 = _super6.call(this, attr_list, 'Appointment');
 
     if (!_this6.attr_list.date_time_start && _this6.attr_list.date && _this6.attr_list.time) {
@@ -104504,62 +105169,65 @@ var Appointment = /*#__PURE__*/function (_Model3) {
   }
 
   _createClass(Appointment, [{
+    key: "rrule_exclude",
+    value: function rrule_exclude(date_str) {
+      var recur_obj = new _forms__WEBPACK_IMPORTED_MODULE_2__["Forms"].FormResponse(this.attr_list.recurrence),
+          dates = recur_obj.response_for('SelectDates'),
+          exclusions = this.attr_list.exclusions || [];
+      exclusions.smartPush(date_str);
+      this.attr_list.recurrence = recur_obj.json;
+      this.attr_list.exclusions = exclusions;
+    }
+  }, {
     key: "on_save",
     value: function () {
-      var _on_save = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee29() {
-        var sched, edit, edit_recur, existing, date, existing_datetime, exdate, rule;
-        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee29$(_context29) {
+      var _on_save = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee32() {
+        var sched, edit, edit_recur, existing, date, appts, result_arr;
+        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee32$(_context32) {
           while (1) {
-            switch (_context29.prev = _context29.next) {
+            switch (_context32.prev = _context32.next) {
               case 0:
                 sched = this.schedule, edit = sched.edit, edit_recur = sched.edit_recur;
 
-                if (!(this.schedule.edit && this.schedule.edit_recur)) {
-                  _context29.next = 16;
+                if (!(edit && edit_recur)) {
+                  _context32.next = 13;
                   break;
                 }
 
+                if (!(edit_recur == 'all')) {
+                  _context32.next = 4;
+                  break;
+                }
+
+                return _context32.abrupt("return", true);
+
+              case 4:
                 existing = new Appointment(edit), date = this.attr_list.date;
 
-                if (!(edit_recur == 'this')) {
-                  _context29.next = 15;
-                  break;
-                }
+                if (edit_recur == 'this') {
+                  existing.rrule_exclude(date);
+                  existing.on_save = null;
+                } else if (edit_recur == 'future') {}
 
-                existing_datetime = Schedule.datetime_to_moment("".concat(date, " ").concat(existing.attr_list.time_start)), exdate = Schedule.moment_to_rdate(existing_datetime), rule = existing.rrule_obj;
-                rule.exdate(exdate);
-                existing.attr_list.rrule = rule.toString();
-                existing.on_save = null;
-                Object(_functions__WEBPACK_IMPORTED_MODULE_1__["log"])({
-                  sched: sched,
-                  edit: edit,
-                  edit_recur: edit_recur,
-                  existing_datetime: existing_datetime,
-                  existing: existing,
-                  date: date,
-                  exdate: exdate,
-                  rule: rule
-                });
-                _context29.next = 11;
-                return existing.save({
-                  clear_on_success: false
-                });
-
-              case 11:
                 this.attr_list.recurring_id = existing.uid;
                 this.clear_uid();
-                _context29.next = 16;
-                break;
+                appts = [this, existing];
+                _context32.next = 11;
+                return Model.save_multi(appts);
 
-              case 15:
-                if (edit_recur == 'future') {}
+              case 11:
+                result_arr = _context32.sent;
+                return _context32.abrupt("return", false);
 
-              case 16:
+              case 13:
+                return _context32.abrupt("return", true);
+
+              case 14:
               case "end":
-                return _context29.stop();
+                return _context32.stop();
             }
           }
-        }, _callee29, this);
+        }, _callee32, this);
       }));
 
       function on_save() {
@@ -104571,37 +105239,34 @@ var Appointment = /*#__PURE__*/function (_Model3) {
   }, {
     key: "save_callback",
     value: function () {
-      var _save_callback = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee30(data) {
-        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee30$(_context30) {
+      var _save_callback = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee33(data) {
+        var multi,
+            _args33 = arguments;
+        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee33$(_context33) {
           while (1) {
-            switch (_context30.prev = _context30.next) {
+            switch (_context33.prev = _context33.next) {
               case 0:
+                multi = _args33.length > 1 && _args33[1] !== undefined ? _args33[1] : false;
                 this.uid = data.uid;
                 this.attr_list.uid = data.uid;
                 this.attr_list.google_id = data.google_id;
-                if (this.attr_list.recurrence && !this.attr_list.recurring_id) this.attr_list.recurring_id = data.uid;
-                _context30.next = 6;
-                return this.schedule.add_model(this);
+                this.attr_list.recurring_id = data.recurring_id; // if (this.attr_list.recurrence && !this.attr_list.recurring_id) this.attr_list.recurring_id = data.uid;
 
-              case 6:
-                this.event_in_schedule = _context30.sent;
+                _context33.next = 7;
+                return this.schedule.model_add(this);
 
-                if (!this.event_in_schedule) {
-                  _context30.next = 9;
-                  break;
-                }
+              case 7:
+                this.event_in_schedule = _context33.sent;
 
-                return _context30.abrupt("return", this.schedule.save());
-
-              case 9:
+              case 8:
               case "end":
-                return _context30.stop();
+                return _context33.stop();
             }
           }
-        }, _callee30, this);
+        }, _callee33, this);
       }));
 
-      function save_callback(_x15) {
+      function save_callback(_x19) {
         return _save_callback.apply(this, arguments);
       }
 
@@ -104610,16 +105275,16 @@ var Appointment = /*#__PURE__*/function (_Model3) {
   }, {
     key: "delete_callback",
     value: function () {
-      var _delete_callback = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee31() {
-        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee31$(_context31) {
+      var _delete_callback = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee34() {
+        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee34$(_context34) {
           while (1) {
-            switch (_context31.prev = _context31.next) {
+            switch (_context34.prev = _context34.next) {
               case 0:
               case "end":
-                return _context31.stop();
+                return _context34.stop();
             }
           }
-        }, _callee31);
+        }, _callee34);
       }));
 
       function delete_callback() {
@@ -104642,29 +105307,30 @@ var Appointment = /*#__PURE__*/function (_Model3) {
           days = recur_obj.response_for('SelectWeekDays'),
           until = recur_obj.response_for('EndDateOptional'),
           rrule_set = new RRuleSet(),
-          start = null,
-          end = null,
-          // start = Schedule.db_datetime_to_moment(this.attr_list.date_time_start), 
-      // end = Schedule.db_datetime_to_moment(this.attr_list.date_time_end), 
-      interval = recur_obj.response_for('HowOften');
+          start = this.start_moment,
+          end = this.end_moment,
+          interval = recur_obj.response_for('HowOften');
 
-      if (this.attr_list.date_time_start) {
-        start = Schedule.db_datetime_to_moment(this.attr_list.date_time_start);
-        end = Schedule.db_datetime_to_moment(this.attr_list.date_time_end);
-      } else if (this.attr_list.date_start && this.attr_list.time_start) {
-        start = Schedule.datetime_to_moment("".concat(this.attr_list.date_start, " ").concat(this.attr_list.time_start));
-        end = Schedule.datetime_to_moment("".concat(this.attr_list.date_end, " ").concat(this.attr_list.time_end));
+      if (!start || !end) {
+        Object(_functions__WEBPACK_IMPORTED_MODULE_1__["log"])({
+          start: start,
+          end: end,
+          recur_obj: recur_obj,
+          appt: this
+        });
+        throw new Error('Insufficient info for dtstart');
       }
 
-      if (!start || !end) throw new Error('Insufficient info for dtstart');
-      var date = start.format('MM/DD/YYYY');
+      var date = start.format('MM/DD/YYYY'),
+          exclusions = this.attr_list.exclusions,
+          time_start = start.format('hh:mma'),
+          time_end = end.format('hh:mma');
 
       try {
         if (dates) {
           if (!dates.is_array()) dates = dates.split(', ');
-          dates.smartPush(date);
-          var time_start = start.format('hh:mma'),
-              dtstart = Schedule.datetime_to_rdate("".concat(date, " ").concat(time_start));
+          dates.smartPush(date); // let dtstart = Schedule.datetime_to_rdate(`${date} ${time_start}`);
+
           dates.forEach(function (date) {
             rrule_set.rdate(Schedule.datetime_to_rdate("".concat(date, " ").concat(time_start)));
           });
@@ -104677,8 +105343,15 @@ var Appointment = /*#__PURE__*/function (_Model3) {
               return RRule[day.substring(0, 2).toUpperCase()];
             })
           };
-          if (until) rrule.until = Schedule.datetime_to_rdate("".concat(until, " ").concat(end.format('hh:mma')));
+          if (until) rrule.until = Schedule.datetime_to_rdate("".concat(until, " ").concat(time_end));
           rrule_set.rrule(new RRule(rrule));
+        }
+
+        if (exclusions) {
+          // log({exclusions},'building rrule');
+          exclusions.forEach(function (date) {
+            return rrule_set.exdate(Schedule.datetime_to_rdate("".concat(date, " ").concat(time_start)));
+          });
         }
 
         return rrule_set;
@@ -104689,85 +105362,100 @@ var Appointment = /*#__PURE__*/function (_Model3) {
           attr_list: this.attr_list
         });
         return null;
-      } // this.attr_list.rrule = rrule_set.toString();
-      // return this.attr_list.rrule;
-
+      }
+    }
+  }, {
+    key: "start_moment",
+    get: function get() {
+      if (this.attr_list.date_time_start) {
+        return Schedule.db_datetime_to_moment(this.attr_list.date_time_start);
+      } else if (this.attr_list.date && this.attr_list.time_start) {
+        return Schedule.datetime_to_moment("".concat(this.attr_list.date, " ").concat(this.attr_list.time_start));
+      } else return null;
+    }
+  }, {
+    key: "end_moment",
+    get: function get() {
+      if (this.attr_list.date_time_end) {
+        return Schedule.db_datetime_to_moment(this.attr_list.date_time_end);
+      } else if (this.attr_list.date && this.attr_list.time_end) {
+        return Schedule.datetime_to_moment("".concat(this.attr_list.date, " ").concat(this.attr_list.time_end));
+      } else return null;
     }
   }, {
     key: "schedule_obj",
     get: function get() {
-      var obj = {
-        type: 'Appointment',
-        uid: this.uid
-      };
-      var services = this.attr_list.services,
-          group_id = "".concat(this.event_source_id, "_").concat(this.uid),
-          start = Schedule.db_datetime_to_moment(this.attr_list.date_time_start),
-          end = Schedule.db_datetime_to_moment(this.attr_list.date_time_end),
-          patient_id = this.attr_list.patient_id,
-          practitioner_id = this.attr_list.practitioner_id,
-          date = this.attr_list.date,
-          duration = end.diff(start, 'minutes');
-      obj.merge({
-        services: services,
-        patient_id: patient_id,
-        practitioner_id: practitioner_id,
-        date: date,
-        duration: duration,
-        time_start: start.format('hh:mma'),
-        time_end: end.format('hh:mma')
-      });
-
-      if (this.attr_list.recurrence) {
-        var recur_obj = new _forms__WEBPACK_IMPORTED_MODULE_2__["Forms"].FormResponse(this.attr_list.recurrence),
-            dates = recur_obj.response_for('SelectDates'),
-            rrule_set = new RRuleSet();
+      try {
+        var obj = {
+          type: 'Appointment',
+          uid: this.uid
+        };
+        var services = this.attr_list.services,
+            group_id = "".concat(this.event_source_id, "_").concat(this.uid),
+            start = this.start_moment,
+            end = this.end_moment,
+            patient_id = this.attr_list.patient_id,
+            practitioner_id = this.attr_list.practitioner_id,
+            date = this.attr_list.date,
+            duration = end.diff(start, 'minutes');
         obj.merge({
-          recurrence: this.attr_list.recurrence,
-          rrule: this.rrule,
+          services: services,
+          patient_id: patient_id,
+          practitioner_id: practitioner_id,
+          date: date,
+          duration: duration,
+          time_start: start.format('hh:mma'),
+          time_end: end.format('hh:mma'),
           recurring_id: this.attr_list.recurring_id
         });
 
-        if (dates) {
-          if (!dates.is_array()) dates = dates.split(', ');
-          dates.smartPush(date);
-          var time_start = start.format('hh:mma'),
-              dtstart = Schedule.datetime_to_rdate("".concat(date, " ").concat(time_start));
-          dates.forEach(function (date) {
-            rrule_set.rdate(Schedule.datetime_to_rdate("".concat(date, " ").concat(time_start)));
-          });
+        if (this.attr_list.recurrence) {
+          var recur_obj = new _forms__WEBPACK_IMPORTED_MODULE_2__["Forms"].FormResponse(this.attr_list.recurrence),
+              dates = recur_obj.response_for('SelectDates'),
+              days = recur_obj.response_for('SelectWeekDays');
           obj.merge({
-            dates: dates,
-            description: {
-              'Linked Dates': dates.smartJoin()
-            }
+            recurrence: this.attr_list.recurrence,
+            rrule: this.rrule,
+            exclusions: this.attr_list.exclusions
           });
-        } else {
-          obj.merge({
-            days: recur_obj.response_for('SelectWeekDays'),
-            interval: recur_obj.response_for('HowOften'),
-            date_start: this.attr_list.date,
-            date_end: recur_obj.response_for('EndDate')
-          });
-          obj.description = {
-            Recurring: "".concat(obj.interval == 1 ? 'Weekly' : "Every ".concat(obj.interval, " weeks"), " on ").concat(obj.days.smartJoin())
-          }; // obj.merge({rrule: this.rrule});            
-        }
-      }
+          var rrule_set = this.rrule_obj,
+              upcoming = 'what',
+              past = 'how'; // log({rrule_set});
 
-      Object(_functions__WEBPACK_IMPORTED_MODULE_1__["log"])(obj, 'getting schedule obj');
-      return obj;
+          if (dates) {
+            if (!dates.is_array()) dates = dates.split(', ');
+            dates.smartPush(date);
+            var time_start = start.format('hh:mma'),
+                dtstart = Schedule.datetime_to_rdate("".concat(date, " ").concat(time_start));
+            obj.merge({
+              dates: dates,
+              description: Appointment.recurring_description(this.attr_list.recurrence)
+            });
+          } else {
+            var interval = recur_obj.response_for('HowOften');
+            obj.merge({
+              days: days,
+              interval: interval,
+              date_start: this.attr_list.date,
+              date_end: recur_obj.response_for('EndDate'),
+              description: Appointment.recurring_description(this.attr_list.recurrence)
+            });
+          }
+        }
+
+        return obj;
+      } catch (error) {}
     }
   }, {
     key: "db_columns",
     get: function get() {
-      return ['patient_id', 'practitioner_id', 'date_time_start', 'date_time_end', 'recurrence', 'recurring_id', 'rrule'];
+      return ['patient_id', 'practitioner_id', 'date_time_start', 'date_time_end', 'recurrence', 'exclusions', 'recurring_id'];
     }
   }, {
     key: "db_relationships",
     get: function get() {
       return {
-        sync: 'services'
+        services: 'sync'
       };
     }
   }, {
@@ -104786,7 +105474,7 @@ var Appointment = /*#__PURE__*/function (_Model3) {
       var services_list = Model.list('service'),
           duration = 0,
           duration_obj = $('#Appointment').find('.duration').getObj();
-      if (services instanceof Answer) services = services.get();
+      if (services instanceof _forms__WEBPACK_IMPORTED_MODULE_2__["Forms"].Answer) services = services.get();
 
       if (services) {
         services.forEach(function (uid) {
@@ -104798,6 +105486,18 @@ var Appointment = /*#__PURE__*/function (_Model3) {
       }
 
       return duration;
+    }
+  }, {
+    key: "recurring_description",
+    value: function recurring_description(recurrence) {
+      var recur_obj = new _forms__WEBPACK_IMPORTED_MODULE_2__["Forms"].FormResponse(recurrence),
+          dates = recur_obj.response_for('SelectDates'),
+          days = recur_obj.response_for('SelectWeekDays'),
+          interval = recur_obj.response_for('HowOften'),
+          until = recur_obj.response_for('EndDate'),
+          desc = {};
+      if (dates) desc.Recurring = 'Only on selected dates';else if (days) desc.Recurring = "".concat(interval == 1 ? 'Weekly' : "Every ".concat(interval, " weeks"), " on ").concat(days.smartJoin(), " until ").concat(until ? until : 'forever');
+      return desc;
     }
   }]);
 
@@ -104842,19 +105542,19 @@ var Form = /*#__PURE__*/function (_Model5) {
   _createClass(Form, [{
     key: "preview",
     value: function () {
-      var _preview = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee32() {
-        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee32$(_context32) {
+      var _preview = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee35() {
+        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee35$(_context35) {
           while (1) {
-            switch (_context32.prev = _context32.next) {
+            switch (_context35.prev = _context35.next) {
               case 0:
                 menu.fetch("/form/preview/".concat(this.uid), 'new_modal:FormPreview');
 
               case 1:
               case "end":
-                return _context32.stop();
+                return _context35.stop();
             }
           }
-        }, _callee32, this);
+        }, _callee35, this);
       }));
 
       function preview() {
@@ -104866,19 +105566,19 @@ var Form = /*#__PURE__*/function (_Model5) {
   }, {
     key: "edit_unique",
     value: function () {
-      var _edit_unique2 = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee33() {
-        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee33$(_context33) {
+      var _edit_unique2 = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee36() {
+        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee36$(_context36) {
           while (1) {
-            switch (_context33.prev = _context33.next) {
+            switch (_context36.prev = _context36.next) {
               case 0:
                 $('#forms-edit').click();
 
               case 1:
               case "end":
-                return _context33.stop();
+                return _context36.stop();
             }
           }
-        }, _callee33);
+        }, _callee36);
       }));
 
       function edit_unique() {
@@ -104890,22 +105590,22 @@ var Form = /*#__PURE__*/function (_Model5) {
   }], [{
     key: "preview_by_uid",
     value: function () {
-      var _preview_by_uid = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee34(uid) {
-        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee34$(_context34) {
+      var _preview_by_uid = _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee37(uid) {
+        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee37$(_context37) {
           while (1) {
-            switch (_context34.prev = _context34.next) {
+            switch (_context37.prev = _context37.next) {
               case 0:
                 menu.fetch("/form/preview/".concat(uid), 'new_modal:FormPreview');
 
               case 1:
               case "end":
-                return _context34.stop();
+                return _context37.stop();
             }
           }
-        }, _callee34);
+        }, _callee37);
       }));
 
-      function preview_by_uid(_x16) {
+      function preview_by_uid(_x20) {
         return _preview_by_uid.apply(this, arguments);
       }
 
@@ -104931,7 +105631,8 @@ var Models = {
   Appointment: Appointment,
   Service: Service,
   Form: Form
-}; // $(document).ready(function(){
+}; // $(document).ready(function(){if (system.user.isSuper()) alert('yeah');window.Models = Models});
+// $(document).ready(function(){
 //   class_map_all.merge({Form,FormEle,Patient,Practitioner,StaffMember,User,Service,Practice,model,Appointment})
 // });
 
@@ -104977,9 +105678,10 @@ var table = {
     nav_options: function nav_options() {
       init('.optionsNav', function () {
         if ($(this).data('uid') !== undefined) {
-          var type = $(this).data('model'),
+          var _type2 = $(this).data('model'),
               options = $(this).data('options');
-          model.current = type.to_class_obj(options);
+
+          model.current = _type2.to_class_obj(options);
         } else model.current = null;
 
         $(this).find('.navOption').each(function () {

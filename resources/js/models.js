@@ -273,8 +273,8 @@ class Model {
       this.uid = this.attr_list.uid;
       // delete this.attr_list.uid;
     }
-    this.dont_save(['model','id']);
-    log({model:this},`new ${type}`);
+    // this.dont_save(['model','id']);
+    // log({model:this},`new ${type}`);
   }
 
   backup_attr_values (array) {
@@ -304,7 +304,6 @@ class Model {
       log({error,selector});
       all_pass = false;
     }
-    // log({attr_list,all_pass});
     return all_pass ? attr_list : false;
   }
   update_attr_by_form (form_ele = null) {
@@ -324,7 +323,6 @@ class Model {
       log({error,form_ele});
       all_pass = false;
     }
-    // log({attr_list});
     return all_pass;
   }
   clear_uid () {
@@ -365,28 +363,23 @@ class Model {
   }
   async save (options = {}) {
     let type = this.type, model = this, columns = {}, relationships = {}, addl_post_data = {};
-    let clear_on_success = options.clear_on_success || true;
-    if (this.on_save) await this.on_save();
+    let proceed = true, clear_on_success = ifu(options.clear_on_success || true);
+    if (this.on_save) proceed = await this.on_save();
+    if (!proceed) return;
     try {
       if (this.valid) {
-        if (!this.db_columns) throw new Error(`db_columns not defined for ${type}`);
-        this.db_columns.forEach(column => {if (model.attr_list[column]) columns[column] = model.attr_list[column]});
-        if (this.db_relationships) {
-          for (let model in this.db_relationships) {
-            if (this.attr_list[model]) relationships[model] = {uids: this.attr_list[model], method: this.db_relationships[model]}
-          }
-        }
         let save_blur = this.save_blur || false;
         if (save_blur) blur(save_blur.ele,'loading',save_blur.options);
         else blurTop('loading',{loadingColor:'var(--green)',loadingFade:true});
-        let uid = this.save_uid || this.uid || this.attr_list.uid || null, callback = this.save_callback ? this.save_callback.bind(this) : null;
-        if (type == 'User') uid = this.attr_list.user_id;
-        log({columns,relationships,obj:this,attr_list:this.attr_list},`saving new ${this.type}`);
+        
+        let db_obj = this.db_save_obj, callback = this.save_callback ? this.save_callback.bind(this) : null;
+        if (type == 'User') db_obj.uid = this.attr_list.user_id;
+        log({db_obj, attr_list:this.attr_list},`saving new SINGLE ${this.type}`);
         // return;
         let result = await $.ajax({
           url: `/save/${type}`,
           method: 'POST',
-          data: {uid,columns,relationships},
+          data: db_obj,
           success: function(response){
             if (system.validation.xhr.error.exists(response)) return;
             if (clear_on_success) {
@@ -397,6 +390,7 @@ class Model {
             else $('.loadTarget').last().html(response);
           }
         })
+        return result;
       }
     } catch (error) {
       log({error,attr_list:this.attr_list});
@@ -429,6 +423,17 @@ class Model {
 
       })
     } else this.delete_unique();
+  }
+  get db_save_obj () {
+    let model = this, columns = {}, relationships = {}, uid = this.save_uid || this.uid || this.attr_list.uid || null;
+    if (!this.db_columns) throw new Error(`db_columns not defined for ${type}`);
+    this.db_columns.forEach(column => {if (model.attr_list[column]) columns[column] = model.attr_list[column]});
+    if (this.db_relationships) {
+      for (let model in this.db_relationships) {
+        if (this.attr_list[model]) relationships[model] = {uids: this.attr_list[model], method: this.db_relationships[model]}
+      }
+    }
+    return {uid, columns, relationships};
   }
   dont_save (attrs) {
     let list = this.attrs_not_to_save || [];
@@ -477,6 +482,39 @@ class Model {
       log({error,model,uids});
       return [];
     }
+  }
+  static async save_multi_callback (model_arr, data_arr) {
+    model_arr.forEach((model,m) => {
+      log({model,data:data_arr[m]});
+      if (model.save_callback && !system.validation.xhr.error.exists(data_arr[m])) model.save_callback(data_arr[m],true);
+    })
+  }
+  static async save_multi (model_array, options = {}) {
+    let db_array = model_array.map(model => {
+      return model.db_save_obj.merge({type: model.type});
+    }), blur_ele = options.blur_ele || null, loadingColor = options.loadingColor || 'var(--darkgray97)';
+    if (blur_ele) blur(blur_ele,'loading',{loadingColor});
+    else blurTop('loading',{loadingColor});
+    let data = {models: db_array};
+    log({data, model_array, options},'save MULTI');
+    if (options.wants_checkmark) data.merge({wants_checkmark:true});
+    try {
+      let result = await $.ajax({
+        url: `/save/multi`,
+        method: 'POST',
+        data: data,
+        success: async function(response){
+          if (system.validation.xhr.error.exists(response)) return;
+          await Model.save_multi_callback(model_array, response);
+          if (blur_ele) unblur({ele:blur_ele});
+          else unblurAll();
+        }
+      });
+      return result;
+    } catch (error) {
+      log({error});
+      return false;
+    } 
   }
 }
 class SettingsManager {
@@ -585,13 +623,14 @@ class Practice extends Model {
   }
   async schedule_edit () {
     await menu.fetch(`/schedule/Practice/${this.uid}`,'new_modal:EditSchedule');
-    let calendar = $('#EditSchedule').find('.calendar').getObj();
-    let schedule = $('#EditSchedule').find('.schedule').getObj();
+    // let calendar = $('#EditSchedule').find('.calendar').getObj();
+    // let schedule = $('#EditSchedule').find('.schedule').getObj();
   }
   async schedule_save () {
-    if (this.schedule.add_response()) {
-      this.schedule.save('Practice', this.uid);
-    }
+    this.schedule.add_response();
+    // if (this.schedule.add_response()) {
+    //   this.schedule.save('Practice', this.uid);
+    // }
   }
 }
 class User extends Model {
@@ -600,10 +639,12 @@ class User extends Model {
     this.backup_attr_values(['username:email','address_billing:address_mailing']);
     this.usertype = type;
     if (!this.attr_list.roles) this.attr_list.roles = {list:[type],default:null};
-    this.dont_save(['name','user_id']);
+    // this.dont_save(['name','user_id']);
     this.save_uid = this.user_id;
   }
 
+  get is_super () {return this.attr_list.is_super || false}
+  get is_admin () {return this.attr_list.is_admin || false}
   async delete_unique () {
     log({this:this});
     let instance = this;
@@ -638,17 +679,18 @@ class User extends Model {
   async schedule_edit () {
     let UserType = this.usertype.toKeyString(), user = this;
     await menu.fetch(`/schedule/${UserType}/${this.uid}`,'new_modal:EditSchedule');
-    let calendar = $('#EditSchedule').find('.calendar').getObj();
-    let schedule = $('#EditSchedule').find('.schedule').getObj();
+    // let calendar = $('#EditSchedule').find('.calendar').getObj();
+    // let schedule = $('#EditSchedule').find('.schedule').getObj();
     // init('.calendar.schedule',function(){
     //   user.schedule = new Schedule({ele:$(this),model:UserType,uid:user.uid});
     // })
   }
 
   async schedule_save () {
-    if (this.schedule.add_response()) {
-      this.schedule.save(this.usertype.toKeyString(), this.uid);
-    }
+    this.schedule.add_response();
+    // if (this.schedule.add_response()) {
+    //   this.schedule.save(this.usertype.toKeyString(), this.uid);
+    // }
   }
 }
 class Patient extends User {
@@ -679,17 +721,13 @@ class Calendar {
     this.form_obj = this.form ? this.form.find('.form').getObj() : null;
     let schedule_eles = this.ele.find('.schedule'), schedules = [];
     schedule_eles.each((s,schedule) => {
-      let obj = new Schedule(schedule,s);
+      let obj = new Schedule(schedule, s, this.ele);
       schedules.push(obj);
       obj.calendar = this;
     })
     this.schedules = schedules;
-    log({cal:this,practice:practice.info,tz:practice.info.tz}, 'new calendar');
-    // let tz = practice.info.tz;
-    // alert(tz);
+    // log({cal:this,practice:practice.info,tz:practice.info.tz}, 'new calendar');
     let tz = practice.info.tz, client_tz = moment.tz.guess();
-    // alert (`${tz}... ${client_tz}`);
-    // return;
     let calendar = this, fullcal_options = {
       plugins: [dayGridPlugin,listPlugin, timeGridPlugin, interactionPlugin, rrulePlugin, momentTimezonePlugin],
       timeZone: tz,
@@ -705,8 +743,8 @@ class Calendar {
       editable: true,
       eventDrop: async function(info) {
         let result = await calendar.event_drop(info);
-        // log({result});
-        if (result != 'checkmark') info.revert();
+        log({result},'dropping event');
+        if (!result) info.revert();
       },
       eventResize: async function(info) {
         let result = await calendar.event_resize(info);
@@ -735,6 +773,7 @@ class Calendar {
         setTimeout(function(){unblur({ele:view})},100);
       }
     },100);
+    if (this.schedule_active.modal.id == 'Appointment') this.schedule_active.autosave = new Features.Autosave({send: this.schedule_active.save.bind(this.schedule_active), delay:5000, message: 'All schedule changes saved', ele: this.ele});
   }
   get event_list () {return this.events ? this.events : []}
   get event_sources () {
@@ -745,7 +784,12 @@ class Calendar {
   async event_drop (info) {
     let group_id = info.event.groupId, event_source_id = info.event.source.id, source = this.fullcal.getEventSourceById(event_source_id), schedule = this.schedule_by_source_id(event_source_id), response = schedule.response_by_group_id(group_id), delta = info.delta;
     log({info,group_id,event_source_id,schedule,response}, 'event drop');
-    if (schedule) return schedule.update_by_delta(response, {delta});
+
+    if (schedule) {
+      schedule.edit_recur = 'all';
+      let result = await schedule.update_by_delta(response, {delta});
+      return !system.validation.xhr.error.exists(result);
+    }
     else return false;
   }
   async event_resize (info) {
@@ -771,11 +815,13 @@ class Calendar {
 
   }
   event_mount (info) {
+    $(info.el).data({fc_event:info.event});
     if (info.isMirror || info.event.display == 'background') return;
-    log({info}, 'event mount');
     let calendar = this;
     if (info.event.extendedProps.description) {
       let message = info.event.extendedProps.description.to_key_value_html();
+      // log({message,has_modified:message.find('.modified_indicator').exists()});
+      if (message.find('.modified_indicator').exists()) message.append(`<div class='little pink modified_note'>Modified from original*</div>`);
       this.apply_event_info_to_tooltip(message,info);
       new Features.ToolTip({
         target: $(info.el),
@@ -788,39 +834,13 @@ class Calendar {
         hide_on: 'mousedown touchstart',
       })
     }
-
-  }
-  event_render (info) {
-    try {
-      let calendar = this, schedule = this.schedule_by_source_id(info.event.source.id), display = schedule.display;
-      if (display == 'none') return false;
-      else if (display == 'background') return;
-      if (info.event.extendedProps.description && !info.isMirror) {
-        log({event:info.event});
-        let message = info.event.extendedProps.description.to_key_value_html();
-        this.apply_event_info_to_tooltip(message,info);
-        new Features.ToolTip({
-          target: $(info.el),
-          message: message,
-          match_border: true,
-          on_hide: function(){
-            if (info.event.groupId) calendar.event_eles_by_group_id(info.event.groupId).removeClass('hover');
-            else $(info.el).removeClass('hover');
-          },
-          hide_on: 'mousedown touchstart',
-        })
-      }
-    } catch (error) {
-      // log({error,info,event:info.event});
-      return false;
-    }
   }
   event_mouseenter (info) {
     if (info.event.display == 'background') return;
-    // log({info});
     let group_id = info.event.groupId;
+    // log({info},'mouseenter info');
+    $(info.el).removeClass('pinkBgFlash');
     if (group_id && group_id != '') this.event_eles_by_group_id(group_id).addClass('hover');
-    // eles.addClass('hover');
   }
   event_mouseleave (info) {
     if (info.event.display == 'background') return;
@@ -831,8 +851,8 @@ class Calendar {
   event_click (info) {
     let groupId = info.event.groupId, schedule = this.schedule_by_event(info.event);
     if (schedule.is_background) return;
-    let response = schedule.response_by_group_id(groupId);
-    log({info});
+    let response = schedule.response_by_group_id(groupId), ids = info.event.extendedProps.ids;
+    log({info,response,ids},`event click uid: ${ids.uid}, recurring_id: ${ids.recurring_id}`);
     // schedule.edit_moment_start = moment(info.event.start);
     // schedule.edit_moment_end = moment(info.event.end);
     schedule.edit_event = info.event;
@@ -840,18 +860,18 @@ class Calendar {
   }
   date_click (info) {
     let schedule = this.schedule_active;
-    log({date:moment(info.date),schedule}, 'date click');
+    // log({date:moment(info.date),schedule}, 'date click');
     if (schedule) schedule.date_click_to_form(info);
     else log({error:new Error('schedule not selected')});
   }
   apply_event_info_to_tooltip (message, render_info) {
-    this.apply_tooltip_info_by_class(message, render_info);
     this.apply_tooltip_info_generic(message, render_info);
+    this.apply_tooltip_info_by_class(message, render_info);
   }
   apply_tooltip_info_generic (message, render_info) {
     let event = render_info.event, start = moment(event.start), end = moment(event.end);
     let description = `${start.format('MMM D h:mma')} - ${end.format('h:mma')}`;
-    message.prepend(`<div><b>${description}</b></div>`);
+    message.prepend(`<div class='generic'><b>${description}</b></div>`);
   }
   apply_tooltip_info_by_class (message, render_info) {
     let ele = $(render_info.el);
@@ -867,9 +887,6 @@ class Calendar {
         text:'edit', class_list: 'xxsmall yellow70', action: function(){
           let groupId = render_info.event.groupId, schedule = cal.schedule_by_event(render_info.event);
           let response = schedule.response_by_group_id(groupId);
-          // log({render_info});
-          // schedule.edit_moment_start = moment(render_info.event.start);
-          // schedule.edit_moment_end = moment(render_info.event.end);
           schedule.edit_event = render_info.event;
           schedule.form_open({response});      
         }
@@ -880,12 +897,13 @@ class Calendar {
           schedule.delete(response);
         }
       })
+      message.find('.generic, .Patient, .Practitioner, .Services').css({fontSize:'1.2em'});
       message.append(edit_btn.ele,delete_btn.ele);
     }
   }
 }
 class Schedule {
-  constructor(schedule_ele, cal_index) {
+  constructor(schedule_ele, cal_index, cal_ele) {
     this.ele = $(schedule_ele);
     this.ele.data('class_obj',this);
     this.cal_index = cal_index;
@@ -916,7 +934,12 @@ class Schedule {
   }
   find (uid) {
     let collection = this.responses || this.models, match = collection.find(x => x.uid == uid) || null;
-    log({collection,match,uid});
+    log({collection,match,uid}, 'find model by uid');
+    return match;
+  }
+  find_by_recurring_id (recurring_id) {
+    let collection = this.responses || this.models, match = collection.filter(x => x.recurring_id == recurring_id) || null;
+    log({collection,match,recurring_id}, 'find model by recurring id');
     return match;
   }
   date_click_to_form (info) {
@@ -937,7 +960,7 @@ class Schedule {
         SelectWeekDays: Schedule.integer_to_weekday(Schedule.date_moment(date).day()),
       })
     }
-    log({fill});
+    // log({fill});
     this.form_open({fill});
   }
   source_remove () {
@@ -965,20 +988,28 @@ class Schedule {
       else this.responses.push(response);
       this.refresh_events();
       unblur();
+      this.save();
+      // this.autosave.trigger('Schedule updated');
     }
     return response !== false;
   }
-  add_model (instance) {
+  model_add (instance) {
     try {
       if (this.models === null) this.models = [];
-      if (this.edit) this.replace_model(this.edit, instance.schedule_obj);
+      let uid = instance.uid, existing = this.find(uid);
+      if (existing) this.replace_model(existing, instance.schedule_obj);
       else this.models.push(instance.schedule_obj);
+      this.autosave.trigger();
     } catch (error) {
       log({error,instance});
       return false;
     }
     this.refresh_events();
     return instance.schedule_obj;
+  }
+  model_find_related (model) {
+    let models = this.models.filter(m => m.recurring_id && m.recurring_id == model.recurring_id && m.uid != model.uid);
+    return models;
   }
   async delete (response) {
     log({response});
@@ -1040,7 +1071,6 @@ class Schedule {
       this.refresh_events();
       return this.save();
     } else if (this.modal.id == 'Appointment') {
-      log({response}, 'initial response');
       let time_start = response.time_start, time_end = response.time_end;
       if (delta_obj.delta) {
         let delta = delta_obj.delta;
@@ -1057,22 +1087,17 @@ class Schedule {
             response.recurrence = recur_obj.json;
           }
         }
-        // log({response,time_start,time_end}, 'delta');
       }
       if (delta_obj.startDelta) {
         let delta = delta_obj.startDelta;
         if (delta.milliseconds) response.time_start = moment(time_start,'h:mma').add(delta.milliseconds,'milliseconds').format('h:mma');
-        // log({response,time_start,time_end,delta}, 'start delta');
       }
       if (delta_obj.endDelta) {
         let delta = delta_obj.endDelta;
         if (delta.milliseconds) response.time_end = moment(time_end,'h:mma').add(delta.milliseconds,'milliseconds').format('h:mma');
-        // log({response,time_start,time_end,delta}, 'end delta');
       }
       let end = Schedule.time_moment(response.time_end), start = Schedule.time_moment(response.time_start), duration = end.diff(start, 'minutes');
-      log({start,end,duration});
       response.duration = duration;
-      log({response,delta_obj});
       let new_appointment = new Appointment(response.merge({time:response.time_start}));
       new_appointment.save_blur = this.save_blur_model;
       this.edit = response;
@@ -1103,9 +1128,9 @@ class Schedule {
       this.edit = options.response ? options.response : null;
       let recur_toggle = this.modal.ele.find('.toggle_ele').getObj();
       if (this.edit) {
-        log({edit:this.edit});
+        // log({edit:this.edit});
         let ev = this.edit_event, description = ev.extendedProps.description, answers = Forms.Answer.get_all_within(this.modal.ele,false), named = function(name) {return Forms.Answer.find(answers, {name})}, recur_form = this.form, header_text = `${description.Patient}<br>${moment(ev.start).format('MMM D h:mma')} - ${moment(ev.end).format('h:mma')}`;
-        log({ev});
+        // log({ev});
         header.html(header_text);
         answers.forEach(answer => answer.to_initial_value());
         for (let attr in this.edit) {
@@ -1122,7 +1147,7 @@ class Schedule {
           else recur_str = `<h3>${this.edit.description['Recurring']}<br><b>From</b> ${this.edit.date_start} <b style='margin-left:5px'>Until</b> ${this.edit.date_end ? this.edit.date_end : 'forever'}</h3>`;
 
           if ($('#RecurEditOptions').dne()) {
-            this.recur_options = new OptionBox({id:'RecurEditOptions',header:header_str,header_html_tag:'h2'});
+            this.recur_options = new Features.OptionBox({id:'RecurEditOptions',header:header_str,header_html_tag:'h2'});
             this.recur_options.add_info(recur_str);
             this.recur_options.add_button_info(`<h3 class="pink bold">Would you like to change this event only or other events as well?</h3>`)
             this.recur_options.add_button({text:'this event only',
@@ -1205,7 +1230,8 @@ class Schedule {
     });
   }
   static string_to_moment (string, format = 'MM/DD/YYYY h:mma') {
-    return moment(string, format, true);
+    let m = moment(string, format, true); if (!m._isValid) throw new Error(`Invalid moment creation with str = ${string} and format = ${format}`);
+    return m;
   }
   static string_to_db_datetime (string) {
     return Schedule.datetime_to_moment(string).format('YYYY-MM-DD HH:mm:ss');
@@ -1224,9 +1250,152 @@ class Schedule {
   static moment_to_rdate (dt) {
     return new Date(Date.UTC(dt.utc().year(), dt.utc().month(), dt.utc().date(), dt.utc().hours(), dt.utc().minutes(), dt.utc().seconds()));
   }
-  static date_moment (string) {return Schedule.string_to_moment(string, 'MM/DD/YYYY')}
-  static time_moment (string) {return Schedule.string_to_moment(string, 'h:mma')}
+  static date_moment (string, format = 'MM/DD/YYYY') {return Schedule.string_to_moment(string, format)}
+  static time_moment (string, format = 'h:mma') {return Schedule.string_to_moment(string, format)}
+  upcoming (model, options = {}) {
+    let schedule = this;
+    let limit = options.limit || 3,
+      format = options.format || 'M/D/YYYY',
+      sort = options.sort || null,
+      rrule_set = model.rrule ? rrulestr(model.rrule,{forceset:true}) : null,
+      include_related = ifu(options.include_related, true),
+      related = null, related_dates = [], related_uids = [];
+    if (include_related) {
+      related = this.model_find_related(model);
+      let related_map = this.model_find_related(model).map(model_related => {
+        return {uid: model_related.uid, dates: schedule.upcoming(model_related,{sort:{dir:'asc'},include_related:false}).dates, time_start: model_related.time_start};
+      }); 
+      // log({related_map,related_uids,related_dates,rrule_set},'UPCOMING RELATED');
+      related_map.forEach(model_related => {
+        model_related.dates.forEach(date => {
+          let rdate = Schedule.moment_to_rdate(date);
+          // log({rdate});
+          related_dates.push(rdate); 
+          related_uids.push(model_related.uid)});
+      });
+    }
+    let working_rdate = Schedule.moment_to_rdate(moment()), dates = [], self_data = [];
+    if (rrule_set) {
+      let self = true;
+      while (working_rdate && dates.length < limit) {
+        working_rdate = rrule_set.after(working_rdate); self = true;
+        if (!working_rdate && related_dates.notEmpty()) {
+          working_rdate = related_dates.shift(); self = related_uids.shift();
+        } else if (related_dates.notEmpty() && related_dates[0].valueOf() < working_rdate.valueOf()) {
+          working_rdate = related_dates.shift(); self = related_uids.shift();
+        }
+        if (working_rdate) {
+          dates.push(working_rdate); self_data.push(self);
+        }
+      }
+    } else {
+      let rdate = Schedule.datetime_to_rdate(`${model.date} ${model.time_start}`);
+      if (rdate.valueOf() > moment().valueOf()) {dates.push(rdate); self_data.push(false);}
+    }
 
+    if (sort) dates = system.validation.date.sort(dates, sort.merge({as_moment:true}));
+    else dates = dates.map(date => moment(date));
+    return {model, limit, dates, self_data, max: working_rdate != null, rrule_set};
+  }
+  upcoming_ele (result) {
+    let sched = this;
+    let update = function(ev, more = 3) {
+      let ele = $(this).closest('.upcoming'), prev_result = ele.data(), limit = prev_result.limit, rrule_set = prev_result.rrule_set, new_result = sched.upcoming(prev_result.model, {limit: limit + more, sort: {dir:'asc'}}), new_ele = sched.upcoming_ele(new_result);
+      ele.replaceWith(new_ele);
+      Features.ToolTip.find_containing_tooltip(new_ele).check_right();    
+    }
+    let see_more = $('<span/>',{css:{cursor:'pointer',color:'var(--pink)',textDecoration:'underline',fontSize:'0.9em'},text:'see more'}).on('click',update),
+      list = $(`<span/>`,{class:'upcoming'}).data(result);
+    list.append(sched.date_links(result));
+    if (result.max) list.append(see_more);
+    return list;
+  }
+  recent (model, options = {}) {
+    let schedule = this;
+    let limit = options.limit || 3,
+      format = options.format || 'M/D/YYYY',
+      sort = options.sort || null,
+      rrule_set = model.rrule ? rrulestr(model.rrule,{forceset:true}) : null,
+      include_related = ifu(options.include_related, true),
+      related = null, related_dates = [], related_uids = [];
+    if (include_related) {
+      related = this.model_find_related(model);
+      let related_map = this.model_find_related(model).map(model_related => {
+        return {uid: model_related.uid, dates: schedule.recent(model_related,{sort:{dir:'desc'},include_related:false}).dates, time_start: model_related.time_start};
+      }); 
+      // log({related_map,related_uids,related_dates,rrule_set},'UPCOMING RELATED');
+      related_map.forEach(model_related => {
+        model_related.dates.forEach(date => {
+          let rdate = Schedule.moment_to_rdate(date);
+          // log({rdate});
+          related_dates.push(rdate); 
+          related_uids.push(model_related.uid)});
+      });
+    }
+    let working_rdate = Schedule.moment_to_rdate(moment()), dates = [], self_data = [];
+    if (rrule_set) {
+      let self = true;
+      while (working_rdate && dates.length < limit) {
+        working_rdate = rrule_set.before(working_rdate); self = true;
+        if (!working_rdate && related_dates.notEmpty()) {
+          working_rdate = related_dates.shift(); self = related_uids.shift();
+        } else if (related_dates.notEmpty() && related_dates[0].valueOf() > working_rdate.valueOf()) {
+          working_rdate = related_dates.shift(); self = related_uids.shift();
+        }
+        if (working_rdate) {
+          dates.push(working_rdate); self_data.push(self);
+        }
+      }
+    } else {
+      let rdate = Schedule.datetime_to_rdate(`${model.date} ${model.time_start}`);
+      if (rdate.valueOf() < moment().valueOf()) {dates.push(rdate); self_data.push(false);}
+    }
+
+    if (sort) dates = system.validation.date.sort(dates, sort.merge({as_moment:true}));
+    else dates = dates.map(date => moment(date));
+    return {model, limit, dates, self_data, max: working_rdate != null, rrule_set};
+  }
+  recent_ele (result) {
+    let sched = this;
+    let update = function(ev, more = 3) {
+      let ele = $(this).closest('.recent'), prev_result = ele.data(), limit = prev_result.limit, rrule_set = prev_result.rrule_set, new_result = sched.recent(prev_result.model, {limit: limit + more, sort: {dir:'desc'}}), new_ele = sched.recent_ele(new_result);
+      ele.replaceWith(new_ele);
+      Features.ToolTip.find_containing_tooltip(new_ele).check_right();    
+    }
+    let see_more = $('<span/>',{css:{cursor:'pointer',color:'var(--pink)',textDecoration:'underline',fontSize:'0.9em'},text:'see more'}).on('click',update),
+      list = $(`<span/>`,{class:'recent'}).data(result);
+    list.append(sched.date_links(result));
+    if (result.max) list.append(see_more);
+    return list;
+  }
+  date_links (result) {
+    let append_arr = [], dates = result.dates, max = result.max, count = dates.length, self = result.self_data, sched = this;
+    dates.forEach((date,d) => {
+      let uid = self[d] === true ? result.model.uid : self[d];
+      append_arr.push(sched.date_link(date, uid));
+      if (self[d] !== true) append_arr.push(`<span class='modified_indicator'>*</span>`);
+      if (d < count - 1 && count > 2) append_arr.push(', ');
+      if (d == count - 2 && !max && count > 1) append_arr.push(`${count == 2 ? ' and ' : 'and '}`);
+      if (d == count - 1 && max) append_arr.push('... ');
+    })
+    return append_arr;
+  }
+  date_link (date, uid) {
+    return $(`<span class='date_link'>${date.format('M/D/YYYY')}</span>`).data({date,uid}).on('click', this.date_link_click.bind(this));
+  }
+  date_link_click (ev) {
+    let target = $(ev.target), tt = Features.ToolTip.find_containing_tooltip(target);
+    let data = target.data(), date = data.date, uid = data.uid, fc = this.calendar.fullcal;
+    tt.hide(100);
+    fc.gotoDate(date.toISOString());
+    let event_ele = $('.fc-event').filter(':visible').filter((e,ele) => {
+      let fc_event = $(ele).data('fc_event'), this_uid = fc_event.extendedProps.ids ? fc_event.extendedProps.ids.uid : null;
+      return date.isSame(fc_event.start,'day') && this_uid == uid;
+    });
+    event_ele.addClass('pinkBgFlash');
+  }
+
+  // related_models
   get save_blur_model () {
     return {ele: this.calendar.ele.find('.fc-view'),options:{loadingColor:'var(--pink)',blurCss:{backgroundColor:'var(--white50)'}}};    
   }
@@ -1318,29 +1487,47 @@ class Schedule {
       if (model.type == 'Appointment') {
         let service_names = Model.names('service',model.services), title = service_names.smartJoin(), classNames = `${service_names.map(name => name.toKeyString()).join(' ')} ${groupId} ${model.type}`, Patient = Model.names('patient',model.patient_id)[0], Practitioner = Model.names('practitioner',model.practitioner_id)[0], description ={Patient,Practitioner,Services:title};
         description.merge(model.description || {});
-        event.merge({title,classNames,description});
+        event.merge({title,classNames,description,ids:{uid:model.uid,recurring_id:model.recurring_id}});
       }
       
       try {
         if (model.rrule) {
+          let rrule_set = rrulestr(model.rrule, {forceset:true});
           let start = moment(`${model.date} ${model.time_start}`,'MM-DD-YYYY hh:mma'), 
-            end = moment(`${model.date} ${model.time_end}`,'MM-DD-YYYY hh:mma'), duration = end.diff(start);
-          event.merge({
-            duration, rrule: model.rrule, start: start.toISOString()
+            end = moment(`${model.date} ${model.time_end}`,'MM-DD-YYYY hh:mma'), duration = end.diff(start),
+            today = Schedule.moment_to_rdate(moment()), 
+            upcoming = schedule.upcoming(model,{limit:3,format:'M/D/YYYY',sort:{dir:'asc'}}), 
+            recent = schedule.recent(model,{limit:3,format:'M/D/YYYY',sort:{dir:'desc'}}),
+            upcoming_ele = schedule.upcoming_ele(upcoming),
+            recent_ele = schedule.recent_ele(recent);
+          event.merge({duration, rrule: model.rrule, start: start.toISOString()});
+          event.description.merge({
+            'Upcoming': upcoming_ele,
+            'Most Recent': recent_ele,
           });
-          // alert(start.toISOString());
           events.push(event);
         } else {
           let date = model.date, start = moment(`${date} ${model.time_start}`,'MM-DD-YYYY hh:mma').toISOString(), end = moment(`${date} ${model.time_end}`,'MM-DD-YYYY hh:mma').toISOString();
           event.merge({start,end});
-          // alert(start);
+          if (model.recurring_id) {
+            let original_model = schedule.find(model.recurring_id),
+              upcoming = schedule.upcoming(original_model,{limit:3,format:'M/D/YYYY',sort:{dir:'asc'}}), 
+              recent = schedule.recent(original_model,{limit:3,format:'M/D/YYYY',sort:{dir:'desc'}}),
+              upcoming_ele = schedule.upcoming_ele(upcoming),
+              recent_ele = schedule.recent_ele(recent);
+            event.description.merge(Appointment.recurring_description(original_model.recurrence));
+            event.description.merge({
+              'Upcoming': upcoming_ele,
+              'Most Recent': recent_ele,
+            });
+          }
           events.push(event);
         }
       } catch (error) {
         log({error,model});
       }
     })
-    log({events});
+    log({models,events},'models to events');
     this.loading = false;
     return events;
   }
@@ -1351,14 +1538,14 @@ class Schedule {
     columns[this.db_attr] = this.response || this.models;
     if (columns[this.db_attr].is_array() && columns[this.db_attr].isEmpty()) columns[this.db_attr] = null;
     log({uid,columns,wants_checkmark: true});
-    blur(view,'loading',{loadingColor:'var(--pink)'});
+    if (!this.autosave) blur(view,'loading',{loadingColor:'var(--pink)'});
     let result = $.ajax({
       url: `/save/${model}`,
       method: 'POST',
       data: {uid,columns,wants_checkmark: true},
       success: function(response){
         if (system.validation.xhr.error.exists(response)) return;
-        unblur({ele:view});
+        if (!this.autosave) unblur({ele:view});
       }
     })
     return result;
@@ -1374,7 +1561,6 @@ class Schedule {
 class Appointment extends Model{
   constructor (attr_list = null) {
     attr_list = attr_list || Model.construct_from_form('#Appointment');
-    log({attr_list});
     super(attr_list, 'Appointment');
 
     if (!this.attr_list.date_time_start && this.attr_list.date && this.attr_list.time) {
@@ -1400,7 +1586,7 @@ class Appointment extends Model{
 
   static update_duration (services, ev) {
     let services_list = Model.list('service'), duration = 0, duration_obj = $('#Appointment').find('.duration').getObj();
-    if (services instanceof Answer) services = services.get();
+    if (services instanceof Forms.Answer) services = services.get();
     if (services) {
       services.forEach(uid => {duration += services_list.find(service => service.uid == uid).duration;});
       if (duration_obj) duration_obj.value = duration;      
@@ -1412,24 +1598,19 @@ class Appointment extends Model{
     if (!this.attr_list.recurrence) return null;
     let recur_obj = new Forms.FormResponse(this.attr_list.recurrence), 
       dates = recur_obj.response_for('SelectDates'), days = recur_obj.response_for('SelectWeekDays'), 
-      until = recur_obj.response_for('EndDateOptional'), rrule_set =new RRuleSet(), start = null, end = null,
-      // start = Schedule.db_datetime_to_moment(this.attr_list.date_time_start), 
-      // end = Schedule.db_datetime_to_moment(this.attr_list.date_time_end), 
+      until = recur_obj.response_for('EndDateOptional'), rrule_set =new RRuleSet(), 
+      start = this.start_moment, end = this.end_moment,
       interval = recur_obj.response_for('HowOften');
-    if (this.attr_list.date_time_start) {
-      start = Schedule.db_datetime_to_moment(this.attr_list.date_time_start);
-      end = Schedule.db_datetime_to_moment(this.attr_list.date_time_end);     
-    } else if (this.attr_list.date_start && this.attr_list.time_start) {
-      start = Schedule.datetime_to_moment(`${this.attr_list.date_start} ${this.attr_list.time_start}`);
-      end = Schedule.datetime_to_moment(`${this.attr_list.date_end} ${this.attr_list.time_end}`);
-    } 
-    if (!start || !end) throw new Error('Insufficient info for dtstart');
-    let date = start.format('MM/DD/YYYY');
+    if (!start || !end) {
+      log({start,end,recur_obj,appt:this});
+      throw new Error('Insufficient info for dtstart');
+    }
+    let date = start.format('MM/DD/YYYY'), exclusions = this.attr_list.exclusions, time_start = start.format('hh:mma'), time_end = end.format('hh:mma');
     try {
       if (dates) {
         if (!dates.is_array()) dates = dates.split(', ');
         dates.smartPush(date);
-        let time_start = start.format('hh:mma'), dtstart = Schedule.datetime_to_rdate(`${date} ${time_start}`);
+        // let dtstart = Schedule.datetime_to_rdate(`${date} ${time_start}`);
         dates.forEach(date => {rrule_set.rdate(Schedule.datetime_to_rdate(`${date} ${time_start}`))});
       } else {
         let rrule = {
@@ -1438,61 +1619,96 @@ class Appointment extends Model{
           dtstart: Schedule.moment_to_rdate(start),
           byweekday: days.map(day => RRule[day.substring(0,2).toUpperCase()])
         };
-        if (until) rrule.until = Schedule.datetime_to_rdate(`${until} ${end.format('hh:mma')}`);
+        if (until) rrule.until = Schedule.datetime_to_rdate(`${until} ${time_end}`);
         rrule_set.rrule(new RRule(rrule));
+      }
+      if (exclusions) {
+        // log({exclusions},'building rrule');
+        exclusions.forEach(date => rrule_set.exdate(Schedule.datetime_to_rdate(`${date} ${time_start}`)));
       }
       return rrule_set;
     } catch (error) {
       log({error,start,attr_list:this.attr_list});
       return null;
     }
-    // this.attr_list.rrule = rrule_set.toString();
-    // return this.attr_list.rrule;
+  }
+  rrule_exclude (date_str) {
+    let recur_obj = new Forms.FormResponse(this.attr_list.recurrence), dates = recur_obj.response_for('SelectDates'), exclusions = this.attr_list.exclusions || [];
+    exclusions.smartPush(date_str);
+    this.attr_list.recurrence = recur_obj.json;
+    this.attr_list.exclusions = exclusions;
+  }
+  get start_moment () {
+    if (this.attr_list.date_time_start) {
+      return Schedule.db_datetime_to_moment(this.attr_list.date_time_start);
+    } else if (this.attr_list.date && this.attr_list.time_start) {
+      return Schedule.datetime_to_moment(`${this.attr_list.date} ${this.attr_list.time_start}`);
+    } else return null;
+  }
+  get end_moment () {
+    if (this.attr_list.date_time_end) {
+      return Schedule.db_datetime_to_moment(this.attr_list.date_time_end);
+    } else if (this.attr_list.date && this.attr_list.time_end) {
+      return Schedule.datetime_to_moment(`${this.attr_list.date} ${this.attr_list.time_end}`);
+    } else return null;
+  }
+  static recurring_description (recurrence) {
+    let recur_obj = new Forms.FormResponse(recurrence), dates = recur_obj.response_for('SelectDates'), days = recur_obj.response_for('SelectWeekDays'), interval = recur_obj.response_for('HowOften'), until = recur_obj.response_for('EndDate'), desc = {};
+    if (dates) desc.Recurring = 'Only on selected dates';
+    else if (days) desc.Recurring = `${interval == 1 ? 'Weekly' : `Every ${interval} weeks`} on ${days.smartJoin()} until ${until ? until : 'forever'}`;
+    return desc;
   }
   get schedule_obj () {
-    let obj = {type:'Appointment',uid:this.uid};
-    let services = this.attr_list.services, group_id = `${this.event_source_id}_${this.uid}`, 
-      start = Schedule.db_datetime_to_moment(this.attr_list.date_time_start), 
-      end = Schedule.db_datetime_to_moment(this.attr_list.date_time_end), 
-      patient_id = this.attr_list.patient_id, 
-      practitioner_id = this.attr_list.practitioner_id, 
-      date = this.attr_list.date, duration = end.diff(start,'minutes');
-    obj.merge({
-      services, patient_id, practitioner_id, date, duration,
-      time_start: start.format('hh:mma'),
-      time_end: end.format('hh:mma')
-    })
-    if (this.attr_list.recurrence) {
-      let recur_obj = new Forms.FormResponse(this.attr_list.recurrence), dates = recur_obj.response_for('SelectDates'), rrule_set = new RRuleSet();
-      obj.merge({recurrence:this.attr_list.recurrence, rrule:this.rrule, recurring_id: this.attr_list.recurring_id});
-      if (dates) {
-        if (!dates.is_array()) dates = dates.split(', ');
-        dates.smartPush(date);
-        let time_start = start.format('hh:mma'), dtstart = Schedule.datetime_to_rdate(`${date} ${time_start}`);
-        dates.forEach(date => {rrule_set.rdate(Schedule.datetime_to_rdate(`${date} ${time_start}`))});
+    try {
+      let obj = {type:'Appointment',uid:this.uid};
+      let services = this.attr_list.services, group_id = `${this.event_source_id}_${this.uid}`, 
+        start = this.start_moment, end = this.end_moment, 
+        patient_id = this.attr_list.patient_id, 
+        practitioner_id = this.attr_list.practitioner_id, 
+        date = this.attr_list.date, duration = end.diff(start,'minutes');
+      obj.merge({
+        services, patient_id, practitioner_id, date, duration,
+        time_start: start.format('hh:mma'),
+        time_end: end.format('hh:mma'),
+        recurring_id: this.attr_list.recurring_id,
+      })
+      if (this.attr_list.recurrence) {
+        let recur_obj = new Forms.FormResponse(this.attr_list.recurrence), dates = recur_obj.response_for('SelectDates'), days = recur_obj.response_for('SelectWeekDays');
         obj.merge({
-          dates,
-          description: {'Linked Dates': dates.smartJoin()}
+          recurrence:this.attr_list.recurrence, 
+          rrule:this.rrule, 
+          exclusions: this.attr_list.exclusions
         });
-      } else {
-        obj.merge({
-          days: recur_obj.response_for('SelectWeekDays'),
-          interval: recur_obj.response_for('HowOften'),
-          date_start: this.attr_list.date,
-          date_end: recur_obj.response_for('EndDate'),
-        });
-        obj.description = {Recurring: `${obj.interval == 1 ? 'Weekly' : `Every ${obj.interval} weeks`} on ${obj.days.smartJoin()}`};
-        // obj.merge({rrule: this.rrule});            
+        let rrule_set = this.rrule_obj, upcoming = 'what', past = 'how';
+        // log({rrule_set});
+        if (dates) {
+          if (!dates.is_array()) dates = dates.split(', ');
+          dates.smartPush(date);
+          let time_start = start.format('hh:mma'), dtstart = Schedule.datetime_to_rdate(`${date} ${time_start}`);
+          obj.merge({
+            dates,
+            description: Appointment.recurring_description(this.attr_list.recurrence),
+          });
+        } else {
+          let interval = recur_obj.response_for('HowOften');
+          obj.merge({
+            days, interval,
+            date_start: this.attr_list.date,
+            date_end: recur_obj.response_for('EndDate'),
+            description: Appointment.recurring_description(this.attr_list.recurrence),
+          });
+        }
       }
+      return obj;
+    } catch (error) {
+
     }
-    log(obj,'getting schedule obj');
-    return obj;
   }
   get db_columns () {
-    return ['patient_id','practitioner_id','date_time_start','date_time_end','recurrence','recurring_id','rrule'];
+    return ['patient_id','practitioner_id','date_time_start','date_time_end','recurrence','exclusions','recurring_id'];
   }
   get db_relationships () {
-    return {sync: 'services'};
+    return {services:'sync'};
   }
   get service_names () {
     return Model.names('service',this.attr_list.services || []);
@@ -1502,30 +1718,32 @@ class Appointment extends Model{
   }
   async on_save () {
     let sched = this.schedule, edit = sched.edit, edit_recur = sched.edit_recur;
-    if (this.schedule.edit && this.schedule.edit_recur) {
+    if (edit && edit_recur) {
+      if (edit_recur == 'all') return true;
       let existing = new Appointment(edit), date = this.attr_list.date;
 
       if (edit_recur == 'this') {
-        let existing_datetime = Schedule.datetime_to_moment(`${date} ${existing.attr_list.time_start}`), exdate = Schedule.moment_to_rdate(existing_datetime), rule = existing.rrule_obj;
-        rule.exdate(exdate);
-        existing.attr_list.rrule = rule.toString();
+        existing.rrule_exclude(date);
         existing.on_save = null;
-        log({sched,edit,edit_recur,existing_datetime,existing,date,exdate,rule});
-        await existing.save({clear_on_success: false});
-        this.attr_list.recurring_id = existing.uid;
-        this.clear_uid();
       } else if (edit_recur == 'future') {
 
       }
+      this.attr_list.recurring_id = existing.uid;
+      this.clear_uid();
+      let appts = [this,existing], result_arr = await Model.save_multi(appts);
+      // log({result_arr},'multi result');
+      // result_arr.forEach((appt,a) => {})
+      return false;
     } 
+    return true;
   }
-  async save_callback (data) {
+  async save_callback (data, multi = false) {
     this.uid = data.uid;
     this.attr_list.uid = data.uid;
     this.attr_list.google_id = data.google_id;
-    if (this.attr_list.recurrence && !this.attr_list.recurring_id) this.attr_list.recurring_id = data.uid;
-    this.event_in_schedule = await this.schedule.add_model(this);
-    if (this.event_in_schedule) return this.schedule.save();
+    this.attr_list.recurring_id = data.recurring_id;
+    // if (this.attr_list.recurrence && !this.attr_list.recurring_id) this.attr_list.recurring_id = data.uid;
+    this.event_in_schedule = await this.schedule.model_add(this);
   }
   async delete_callback () {
     // defined to prevent default  
@@ -1552,6 +1770,7 @@ class Form extends Model {
 }
 
 export const Models = {ModelTable, Filter, Model, SettingsManager, Practice, User, Patient, Practitioner, StaffMember, Calendar, Schedule, Appointment, Service, Form};
+// $(document).ready(function(){if (system.user.isSuper()) alert('yeah');window.Models = Models});
 
 // $(document).ready(function(){
 //   class_map_all.merge({Form,FormEle,Patient,Practitioner,StaffMember,User,Service,Practice,model,Appointment})

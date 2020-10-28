@@ -42,7 +42,7 @@ class FormEle {
       callback: this.autosave_callback.bind(this)
     });
 
-    log({form:this}, `new FormEle`);
+    // log({form:this}, `new FormEle`);
   }
 
   add_header () {
@@ -56,7 +56,7 @@ class FormEle {
       });
       this.ele.removeClass('central full');
       this.header = this.header_editable.ele.appendTo(this.ele);
-      this.section_options = new OptionBox();
+      this.section_options = new Features.OptionBox();
       this.section_options.ele.appendTo(this.ele);
       this.section_options.add_button({text: 'add section',action: blurTop.bind(null, '#AddSection'),class_list: 'pink xsmall'});
       this.section_options.add_button({text: 'preview form', class_list: 'pink70 xsmall', 
@@ -77,7 +77,7 @@ class FormEle {
   }
   add_buttons () {
     if (this.mode == 'modal') {
-      this.modal = new OptionBox({css:{width:'100%',border:'0',maxWidth:'unset'}});
+      this.modal = new Features.OptionBox({css:{width:'100%',border:'0',maxWidth:'unset'}});
       this.modal.ele.insertBefore(this.ele);
       this.modal.add_info(this.ele);
       this.submit_btn = this.modal.add_button({text:'save',action:this.action});
@@ -818,17 +818,17 @@ class Item {
   get condition_str () {
     let str = 'null', c = this.options.condition;
     if (['number','scale'].includes(c.type)) {
-      str = `${c.conditionNumberComparator.smartJoin('or')} ${c.conditionNumberVal}`;
+      str = `${c.conditionNumberComparator.smartJoin({str:'or'})} ${c.conditionNumberVal}`;
     }
     else if (["list","dropdown","checkboxes"].includes(c.type)) {
       // log({c});
       if (this.parent.options.linked_to) {
         log({c});
       }
-      str = c.conditionList.map(condition => Answer.split_values_and_text(condition).text).smartJoin('or');
+      str = c.conditionList.map(condition => Answer.split_values_and_text(condition).text).smartJoin({str:'or'});
     }
     else if (c.type == 'time') {
-      str = `${c.conditionTimeComparator.smartJoin('or')} ${c.conditionTime}`;
+      str = `${c.conditionTimeComparator.smartJoin({str:'or'})} ${c.conditionTime}`;
     }
     if (str == 'null') log(this,`condition type not found`);
     return str;
@@ -1747,8 +1747,8 @@ class Answer {
       .on('mouseleave',function(){if ($('.datepick-popup').dne()) $(this).animate({opacity:0.6})});
     this.input = this.input.add(cal_icon);
     this.get = () => {
-      let v = this.input.val(); 
-      return v != '' ? v : null;
+      let v = this.input.val();
+      return v != '' ? system.validation.date.sort(v) : null;
     }
   }
   async time () {

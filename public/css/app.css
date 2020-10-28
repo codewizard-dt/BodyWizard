@@ -2870,7 +2870,7 @@ textarea[data-followup] {
 }
 
 .calendar .fc-event:not(.fc-bg-event) {
-  background-color: var(--pink80);
+  background-color: var(--pink70);
   border-color: var(--pink);
   cursor: pointer;
 }
@@ -2920,6 +2920,19 @@ td.fc-today {
   position: relative;
   top: 50%;
   transform: translateY(-50%);
+}
+
+.date_link {
+  cursor: pointer;
+  transition: color 400ms;
+}
+
+.date_link:hover {
+  color: var(--pink);
+}
+
+.modified_indicator {
+  color: var(--pink);
 }
 
 .scale.small {
@@ -2978,7 +2991,7 @@ td.fc-today {
 }
 
 .tooltip {
-  position: absolute;
+  position: fixed;
   display: inline-block;
   opacity: 0;
   top: 10em;
