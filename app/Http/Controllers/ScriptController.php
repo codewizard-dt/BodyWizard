@@ -93,32 +93,76 @@ class ScriptController extends Controller
   public function createNewModel($model, Request $request){
     return view('models.create.template',compact('model','request'));
   }
-  public function save($model, Request $request){
+  public function save ($model, $columns, $relationships, $uid = null) {
     $class = "App\\$model";
     try{
-      if ($request->uid != null){
-        $instance = $class::findOrFail($request->uid);
-        $instance->fill($request->columns);
+      if ($uid != null){
+        $instance = $class::findOrFail($uid);
+        $instance->fill($columns);
         if (!$instance->isDirty()) throw new \Exception('no changes');
-        $instance->update($request->columns);
+        $instance->update($columns);
         session(['model_action' => 'update']);
       }else{
-        $instance = $class::create($request->columns);
-        // foreach($request->relationships as $relationship) {
-          Log::info('relationships!',['relationships'=>$request->relationships]);
-        // }
+        $instance = $class::create($columns);
         session(['model_action' => 'create']);
       }
-      setUid($model, $instance->getKey());
 
-      if ($request->submissions){
-        $submissionIds = $this->saveSubmissions($request);
-        if ($submissionIds) $instance->submissions()->sync($submissionIds);
+      if ($relationships) {
+        foreach ($relationships as $rel => $info) {
+          $uids = $info['uids']; $method = $info['method'];
+          if ($method == 'sync') $instance->$rel()->sync($uids);
+          else throw new \Exception("Relationship method ($method) not defined");
+        }
       }
 
+      setUid($model, $instance->getKey());
+
       $response = method_exists($class, 'successResponse') ? $class::successResponse() : successResponse($model);
-      if ($request->has('wants_checkmark')) $response = 'checkmark';
+      if (request()->has('wants_checkmark')) $response = 'checkmark';
     }catch(\Exception $e){
+      $error = handleError($e,'scriptcontroller save 100');
+      $response = compact('error');
+    }
+    return $response;
+  }
+  public function save_single($model, Request $request){
+    $class = "App\\$model";
+    $columns = $request->input('columns', null);
+    $relationships = $request->input('relationships', null);
+    $uid = $request->input('uid', null);
+    return $this->save($model, $columns, $relationships, $uid);
+    // try{
+    //   if ($request->uid != null){
+    //     $instance = $class::findOrFail($request->uid);
+    //     $instance->fill($request->columns);
+    //     if (!$instance->isDirty()) throw new \Exception('no changes');
+    //     $instance->update($request->columns);
+    //     session(['model_action' => 'update']);
+    //   }else{
+    //     $instance = $class::create($request->columns);
+    //     Log::info('relationships!',['relationships'=>$request->relationships]);
+    //     session(['model_action' => 'create']);
+    //   }
+    //   setUid($model, $instance->getKey());
+
+    //   $response = method_exists($class, 'successResponse') ? $class::successResponse() : successResponse($model);
+    //   if ($request->has('wants_checkmark')) $response = 'checkmark';
+    // }catch(\Exception $e){
+    //   $error = handleError($e,'scriptcontroller save 100');
+    //   $response = compact('error');
+    // }
+    return $response;
+  }
+  public function save_multi (Request $request) {
+    try {
+      $models = collect($request->models);
+      $response = $models->map(function($model) {
+        $columns = get($model,'columns',[]);
+        $relationship = get($model,'relationships',[]);
+        $uid = get($model,'uid',null);
+        return $this->save($model['type'],$columns,$relationship,$uid);
+      })->toArray();
+    } catch (\Exception $e) {
       $error = handleError($e,'scriptcontroller save 100');
       $response = compact('error');
     }

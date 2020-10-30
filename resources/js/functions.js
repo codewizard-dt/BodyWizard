@@ -1,10 +1,13 @@
-// import { RRule, RRuleSet, rrulestr } from 'rrule';
+import {forms, Forms} from './forms';
+import {model, table, Models} from './models';
+import Moment from 'moment';
 
-$(".jump").on("click",function(){
-  var target = "#"+$(this).data("target");
-  $.scrollTo(target);
-});
-const debug = {
+
+// $(".jump").on("click",function(){
+//   var target = "#"+$(this).data("target");
+//   $.scrollTo(target);
+// });
+export const debug = {
   get y() {return debug.bool},
   get d() {return debug.depth},
   level: function(depth) {return debug.bool && debug.depth >= depth},
@@ -17,7 +20,7 @@ const debug = {
     }
   }
 };
-const log = function(info, text = null, allowArray = false){
+export const log = function(info, text = null, allowArray = false){
   if (typeof info === 'string') text = info;
   let error = ifu([info.error, info.errors], null, allowArray);
   let data = {}, attrText = [];
@@ -61,6 +64,7 @@ const log = function(info, text = null, allowArray = false){
     console.groupEnd();
   }
 };
+
 class Button {
   constructor(options){
     let errors = [];
@@ -114,7 +118,7 @@ class Button {
       log({error,message,options});
     }
   }
-}
+};
 class Editable {
   constructor(options){
   // attributes: name, html_tag, id, callback
@@ -179,7 +183,7 @@ class Editable {
     this.ele.find('.edit, .value').show();
     this.ele.find('input').val(this.ele.find('.value').text());
   }
-}
+};
 class OptionBox {
   constructor (options = {}) {
     let header = ifu(options.header, null), id = ifu(options.id, null),
@@ -201,7 +205,7 @@ class OptionBox {
     this.info.append(ele);
     return this;
   }
-  reset_header (str) {log({str}); this.header.html(str)}
+  reset_header (str) {this.header.html(str)}
   reset_info (ele = null) {
     this.info.html('');
     if (ele) this.add_info(ele);
@@ -213,12 +217,12 @@ class OptionBox {
   }
   add_button (options) {
     let text = ifu(options.text, 'button'), action = ifu(options.action, null), class_list = ifu(options.class_list, 'pink xsmall'), appendTo = this.option_list, tooltip = options.tooltip || null;
-    let btn = new Button({text,action,class_list,appendTo});
+    let btn = new Features.Button({text,action,class_list,appendTo});
     this.buttons.push(btn);
     if (tooltip) new ToolTip({target:btn.ele}.merge(tooltip));
     return btn;
   }
-}
+};
 class List {
   constructor (options = {}) {
     this.ele = $(`<div/>`,{class:'List'});
@@ -260,7 +264,7 @@ class List {
     if (!item) throw new Error(`Index ${index} does not exist`);
     $(item).slideFadeOut(function(){$(this).remove()});
   }
-}
+};
 class UpDown {
   constructor (options) {
     this.ele = $("<div/>",{class:'UpDown flexbox'}).css({width:'1em',position:'relative'});
@@ -350,7 +354,7 @@ class UpDown {
     next.data().index--;
     target.data().index++;
   }
-}
+};
 class Toggle {
   constructor (options = {}){
     try{
@@ -461,7 +465,7 @@ class Toggle {
     if (this.message_enable) this.message_enable.remove();
     if (this.tooltip) this.tooltip.ele.remove();
   }
-}
+};
 class ToolTip {
   constructor (options) {
     let tip = this;
@@ -477,6 +481,7 @@ class ToolTip {
     this.on_hide = options.on_hide || null;
     this.match_border = options.match_border || false;
     this.hide_on = options.hide_on || '';
+    this.tracking = options.tracking || false;
     this.ele.data('class_obj',this).slideFadeOut(0);
     this.hide_btn = ifu(options.hide_btn,true);
     if (this.hide_btn) {
@@ -499,7 +504,7 @@ class ToolTip {
       let target = $(ev.relatedTarget), next_tip = ToolTip.find_closest_tooltip(target);
       if (!target.is(tip.target)) tip.hide(ev);
       if (next_tip) next_tip.show(ev);
-    }).on('mouseenter',this.mousein.bind(this));
+    }).on('mouseenter', this.mousein.bind(this));
   }
   message_append (msg) {
     if (typeof msg == 'object') {
@@ -519,16 +524,14 @@ class ToolTip {
     this.move(ev, false);
   }
   move (ev, animate = true) {
-    let target = $(ev.toElement);
-    if (target.isInside('.tooltip')) return;
-    // this.mouse_pos = ev;
-    let ele = this.ele[0].getBoundingClientRect();
-    // log({view:view(),body:body(),ele,pos:this.position});
-    if (animate) this.ele.animate(this.position, 250);
-    else this.ele.css(this.position);
-    // this.check_overflow();
+    let target = ev ? $(ev.toElement) : null;
+    if (target && target.isInside('.tooltip')) return;
+    let pos = this.tracking ? this.position_track : this.position_fixed;
+    if (animate) this.ele.animate(pos, 250);
+    else this.ele.css(pos);
   }
   track (ev) {
+    if (!this.tracking) return;
     let move = this.move.bind(this,ev), tooltip = this;
     this.mouse_pos = ev;
     if (!tooltip.track_timeout) {
@@ -551,25 +554,31 @@ class ToolTip {
     // this.track_timeout = null;
     // if (this.on_hide && typeof this.on_hide == 'function') this.on_hide();
   }
-  check_overflow () {
-    // let is_visible = this.ele.isVisible(), scroll_bar_width = system.ui.scroll.bar_width();
-    // if (!is_visible.right || !is_visible.bottom) {
-    //   if (!is_visible.right) this.left -= (is_visible.ele_box.right - is_visible.parent_box.right);
-    //   if (!is_visible.bottom) this.top -= (is_visible.ele_box.height + 40);
-    //   this.ele.css({top:this.top,left:this.left});      
-    // }
+  check_right () {
+    let box = this.ele[0].getBoundingClientRect(), v = view(),
+      border = {right: this.mouse.x + box.width + system.ui.scroll.bar_width()};
+    if (border.right > v.width) this.ele.css({right: 10, left:'unset'});
   }
-  get position () {
+  get position_track () {
     let box = this.ele[0].getBoundingClientRect(), v = view(),
       border = {right: this.mouse.x + box.width + system.ui.scroll.bar_width(), bottom: this.mouse.y + box.height},
       pos_adjusted = {top: (border.bottom > v.height) ? this.mouse.y - box.height - 20 : this.mouse.y};
     if (border.right > v.width) {
       pos_adjusted.right = 10; this.ele.css({left: 'unset'});
-    }
-    else {
+    } else {
       this.ele.css({right: 'unset'}); pos_adjusted.left = this.mouse.x;
     }
-    // log({box,border,pos_adjusted})
+    return pos_adjusted;
+  }
+  get position_fixed () {
+    let box_ele = this.ele[0].getBoundingClientRect(), box_target = this.target[0].getBoundingClientRect(), v = view(),    border = {right: box_target.x + box_ele.width + system.ui.scroll.bar_width(), bottom: box_target.bottom + box_ele.height, top: box_target.top - box_ele.height - 10}, pos_adjusted = {top: (border.top > 10) ? border.top : box_target.bottom + 10};
+    if (border.right > v.width) {
+      pos_adjusted.right = 10; this.ele.css({left: 'unset'});
+    } else {
+      this.ele.css({right: 'unset'}); pos_adjusted.left = box_target.x;
+    }
+    // log({pos_adjusted,view:v, border, box_target, relPos: box_target.y / v.height});
+
     return pos_adjusted;
   }
   set mouse_pos (ev) {
@@ -582,6 +591,10 @@ class ToolTip {
     let tip = $('.tooltip').filter(':visible');
     if (tip.exists()) tip.each((t,tip) => $(tip).data('class_obj').hide(undefined,time));
   }
+  static find_containing_tooltip (ele) {
+    let tt = ele.closest('.tooltip');
+    return tt.exists() ? tt.getObj() : null;
+  }
   static find_closest_tooltip (ele) {
     let tooltip = ele.data('tooltip'), parents = ele.parents();
     if (!tooltip) {
@@ -592,7 +605,7 @@ class ToolTip {
     }
     return tooltip != undefined ? tooltip : null;
   }
-}
+};
 class Warning {
   constructor (options) {
     for (let option in options) this[option] = options[option];
@@ -603,9 +616,9 @@ class Warning {
     ele.warn(message);
     // if (eles) eles.not(ele).warn('');
   }
-}
+};
 class Autosave {
-  constructor (options) {
+  constructor (options = {}) {
     try {
       for (let option in options) {this[option] = options[option]}
       if (!this.send) throw new Error(`Autosave must have a 'send' ajax call`);
@@ -613,38 +626,46 @@ class Autosave {
         this.indicator = $(`<div/>`,{class:'autosave_indicator flexbox left'}).css({
           position: 'sticky', top: this.ele.getTopOffset(), left: 0, zIndex: 49, height: 0,
         }).slideFadeOut(0);
-        this.ele.prepend(this.indicator);
+        // this.ele.prepend(this.indicator);
+        this.indicator.prependTo(this.ele);
       }
       this.delay = this.delay || 10000;
       this.size = options.size || 2;
       this.message = options.message || 'changes saved';
+      this.spinner = null;
     } catch (error) {
       log({error});
     }
     log({autosave:this});
   }
 
-  async trigger (easing_fx = 'easeInOutSine') {
+  async trigger (options = {}) {
+    let easing_fx = options.easing_fx || 'easeInOutSine', message = options.message || null,
+      xhr = this.xhr;
+    if (message) this.message = message;
     log({autosave:this},'autosave trigger');
-    let autosave = this, spinner = null, five_seconds_less = (this.delay - 5000 >= 0) ? this.delay - 5000 : this.delay;
+    let autosave = this, five_seconds_less = (this.delay - 5000 >= 0) ? this.delay - 5000 : this.delay;
     if (this.timer_outer) clearTimeout(this.timer_outer)
     if (this.timer_inner) clearTimeout(this.timer_inner)
     if (this.bg) this.bg.slideFadeOut();
+    if (autosave.fadeout_timer != undefined) clearTimeout(autosave.fadeout_timer);
     this.timer_outer = setTimeout(async function(){
-      if (autosave.indicator) autosave.circle_create();
+      if (autosave.indicator && autosave.spinner == null) autosave.circle_create();
       autosave.timer_inner = setTimeout(async function(){
-        if (autosave.indicator) spinner = autosave.circle.spin(easing_fx);
-        let result = await autosave.send();
+        if (autosave.indicator) autosave.spinner = autosave.circle.spin(easing_fx);
+        autosave.xhr = await autosave.send();
+        let result = autosave.xhr;
         if (autosave.indicator) {
-          clearInterval(spinner);
+          clearInterval(autosave.spinner);
+          autosave.spinner = null;
           if (!result.error) {
-            let checkmark = new Icon({type:'checkmark',size:autosave.size});
+            let checkmark = new Features.Icon({type:'checkmark',size:autosave.size});
             autosave.bg.html('').append(checkmark.img,$(`<span/>`,{text: autosave.message}).css({fontSize:`${autosave.size/2}em`,marginLeft: '5px'})).on('click',function(){$(this).slideFadeOut(1000)});
-            setTimeout(function(){autosave.bg.slideFadeOut(1000,function(){$(this).remove()})},5000);            
+            autosave.fadeout_timer = setTimeout(function(){autosave.bg.slideFadeOut(1000,function(){$(this).remove()})},5000);            
           } else {
-            let x = new Icon({type:'red_x',size:autosave.size});
+            let x = new Features.Icon({type:'red_x',size:autosave.size});
             autosave.bg.html('').css({backgroundColor:'var(--pink10o)',borderColor:'var(--pink50)',color:'var(--pink)'}).append(x.img,$(`<span/>`,{text: result.error.message}).css({fontSize:`${autosave.size/2}em`,marginLeft: '5px'})).on('click',function(){$(this).slideFadeOut(1000)});
-            setTimeout(function(){autosave.bg.slideFadeOut(1000,function(){$(this).remove()})},5000);            
+            autosave.fadeout_timer = setTimeout(function(){autosave.bg.slideFadeOut(1000,function(){$(this).remove()})},5000);            
           }
         }        
         if (autosave.callback) autosave.callback(result);        
@@ -653,7 +674,7 @@ class Autosave {
   }
   circle_create () {
     this.bg = Autosave.background();
-    this.circle = new Icon({type:'circle',size:this.size,color:'var(--green)'});
+    this.circle = new Features.Icon({type:'circle',size:this.size,color:'var(--green)'});
     this.circle.dot.add(this.circle.dot2).css({opacity:0});
     this.indicator.html('').append(this.bg.append(this.circle.svg)).slideFadeIn();
     this.circle_loop();
@@ -676,7 +697,7 @@ class Autosave {
   static background () {
     return $(`<div/>`,{class:'autosave_bg flexbox left'}).css({backgroundColor:'var(--green10o)',textAlign:'center',padding:'0.5em',borderRadius:'3px',opacity:0,border:'1px solid var(--green30)',color:'var(--green)',boxSizing:'border-box',lineHeight:'1'});
   }
-}
+};
 class Icon {
   constructor (options) {
     if (!options.type) throw new Error('type must be given');
@@ -686,6 +707,7 @@ class Icon {
     for (let attr in this.data) {
       this[attr] = this.data[attr];
     }
+    // let ele = this.ele || this.
   }
 
   spin (easing_fx = 'easeInOutSine') {
@@ -705,7 +727,7 @@ class Icon {
         let percent = a / b.end;
         circle.g.css({transform:`rotate(${rotate_start*percent}deg)`});
         circle.dot.css({transform:`rotate(${rotate_start*percent}deg)`});
-      },complete: function(){
+      }, complete: function(){
         spinner = setInterval(function(){
           let increase_dash = (count % 200 < 100), up_percent = ease(0,count%100,1,100,100)/100;
           let percent = increase_dash ? up_percent : ease(0,count%100,100,-99,100)/100, arc_delta = circum*0.7*percent, radian_delta = 360*0.7*percent;
@@ -715,10 +737,15 @@ class Icon {
           circle.g.css({transform:`rotate(${group_angle}deg)`});
           count++;
         },interval/100);
+        circle.svg.addClass('spinner').data('class_obj',circle);
+        circle.spinner = spinner;
+
       }
     });
-    this.spinner = spinner;
-    return spinner;
+    return this.spinner;
+  }
+  clear_spinner () {
+    clearInterval(this.spinner);
   }
   static circle (options) {
     let size = options.size || 3, color = options.color || 'var(--gray97)';
@@ -795,9 +822,17 @@ class Icon {
     $(x).css({width:`${size}em`,height:`${size}em`});
     return {img:$(x)};    
   }
-}
+  static clear_spinners_all () {
+    $('.spinner').each((s,spinner) => {$(spinner).getObj().clear_spinner()});
+  }
+  static clear_spinners_within (ele) {
+    $(ele).find('.spinner').each((s,spinner) => {$(spinner).getObj().clear_spinner()});
+  }
+};
 
-class Menu {
+export const Features = {Button, Editable, OptionBox, List, UpDown, Toggle, ToolTip, Warning, Autosave, Icon};
+
+export class Menu {
   constructor(element,data){
     this.element = element;
     this.element.data('class_obj', this);
@@ -893,17 +928,18 @@ class Menu {
     else this.dropdownHide(tab);
   }
 }
-const menu = {
+export const menu = {
   list: () => $('.menuBar').get().map(menu => $(menu).getObj()),
   get: name => menu.list().find(menu => menu.name == name) || null,
   initialize: {
     all: function(){
       init('.menuBar', function() { new Menu($(this), $(this).data()) })
-      let x = 0, menu_list = menu.list();
+      let x = 0, menu_list = menu.list(), count = menu_list.length;
       while (x < menu_list.length){
         if (x == 0) menu_list[x].element.addClass('siteMenu');
         else if (x == 1) menu_list[x].element.addClass('topMenu');
         else menu_list[x].element.addClass(`subMenu${x-1}`);
+        menu_list[x].element.css({marginBottom: x == count - 1 ? '1em':'unset'});
         x++;
       }
     },
@@ -922,12 +958,12 @@ const menu = {
         if (new_modal) {
           let split = target.split(':'), id = split[1] || null, 
             modal = id && $(`#${id}`).exists() ? $(`#${id}`) : $(`<div class='modalForm'${id ? `id='${id}'`:''}></div>`);
-          $(`#${id}`).find('.loading').each((c,circle) => clearInterval($(circle).data('spinner')));
+          Icon.clear_spinners_all();
           log({target,modal,response});
           modal.html(response);
           blurTop(modal);
         } else {
-          $(target).find('.loading').each((c,circle) => clearInterval($(circle).data('spinner')));
+          Icon.clear_spinners_all();
           if (replace_target) $(target).replaceWith(response);
           else $(target).html(response);
         }
@@ -953,13 +989,14 @@ const menu = {
       log({error:{url:url,target:target}},'missing at least one: url || target');
       return;
     }
-    if (blurred) blur(target,'#loading');
-    else target.html().append(system.blur.modal.loading(loadingColor).svg);
+    blur(target,'#loading');
+    // if (blurred) blur(target,'#loading');
+    // else target.html().append(system.blur.modal.loading(loadingColor).svg);
     let result = await menu.fetch(url, target);
     if (callback && typeof callback == 'function') callback();
   }
 }
-const tabs = {
+export const tabs = {
   list: {},
   set: function(menu, tab = null){
     if (typeof menu == 'string' && menu != "") tabs.list[menu] = tab;
@@ -972,7 +1009,7 @@ const tabs = {
   log: function(){console.log(tabs.list)}
 };
 
-const system = {
+export const system = {
   user: {
     current: null,
     is: function(usertype){return user.current ? (user.current.type == usertype) : false;},
@@ -980,7 +1017,13 @@ const system = {
     isAdmin: function(){return (user.current && user.current.is_admin != undefined) ? user.current.is_admin : false;},
     set: function(userData){
       if (Object.isFrozen(user)) return;
-      user.current = userData;
+      user.current = new Models.User(userData);
+      if (user.current.is_super) {
+        window.system = system;
+        window.Models = Models;
+        window.Features = Features;
+        window.Forms = Forms;
+      }
       Object.freeze(user);
     },
     login: async () => {
@@ -1174,7 +1217,7 @@ const system = {
           }
           if (button.type == 'click') btnOptions.action = function(){unblurAll();$(button.target).click();}
           else if (button.type == 'viewModel') btnOptions.action = function(){log({btn:data},'view model')}
-            new Button(btnOptions);
+            new Features.Button(btnOptions);
         });
       }
       blurTop("#Notification");
@@ -1233,28 +1276,28 @@ const system = {
             $(this).on('click', {notification: $(this)}, notifications.click)
           }],
           [notifications.ele.find('.button.markAsUnread'), function(){
-            notifications.markAsUnreadBtn = new Button({
+            notifications.markAsUnreadBtn = new Features.Button({
               ele: $(this),
               action: notifications.update.ajax.bind(null,'unread'),
               id: 'MarkSelectedAsUnreadBtn',
             });
           }],
           [notifications.ele.find('.button.markAsRead'), function(){
-            notifications.markAsReadBtn = new Button({
+            notifications.markAsReadBtn = new Features.Button({
               ele: $(this),
               action: notifications.update.ajax.bind(null,'read'),
               id: 'MarkSelectedAsReadBtn',
             });
           }],
           [notifications.ele.find('.button.delete'), function(){
-            notifications.deleteBtn = new Button({
+            notifications.deleteBtn = new Features.Button({
               ele: $(this),
               action: notifications.delete,
               id: 'DeleteSelectedBtn',
             });
           }],
           [$("#Notification").find('.button.markThisAsUnread'), function(){
-            new Button({
+            new Features.Button({
               ele: $(this),
               action: function(){
                 notifications.update.ajax('unread');
@@ -1264,7 +1307,7 @@ const system = {
             });
           }],
           [$("#Notification").find('.button.deleteThis'), function(){
-            new Button({
+            new Features.Button({
               ele: $(this),
               action: async function(){
                 let result = await notifications.delete();  
@@ -1274,7 +1317,7 @@ const system = {
             });
           }],
           [notifications.ele.find('.button.selectMultiple'), function(){
-            notifications.deleteBtn = new Button({
+            notifications.deleteBtn = new Features.Button({
               ele: $(this),
               action: function(){
                 notifications.ele.toggleClass('multi');
@@ -1397,9 +1440,9 @@ const system = {
         system.ui.initialize();
         system.display.initialize();
         menu.initialize.all();
-        if (forms) forms.initialize.all();
-        if (notifications) notifications.initialize.all();
-        if (table) table.initialize.all();          
+        if (forms !== undefined) forms.initialize.all();
+        if (notifications !== undefined) notifications.initialize.all();
+        if (table !== undefined) table.initialize.all();          
         resizeElements();
         masterStyle();
       }catch(error){
@@ -1505,7 +1548,7 @@ const system = {
         block.append(modal);
         system.blur.resize(ele, modal);
         if (callback && typeof callback == 'function') setTimeout(callback, time+delay);
-        if (FormEle.waiting_for_list(modal)) {
+        if (Forms.FormEle.waiting_for_list(modal)) {
           log({ele,modal},'WAITING FOR LIST!');
           alert("yeah i'm waiting!");
         }
@@ -1540,8 +1583,8 @@ const system = {
     modal: {
       loading: (options) => {
         let loadingColor = options.loadingColor || 'var(--darkgray97)', size = options.size || 4;
-        let circle = new Icon({type:'circle', size:size, color:loadingColor});
-        circle.spin();
+        let circle = new Features.Icon({type:'circle', size:size, color:loadingColor});
+        menu.spinner = circle.spin();
         circle.svg.addClass('loading').data('spinner',circle.spinner);
         return circle.svg;
       },
@@ -1630,6 +1673,7 @@ const system = {
       if (ele) {
         if ($(ele).dne()) throw new Error(`can't unblur because ele doesn't exist`);
         else if ($(ele).find('.blur').dne()) return;
+        Icon.clear_spinners_within(ele);
       }
       if (fade) {
         top.fadeOut(fade,function(){
@@ -1649,12 +1693,13 @@ const system = {
         repeat--;
         system.blur.undo({delay,fade,callback,repeat});
       } else if (callback && typeof callback == 'function') setTimeout(callback, delay);
+      Icon.clear_spinners_within('#ModalHome');
     },
     undoAll: (options) => {
       let callback = options.callback || null,
-      delay = options.delay || 400,
-      fade = options.fade || 400;
-      all = $(".blur");
+        delay = options.delay || 400,
+        fade = options.fade || 400,
+        all = $(".blur");
       if (fade) {
         all.fadeOut(fade,function(){
           all.children().appendTo('#ModalHome');
@@ -1674,7 +1719,7 @@ const system = {
       initAlt('.button', 'generic_fx', function(){
         let options = $(this).data('options') || $(this).data();
         options.ele = $(this);
-        new Button(options);
+        new Features.Button(options);
       });
       init('#Feedback',function(){
         $(this).on('click','.cancel',function(){
@@ -1715,7 +1760,7 @@ const system = {
         let key_allowed = false;
         if (typeof values == 'string') key_allowed = system.ui.keyboard.allow.string_characters(values, key);
         if (typeof values == 'object') key_allowed = system.ui.keyboard.allow.regex(values, key);
-        meta_keys = system.ui.keyboard.allow.meta_keys(key);
+        let meta_keys = system.ui.keyboard.allow.meta_keys(key);
         return key_allowed || meta_keys;
       },
       allow: {
@@ -1913,6 +1958,59 @@ const system = {
           }
         }
       },
+      moment_array: (dates, format = 'MM/DD/YYYY') => {
+        return dates.map(date => {
+          if (date instanceof Moment) return date;
+          else if (date instanceof Date) return moment(date);
+          else return Models.Schedule.string_to_moment(date, format);
+        })
+      },
+      sort: (dates, options = {}) => {
+        let dir = options.dir || 'asc',
+          format = options.format || 'MM/DD/YYYY',
+          separator = options.separator || ', ',
+          as_moment = options.as_moment || false;
+        if (typeof dates == 'string') return system.validation.date.sort_string(dates, separator, dir, format);
+        let moments = system.validation.date.moment_array(dates, format), 
+          ascending = system.validation.date.sort_moment(moments);
+        if (!as_moment) ascending = ascending.map(d => d.format(format));
+        return dir == 'desc' ? ascending.reverse() : ascending;
+      },
+      sort_moment: (moment_array) => moment_array.sort((a,b) => a.valueOf() - b.valueOf()),
+      sort_string: (date_str, separator = ', ', dir = 'asc', format = 'MM/DD/YYYY') => {
+        let array = date_str.split(separator), sorted = system.validation.date.sort(array, {dir, format});
+        return sorted.join(separator);
+      },
+      after: (dates, reference_date, options = {}) => {
+        let format = options.format || 'MM/DD/YYYY',
+          separator = options.separator || ', ',
+          sort = options.sort || null;
+        reference_date = reference_date instanceof Moment ? reference_date : Models.Schedule.string_to_moment(reference_date, format);
+        if (typeof dates == 'string') return system.validation.date.after_string(dates, reference_date, separator, format);
+        let moments = moments = system.validation.date.moment_array(dates, format), 
+          filtered = system.validation.date.after_moment(moments, reference_date);
+        if (sort) filtered = system.validation.date.sort(filtered, {dir:sort, as_moment:true});
+        return filtered.map(d => d.format(format));
+      },
+      after_moment: (moment_array, reference_moment) => moment_array.filter(m => m.isAfter(reference_moment)),
+      after_string: (moment_array, reference_moment, separator = ', ', format = 'MM/DD/YYYY') => {
+        throw new Error('after_string function not defined');
+      },
+      before: (dates, reference_date, options = {}) => {
+        let format = options.format || 'MM/DD/YYYY',
+          separator = options.separator || ', ',
+          sort = options.sort || null;
+        reference_date = reference_date instanceof Moment ? reference_date : Models.Schedule.string_to_moment(reference_date, format);
+        if (typeof dates == 'string') return system.validation.date.before_string(dates, reference_date, separator, format);
+        let moments = moments = system.validation.date.moment_array(dates, format), 
+          filtered = system.validation.date.before_moment(moments, reference_date);
+        if (sort) filtered = system.validation.date.sort(filtered, {dir:sort, as_moment:true});
+        return filtered.map(d => d.format(format));
+      },
+      before_moment: (moment_array, reference_moment) => moment_array.filter(m => m.isBefore(reference_moment)),
+      before_string: (moment_array, reference_moment, separator = ', ', format = 'MM/DD/YYYY') => {
+        throw new Error('before_string function not defined');
+      },
       comparison: (comparison_date, reference_date = null) => {
         if (!reference_date) reference_date = moment(); 
         return {
@@ -1921,8 +2019,8 @@ const system = {
           is_after: comparison_date.isAfter(reference_date),
         }
       },
-      is_invalid: str => {
-        let date = moment(str,'MM/DD/YYYY',true), invalid = (!date._isValid && str != '');
+      is_invalid: (str, format = 'MM/DD/YYYY') => {
+        let date = moment(str,format,true), invalid = (!date._isValid && str != '');
         return invalid;
       },
       is_in_range: (moment, min, max) => {
@@ -2119,47 +2217,50 @@ const system = {
     }
   },
 };
+// window.system = system;
 
-const class_map_all = {};
-$(document).ready(function(){class_map_all.merge({system,menu,notifications})})
+// export {menu,tabs,system,Menu,Icon,Autosave,Warning,ToolTip,Toggle,UpDown,List}
 
-const user = system.user;
-const initialize = system.initialize;
-const modal = system.blur.modal;
-const get_rem_px = system.display.size.font.get_root;
-const fix_width = system.display.size.width.fix;
-const body = () => system.ui.body_dimensions();
-const view = () => system.ui.viewport_dimensions();
-const px_to_rem = px => system.display.size.px_to_rem(px);
-const rem_to_px = rem => system.display.size.rem_to_px(rem);
-const blur = (ele, modal, options = {}) => system.blur.element({ele:ele,modal:modal}.merge(options));
-const blurInstant = (ele, modal) => system.blur.element({ele:ele,modal:modal,time:0});
-const blurTop = (modal, options = {}) => system.blur.topmost(modal, options);
-const blurTopGet = () => system.blur.block.top();
-const unblur = (options = {}) => {
-  let repeat = typeof options == 'number' ? options : options.repeat || null;
-  if (typeof options != 'object') options = {};
-  let callback = options.callback || null,
+// const class_map_all = {};
+// $(document).ready(function(){class_map_all.merge({system,menu,notifications})})
+
+window.user = system.user;
+window.initialize = system.initialize;
+window.modal = system.blur.modal;
+window.get_rem_px = system.display.size.font.get_root;
+window.fix_width = system.display.size.width.fix;
+window.body = () => system.ui.body_dimensions();
+window.view = () => system.ui.viewport_dimensions();
+window.px_to_rem = px => system.display.size.px_to_rem(px);
+window.rem_to_px = rem => system.display.size.rem_to_px(rem);
+window.blur = (ele, modal, options = {}) => system.blur.element({ele:ele,modal:modal}.merge(options));
+window.blurInstant = (ele, modal) => system.blur.element({ele:ele,modal:modal,time:0});
+window.blurTop = (modal, options = {}) => system.blur.topmost(modal, options);
+window.blurTopGet = () => system.blur.block.top();
+window.unblur = (options = {}) => {
+    let repeat = typeof options == 'number' ? options : options.repeat || null;
+    if (typeof options != 'object') options = {};
+    let callback = options.callback || null,
+      delay = options.delay || 400,
+      fade = options.fade || null,
+      ele = options.ele || null;
+    system.blur.undo({callback,delay,fade,repeat,ele});
+  };
+window.unblurAll = (options = {}) => {
+    let callback = options.callback || null,
     delay = options.delay || 400,
-    fade = options.fade || null,
-    ele = options.ele || null;
-  system.blur.undo({callback,delay,fade,repeat,ele});
-}
-const unblurAll = (options = {}) => {
-  let callback = options.callback || null,
-  delay = options.delay || 400,
-  fade = options.fade || null;
-  system.blur.undoAll({callback,delay,fade});
-}
-const feedback = (header, message, delay = null, callback = null) => {
-  if (typeof delay == 'function') {
-    callback = delay;
-    delay = null;
-  }
-  system.ui.feedback.display(header, message, delay, callback);
-}
-const confirm = settings => system.ui.confirm.prompt(settings);
-const init = function(ele, fx){
+    fade = options.fade || null;
+    system.blur.undoAll({callback,delay,fade});
+  };
+window.feedback = (header, message, delay = null, callback = null) => {
+    if (typeof delay == 'function') {
+      callback = delay;
+      delay = null;
+    }
+    system.ui.feedback.display(header, message, delay, callback);
+  };
+window.confirm = settings => system.ui.confirm.prompt(settings),
+window.init = function(ele, fx){
   if (debug.level(1)) log({ele}, typeof ele == 'string' ? ele : 'jquery obj');
   if (Array.isArray(ele)) {
     ele.forEach(function(params){
@@ -2171,12 +2272,30 @@ const init = function(ele, fx){
     if (typeof fx != 'function') log({error:{ele,fx}},'invalid initialization function, consider initAlt()');
     system.initialize.ele({select:ele,function:fx})
   };
-}
-const initAlt = (ele, attr, fx) => system.initialize.ele({select:ele,function:fx,dataAttr:attr});
-const toBool = (val, true_if_contains) => system.validation.boolean(val, true_if_contains);
-const get_setting = (obj, string, fall_back) => system.validation.settings.get(obj,string,fall_back);
+  };
+window.initAlt = (ele, attr, fx) => system.initialize.ele({select:ele,function:fx,dataAttr:attr});
+window.toBool = (val, true_if_contains) => system.validation.boolean(val, true_if_contains);
+window.get_setting = (obj, string, fall_back) => system.validation.settings.get(obj,string,fall_back);
+window.ifu = function(val,backup,allowArray=false){
+    if (Array.isArray(val) && !allowArray){
+    let test = undefined; for (let x = 0; x < val.length - 1; x++){test = ifu(val[x], val[x+1]); if (test === val[x]) break;} val = test;
+    } 
+    if (debug.level(3)) console.log({val,allowArray},'using array as options');
+    return (typeof val !== 'undefined') ? val : backup;
+  };
+window.ifn = function(val,backup,allowArray=false){
+    if (Array.isArray(val) && !allowArray)
+      {let test = undefined; for (let x = 0; x < val.length - 1; x++){test = ifn(val[x], val[x+1]); if (test === val[x]) break;} val = test;} 
+    return (typeof val !== 'undefined' && val !== null) ? val : backup;
+  };
+window.iff = function(val,backup,allowArray=false){
+    if (Array.isArray(val) && !allowArray)
+      {let test = undefined; for (let x = 0; x < val.length - 1; x++){test = iff(val[x], val[x+1]); if (test === val[x]) break;} val = test;}
+    return val || backup;
+  };
 
-const uids = {
+
+export const uids = {
   list: {},
   set: function(model, uid = null){
     if (!user.current) return;
@@ -2190,7 +2309,7 @@ const uids = {
   clear: function(){uids.list = {}},
   log: function(){console.log(uids.list)}
 };
-const practice = {
+export const practice = {
   info: null,
   set: function(practiceData){
     if (Object.isFrozen(practice)) return;
@@ -2203,7 +2322,7 @@ const practice = {
     return (practice.info[key] != undefined) ? practice.info[key] : null;
   }
 }
-const notifications = system.notifications;
+export const notifications = system.notifications;
 // const const_map = {};
 
 $(document).ready(function(){
@@ -2218,9 +2337,7 @@ $(document).ready(function(){
   // const_map = {user,menu,model};
 })
 
-var systemModalList = ['Confirm','Warn','Error','Feedback','Refresh','Notification','ErrorMessageFromClient','AutoSaveWrap'],
-systemModals = $('#Confirm, #Warn, #Error, #Feedback, #Refresh, #Notification, #ErrorMessageFromClient, #AutoSaveWrap'), usertype,
-defaultTemplateInfo;
+var systemModalList = ['Confirm','Warn','Error','Feedback','Refresh','Notification','ErrorMessageFromClient','AutoSaveWrap'];
 
 (function($) {
   $.sanitize = function(input) {
@@ -2447,7 +2564,14 @@ Object.defineProperties(Array.prototype, {
   isEmpty: {value: function(){return this.length === 0}},
   notEmpty: {value: function(){return this.length > 0}},
   notSolo: {value: function(){return this.length > 1}},
-  smartJoin: {value: function(str = 'and', oxford = true){return system.validation.array.join(this,str,oxford)}},
+  smartJoin: {value: function(str, options = {}){
+    if (typeof str == 'object') options = str;
+    else options.merge({str});
+    str = ifu(options.str, 'and');
+    let oxford = options.oxford || true, map = options.map || null, array = this;
+    if (map) array = this.map(map);
+    return system.validation.array.join(array,str,oxford)}
+  },
   smartPush: {value: function(){
     let count = this.length, values = [...arguments];
     while (values.notEmpty()) {
@@ -2506,7 +2630,13 @@ Object.defineProperties(Object.prototype, {
   to_key_value_html: {value: function(){
     let wrapper = $('<div/>');
     for (let key in this) {
-      if (this.hasOwnProperty(key)) wrapper.append(`<div><b style='padding-right:5px'>${key}:</b><span>${this[key]}</span></div>`);
+      let item = $('<div/>',{class:key.toKeyString()});
+      if (this.hasOwnProperty(key)) wrapper.append(
+        item.append(
+          `<b style='padding-right:5px'>${key}:</b>`,
+          this[key] instanceof jQuery ? this[key].clone(true) : `<span>${this[key]}</span>`
+          )
+        );
     }
     return wrapper;
   }},
@@ -2564,13 +2694,15 @@ Object.defineProperties(String.prototype, {
   }},
   json_if_valid: {value: function(){return system.validation.json(this.toString())}},  
   to_class_obj: {value: function(attr_list){
-    return new class_map_all[this](attr_list);
+    let FoundClass = Models[this] || Features[this] || null;
+    return FoundClass ? new FoundClass(attr_list) : null;
   }},
   get_obj_val: {value: function(obj = null, ok_if_missing = false){
     let split = this.valueOf().split('.'), obj_val = null;
     try{
       let first = split.shift();
-      obj_val = obj ? obj[first] : class_map_all[first] || system[first] || window[first];
+      if (first == 'system') obj_val = system;
+      else obj_val = obj ? obj[first] : Models[first] || Forms[first] || Features[first] || system[first] || window[first];
       if (!obj_val) throw new Error(`${first} not given or found in window or class_map`);
       if (obj_val) {
         while (split.length > 0) {
@@ -3831,24 +3963,6 @@ $(document).on('click','.cancel',function(ev){
 });
 })
 
-const ifu = function(val,backup,allowArray=false){
-  if (Array.isArray(val) && !allowArray){
-// if (debug.level(3)) console.log({val,allowArray},'using array as options');
-let test = undefined; for (let x = 0; x < val.length - 1; x++){test = ifu(val[x], val[x+1]); if (test === val[x]) break;} val = test;
-} 
-if (debug.level(3)) console.log({val,allowArray},'using array as options');
-return (typeof val !== 'undefined') ? val : backup;
-}
-const ifn = function(val,backup,allowArray=false){
-  if (Array.isArray(val) && !allowArray)
-    {let test = undefined; for (let x = 0; x < val.length - 1; x++){test = ifn(val[x], val[x+1]); if (test === val[x]) break;} val = test;} 
-  return (typeof val !== 'undefined' && val !== null) ? val : backup;
-}
-const iff = function(val,backup,allowArray=false){
-  if (Array.isArray(val) && !allowArray)
-    {let test = undefined; for (let x = 0; x < val.length - 1; x++){test = iff(val[x], val[x+1]); if (test === val[x]) break;} val = test;}
-  return val || backup;
-}
 
 jQuery.easing['jswing'] = jQuery.easing['swing'];
 

@@ -21,7 +21,8 @@ class CreateAppointmentsTable extends Migration
             $table->dateTimeTz('date_time_start');
             $table->dateTimeTz('date_time_end');
             $table->json('recurrence')->nullable();
-            $table->string('rrule')->nullable();
+            $table->json('exclusions')->nullable();
+            // $table->string('rrule')->nullable();
             $table->unsignedInteger('recurring_id')->nullable();
             $table->mediumtext('notes')->nullable();
             $table->json('status')->nullable();

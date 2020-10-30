@@ -66,6 +66,8 @@
   --green70:rgba(46, 107, 53, 0.7);
   --green80:rgba(46, 107, 53, 0.8);
   --green90:rgba(46, 107, 53, 0.9);
+  --fc-bg-event-color: var(--yellow50);
+  --fc-today-bg-color: var(--purple5);
 }
 
 @font-face{

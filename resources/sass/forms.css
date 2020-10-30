@@ -126,35 +126,23 @@ textarea[data-followup]{
 .fc-event, .fc-bg-event{
     transition: background-color 500ms;
 }
-.calendar .fc-bg-event{
-    background-color: var(--yellow10);
-    opacity: 1;
-}
-.calendar .fc-event{
-    background-color: var(--pink80);
+.calendar .fc-event:not(.fc-bg-event){
+    background-color: var(--pink70);
     border-color: var(--pink);
     cursor: pointer;
 }
-.calendar .fc-event:hover, .calendar .fc-event.hover{
+.calendar .fc-event:not(.fc-bg-event):hover, .calendar .fc-event.hover:not(.fc-bg-event){
     background-color: var(--pink);
     border-color: var(--pink);
 }
-.calendar .fc-event.nonEHR{
-    background-color:var(--purple30);
-    border-color:var(--purple30);
-}
-.calendar .fc-event.nonEHR:hover{
-    background-color:var(--purple50);
-    border-color:var(--purple30);    
-}
-.calendar .fc-event.break{
+/*.calendar .fc-event.break{
     background-color:var(--purple30);
     border-color:var(--purple30);
 }
 .calendar .fc-event.break:hover{
     background-color:var(--purple50);
     border-color:var(--purple30);    
-}
+}*/
 td.fc-today{background-color: var(--purple10) !important;}
 .fc-button-primary, .fc-button-primary:disabled{
     background-color: var(--purple90);
@@ -176,6 +164,17 @@ td.fc-today{background-color: var(--purple10) !important;}
     position: relative;
     top:50%;
     transform:translateY(-50%);
+}
+
+.date_link {
+    cursor: pointer;
+    transition: color 400ms;
+}
+.date_link:hover {
+    color: var(--pink);
+}
+.modified_indicator {
+    color: var(--pink);
 }
 
 .scale.small {
@@ -231,7 +230,7 @@ td.fc-today{background-color: var(--purple10) !important;}
     font-weight: 700;
 }
 .tooltip {
-    position: absolute;
+    position: fixed;
     display: inline-block;
     opacity: 0;
     top: 10em;

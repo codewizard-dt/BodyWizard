@@ -1,3 +1,6 @@
+import {system, practice, log, Features} from './functions';
+import {model, Models} from './models';
+
 class FormEle {
   constructor(proxy) {
     let options = $(proxy).data(), json = options.json;
@@ -11,7 +14,7 @@ class FormEle {
     this.ele = $(`<div/>`,{class:'form central full',id: (this.form_name || '').toKeyString()});
     $(proxy).replaceWith(this.ele);
     this.ele.data('class_obj',this);
-    this.section_list = new List({header:'Sections'});
+    this.section_list = new Features.List({header:'Sections'});
     this.section_array = [];
     let form = this;
     this.add_header();
@@ -23,7 +26,7 @@ class FormEle {
     this.waiting = setInterval(this.linked_answer_check.bind(this),200);
 
     if (this.mode == 'settings') {
-      this.settings_manager = new SettingsManager({
+      this.settings_manager = new Models.SettingsManager({
         obj: this,
         save: this.autosave_send.bind(this),
         callback: this.autosave_callback.bind(this),
@@ -39,7 +42,7 @@ class FormEle {
       callback: this.autosave_callback.bind(this)
     });
 
-    log({form:this}, `new FormEle`);
+    // log({form:this}, `new FormEle`);
   }
 
   add_header () {
@@ -53,7 +56,7 @@ class FormEle {
       });
       this.ele.removeClass('central full');
       this.header = this.header_editable.ele.appendTo(this.ele);
-      this.section_options = new OptionBox();
+      this.section_options = new Features.OptionBox();
       this.section_options.ele.appendTo(this.ele);
       this.section_options.add_button({text: 'add section',action: blurTop.bind(null, '#AddSection'),class_list: 'pink xsmall'});
       this.section_options.add_button({text: 'preview form', class_list: 'pink70 xsmall', 
@@ -74,26 +77,26 @@ class FormEle {
   }
   add_buttons () {
     if (this.mode == 'modal') {
-      this.modal = new OptionBox({css:{width:'100%',border:'0',maxWidth:'unset'}});
+      this.modal = new Features.OptionBox({css:{width:'100%',border:'0',maxWidth:'unset'}});
       this.modal.ele.insertBefore(this.ele);
       this.modal.add_info(this.ele);
       this.submit_btn = this.modal.add_button({text:'save',action:this.action});
       this.modal.add_button({text:'dismiss',class_list:'cancel small'});
     } else if (this.mode == 'preview') {
-      this.submit_btn = new Button({text:'save',action:null,class_list:'pink',tooltip:{message:'Submit not available in preview mode'}});
+      this.submit_btn = new Features.Button({text:'save',action:null,class_list:'pink',tooltip:{message:'Submit not available in preview mode'}});
       this.ele.append(this.submit_btn.ele);
     } else if (this.mode == 'settings') {
-      this.submit_btn = new Button({text:'save',action:null,class_list:'pink',tooltip:{message:'Submit not available in preview mode'}});
+      this.submit_btn = new Features.Button({text:'save',action:null,class_list:'pink',tooltip:{message:'Submit not available in preview mode'}});
       this.ele.append(this.submit_btn.ele);
     } else if (this.mode != 'build') {
-      this.submit_btn = new Button({text:'save', action:this.action, class_list:'pink'});
+      this.submit_btn = new Features.Button({text:'save', action:this.action, class_list:'pink'});
       this.ele.append(this.submit_btn.ele);
     } 
   }
 
   settings_apply (time = 0) {
     if (this.mode == 'build') return;
-    let manager = this.settings_manager || new SettingsManager({obj:this});
+    let manager = this.settings_manager || new Models.SettingsManager({obj:this});
     let get = function (name) {return manager.get_setting(name)};
     if (get('display.HideFormTitle')) this.header.slideFadeOut(time);
     else this.header.slideFadeIn(time);
@@ -153,7 +156,7 @@ class FormEle {
       action: function() {section.ele.smartScroll()},
     });
     if (this.mode == 'build') {
-      let arrows = new UpDown({
+      let arrows = new Features.UpDown({
         action:'change_order',
         selector: 'li',
         callback: this.section_sort_callback.bind(this),
@@ -447,7 +450,7 @@ class Section {
   get form() {return this.ele.getObj('form')}
   
   settings_icons_create () {
-    this.settings_manager = new SettingsManager({
+    this.settings_manager = new Models.SettingsManager({
       obj: this,
       autosave: this.form.settings_manager.autosave,
     }, 'edit');
@@ -480,7 +483,7 @@ class Section {
   }
   settings_apply (time = 0) {
     if (this.mode == 'build') return;
-    let manager = this.settings_manager || new SettingsManager({obj:this});
+    let manager = this.settings_manager || new Models.SettingsManager({obj:this});
     let get = function (name) {return manager.get_setting(name)};
     if (get('display.HideSectionTitle')) this.header.slideFadeOut(time);
     else this.header.slideFadeIn(time);
@@ -691,7 +694,7 @@ class Item {
     ];
     let insert_options = new InsertOptions({buttons:insert_btns});
     insert_options.ele.prependTo(this.ele);
-    this.arrows = new UpDown({
+    this.arrows = new Features.UpDown({
       action:'change_order',
       selector: '.item',
       callback: this.sort_callback,
@@ -750,7 +753,7 @@ class Item {
     }
   }
   settings_icons_create () {
-    this.settings_manager = new SettingsManager({
+    this.settings_manager = new Models.SettingsManager({
       obj: this,
       autosave: this.form.settings_manager.autosave,
     }, 'edit');
@@ -774,7 +777,7 @@ class Item {
   }
   settings_apply() {
     if (this.mode == 'build') return;
-    let manager = this.settings_manager || new SettingsManager({obj:this});
+    let manager = this.settings_manager || new Models.SettingsManager({obj:this});
     let get = function (name) {return manager.get_setting(name)};
     if (get('display.Condensed')) this.ele.addClass('condensed');
     else this.ele.removeClass('condensed');
@@ -815,17 +818,17 @@ class Item {
   get condition_str () {
     let str = 'null', c = this.options.condition;
     if (['number','scale'].includes(c.type)) {
-      str = `${c.conditionNumberComparator.smartJoin('or')} ${c.conditionNumberVal}`;
+      str = `${c.conditionNumberComparator.smartJoin({str:'or'})} ${c.conditionNumberVal}`;
     }
     else if (["list","dropdown","checkboxes"].includes(c.type)) {
       // log({c});
       if (this.parent.options.linked_to) {
         log({c});
       }
-      str = c.conditionList.map(condition => Answer.split_values_and_text(condition).text).smartJoin('or');
+      str = c.conditionList.map(condition => Answer.split_values_and_text(condition).text).smartJoin({str:'or'});
     }
     else if (c.type == 'time') {
-      str = `${c.conditionTimeComparator.smartJoin('or')} ${c.conditionTime}`;
+      str = `${c.conditionTimeComparator.smartJoin({str:'or'})} ${c.conditionTime}`;
     }
     if (str == 'null') log(this,`condition type not found`);
     return str;
@@ -1268,7 +1271,7 @@ class Answer {
   }
   async linked_list_get(model, columns = []) {
     this.waiting_for_list = true;
-    let list = await Model.get_list({model,obj:this,columns});
+    let list = await Models.Model.get_list({model,obj:this,columns});
     this.waiting_for_list = false;
     return list;
   }
@@ -1281,7 +1284,7 @@ class Answer {
       let within_answer = answer.ele.find(ev.relatedTarget).exists();
       if (!within_answer) answer.linked_ele.slideFadeOut();
     })
-    this.linked_list = new List({
+    this.linked_list = new Features.List({
       header: 'Type to search',
       header_html_tag: 'h5',
       css: {backgroundColor:'var(--white97)',border:'2px solid var(--gray97)',borderRadius:'5px',padding:'0.5em 1em'},
@@ -1325,7 +1328,7 @@ class Answer {
   }
   linked_find_data_by_uid (uid) {
     if (typeof uid != 'number') uid = Number(uid);
-    let list = Model.list(this.options.linked_to), item = list.find(m => m.uid == uid);
+    let list = Models.Model.list(this.options.linked_to), item = list.find(m => m.uid == uid);
     return {uid:item.uid,text:item.name};
   }
   linked_select_uid (uids) {
@@ -1473,7 +1476,7 @@ class Answer {
       interval: 300,
       count: 0,
     };
-    this.arrows = new UpDown({
+    this.arrows = new Features.UpDown({
       action: this.change.start,
       callback: this.change.stop,
       css: {fontSize:'1.2em',margin:'2px 0 2px 0.5em'}
@@ -1505,7 +1508,7 @@ class Answer {
   }
   async imageclick () {
     let height_map = {small: '25em', medium: '35em', large: '45em', x_large: '50em'};
-    this.undo_btn = new Button({
+    this.undo_btn = new Features.Button({
       text:'undo',
       class_list: 'pink xsmall undo',
     })
@@ -1744,8 +1747,8 @@ class Answer {
       .on('mouseleave',function(){if ($('.datepick-popup').dne()) $(this).animate({opacity:0.6})});
     this.input = this.input.add(cal_icon);
     this.get = () => {
-      let v = this.input.val(); 
-      return v != '' ? v : null;
+      let v = this.input.val();
+      return v != '' ? system.validation.date.sort(v) : null;
     }
   }
   async time () {
@@ -1827,7 +1830,7 @@ class InsertOptions {
     if (buttons){
       buttons.forEach(button => {
         button.class_list += ' white xxsmall';
-        new Button($.extend(button,{appendTo:button_wrap, css: {margin:'0.2em 0.3em',fontWeight:'bold'}}));
+        new Features.Button($.extend(button,{appendTo:button_wrap, css: {margin:'0.2em 0.3em',fontWeight:'bold'}}));
       })
     }
     this.ele.append(this.plus_sign).on('mouseenter',this.show.bind(this)).on('mouseleave',this.hide.bind(this));
@@ -1858,7 +1861,9 @@ class InsertOptions {
     else this.show();
   }
 }
-$(document).ready(function(){class_map_all.merge({Answer,forms,FormEle,Section,Item})});
+// $(document).ready(function(){class_map_all.merge({Answer,forms,FormEle,Section,Item})});
+
+export const Forms = {FormEle, FormResponse, Section, Item, Answer};
 
 var forms = {
   current: null,
@@ -1998,7 +2003,7 @@ var forms = {
           add_option: () => {
             let last = $("#OptionsList").find('.answer').last(), o = last.getObj(), options = o.options, settings = o.settings;
             let option = new Answer({options,settings,type:'text'}),
-              arrows = new UpDown({
+              arrows = new Features.UpDown({
                 css: {fontSize: '1em',marginLeft:'0.5em'},
                 action: 'change_order',
                 postLabel: 'change option order'
@@ -2077,7 +2082,7 @@ var forms = {
         },
         link_to_model: () => {
           let link_modal = $(`<div/>`,{class:'modalForm center'});
-          let list = new List({header:'Available for Linking'});
+          let list = new Features.List({header:'Available for Linking'});
           link_modal.append(`<h3>Select a Category</h3><div>Linking a question to a category will allow the user to select from an up-to-date list of that category. There will be no need to update the question if you add to the category</div>`,list.ele);
           for (let model in class_map_linkable) {
             if (model != 'list') list.add_item({
@@ -2085,7 +2090,7 @@ var forms = {
               action: async function(){
                 try{
                   blurTop('loading');
-                  let list = linkable_lists[model] || await Model.get_list({model}), list_ele = $("#OptionsList");
+                  let list = linkable_lists[model] || await Models.Model.get_list({model}), list_ele = $("#OptionsList");
                   forms.create.editor.options.list.reset();
                   list.forEach((item,i) => {
                     let options = list_ele.find('.answer.text'), option = options.get(i);
@@ -2230,7 +2235,7 @@ var forms = {
         })
         let options_list = $('#OptionsList'),
           arrow_proxy = options_list.find('span').filter(function(){return $(this).text() == 'UpDownProxy'}),
-          arrows = new UpDown({
+          arrows = new Features.UpDown({
             css: {fontSize: '1em',marginLeft:'0.5em'},
             action: 'change_order',
             postLabel: 'change option order'
@@ -2261,12 +2266,12 @@ var forms = {
     },
     calendars: () => {
       init('.calendar',function(){
-        new Calendar($(this));
+        new Models.Calendar($(this));
       })      
     },
     toggles: () => {
       init('.toggle_proxy',function(){
-        new Toggle($(this));
+        new Features.Toggle($(this));
       })
     },
   },
@@ -2421,7 +2426,7 @@ var notes = {
   },
 };
 
-
+export {forms, notes};
 
 
 function initializeAdditionalNoteForm(targetObj = null, callback = null){
