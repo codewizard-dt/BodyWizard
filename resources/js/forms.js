@@ -1,5 +1,5 @@
 import {system, practice, log, Features} from './functions';
-import {model, Models} from './models';
+import {model, Models, class_map_linkable, linkable_lists} from './models';
 
 class FormEle {
   constructor(proxy) {
@@ -35,7 +35,7 @@ class FormEle {
       this.section_array.forEach(section => section.settings_icons_create());
     }
     this.settings_apply();
-    if (this.mode == 'build') this.autosave = new Autosave({
+    if (this.mode == 'build') this.autosave = new Features.Autosave({
       ele: $("#FormBuilder"),
       delay: 10000,
       send: this.autosave_send.bind(this),
@@ -48,7 +48,7 @@ class FormEle {
   add_header () {
     let form = this;
     if (this.mode == 'build') {
-      this.header_editable = new Editable({
+      this.header_editable = new Features.Editable({
         name: 'form name',
         html_tag: 'h1',
         initial: this.form_name,
@@ -60,7 +60,7 @@ class FormEle {
       this.section_options.ele.appendTo(this.ele);
       this.section_options.add_button({text: 'add section',action: blurTop.bind(null, '#AddSection'),class_list: 'pink xsmall'});
       this.section_options.add_button({text: 'preview form', class_list: 'pink70 xsmall', 
-          action: function(){Form.preview_by_uid(form.form_uid)}});
+          action: function(){FormEle.preview_by_uid(form.form_uid)}});
       this.section_list.ele.appendTo(this.section_options.body);
     }else if (this.mode == 'preview') {
       this.label = $(`<h1>Preview</h1>`).insertBefore(this.ele);
@@ -493,7 +493,7 @@ class Section {
 
   add_header () {
     if (this.mode == 'build'){
-      let name_input = new Editable({
+      let name_input = new Features.Editable({
         name: 'section name',
         initial: this.name,
         html_tag: 'h2',
@@ -505,13 +505,13 @@ class Section {
   add_buttons () {
     if (this.mode == 'build'){
       this.buttons = $(`<div class='flexbox left'></div>`).insertAfter(this.item_list);
-      new Button ({
+      new Features.Button ({
         text: 'add question', 
         class_list: 'pink xsmall addQuestion', 
         action: this.item_create.bind(this), 
         appendTo: this.buttons
       });
-      new Button ({
+      new Features.Button ({
         text: 'add text', 
         class_list: 'pink xsmall addText', 
         action: function(){alert('nope')}, 
@@ -709,7 +709,7 @@ class Item {
       let wrapper = this.item_list_wrapper, btn_wrap = $('<div class="buttonWrapper"></div>');
       let callback_hide = function(){wrapper.children('.buttonWrapper').slideFadeOut();}, 
         callback_show = function(){wrapper.children('.buttonWrapper').slideFadeIn();}, 
-        btn_item = new Button ({text: 'add question', class_list: 'pink70 xsmall addQuestion', action: function(){
+        btn_item = new Features.Button ({text: 'add question', class_list: 'pink70 xsmall addQuestion', action: function(){
             let modal = $("#AddItem"), item = null, parent = current_item, action = 'append', index = null,form = parent.form;
             log({item,parent,action,index,form});
             current_item.show_followup_options();
@@ -717,7 +717,7 @@ class Item {
           }, css: {marginBottom:'0'}
         });
       wrapper.append(this.item_list_wrapper_header,item_list, btn_wrap.append(btn_item.ele));
-      this.item_list_toggle = new Toggle({
+      this.item_list_toggle = new Features.Toggle({
         toggle_ele: this.item_list_wrapper_header,
         target_ele: item_list,
         initial_state: 'hidden',
@@ -863,6 +863,7 @@ class Item {
       items.push(item.item_db);
     }
     this.options.items = items;
+    log({options:this.options},"OPTIONS");
     return this.options;
   }
   get response() {
@@ -1017,7 +1018,7 @@ class Item {
       if (list.notEmpty()) obj.options.list = list;
       if (linked_to) obj.options.linked_to = linked_to;
       let check = Item.check_obj(obj);
-      log({all_pass,check});
+      log({all_pass,check,obj});
       if (!all_pass || !check) return;
 
       if (action == 'edit') {
@@ -1129,7 +1130,7 @@ class Answer {
     let str = string || this.if_null_str || 'this question is required', i = this.input;
     if (this.get() == null && this.settings.required) {
       i.smartScroll({
-        offset: getEm() * 4,
+        offset: get_rem_px() * 4,
         callback: function(){i.warn(str);}
       });
       return false;
@@ -1213,6 +1214,7 @@ class Answer {
     if (this.has_filter) this.filter.update();
     if (this.options.on_change_action) this.options.on_change_action(this, ev);
     if (this.options.after_change_action) this.options.after_change_action(this, ev);
+    // log('hello');
   }
   followup_show (time = 400) {
     let item_ele = this.ele.closest('.item');
@@ -1283,7 +1285,8 @@ class Answer {
     }).attr('tabindex',0).appendTo(this.ele).hide().on('blur',function(ev){
       let within_answer = answer.ele.find(ev.relatedTarget).exists();
       if (!within_answer) answer.linked_ele.slideFadeOut();
-    })
+    });
+
     this.linked_list = new Features.List({
       header: 'Type to search',
       header_html_tag: 'h5',
@@ -1316,6 +1319,7 @@ class Answer {
     }
     this.linked_selection = selection;
     this.linked_text_update();
+    this.on_change(ev);
   }
   linked_find_item_by_uid (uid) {
     let list = this.linked_list;
@@ -1838,7 +1842,7 @@ class InsertOptions {
   }
   get button_width () {
     let w = this.buttons.find('.button').get().map(b => b.offsetWidth).reduce((sum,current) => sum + current, 0);
-    w += getEm() * 2;
+    w += get_rem_px() * 2;
     return w;
   }
   show () {
@@ -2098,6 +2102,8 @@ var forms = {
                     $(option).getObj().value = item.name;
                     $(option).data('value',item.uid);
                   });
+                  log({model});
+                  list_ele.data('linked_to',model);
                   forms.create.editor.options.linked_text_update_editor(model);
                   unblur(2);
                 }catch (error) {
@@ -2223,7 +2229,7 @@ var forms = {
           let section = Section.create();
           if (section) forms.current.autosave.trigger();
         });
-        let form_name = new Editable({
+        let form_name = new Features.Editable({
           name: 'form name',
           id: 'FormName',
           replace: 'FormNameProxy',

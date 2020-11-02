@@ -949,20 +949,8 @@ form.disabled .plzCheck{
 #Templates{
     display: none;
 }
-/*.item.inline .text, .item.inline .textbox{
-    width:100%;
-}
-.item.inline .answer{
-    width:auto;
-    max-width: 95%;
-}*/
-
-/*.answer.text, .answer.date, .answer.textbox, .answer.dropdown, .answer.time{
-    border-color: transparent;
-    background-color: transparent;
-}*/
 .answer.textbox{
-    min-width: 65%;
+    width: 100%;
 }
 .answer textarea{
     width: 98%;
@@ -2600,6 +2588,9 @@ table img.checkmark {
     box-sizing: border-box;
     overflow-y: auto;
     transition: width 1000ms, height 1000ms;
+}
+.createModel {
+    /*background-color: var(--white97);*/
 }
 /*.modalForm.expanded{
     width:96%;

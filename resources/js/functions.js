@@ -945,7 +945,16 @@ export const menu = {
     },
   },
   fetch: (url, target, replace_target = false) => {
-    let data = {}, new_modal = (typeof target == 'string' && target.includes('new_modal'));
+    let data = {}, method = 'GET';
+    if (typeof url == 'object') {
+      let options = url;
+      url = options.url;
+      target = options.target;
+      method = options.method || 'GET';
+      replace_target = options.replace_target || false;
+      data = options.data || {};
+    }
+    let new_modal = (typeof target == 'string' && target.includes('new_modal'));
     if (new_modal) {
       blurTop('loading');
       data.mode = 'modal';
@@ -954,6 +963,7 @@ export const menu = {
       url: url,
       headers: system.validation.xhr.headers.list(),
       data: data,
+      method: method,
       success: (response, status, request) => {
         if (new_modal) {
           let split = target.split(':'), id = split[1] || null, 
@@ -2106,7 +2116,7 @@ export const system = {
     },
     get_ele: selector => {
       let ele = $(selector);
-      if (ele.dne()) throw new Error(`ele not found using ${selector}`);
+      if (ele.dne()) throw new Error(`ele not found using $(${selector})`);
       return ele;
     }
   },
@@ -2217,12 +2227,6 @@ export const system = {
     }
   },
 };
-// window.system = system;
-
-// export {menu,tabs,system,Menu,Icon,Autosave,Warning,ToolTip,Toggle,UpDown,List}
-
-// const class_map_all = {};
-// $(document).ready(function(){class_map_all.merge({system,menu,notifications})})
 
 window.user = system.user;
 window.initialize = system.initialize;
@@ -2314,7 +2318,9 @@ export const practice = {
   set: function(practiceData){
     if (Object.isFrozen(practice)) return;
     practice.info = practiceData;
-    moment.tz.setDefault(practice.info.tz.replace(/ /g,'_'));
+    let tz = practice.info.tz.replace(/ /g,'_');
+    window.tz = tz;
+    moment.tz.setDefault(tz);
     Object.freeze(practice);
   },
   get: function(key){
@@ -2527,7 +2533,7 @@ $.fn.set = function (value = null) {
     }
     let class_obj = this.data('class_obj');
     if (!class_obj) throw new Error('ele does not have class_obj');
-    if (class_obj instanceof Answer) {
+    if (class_obj instanceof Forms.Answer) {
       class_obj.value = value;
     }
   }catch(error){
@@ -2535,7 +2541,7 @@ $.fn.set = function (value = null) {
   }
 }
 $.fn.findAnswer = function (options) {
-  return Answer.find(Answer.get_all_within(this,false),options);
+  return Forms.Answer.find(Forms.Answer.get_all_within(this,false),options);
 }
 $.fn.answersAsObj = function () {
   return forms.response.all_answers_as_obj(this);
@@ -2702,6 +2708,8 @@ Object.defineProperties(String.prototype, {
     try{
       let first = split.shift();
       if (first == 'system') obj_val = system;
+      else if (first == 'forms') obj_val = forms;
+      else if (first == 'model') obj_val = model;
       else obj_val = obj ? obj[first] : Models[first] || Forms[first] || Features[first] || system[first] || window[first];
       if (!obj_val) throw new Error(`${first} not given or found in window or class_map`);
       if (obj_val) {
@@ -3731,23 +3739,23 @@ function listenMobileMenuExit(e){
 
 var timer;
 function resizeElements(ev){
-  clearTimeout(timer);
-  timer = setTimeout(function(){
-    if (typeof ev !== 'undefined' && typeof ev === 'object'
-      && typeof ev.type !== 'undefined' && ev.type === 'resize'
-      && vhIndicatorHeight !== undefined && !inputHasFocus){
-// console.log(ev);
-vhIndicatorHeight = vhIndicator.height();
-}
-// if (vhIndicatorHeight !== undefined) console.log(vhIndicatorHeight);
-resizeSplits();
-resizeQuotes();
-resizeMobileMenuAndFooter();
-resizeFooterPadding();
-resizeImageClicks();
-// resizeFcCalendar();
-// optionsNavOverflowCheck();
-}.bind(null, ev),150)
+//   clearTimeout(timer);
+//   timer = setTimeout(function(){
+//     if (typeof ev !== 'undefined' && typeof ev === 'object'
+//       && typeof ev.type !== 'undefined' && ev.type === 'resize'
+//       && vhIndicatorHeight !== undefined && !inputHasFocus){
+// // console.log(ev);
+// vhIndicatorHeight = vhIndicator.height();
+// }
+// // if (vhIndicatorHeight !== undefined) console.log(vhIndicatorHeight);
+// resizeSplits();
+// resizeQuotes();
+// resizeMobileMenuAndFooter();
+// resizeFooterPadding();
+// resizeImageClicks();
+// // resizeFcCalendar();
+// // optionsNavOverflowCheck();
+// }.bind(null, ev),150)
 }
 
 
@@ -3771,180 +3779,169 @@ function singular(model){
   return model;
 }
 
-const autosave = {
-  settings: {
-    saveBtn: null,
-    btnText: null,
-    timer: null,
-    ajaxCall: null,
-    callback: null,
-    delay: 5000,
-    countdown: null,
-  },
-  btnLoading: $("<div class='lds-ring insideBtn dark autosaveCircle'><div></div><div></div><div></div><div></div></div>"),
-  initialize: function(options = autosave.settings){
-    throw new Error("STOP USING THIS");
-    try{
-      autosave.reset();
-      if (!options.ajaxCall || typeof options.ajaxCall != 'function'){
-        throw new Error('autosave ajax call is required');
-      } else autosave.settings.ajaxCall = options.ajaxCall;
-      if (options.delay && typeof options.delay == 'number') autosave.settings.delay = options.delay;
-      if (options.saveBtn && options.saveBtn instanceof jQuery){
-        autosave.settings.saveBtn = options.saveBtn;
-        autosave.settings.btnText = options.saveBtn.text();            
-      }
-      if (options.callback && typeof options.callback == 'function') autosave.settings.callback = options.callback;
-    } catch (error) {
-      log({error,options});
-    }
-  },
-  clearTimer: () => {
-    clearTimeout(autosave.settings.timer);
-    clearInterval(autosave.settings.countdown);
-    if (autosave.settings.saveBtn) {
-      let text = '', flash = false, show = false;
-      autosave.statusUpdate({text,flash,show});
-    }
-  },
-  statusUpdate: (options = {}) => {
-    let btn = autosave.settings.saveBtn, status = $("#AutoStatus");
-    if (btn.parent(".autosaveSpan").dne()) btn.wrap("<span class='autosaveSpan'/>");
-    status.addClass('pink');
-    let span = btn.parent(), 
-    margin = btn.css('margin'), 
-    text = options.text || "",
-    flash = options.flash || false,
-    show = options.show || true;
-    if (flash) status.addClass('opacityFlash');
-    else status.removeClass('opacityFlash');
-    if (show) status.slideFadeIn();
-    else status.slideFadeOut();
-    status.html(text);
-    status.appendTo(span).css('transform','translate(-50%, calc(100% - '+margin+'))');
-  },
-  trigger: function(){
-    throw new Error("STOP USING THIS");
-    console.log('trigger');
-    autosave.clearTimer();
-    autosave.settings.timer = setTimeout(async function(){
-      autosave.inProgress();
-      log(autosave.settings);
-      try{
-        let result = await autosave.settings.ajaxCall().then((data,status,request) => {
-          log({data,status,request});
-          system.validation.xhr.headers.check(request);
-          let callback = autosave.settings.callback;
-          if (autosave.settings.callback) autosave.settings.callback.bind(null,data)();
-          autosave.success();
-        }).catch(error => log({error},'autosave error'));        
-      }catch(error){
-        log({error,setting:autosave.settings},'autosave error');
-      }
-    }, autosave.settings.delay);
+// const autosave = {
+//   settings: {
+//     saveBtn: null,
+//     btnText: null,
+//     timer: null,
+//     ajaxCall: null,
+//     callback: null,
+//     delay: 5000,
+//     countdown: null,
+//   },
+//   btnLoading: $("<div class='lds-ring insideBtn dark autosaveCircle'><div></div><div></div><div></div><div></div></div>"),
+//   initialize: function(options = autosave.settings){
+//     throw new Error("STOP USING THIS");
+//     try{
+//       autosave.reset();
+//       if (!options.ajaxCall || typeof options.ajaxCall != 'function'){
+//         throw new Error('autosave ajax call is required');
+//       } else autosave.settings.ajaxCall = options.ajaxCall;
+//       if (options.delay && typeof options.delay == 'number') autosave.settings.delay = options.delay;
+//       if (options.saveBtn && options.saveBtn instanceof jQuery){
+//         autosave.settings.saveBtn = options.saveBtn;
+//         autosave.settings.btnText = options.saveBtn.text();            
+//       }
+//       if (options.callback && typeof options.callback == 'function') autosave.settings.callback = options.callback;
+//     } catch (error) {
+//       log({error,options});
+//     }
+//   },
+//   clearTimer: () => {
+//     clearTimeout(autosave.settings.timer);
+//     clearInterval(autosave.settings.countdown);
+//     if (autosave.settings.saveBtn) {
+//       let text = '', flash = false, show = false;
+//       autosave.statusUpdate({text,flash,show});
+//     }
+//   },
+//   statusUpdate: (options = {}) => {
+//     let btn = autosave.settings.saveBtn, status = $("#AutoStatus");
+//     if (btn.parent(".autosaveSpan").dne()) btn.wrap("<span class='autosaveSpan'/>");
+//     status.addClass('pink');
+//     let span = btn.parent(), 
+//     margin = btn.css('margin'), 
+//     text = options.text || "",
+//     flash = options.flash || false,
+//     show = options.show || true;
+//     if (flash) status.addClass('opacityFlash');
+//     else status.removeClass('opacityFlash');
+//     if (show) status.slideFadeIn();
+//     else status.slideFadeOut();
+//     status.html(text);
+//     status.appendTo(span).css('transform','translate(-50%, calc(100% - '+margin+'))');
+//   },
+//   trigger: function(){
+//     throw new Error("STOP USING THIS");
+//     console.log('trigger');
+//     autosave.clearTimer();
+//     autosave.settings.timer = setTimeout(async function(){
+//       autosave.inProgress();
+//       log(autosave.settings);
+//       try{
+//         let result = await autosave.settings.ajaxCall().then((data,status,request) => {
+//           log({data,status,request});
+//           system.validation.xhr.headers.check(request);
+//           let callback = autosave.settings.callback;
+//           if (autosave.settings.callback) autosave.settings.callback.bind(null,data)();
+//           autosave.success();
+//         }).catch(error => log({error},'autosave error'));        
+//       }catch(error){
+//         log({error,setting:autosave.settings},'autosave error');
+//       }
+//     }, autosave.settings.delay);
     
-    if (autosave.settings.saveBtn){
-      let text = `saving changes in <span class='count' style='display:inline:block;margin-left:4px;'>${autosave.settings.delay/1000}</span>`, flash = true, show = true;
-      autosave.statusUpdate({text,flash,show});
-      autosave.settings.countdown = setInterval(function(){
-        let c = $("#AutoStatus").find('.count'), s = Number(c.text());
-        c.text(s-1);
-      },1000);      
-    }
-  },
-  inProgress: function(){
-    console.log('in progress');
-    if (autosave.settings.saveBtn){
-      let text = 'saving changes', flash = true, show = true;
-      autosave.statusUpdate({text,flash,show});
-      let disabled = autosave.settings.saveBtn.hasClass('disabled'), span = autosave.settings.saveBtn.parent();
-      autosave.settings.saveBtn.data('disabled',disabled);
-      autosave.settings.saveBtn.addClass('disabled');
-      autosave.btnLoading.clone().appendTo(span);
-    }
-  },
-  success: function(){
+//     if (autosave.settings.saveBtn){
+//       let text = `saving changes in <span class='count' style='display:inline:block;margin-left:4px;'>${autosave.settings.delay/1000}</span>`, flash = true, show = true;
+//       autosave.statusUpdate({text,flash,show});
+//       autosave.settings.countdown = setInterval(function(){
+//         let c = $("#AutoStatus").find('.count'), s = Number(c.text());
+//         c.text(s-1);
+//       },1000);      
+//     }
+//   },
+//   inProgress: function(){
+//     console.log('in progress');
+//     if (autosave.settings.saveBtn){
+//       let text = 'saving changes', flash = true, show = true;
+//       autosave.statusUpdate({text,flash,show});
+//       let disabled = autosave.settings.saveBtn.hasClass('disabled'), span = autosave.settings.saveBtn.parent();
+//       autosave.settings.saveBtn.data('disabled',disabled);
+//       autosave.settings.saveBtn.addClass('disabled');
+//       autosave.btnLoading.clone().appendTo(span);
+//     }
+//   },
+//   success: function(){
 
-var t = new Date(), timeStr = t.toLocaleTimeString(), wrap = $("#AutoSaveWrap");
-$("#AutoConfirm").find(".message").text("Autosaved at " + timeStr);
-// console.log(wrap);
-wrap.slideFadeIn(1200);
-setTimeout(wrap.slideFadeOut.bind(wrap,400),3600);
-if (autosave.settings.saveBtn){
-  let disabled = autosave.settings.saveBtn.data('disabled'),
-  text = '<span>changes saved</span><span class="checkmark" style="position:relative">✓</span>', 
-  flash = false, show = true;
-  if (!disabled) autosave.settings.saveBtn.removeClass('disabled');
-  autosave.settings.saveBtn.removeData('disabled').parent().find(".autosaveCircle").remove();
-  autosave.statusUpdate({text,flash,show});
-  setTimeout(function(){
-    $("#AutoStatus").slideFadeOut(400,function(){$("#AutoStatus").appendTo("#AutoSaveWrap")});
-  },4000)
-}
-}
-};
-
-// function initializeLinks(){
-//   var links = filterUninitialized('.link');
-//   links.on("click",followLink);
-//   links.data('initialized',true);
+// var t = new Date(), timeStr = t.toLocaleTimeString(), wrap = $("#AutoSaveWrap");
+// $("#AutoConfirm").find(".message").text("Autosaved at " + timeStr);
+// // console.log(wrap);
+// wrap.slideFadeIn(1200);
+// setTimeout(wrap.slideFadeOut.bind(wrap,400),3600);
+// if (autosave.settings.saveBtn){
+//   let disabled = autosave.settings.saveBtn.data('disabled'),
+//   text = '<span>changes saved</span><span class="checkmark" style="position:relative">✓</span>', 
+//   flash = false, show = true;
+//   if (!disabled) autosave.settings.saveBtn.removeClass('disabled');
+//   autosave.settings.saveBtn.removeData('disabled').parent().find(".autosaveCircle").remove();
+//   autosave.statusUpdate({text,flash,show});
+//   setTimeout(function(){
+//     $("#AutoStatus").slideFadeOut(400,function(){$("#AutoStatus").appendTo("#AutoSaveWrap")});
+//   },4000)
 // }
+// }
+// };
+
 
 function initializeNewContent(){
   throw new Error(`don't use initializeNewContent`);
   if (typeof notify !== 'undefined'){
-// resetEntireAppt();
-initializeNewForms();
-initializeNewModelForms();
-// initializeNewModelTables();
-table.initialize.all();
-initializeSettingsForm();
-// initializeApptForms();
-appointment.initialize.all();
-initializeScheduleForms();
-checkNotifications();
-// activateServiceSelection();
-// initializeChartNotePage();
-chartnote.initialize.all();
-// initializeInvoicePage();
-invoice.initialize.all();
-}
-initializeNewMenus();
-initializeEditables();
-initializeLinks();
-resizeElements();
-masterStyle();
+    initializeNewForms();
+    initializeNewModelForms();
+    table.initialize.all();
+    initializeSettingsForm();
+    appointment.initialize.all();
+    initializeScheduleForms();
+    checkNotifications();
+    chartnote.initialize.all();
+    invoice.initialize.all();
+  }
+  initializeNewMenus();
+  initializeEditables();
+  initializeLinks();
+  resizeElements();
+  masterStyle();
 }
 
-var loadingRing = "<div class='lds-ring dark'><div></div><div></div><div></div><div></div></div>", loadingRingCSS = {top:"50%",transform:"translate(-50%,-50%)"}, vhIndicator, vhIndicatorHeight = undefined, inputHasFocus = false, rapidChangeTimer = null;
-function checkRapidVhShrink(ev){
-  inputHasFocus = true;
-  input = $(ev.target), inputBoundaries = ev.target.getBoundingClientRect();
-// console.log(inputBoundaries);
-rapidChangeTimer = setTimeout(function(){
-// console.log(vhIndicator.height(), vhIndicatorHeight);
-if (vhIndicator.height() < vhIndicatorHeight * 0.85){
-  console.log("SHRINK");
-}
-},250)
-}
-function checkRapidVhGrowth(){
-  inputHasFocus = false;
+// var loadingRing = "<div class='lds-ring dark'><div></div><div></div><div></div><div></div></div>", loadingRingCSS = {top:"50%",transform:"translate(-50%,-50%)"}, vhIndicator, vhIndicatorHeight = undefined, inputHasFocus = false, rapidChangeTimer = null;
+// function checkRapidVhShrink(ev){
+//   inputHasFocus = true;
+//   input = $(ev.target), inputBoundaries = ev.target.getBoundingClientRect();
+// // console.log(inputBoundaries);
 // rapidChangeTimer = setTimeout(function(){
-//     console.log(vhIndicator.height(), vhIndicatorHeight);
-//     if (vhIndicator.height() > vhIndicatorHeight * 0.85){
-// console.log("GROW");
-//     }
+// // console.log(vhIndicator.height(), vhIndicatorHeight);
+// if (vhIndicator.height() < vhIndicatorHeight * 0.85){
+//   console.log("SHRINK");
+// }
 // },250)
-}
+// }
+// function checkRapidVhGrowth(){
+//   inputHasFocus = false;
+// // rapidChangeTimer = setTimeout(function(){
+// //     console.log(vhIndicator.height(), vhIndicatorHeight);
+// //     if (vhIndicator.height() > vhIndicatorHeight * 0.85){
+// // console.log("GROW");
+// //     }
+// // },250)
+// }
 
 $(document).ready(function(){
-  vhIndicator = $(".vhIndicator").first();
-  if (vhIndicator.length > 0){
-    vhIndicatorHeight = vhIndicator.length > 0 ? vhIndicator.height() : undefined;
-    $('body').on('focusin','input[type="text"], textarea',checkRapidVhShrink);
-    $('body').on('focusout','input[type="text"], textarea',checkRapidVhGrowth);        
-  }
+  // vhIndicator = $(".vhIndicator").first();
+  // if (vhIndicator.length > 0){
+  //   vhIndicatorHeight = vhIndicator.length > 0 ? vhIndicator.height() : undefined;
+  //   $('body').on('focusin','input[type="text"], textarea',checkRapidVhShrink);
+  //   $('body').on('focusout','input[type="text"], textarea',checkRapidVhGrowth);        
+  // }
   resizeElements();
   if ($("#LoggedOut").length>0){
     setTimeout(function(){
@@ -3955,12 +3952,10 @@ $(document).ready(function(){
     systemModalList.push("createAppointment","editAppointment","SelectServices","SelectPractitioner","SelectDateTime","ApptDetails","ServiceListModal","PractitionerListModal");
     systemModals = systemModals.add($("#createAppointment, #editAppointment, #SelectServices, #SelectPractitioner, #SelectDateTime, #ApptDetails, #ServiceListModal, #PractitionerListModal"));
   }
-// initializeLinks();
-// $(".booknow").addClass("link").data("target","/booknow");
-$(document).on('click','.cancel',function(ev){
-  if ($(ev.target).hasClass('toggle')) return;
-  unblur(); 
-});
+  $(document).on('click','.cancel',function(ev){
+    if ($(ev.target).hasClass('toggle')) return;
+    unblur(); 
+  });
 })
 
 

@@ -1,5 +1,5 @@
 // require ('./functions');
-import {system, practice, log, Features} from './functions';
+import {system, practice, log, Features, menu} from './functions';
 import {forms, Forms} from './forms';
 
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -271,10 +271,7 @@ class Model {
     this.type = type;
     if (this.attr_list.uid) {
       this.uid = this.attr_list.uid;
-      // delete this.attr_list.uid;
     }
-    // this.dont_save(['model','id']);
-    // log({model:this},`new ${type}`);
   }
 
   backup_attr_values (array) {
@@ -293,7 +290,7 @@ class Model {
       let form = $(selector);
       if (form.dne()) throw new Error('form does not exist');
       if (form.length > 1) throw new Error('more than one form found');
-      attr_list = {};
+      // attr_list = {};
       form.find('.answer').filter(':visible').each((a,answer) => {
         let obj = $(answer).getObj(), value = $(answer).verify('required'), name = obj.options.name;
         if (value === false) all_pass = false;
@@ -358,7 +355,10 @@ class Model {
   }
   async settings () {
     if (!this.settings_unique) {
+      let model = this;
       await menu.fetch(`/settings/${this.type.toKeyString()}/${this.uid}`,'new_modal:SettingsModal');
+      let answers = Forms.Answer.get_all_within("#SettingsModal");
+      if (this.settings_autosave) answers.forEach(answer => answer.options.after_change_action = model.settings_autosave);
     } else await this.settings_unique();
   }
   async save (options = {}) {
@@ -516,6 +516,33 @@ class Model {
       return false;
     } 
   }
+  static async retrieve (attrs, type, options = {}) {
+    let instance = await $.ajax({
+      url: `/retrieve/${type}`,
+      method: 'POST',
+      data: {attrs}.merge(options),
+      success: function(response) {
+        if (system.validation.xhr.error.exists(response)) return null;
+        return response;
+      }
+    })
+    return instance;
+  }
+  static async create_or_edit (where_array, type, options = {}) {
+    let data = {where_array}.merge(options);
+    await menu.fetch({url:`/create_or_edit/${type}`, target:`new_modal:NewOrEdit${type}`, method:"POST", data});
+    // blurTop('loading');
+    // let instance = await $.ajax({
+    //   url: `/create_or_edit/${type}`,
+    //   method: 'POST',
+    //   data: {where_array}.merge(options),
+    //   success: function(response) {
+    //     if (system.validation.xhr.error.exists(response)) return null;
+    //     blurTop(response);
+    //   }
+    // })
+    // return instance;
+  }
 }
 class SettingsManager {
   constructor (options, mode = 'display') {
@@ -527,7 +554,7 @@ class SettingsManager {
       if (!this.save || typeof this.save != 'function') throw new Error('must supply a save function');
       if (this.callback && typeof this.callback != 'function') this.callback = null;
       let settings_manager = this;
-      this.autosave = new Autosave({
+      this.autosave = new Features.Autosave({
         ele: $("#SettingsModal"),
         delay: 10000,
         send: function() {
@@ -587,7 +614,7 @@ class SettingsManager {
         if (input.options.usePreLabel) existing = manager.get_setting(`${name}.${input.options.preLabel.toKeyString()}`);
         else existing = manager.get_setting(name);
         initial = input.options.save_as_bool ? SettingsManager.array_of_true_values(existing) : existing;
-        if (manager.obj instanceof Section) log({initial,existing,input});
+        if (manager.obj instanceof Forms.Section) log({initial,existing,input});
         input.merge({options: {on_change_action: update}, initial});
         let answer = new Forms.Answer(input);
         tooltip.message_append(answer.ele.addClass('flexbox left').css({width:'auto'}).wrap(`<div class='flexbox'></div>`));
@@ -883,22 +910,30 @@ class Calendar {
     }
     if (ele.hasClass('Appointment')) {
       let cal = this, description = render_info.event.extendedProps.description;
-      let edit_btn = new Features.Button({
-        text:'edit', class_list: 'xxsmall yellow70', action: function(){
-          let groupId = render_info.event.groupId, schedule = cal.schedule_by_event(render_info.event);
-          let response = schedule.response_by_group_id(groupId);
+      let groupId = render_info.event.groupId, schedule = cal.schedule_by_event(render_info.event);
+      let appt_details = schedule.response_by_group_id(groupId), appointment_id = appt_details.uid, appointment_datetime = Schedule.moment_to_db_datetime(moment(render_info.event.start));
+      let chartnote_btn = new Features.Button({
+        text:'chart note', class_list: 'xxsmall yellow', action: async function(){
+          log({appt_details,groupId,render_info});
+          let note = await Model.create_or_edit({appointment_id,appointment_datetime},'ChartNote',{mode:'modal'});
+          log({note});
+        }, appendTo: message,
+      }), invoice_btn = new Features.Button({
+        text:'invoice', class_list: 'xxsmall yellow', action: function(){
+          log({appt_details,groupId});
+        }, appendTo: message,
+      }), edit_btn = new Features.Button({
+        text:'edit details', class_list: 'xxsmall yellow70', action: function(){
           schedule.edit_event = render_info.event;
-          schedule.form_open({response});      
-        }
+          schedule.form_open({appt_details});      
+        }, appendTo: message,
       }), delete_btn = new Features.Button({
         text:'delete', class_list: 'xxsmall pink70', action: function(){
-          let groupId = render_info.event.groupId, schedule = cal.schedule_by_event(render_info.event);
-          let response = schedule.response_by_group_id(groupId);
-          schedule.delete(response);
-        }
+          schedule.delete(appt_details);
+        }, appendTo: message,
       })
       message.find('.generic, .Patient, .Practitioner, .Services').css({fontSize:'1.2em'});
-      message.append(edit_btn.ele,delete_btn.ele);
+      // message.append(edit_btn.ele,chartnote_btn.ele,delete_btn.ele);
     }
   }
 }
@@ -1250,6 +1285,10 @@ class Schedule {
   static moment_to_rdate (dt) {
     return new Date(Date.UTC(dt.utc().year(), dt.utc().month(), dt.utc().date(), dt.utc().hours(), dt.utc().minutes(), dt.utc().seconds()));
   }
+  static dst_offset_ignore (moment_with_original_time, moment_to_correct) {
+    let dif = moment_with_original_time.utcOffset() - moment_to_correct.utcOffset();
+    moment_to_correct.add(dif,'minutes');
+  }
   static date_moment (string, format = 'MM/DD/YYYY') {return Schedule.string_to_moment(string, format)}
   static time_moment (string, format = 'h:mma') {return Schedule.string_to_moment(string, format)}
   upcoming (model, options = {}) {
@@ -1257,9 +1296,10 @@ class Schedule {
     let limit = options.limit || 3,
       format = options.format || 'M/D/YYYY',
       sort = options.sort || null,
-      rrule_set = model.rrule ? rrulestr(model.rrule,{forceset:true}) : null,
+      rrule_set = model.rrule ? rrulestr(model.rrule,{forceset:true,tzid:tz}) : null,
       include_related = ifu(options.include_related, true),
       related = null, related_dates = [], related_uids = [];
+    // log({tz});
     if (include_related) {
       related = this.model_find_related(model);
       let related_map = this.model_find_related(model).map(model_related => {
@@ -1277,8 +1317,11 @@ class Schedule {
     let working_rdate = Schedule.moment_to_rdate(moment()), dates = [], self_data = [];
     if (rrule_set) {
       let self = true;
+      log({rrule_set});
       while (working_rdate && dates.length < limit) {
+        log({working_rdate},`starting ${working_rdate}`);
         working_rdate = rrule_set.after(working_rdate); self = true;
+        log({working_rdate},`next ${working_rdate}`);
         if (!working_rdate && related_dates.notEmpty()) {
           working_rdate = related_dates.shift(); self = related_uids.shift();
         } else if (related_dates.notEmpty() && related_dates[0].valueOf() < working_rdate.valueOf()) {
@@ -1295,6 +1338,8 @@ class Schedule {
 
     if (sort) dates = system.validation.date.sort(dates, sort.merge({as_moment:true}));
     else dates = dates.map(date => moment(date));
+    let m = {uid:model.uid,rid:model.recurring_id,dates};
+    // log({m},'upcoming');
     return {model, limit, dates, self_data, max: working_rdate != null, rrule_set};
   }
   upcoming_ele (result) {
@@ -1510,16 +1555,18 @@ class Schedule {
           let date = model.date, start = moment(`${date} ${model.time_start}`,'MM-DD-YYYY hh:mma').toISOString(), end = moment(`${date} ${model.time_end}`,'MM-DD-YYYY hh:mma').toISOString();
           event.merge({start,end});
           if (model.recurring_id) {
-            let original_model = schedule.find(model.recurring_id),
-              upcoming = schedule.upcoming(original_model,{limit:3,format:'M/D/YYYY',sort:{dir:'asc'}}), 
-              recent = schedule.recent(original_model,{limit:3,format:'M/D/YYYY',sort:{dir:'desc'}}),
-              upcoming_ele = schedule.upcoming_ele(upcoming),
-              recent_ele = schedule.recent_ele(recent);
-            event.description.merge(Appointment.recurring_description(original_model.recurrence));
-            event.description.merge({
-              'Upcoming': upcoming_ele,
-              'Most Recent': recent_ele,
-            });
+            let original_model = schedule.find(model.recurring_id);
+            if (original_model) {
+              let upcoming = schedule.upcoming(original_model,{limit:3,format:'M/D/YYYY',sort:{dir:'asc'}}), 
+                recent = schedule.recent(original_model,{limit:3,format:'M/D/YYYY',sort:{dir:'desc'}}),
+                upcoming_ele = schedule.upcoming_ele(upcoming),
+                recent_ele = schedule.recent_ele(recent);
+              event.description.merge(Appointment.recurring_description(original_model.recurrence));
+              event.description.merge({
+                'Upcoming': upcoming_ele,
+                'Most Recent': recent_ele,
+              });
+            }
           }
           events.push(event);
         }
@@ -1598,7 +1645,7 @@ class Appointment extends Model{
     if (!this.attr_list.recurrence) return null;
     let recur_obj = new Forms.FormResponse(this.attr_list.recurrence), 
       dates = recur_obj.response_for('SelectDates'), days = recur_obj.response_for('SelectWeekDays'), 
-      until = recur_obj.response_for('EndDateOptional'), rrule_set =new RRuleSet(), 
+      until = recur_obj.response_for('EndDateOptional'), rrule_set = new RRuleSet(), 
       start = this.start_moment, end = this.end_moment,
       interval = recur_obj.response_for('HowOften');
     if (!start || !end) {
@@ -1610,21 +1657,22 @@ class Appointment extends Model{
       if (dates) {
         if (!dates.is_array()) dates = dates.split(', ');
         dates.smartPush(date);
-        // let dtstart = Schedule.datetime_to_rdate(`${date} ${time_start}`);
         dates.forEach(date => {rrule_set.rdate(Schedule.datetime_to_rdate(`${date} ${time_start}`))});
       } else {
         let rrule = {
           freq: RRule.WEEKLY,
           interval: interval,
           dtstart: Schedule.moment_to_rdate(start),
-          byweekday: days.map(day => RRule[day.substring(0,2).toUpperCase()])
+          byweekday: days.map(day => RRule[day.substring(0,2).toUpperCase()]),
         };
         if (until) rrule.until = Schedule.datetime_to_rdate(`${until} ${time_end}`);
         rrule_set.rrule(new RRule(rrule));
       }
       if (exclusions) {
-        // log({exclusions},'building rrule');
-        exclusions.forEach(date => rrule_set.exdate(Schedule.datetime_to_rdate(`${date} ${time_start}`)));
+        exclusions.forEach(date => {
+          let exdate = Schedule.datetime_to_moment(`${date} ${time_start}`);
+          rrule_set.exdate(Schedule.moment_to_rdate(exdate))
+        });
       }
       return rrule_set;
     } catch (error) {
@@ -1754,7 +1802,16 @@ class Service extends Model {
     if (!attr_list) attr_list = Model.construct_from_form('#CreateService');
     super(attr_list, 'Service');
   }
+  // settings_onload () {
+  //   let service = this;
+  //   this.autosave = new Features.Autosave({
+  //     send: this.save,
+  //   });
+  // }
   get db_columns () {return ['name','service_category_id','description_calendar','description_admin','price','duration']}
+  async settings_autosave () {
+    log('hi');
+  }
 }
 class Form extends Model {
   constructor (attr_list) {
@@ -1768,16 +1825,25 @@ class Form extends Model {
   }
   static async preview_by_uid (uid) {menu.fetch(`/form/preview/${uid}`,'new_modal:FormPreview');}
 }
+class ChartNote extends Model {
+  constructor (attr_list = null) {
+    attr_list = attr_list || Model.construct_from_form('#ChartNote');
+    super(attr_list, 'ChartNote');
+  }
+  static get_existing (appt_uid, datetime) {
 
-export const Models = {ModelTable, Filter, Model, SettingsManager, Practice, User, Patient, Practitioner, StaffMember, Calendar, Schedule, Appointment, Service, Form};
+  }
+}
+
+export const Models = {ModelTable, Filter, Model, SettingsManager, Practice, User, Patient, Practitioner, StaffMember, Calendar, Schedule, Appointment, Service, Form, ChartNote};
 // $(document).ready(function(){if (system.user.isSuper()) alert('yeah');window.Models = Models});
 
 // $(document).ready(function(){
 //   class_map_all.merge({Form,FormEle,Patient,Practitioner,StaffMember,User,Service,Practice,model,Appointment})
 // });
-const class_map_linkable = {Patient,Practitioner,StaffMember,Service,Form};
-const linkable_lists = {};
-const linkable_lists_pending = {};
+export const class_map_linkable = {Patient,Practitioner,StaffMember,Service,Form};
+export const linkable_lists = {};
+export const linkable_lists_pending = {};
 
 // const RRule = rrule.RRule, RRuleSet = rrule.RRuleSet;
 

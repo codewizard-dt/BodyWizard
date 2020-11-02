@@ -390,4 +390,3 @@ $inputs = [];
     </div>
   </div>
 
-  <script type="text/javascript" src="{{ asset('/js/launchpad/form-builder.js') }}"></script>

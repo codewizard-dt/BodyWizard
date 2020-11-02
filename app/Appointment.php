@@ -28,7 +28,8 @@ class Appointment extends Model
     'status' => 'array',
     'recurrence' => 'array',
     'exclusions' => 'array',
-    'date_time' => 'datetime',
+    'date_time_start' => 'datetime',
+    'date_time_end' => 'datetime',
   ];
   // protected $dateFormat = 'm/d/Y h:ia';  
   // protected $hidden = ['full_json'];
@@ -278,7 +279,7 @@ class Appointment extends Model
 // return implode(", ",$patients);
   }
   public function getNameAttribute(){
-    return $this->service_list." (".$this->date_time->format('n/j/y').")";
+    return $this->service_list." (".$this->date_time_start->format('n/j/y').")";
   }
 
   public function requiresForm($formId, $usertype = null){

@@ -131,27 +131,7 @@ class ScriptController extends Controller
     $relationships = $request->input('relationships', null);
     $uid = $request->input('uid', null);
     return $this->save($model, $columns, $relationships, $uid);
-    // try{
-    //   if ($request->uid != null){
-    //     $instance = $class::findOrFail($request->uid);
-    //     $instance->fill($request->columns);
-    //     if (!$instance->isDirty()) throw new \Exception('no changes');
-    //     $instance->update($request->columns);
-    //     session(['model_action' => 'update']);
-    //   }else{
-    //     $instance = $class::create($request->columns);
-    //     Log::info('relationships!',['relationships'=>$request->relationships]);
-    //     session(['model_action' => 'create']);
-    //   }
-    //   setUid($model, $instance->getKey());
-
-    //   $response = method_exists($class, 'successResponse') ? $class::successResponse() : successResponse($model);
-    //   if ($request->has('wants_checkmark')) $response = 'checkmark';
-    // }catch(\Exception $e){
-    //   $error = handleError($e,'scriptcontroller save 100');
-    //   $response = compact('error');
-    // }
-    return $response;
+    // return $response;
   }
   public function save_multi (Request $request) {
     try {
@@ -165,6 +145,37 @@ class ScriptController extends Controller
     } catch (\Exception $e) {
       $error = handleError($e,'scriptcontroller save 100');
       $response = compact('error');
+    }
+    return $response;
+  }
+  public function retrieve_single($model, Request $request) {
+    $class = "App\\$model"; $collection = null;
+    try {
+      $attrs = $request->attrs;
+      $collection = $class::where($attrs)->get();
+      if ($collection->count() == 0) throw new \Exception('not found');
+      else if ($collection->count() > 1) throw new \Exception('more than one found');
+      $response = $collection->first();
+    } catch (\Exception $e) {
+      $error = handleError($e,'scriptcontroller retrieve_single');
+      return compact('error');
+    }
+    return $response;
+  }
+  public function retrieve_multi (Request $request) {
+    return 'hello';
+  }
+  public function create_or_edit ($model, Request $request) {
+    $class = "App\\$model"; $collection = null;
+    try {
+      $where_array = $request->where_array;
+      $collection = $class::where($where_array)->get();
+      if ($collection->count() > 1) throw new \Exception('more than one found');
+      $instance = $collection->count() == 1 ? $collection->first() : null;
+      return view('models.create.template',compact('model','instance','request'));
+    } catch (\Exception $e) {
+      $error = handleError($e,'scriptcontroller retrieve_single');
+      return compact('error');
     }
     return $response;
   }

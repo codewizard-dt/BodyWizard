@@ -10,7 +10,6 @@ $inputs = [];
   'services', new_input('list',
   	['linked_to','listLimit','linked_columns','preLabel','labelHtmlTag','labelCss','after_change_action','eleCss'],
   	['Service','no limit',['price','duration','settings'],'Services','h2',['width'=>'100%','marginTop'=>'0.2em','color'=>'var(--purple)'],'Appointment.update_duration',['width'=>'min-content','marginRight'=>'1em']]),
-  'services.settings.required','true',
   'date', new_input('date',
   	['date_limit','preLabel','labelHtmlTag','labelCss'],
   	[1,'Date','h2',['width'=>'100%','marginTop'=>'0.2em','color'=>'var(--purple)']]),
