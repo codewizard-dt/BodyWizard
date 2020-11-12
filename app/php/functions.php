@@ -121,6 +121,7 @@ function handleError($exception,$location=null) {
     $error = ['header' => 'Error', 'message' => 'No changes were made.'];
   } else{
     reportError($exception,$location);
+    Log::error($exception);
     $error = ['header' => 'Error','message'=>$msg];
   }
   return $error;

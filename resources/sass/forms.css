@@ -126,6 +126,7 @@ textarea[data-followup]{
 .fc-event, .fc-bg-event{
     transition: background-color 500ms;
 }
+.fc-bg-event.blocked {background-color: var(--pink50) !important}
 .calendar .fc-event:not(.fc-bg-event){
     background-color: var(--pink70);
     border-color: var(--pink);
@@ -143,10 +144,11 @@ textarea[data-followup]{
     background-color:var(--purple50);
     border-color:var(--purple30);    
 }*/
-td.fc-today{background-color: var(--purple10) !important;}
+/*td.fc-today{background-color: var(--purple10) !important;}*/
 .fc-button-primary, .fc-button-primary:disabled{
     background-color: var(--purple90);
     border-color: var(--purple);
+    transition: background-color 400ms;
 }
 .fc-button-primary:hover{
     background-color: var(--purple);

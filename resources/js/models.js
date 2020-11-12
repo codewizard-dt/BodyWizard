@@ -6,9 +6,9 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import listPlugin from '@fullcalendar/list';
 import timeGridPlugin from '@fullcalendar/timegrid';
+import luxonPlugin from '@fullcalendar/luxon'
 import rrulePlugin from '@fullcalendar/rrule';
-import momentTimezonePlugin from '@fullcalendar/moment-timezone';
-
+import {DateTime as LUX, Duration as LUXDur} from 'luxon';
 
 class ModelTable {
   constructor(ele, selectionLimit = 1){
@@ -303,21 +303,23 @@ class Model {
     }
     return all_pass ? attr_list : false;
   }
-  update_attr_by_form (form_ele = null) {
+  update_attr_by_form (options = {}) {
     let attr_list = this.attr_list, all_pass = true;
     try {
-      if (!form_ele) form_ele = $(`#Create${this.attr_list.model}`);
-      // if (!form_ele) throw new Error('form ele not given');
-      if (form_ele.dne()) throw new Error('form does not exist');
-      if (form_ele.length > 1) throw new Error('more than one form found');
-      form_ele.find('.answer').each((a,answer) => {
-        let obj = $(answer).getObj(), value = $(answer).verify('required'), name = obj.options.name;
+      let form = options.form || null, type = this.attr_list.model || this.type;
+      log({instance:this});
+      if (!form) form = $(`#Create${type}`);
+      if (form.dne()) throw new Error('form does not exist');
+      if (form.length > 1) throw new Error('more than one form found');
+      let answers = Forms.Answer.get_all_within(form);
+      answers.forEach(answer => {
+        let value = answer.verify('required'), name = answer.options.name;
         if (value === false) all_pass = false;
-        if (obj.initial != value) attr_list[name] = value;
-        log({answer,value,obj})
+        attr_list[name] = value;
+        // log({answer,value},value === false ? "FALSE" : value);
       })
     }catch (error) {
-      log({error,form_ele});
+      log({error,options,all_pass});
       all_pass = false;
     }
     return all_pass;
@@ -347,11 +349,7 @@ class Model {
       await this.edit_unique();
     }
     let top = blurTopGet(), form = top && top.find('.createModel').exists() ? top.find('.createModel') : null;
-    if (form) {
-      let header = form.find('h1'), submit_btn = form.find('.submit.create');
-      header.text(header.text().replace('Create','Edit'));
-      submit_btn.toggleClass('create edit').text(submit_btn.text().replace('add','save changes to'));      
-    }
+    if (form) Model.form_mode('edit',form);
   }
   async settings () {
     if (!this.settings_unique) {
@@ -375,7 +373,7 @@ class Model {
         let db_obj = this.db_save_obj, callback = this.save_callback ? this.save_callback.bind(this) : null;
         if (type == 'User') db_obj.uid = this.attr_list.user_id;
         log({db_obj, attr_list:this.attr_list},`saving new SINGLE ${this.type}`);
-        // return;
+        // return ;
         let result = await $.ajax({
           url: `/save/${type}`,
           method: 'POST',
@@ -427,7 +425,15 @@ class Model {
   get db_save_obj () {
     let model = this, columns = {}, relationships = {}, uid = this.save_uid || this.uid || this.attr_list.uid || null;
     if (!this.db_columns) throw new Error(`db_columns not defined for ${type}`);
-    this.db_columns.forEach(column => {if (model.attr_list[column]) columns[column] = model.attr_list[column]});
+    this.db_columns.forEach(column => {
+      if (model.attr_list[column]) {
+        let attr = model.attr_list[column];
+        if (attr instanceof LUX) {
+          if (column.includes('datetime') || column.includes('date_time')) attr = attr.datetime_db;
+        }
+        columns[column] = attr;
+      }
+    });
     if (this.db_relationships) {
       for (let model in this.db_relationships) {
         if (this.attr_list[model]) relationships[model] = {uids: this.attr_list[model], method: this.db_relationships[model]}
@@ -440,6 +446,19 @@ class Model {
     if (typeof attrs == 'string') list.push(attrs);
     else if (attrs.is_array()) list = [...list,...attrs];
     this.attrs_not_to_save = list;
+  }
+  static form_mode (mode, form, options = {}) {
+    // let mode = options.mode || 'create';
+    let header = form.find('h1'), submit_btn = form.find('.submit.create, .submit.edit'), type = submit_btn.data('model');
+    if (mode == 'create') {
+      header.text(header.text().replace('Edit','Create'));
+      let text = options.btn_text || `create ${type}`;
+      submit_btn.addClass('create').removeClass('edit').text(text);      
+    } else if (mode == 'edit') {
+      header.text(header.text().replace('Create','Edit'));
+      let text = options.btn_text || `save changes to ${type}`;
+      submit_btn.addClass('edit').removeClass('create').text(text);      
+    }
   }
   static list_has_column (list, column) {return list[0][column] != undefined;}
   static list_missing_columns (list, columns) {return columns.filter(column => !Model.list_has_column(list,column));}
@@ -531,17 +550,6 @@ class Model {
   static async create_or_edit (where_array, type, options = {}) {
     let data = {where_array}.merge(options);
     await menu.fetch({url:`/create_or_edit/${type}`, target:`new_modal:NewOrEdit${type}`, method:"POST", data});
-    // blurTop('loading');
-    // let instance = await $.ajax({
-    //   url: `/create_or_edit/${type}`,
-    //   method: 'POST',
-    //   data: {where_array}.merge(options),
-    //   success: function(response) {
-    //     if (system.validation.xhr.error.exists(response)) return null;
-    //     blurTop(response);
-    //   }
-    // })
-    // return instance;
   }
 }
 class SettingsManager {
@@ -753,10 +761,8 @@ class Calendar {
       obj.calendar = this;
     })
     this.schedules = schedules;
-    // log({cal:this,practice:practice.info,tz:practice.info.tz}, 'new calendar');
-    let tz = practice.info.tz, client_tz = moment.tz.guess();
     let calendar = this, fullcal_options = {
-      plugins: [dayGridPlugin,listPlugin, timeGridPlugin, interactionPlugin, rrulePlugin, momentTimezonePlugin],
+      plugins: [dayGridPlugin,listPlugin, timeGridPlugin, interactionPlugin, rrulePlugin, luxonPlugin],
       timeZone: tz,
       headerToolbar: {
         left:"title",
@@ -792,12 +798,14 @@ class Calendar {
     if (this.options.fullcal) fullcal_options.merge(this.options.fullcal);
     this.fullcal = new FullCal(this.ele[0], fullcal_options);
     this.fullcal.render();
+    // return;
     let view = this.ele.find('.fc-view');
     blur(view,'loading',{loadingColor:'var(--pink)',blurCss:{backgroundColor:'var(--white50)'}});      
     let cal = this, wait = setInterval(function(){
       if (cal.schedules.every(schedule => schedule.loading === false)) {
         clearInterval(wait);
         setTimeout(function(){unblur({ele:view})},100);
+        log({view,schedules:cal.schedules},'done');
       }
     },100);
     if (this.schedule_active.modal.id == 'Appointment') this.schedule_active.autosave = new Features.Autosave({send: this.schedule_active.save.bind(this.schedule_active), delay:5000, message: 'All schedule changes saved', ele: this.ele});
@@ -810,14 +818,15 @@ class Calendar {
   get schedule_active () {return this.schedules.isSolo() ? this.schedules[0] : this.schedules.find(s => s.options.active)}
   async event_drop (info) {
     let group_id = info.event.groupId, event_source_id = info.event.source.id, source = this.fullcal.getEventSourceById(event_source_id), schedule = this.schedule_by_source_id(event_source_id), response = schedule.response_by_group_id(group_id), delta = info.delta;
-    log({info,group_id,event_source_id,schedule,response}, 'event drop');
-
+    console.groupCollapsed('EVENT DROP');
+    log({info,group_id,event_source_id,schedule,response});
+    let result = null;
     if (schedule) {
       schedule.edit_recur = 'all';
-      let result = await schedule.update_by_delta(response, {delta});
-      return !system.validation.xhr.error.exists(result);
+      result = await schedule.update_by_delta(response, delta);
     }
-    else return false;
+    console.groupEnd();
+    return result ? !system.validation.xhr.error.exists(result) : false;
   }
   async event_resize (info) {
     let group_id = info.event.groupId, event_source_id = info.event.source.id, source = this.fullcal.getEventSourceById(event_source_id), schedule = this.schedule_by_source_id(event_source_id), response = schedule.response_by_group_id(group_id), startDelta = info.startDelta, endDelta = info.endDelta;
@@ -879,9 +888,7 @@ class Calendar {
     let groupId = info.event.groupId, schedule = this.schedule_by_event(info.event);
     if (schedule.is_background) return;
     let response = schedule.response_by_group_id(groupId), ids = info.event.extendedProps.ids;
-    log({info,response,ids},`event click uid: ${ids.uid}, recurring_id: ${ids.recurring_id}`);
-    // schedule.edit_moment_start = moment(info.event.start);
-    // schedule.edit_moment_end = moment(info.event.end);
+    log({info,response,ids});
     schedule.edit_event = info.event;
     schedule.form_open({response});      
   }
@@ -896,8 +903,8 @@ class Calendar {
     this.apply_tooltip_info_by_class(message, render_info);
   }
   apply_tooltip_info_generic (message, render_info) {
-    let event = render_info.event, start = moment(event.start), end = moment(event.end);
-    let description = `${start.format('MMM D h:mma')} - ${end.format('h:mma')}`;
+    let event = render_info.event, start = LUX.fromISO(event.startStr), end = LUX.fromISO(event.endStr);
+    let description = `${start.date} ${start.time} - ${end.time}`;
     message.prepend(`<div class='generic'><b>${description}</b></div>`);
   }
   apply_tooltip_info_by_class (message, render_info) {
@@ -911,7 +918,7 @@ class Calendar {
     if (ele.hasClass('Appointment')) {
       let cal = this, description = render_info.event.extendedProps.description;
       let groupId = render_info.event.groupId, schedule = cal.schedule_by_event(render_info.event);
-      let appt_details = schedule.response_by_group_id(groupId), appointment_id = appt_details.uid, appointment_datetime = Schedule.moment_to_db_datetime(moment(render_info.event.start));
+      let appt_details = schedule.response_by_group_id(groupId), appointment_id = appt_details.uid, appointment_datetime = render_info.event.start;
       let chartnote_btn = new Features.Button({
         text:'chart note', class_list: 'xxsmall yellow', action: async function(){
           log({appt_details,groupId,render_info});
@@ -954,9 +961,6 @@ class Schedule {
     this.is_background = this.form === null;
     this.display = this.options.display || 'auto';
     this.refresh_events();
-    // this.loading = false;
-    // if (this.responses != null) this.events = this.form_responses_to_events(this.responses);
-    // if (this.models != null) this.events = this.models_to_events(this.models);
   }
   get event_list () {return this.events ? this.events : []}
   get event_source_id () {return `SCH_${this.cal_index}_${this.model}`}
@@ -978,24 +982,25 @@ class Schedule {
     return match;
   }
   date_click_to_form (info) {
-    let date_obj = moment(info.date), time = date_obj.format('h:mma'), date = date_obj.format('MM/DD/YYYY'), fill = {};
+    let dt = LUX.From.js(info.date), fill = {};
+    // log({dt,day:dt.day})
     if (this.modal.id == 'ScheduleBlock') {
       fill.merge({
-        'hours.from': time,
-        'hours.to': moment(date_obj).add(1,'h').format('h:mma'),
-        'start date': moment(date_obj).startOf('week').format('MM/DD/YYYY'),
-        'days of week': date_obj.day(),
-        'select dates': date,      
+        'hours.from': dt.time,
+        'hours.to': dt.plus({hours:1}).time,
+        'start date': dt.start_of_week.date_num,
+        'days of week': dt.weekdayLong,
+        'select dates': dt.date_num,      
       });      
     } else if (this.modal.id == 'Appointment') {
-      fill.merge({
-        date: date,
-        time: time,
-        SelectDates: date,      
-        SelectWeekDays: Schedule.integer_to_weekday(Schedule.date_moment(date).day()),
+      fill.merge({  
+        date: dt.date_num,
+        time: dt.time,
+        SelectDates: dt.date_num,      
+        SelectWeekDays: dt.weekdayLong,
       })
     }
-    // log({fill});
+    log({fill});
     this.form_open({fill});
   }
   source_remove () {
@@ -1024,16 +1029,16 @@ class Schedule {
       this.refresh_events();
       unblur();
       this.save();
-      // this.autosave.trigger('Schedule updated');
     }
     return response !== false;
   }
   model_add (instance) {
     try {
       if (this.models === null) this.models = [];
-      let uid = instance.uid, existing = this.find(uid);
-      if (existing) this.replace_model(existing, instance.schedule_obj);
-      else this.models.push(instance.schedule_obj);
+      let uid = instance.uid || instance.attr_list.uid, existing = this.find(uid), new_obj = instance.schedule_obj;
+      if (existing) this.replace_model(existing, new_obj);
+      else this.models.push(new_obj);
+      log({sch:this});
       this.autosave.trigger();
     } catch (error) {
       log({error,instance});
@@ -1078,65 +1083,75 @@ class Schedule {
       if (delta_obj.delta) {
         let delta = delta_obj.delta, time_start = response_obj.time_start, time_end = response_obj.time_end;
         if (delta.milliseconds != 0) {
-          response.Hours.From.answer = moment(response_obj.time_start,'h:mma').add(delta.milliseconds,'milliseconds').format('h:mma');
-          response.Hours.To.answer = moment(response_obj.time_end,'h:mma').add(delta.milliseconds,'milliseconds').format('h:mma');
+          response.Hours.From.answer = LUX.From.time(response_obj.time_start).plus({milliseconds:delta.milliseconds}).time;
+          response.Hours.To.answer = LUX.From.time(response_obj.time_end).plus({milliseconds:delta.milliseconds}).time;
         }
         if (delta.days != 0) {
           if (response_obj.dates) {
             response.Days.ApplyTheseHoursTo.items.SelectDates.answer = response_obj.dates.map(date => {
-              return moment(date,'MM/DD/YYYY').add(delta.days,'days').format('MM/DD/YYYY');
+              return LUX.From.date(date).plus({days:delta.days}).date_num;
             }).join(', ');
           }
           if (response_obj.days) {
             let start = response.Days.ApplyTheseHoursTo.items.StartDate.answer, end = response.Days.ApplyTheseHoursTo.items.EndDateOptional.answer, weekdays = response.Days.ApplyTheseHoursTo.items.SelectDaysOfWeek.answer, weekday_item = this.form.item_search('days of week');
-            response.Days.ApplyTheseHoursTo.items.StartDate.answer = moment(response_obj.date_start,'MM/DD/YYYY').add(delta.days,'days').format('MM/DD/YYYY');
-            if (end) response.Days.ApplyTheseHoursTo.items.EndDateOptional.answer = moment(response_obj.date_end,'MM/DD/YYYY').add(delta.days,'days').format('MM/DD/YYYY');
-            response.Days.ApplyTheseHoursTo.items.SelectDaysOfWeek.answer = Schedule.shift_weekdays(weekdays, delta.days);
+            response.Days.ApplyTheseHoursTo.items.StartDate.answer = LUX.From.date(response_obj.date_start).plus({days:delta.days}).date_num;
+            if (end) response.Days.ApplyTheseHoursTo.items.EndDateOptional.answer = LUX.From.date(response_obj.date_end).plus({days:delta.days}).date_num;
+            response.Days.ApplyTheseHoursTo.items.SelectDaysOfWeek.answer = LUX.Weekdays.shift(weekdays, delta.days);
           }
         }
       }
       if (delta_obj.startDelta) {
         let delta = delta_obj.startDelta, time_start = response_obj.time_start;
-        response.Hours.From.answer = moment(response_obj.time_start,'h:mma').add(delta.milliseconds,'milliseconds').format('h:mma');
+        response.Hours.From.answer = LUX.From.time(response_obj.time_start).plus({milliseconds: delta.milliseconds}).time;
       }
       if (delta_obj.endDelta) {
         let delta = delta_obj.endDelta, time_end = response_obj.time_end;
-        response.Hours.To.answer = moment(response_obj.time_end,'h:mma').add(delta.milliseconds,'milliseconds').format('h:mma');
+        response.Hours.To.answer = LUX.From.time(response_obj.time_end).plus({milliseconds: delta.milliseconds}).time;
       }
       this.refresh_events();
       return this.save();
     } else if (this.modal.id == 'Appointment') {
-      let time_start = response.time_start, time_end = response.time_end;
-      if (delta_obj.delta) {
-        let delta = delta_obj.delta;
-        if (delta.milliseconds) {
-          response.time_start = moment(time_start,'h:mma').add(delta.milliseconds,'milliseconds').format('h:mma');
-          response.time_end = moment(time_end,'h:mma').add(delta.milliseconds,'milliseconds').format('h:mma');          
-        }
-        if (delta.days) {
-          response.date = Schedule.date_moment(response.date).add(delta.days,'days').format('MM/DD/YYYY');
-          if (response.recurrence) {
-            let recur_obj = new Forms.FormResponse(response.recurrence), dates = recur_obj.response_for('SelectDates'), days = recur_obj.response_for('SelectWeekDays');
-            if (dates) recur_obj.set_response_for('SelectDates', dates.split(', ').map(date => Schedule.date_moment(date).add(delta.days,'days').format('MM/DD/YYYY')).join(', '));
-            if (days) recur_obj.set_response_for('SelectWeekDays', Schedule.shift_weekdays(days,delta.days));
-            response.recurrence = recur_obj.json;
-          }
-        }
-      }
-      if (delta_obj.startDelta) {
-        let delta = delta_obj.startDelta;
-        if (delta.milliseconds) response.time_start = moment(time_start,'h:mma').add(delta.milliseconds,'milliseconds').format('h:mma');
-      }
-      if (delta_obj.endDelta) {
-        let delta = delta_obj.endDelta;
-        if (delta.milliseconds) response.time_end = moment(time_end,'h:mma').add(delta.milliseconds,'milliseconds').format('h:mma');
-      }
-      let end = Schedule.time_moment(response.time_end), start = Schedule.time_moment(response.time_start), duration = end.diff(start, 'minutes');
-      response.duration = duration;
-      let new_appointment = new Appointment(response.merge({time:response.time_start}));
+      log({response, delta_obj});
+      let new_appointment = new Appointment(response);
+      new_appointment.update_dtstart(delta_obj);
+      new_appointment.update_dtend(delta_obj);
       new_appointment.save_blur = this.save_blur_model;
       this.edit = response;
-      return new_appointment.save();
+      log({response, delta_obj});
+      return new_appointment.save();      
+      // return false;
+      // let time_start = response.time_start, time_end = response.time_end;
+      // if (delta_obj.delta) {
+      //   let delta = delta_obj.delta;
+      //   if (delta.milliseconds) {
+      //     response.time_start = LUX.From.time(time_start).plus({milliseconds: delta.milliseconds}).time;
+      //     response.time_end = LUX.From.time(time_end).plus({milliseconds: delta.milliseconds}).time;
+      //   }
+      //   if (delta.days) {
+      //     response.date = LUX.From.date(response.date).plus({days: delta.days}).date_num;
+      //     if (response.recurrence) {
+      //       let recur_obj = new Forms.FormResponse(response.recurrence), dates = recur_obj.response_for('SelectDates'), days = recur_obj.response_for('SelectWeekDays');
+      //       if (dates) recur_obj.set_response_for('SelectDates', dates.split(', ').map(date => LUX.From.date(date).plus({days: delta.days}).date_num).join(', '));
+      //       if (days) recur_obj.set_response_for('SelectWeekDays', LUX.Weekdays.shift(days,delta.days));
+      //       response.recurrence = recur_obj.json;
+      //     }
+      //   }
+      // }
+      // if (delta_obj.startDelta) {
+      //   let delta = delta_obj.startDelta;
+      //   if (delta.milliseconds) response.time_start = LUX.From.time(time_start).plus({milliseconds: delta.milliseconds}).time;
+      // }
+      // if (delta_obj.endDelta) {
+      //   let delta = delta_obj.endDelta;
+      //   if (delta.milliseconds) response.time_end = LUX.From.time(time_end).plus({milliseconds: delta.milliseconds}).time;
+      // }
+      // let end = LUX.From.time(response.time_end), start = LUX.From.time(response.time_start), duration = end.diff(start, 'minutes').minutes;
+      // response.duration = duration;
+      // let new_appointment = new Appointment(response.merge({time:response.time_start}));
+      // response.rrule = new_appointment.rrule;
+      // new_appointment.save_blur = this.save_blur_model;
+      // this.edit = response;
+      // return new_appointment.save();
     }
   }
   response_by_group_id (group_id) {
@@ -1150,12 +1165,13 @@ class Schedule {
     }
   }
   form_open (options = {}) {
-    if (this.modal.ele) blurTop(this.modal.ele);
     let sched = this, header = this.modal.ele.find('h1').first().css({lineHeight:1.2});
     this.modal.ele.find('.toggle_ele').each((t,toggle) => {
       $(toggle).getObj().to_initial_state(0);
     })
+    this.modal.ele.find('.section').slideFadeIn(0);
     if (this.modal.id === 'ScheduleBlock') {
+      if (this.modal.ele) blurTop(this.modal.ele);
       this.edit = options.response ? options.response : null;
       if (this.edit) this.form.fill_by_response(this.edit);
       else if (options.fill) this.form.fill_by_key_value_object(options.fill);
@@ -1163,57 +1179,95 @@ class Schedule {
       this.edit = options.response ? options.response : null;
       let recur_toggle = this.modal.ele.find('.toggle_ele').getObj();
       if (this.edit) {
-        // log({edit:this.edit});
-        let ev = this.edit_event, description = ev.extendedProps.description, answers = Forms.Answer.get_all_within(this.modal.ele,false), named = function(name) {return Forms.Answer.find(answers, {name})}, recur_form = this.form, header_text = `${description.Patient}<br>${moment(ev.start).format('MMM D h:mma')} - ${moment(ev.end).format('h:mma')}`;
-        // log({ev});
-        header.html(header_text);
-        answers.forEach(answer => answer.to_initial_value());
-        for (let attr in this.edit) {
-          let value = this.edit[attr];
-          if (attr == 'time_start') attr = 'time';
-          let input = named(attr);
-          if (input) input.value = value;
-          if (attr == 'date') {named('SelectDates').value = value} 
-        }
-        if (this.edit.recurrence) {
-          recur_toggle.show(0); recur_form.fill_by_response(this.edit.recurrence);
-          let header_str = `<b>${header_text}<br></b>Recurring Appointment`, recur_str = '';
-          if (this.edit.dates) recur_str = `<h3>All Dates: ${this.edit.description['Linked Dates']}</h3>`;
-          else recur_str = `<h3>${this.edit.description['Recurring']}<br><b>From</b> ${this.edit.date_start} <b style='margin-left:5px'>Until</b> ${this.edit.date_end ? this.edit.date_end : 'forever'}</h3>`;
+        Appointment.editing = new Appointment(options.response);
+        Appointment.original = new Appointment(options.response.duplicate());
 
+        Model.form_mode('edit', this.modal.ele);
+        let ev = this.edit_event, description = ev.extendedProps.description, answers = Forms.Answer.get_all_within(this.modal.ele,false), start = LUX.From.js(ev.start), end = LUX.From.js(ev.end), named = function(name) {return Forms.Answer.find(answers, {name})}, recur_form = this.form, header_text = `${description.Patient}<br>${start.date} ${start.time} - ${start.date != end.date ? `${end.date} ` : ''}${end.time}`;
+        header.html(header_text);
+        // log({edit:this.edit,start,end});
+        answers.forEach(answer => answer.to_initial_value());
+        named('date').value = start.date_num;
+        named('time').value = start.time;
+        named('duration').value = end.diff(start,'minutes').minutes;
+        named('services').value = this.edit.services;
+        named('patient_id').value = this.edit.patient_id;
+        named('practitioner_id').value = this.edit.practitioner_id;
+        let recurrence = this.edit.recurrence;
+        if (recurrence) {
+          recur_toggle.show(0); recur_form.fill_by_response(recurrence);
+          let header_str = `<b>${header_text}<br></b>Recurring Appointment`, 
+            recur_str = Appointment.recurring_description(recurrence)['Recurring'],
+            recur_str_middle = Appointment.recurring_description(recurrence,'middle')['Recurring'],
+            recur_str_long = Appointment.recurring_description(recurrence,'long')['Recurring'],
+            // recur_html = `<h3>${recur_str}</h3>`,
+            attr_ele = this.modal.ele.find('.section').first(),
+            modal = this.modal.ele;
+          recur_toggle.message = recur_str_long;
+          recur_toggle.exclusions = Appointment.original.attr_list.exclusions;
+          let recur_only = function() {
+              recur_toggle.reset_messages();
+              recur_toggle.enable({message:'<b>Currently Occurs</b> '+recur_toggle.message, message_class_list: 'boxPurple', message_tag:'h4'});
+              if (recur_toggle.exclusions && recur_toggle.exclusions.notEmpty()) {
+                log({exclusions:recur_toggle.exclusions});
+                let exclusions_box = recur_toggle.add_message({message:'<b>Exceptions:</b> <span></span><div style="font-size:0.7em" class="bold">THIS LIST OVERRIDES ALL OTHER RECURRING SETTINGS</div>', message_class_list: 'boxPink', message_tag:'h4'}), exclusions_list = exclusions_box.children('span');
+                recur_toggle.exclusions.forEach(excl => {
+                  let exclusion_click = $('<span/>',{text:excl}).css({cursor:'pointer'}).on('click', sched.exclusion_click);
+                  exclusions_list.append(exclusion_click);
+                })
+              }
+              recur_toggle.toggle_ele.parent().slideFadeIn(0);
+              attr_ele.slideFadeOut(0);
+              sched.edit_recur = 'all';
+              // log(`${recur_str} RECUR ONLY`);
+            }, attrs_only = function() {
+              recur_toggle.toggle_ele.parent().slideFadeOut(0);
+              attr_ele.slideFadeIn(0);
+              // log(`${recur_str} ATTRS ONLY`);
+            }, show_modal = function () { unblur(); blurTop(modal) };
           if ($('#RecurEditOptions').dne()) {
+            this.recurrence_only_btn = new Features.Button({text: 'edit recurring options', class_list: 'purple70 xsmall', css: {margin:'0.1em'}, 
+              action: function(){ recur_only(); show_modal(); }
+            });
             this.recur_options = new Features.OptionBox({id:'RecurEditOptions',header:header_str,header_html_tag:'h2'});
-            this.recur_options.add_info(recur_str);
-            this.recur_options.add_button_info(`<h3 class="pink bold">Would you like to change this event only or other events as well?</h3>`)
+            this.recur_options.add_info(`<h3>${recur_str_middle}</h3>`).add_info(this.recurrence_only_btn.ele);
+            this.recur_options.add_button_info(`<h2 class="pink bold">Edit Time, Services, or Practictioner</h2>`);
             this.recur_options.add_button({text:'this event only',
               action:function(){
-                unblur(); sched.edit_recur = 'this';
-                named('date').value = moment(sched.edit_event.start).format('MM/DD/YYYY');
-                recur_toggle.disable(`Not enabled since you're editing 'this event only'`);
+                sched.edit_recur = 'this';
+                named('date').value = LUX.From.js(sched.edit_event.start).date_num;
+                // recur_toggle.disable(`Not enabled since you're editing 'this event only'`);
+                attrs_only(); show_modal();
               }});
             this.recur_options.add_button({text:'this and future events', class_list:'pink70 xsmall',
               action:function(){
                 let event = sched.edit_event;
-                unblur(); sched.edit_recur = 'future';
-                named('date').value = moment(event.start).format('MM/DD/YYYY');
-                recur_toggle.enable();
+                sched.edit_recur = 'future';
+                named('date').value = LUX.From.js(event.start).date_num;
+                named('date').disable({tooltip:{message:'Editing multiple dates, date change disabled'}});
+                attrs_only(); show_modal();
               }});
             this.recur_options.add_button({text:'all events', class_list:'pink70 xsmall',
               action:function(){
-                unblur(); sched.edit_recur = 'all';
-                recur_toggle.enable();
+                sched.edit_recur = 'all';
+                named('date').disable({tooltip:{message:`'Date' disabled since you are editing all occurences of this event`}});
+                attrs_only(); show_modal();
               }});
             this.recur_options.add_button({text:'cancel',class_list:'cancel xsmall',action:unblurAll});
           } else {
             this.recur_options.reset_header(header_str);
-            this.recur_options.reset_info(recur_str);
+            this.recur_options.reset_info(`<h3>${recur_str_middle}</h3>`).add_info(this.recurrence_only_btn);
           }
           blurTop($('#RecurEditOptions'));
         } else {
           recur_toggle.reset(0);
           this.edit_recur = null;
+          blurTop(this.modal.ele);
         }
       } else {
+        Appointment.editing = null;
+        Model.form_mode('create',this.modal.ele);
+        blurTop(this.modal.ele);
         header.text('New Appointment');
         recur_toggle.reset(0);
         if (options.fill) {
@@ -1225,127 +1279,48 @@ class Schedule {
 
     }
   }
-  static weekdays_to_integers (array) {
-    return array.map(day => {
-      if (day.toLowerCase().substring(0,2) == 'su') return 0;
-      if (day.toLowerCase().substring(0,2) == 'mo') return 1;
-      if (day.toLowerCase().substring(0,2) == 'tu') return 2;
-      if (day.toLowerCase().substring(0,2) == 'we') return 3;
-      if (day.toLowerCase().substring(0,2) == 'th') return 4;
-      if (day.toLowerCase().substring(0,2) == 'fr') return 5;
-      if (day.toLowerCase().substring(0,2) == 'sa') return 6;
-    });
-  }
-  static integers_to_weekdays (array) {
-    return array.map(integer => Schedule.integer_to_weekday(integer));
-  }
-  static integer_to_weekday (integer) {
-    if (integer == 0) return 'Sunday';
-    if (integer == 1) return 'Monday';
-    if (integer == 2) return 'Tuesday';
-    if (integer == 3) return 'Wednesday';
-    if (integer == 4) return 'Thursday';
-    if (integer == 5) return 'Friday';
-    if (integer == 6) return 'Saturday';
-  }
-  static shift_weekdays (array, delta) {
-    if (!delta) throw new Error('must provide delta in number of days');
-    let integers = Schedule.weekdays_to_integers(array),
-      shifted = Schedule.shift_weekday_integers(integers, delta),
-      weekdays = Schedule.integers_to_weekdays(shifted);
-      log({array,integers,shifted,weekdays});
-    return weekdays;
-  } 
-  static shift_weekday_integers (array, delta) {
-    return array.map(integer => {
-      let shift = integer + delta;
-      while (shift < 0) {shift += 7}
-      while (shift > 6) {shift -= 7}
-      return shift;
-    });
-  }
-  static string_to_moment (string, format = 'MM/DD/YYYY h:mma') {
+  static string_to_luxon (string, format = 'MM/DD/YYYY h:mma') {
     let m = moment(string, format, true); if (!m._isValid) throw new Error(`Invalid moment creation with str = ${string} and format = ${format}`);
     return m;
   }
   static string_to_db_datetime (string) {
-    return Schedule.datetime_to_moment(string).format('YYYY-MM-DD HH:mm:ss');
+    return Schedule.datetime_to_luxon(string).toISO();
   }
   static moment_to_db_datetime(date) {
     return date.format('YYYY-MM-DD HH:mm:ss');
   }
-  static db_datetime_to_moment(string) {
-    return moment(string, 'YYYY-MM-DD HH:mm:ss', true);
+  
+  exclusion_click (ev, model, date) {
+    log({ev});
   }
-  static datetime_to_moment (string) {return Schedule.string_to_moment(string)}
-  static datetime_to_rdate (string, format) {
-    let dt = Schedule.string_to_moment(string, format);
-    return Schedule.moment_to_rdate(dt);
-  }
-  static moment_to_rdate (dt) {
-    return new Date(Date.UTC(dt.utc().year(), dt.utc().month(), dt.utc().date(), dt.utc().hours(), dt.utc().minutes(), dt.utc().seconds()));
-  }
-  static dst_offset_ignore (moment_with_original_time, moment_to_correct) {
-    let dif = moment_with_original_time.utcOffset() - moment_to_correct.utcOffset();
-    moment_to_correct.add(dif,'minutes');
-  }
-  static date_moment (string, format = 'MM/DD/YYYY') {return Schedule.string_to_moment(string, format)}
-  static time_moment (string, format = 'h:mma') {return Schedule.string_to_moment(string, format)}
   upcoming (model, options = {}) {
+    console.groupCollapsed(`${model.start} UPCOMING`);
     let schedule = this;
-    let limit = options.limit || 3,
-      format = options.format || 'M/D/YYYY',
+    let limit = options.limit || 3, wiggle_limit = limit + 1,
       sort = options.sort || null,
-      rrule_set = model.rrule ? rrulestr(model.rrule,{forceset:true,tzid:tz}) : null,
       include_related = ifu(options.include_related, true),
-      related = null, related_dates = [], related_uids = [];
-    // log({tz});
+      related = [], dates = LUX.RRule.Upcoming({rrule: model.rrule, limit:wiggle_limit}), related_dates = [];
+      // original = LUX.From.datetime(model.date_start, model.time_start);
     if (include_related) {
       related = this.model_find_related(model);
-      let related_map = this.model_find_related(model).map(model_related => {
-        return {uid: model_related.uid, dates: schedule.upcoming(model_related,{sort:{dir:'asc'},include_related:false}).dates, time_start: model_related.time_start};
-      }); 
-      // log({related_map,related_uids,related_dates,rrule_set},'UPCOMING RELATED');
-      related_map.forEach(model_related => {
-        model_related.dates.forEach(date => {
-          let rdate = Schedule.moment_to_rdate(date);
-          // log({rdate});
-          related_dates.push(rdate); 
-          related_uids.push(model_related.uid)});
-      });
+      related.forEach(m => {
+        let dt = LUX.fromISO(m.start);
+        if (m.rrule) related_dates.push(...LUX.RRule.Upcoming({rrule: m.rrule, limit:wiggle_limit}));
+        else if (dt > LUX.NOW) related_dates.push(dt); 
+      })
     }
-    let working_rdate = Schedule.moment_to_rdate(moment()), dates = [], self_data = [];
-    if (rrule_set) {
-      let self = true;
-      log({rrule_set});
-      while (working_rdate && dates.length < limit) {
-        log({working_rdate},`starting ${working_rdate}`);
-        working_rdate = rrule_set.after(working_rdate); self = true;
-        log({working_rdate},`next ${working_rdate}`);
-        if (!working_rdate && related_dates.notEmpty()) {
-          working_rdate = related_dates.shift(); self = related_uids.shift();
-        } else if (related_dates.notEmpty() && related_dates[0].valueOf() < working_rdate.valueOf()) {
-          working_rdate = related_dates.shift(); self = related_uids.shift();
-        }
-        if (working_rdate) {
-          dates.push(working_rdate); self_data.push(self);
-        }
-      }
-    } else {
-      let rdate = Schedule.datetime_to_rdate(`${model.date} ${model.time_start}`);
-      if (rdate.valueOf() > moment().valueOf()) {dates.push(rdate); self_data.push(false);}
-    }
+    dates.push(...related_dates);
+    if (sort) dates = LUX.Sort(dates, sort);
+    console.groupEnd();
 
-    if (sort) dates = system.validation.date.sort(dates, sort.merge({as_moment:true}));
-    else dates = dates.map(date => moment(date));
-    let m = {uid:model.uid,rid:model.recurring_id,dates};
-    // log({m},'upcoming');
-    return {model, limit, dates, self_data, max: working_rdate != null, rrule_set};
+    let result = {model, limit, dates, related_dates, max: dates.length > limit};
+    return result;
   }
   upcoming_ele (result) {
+    // return;
     let sched = this;
     let update = function(ev, more = 3) {
-      let ele = $(this).closest('.upcoming'), prev_result = ele.data(), limit = prev_result.limit, rrule_set = prev_result.rrule_set, new_result = sched.upcoming(prev_result.model, {limit: limit + more, sort: {dir:'asc'}}), new_ele = sched.upcoming_ele(new_result);
+      let ele = $(this).closest('.upcoming'), prev_result = ele.data(), limit = prev_result.limit, rrule_set = prev_result.rrule_set, new_result = sched.upcoming(prev_result.model, {limit: limit + more, sort: {order:'asc'}}), new_ele = sched.upcoming_ele(new_result);
       ele.replaceWith(new_ele);
       Features.ToolTip.find_containing_tooltip(new_ele).check_right();    
     }
@@ -1356,54 +1331,34 @@ class Schedule {
     return list;
   }
   recent (model, options = {}) {
+    console.groupCollapsed(`${model.start} RECENT`);
     let schedule = this;
     let limit = options.limit || 3,
-      format = options.format || 'M/D/YYYY',
-      sort = options.sort || null,
-      rrule_set = model.rrule ? rrulestr(model.rrule,{forceset:true}) : null,
+      sort = options.sort || {order:'desc'},
       include_related = ifu(options.include_related, true),
-      related = null, related_dates = [], related_uids = [];
-    if (include_related) {
-      related = this.model_find_related(model);
-      let related_map = this.model_find_related(model).map(model_related => {
-        return {uid: model_related.uid, dates: schedule.recent(model_related,{sort:{dir:'desc'},include_related:false}).dates, time_start: model_related.time_start};
-      }); 
-      // log({related_map,related_uids,related_dates,rrule_set},'UPCOMING RELATED');
-      related_map.forEach(model_related => {
-        model_related.dates.forEach(date => {
-          let rdate = Schedule.moment_to_rdate(date);
-          // log({rdate});
-          related_dates.push(rdate); 
-          related_uids.push(model_related.uid)});
-      });
-    }
-    let working_rdate = Schedule.moment_to_rdate(moment()), dates = [], self_data = [];
-    if (rrule_set) {
-      let self = true;
-      while (working_rdate && dates.length < limit) {
-        working_rdate = rrule_set.before(working_rdate); self = true;
-        if (!working_rdate && related_dates.notEmpty()) {
-          working_rdate = related_dates.shift(); self = related_uids.shift();
-        } else if (related_dates.notEmpty() && related_dates[0].valueOf() > working_rdate.valueOf()) {
-          working_rdate = related_dates.shift(); self = related_uids.shift();
-        }
-        if (working_rdate) {
-          dates.push(working_rdate); self_data.push(self);
-        }
+      related = [], dates = LUX.RRule.Recent({rrule: model.rrule, limit}), related_dates = [];
+      if (include_related) {
+        related = this.model_find_related(model);
+        related.forEach(m => {
+          let dt = LUX.fromISO(m.start);
+          if (m.rrule) related_dates.push(...LUX.RRule.Recent({rrule: m.rrule, limit}));
+          else if (dt < LUX.NOW) related_dates.push(dt); 
+        })
       }
-    } else {
-      let rdate = Schedule.datetime_to_rdate(`${model.date} ${model.time_start}`);
-      if (rdate.valueOf() < moment().valueOf()) {dates.push(rdate); self_data.push(false);}
-    }
+    dates.push(...related_dates);
+    log({sort});
+    if (sort) dates = LUX.Sort(dates, sort);
 
-    if (sort) dates = system.validation.date.sort(dates, sort.merge({as_moment:true}));
-    else dates = dates.map(date => moment(date));
-    return {model, limit, dates, self_data, max: working_rdate != null, rrule_set};
+    console.groupEnd();
+
+    let result = {model, limit, dates, related_dates, max: dates.length > limit};
+    return result;
   }
   recent_ele (result) {
+    // return;
     let sched = this;
     let update = function(ev, more = 3) {
-      let ele = $(this).closest('.recent'), prev_result = ele.data(), limit = prev_result.limit, rrule_set = prev_result.rrule_set, new_result = sched.recent(prev_result.model, {limit: limit + more, sort: {dir:'desc'}}), new_ele = sched.recent_ele(new_result);
+      let ele = $(this).closest('.recent'), prev_result = ele.data(), limit = prev_result.limit, new_result = sched.recent(prev_result.model, {limit: limit + more, sort: {order:'desc'}}), new_ele = sched.recent_ele(new_result);
       ele.replaceWith(new_ele);
       Features.ToolTip.find_containing_tooltip(new_ele).check_right();    
     }
@@ -1414,33 +1369,39 @@ class Schedule {
     return list;
   }
   date_links (result) {
-    let append_arr = [], dates = result.dates, max = result.max, count = dates.length, self = result.self_data, sched = this;
+    // log({result});
+    let append_arr = [], dates = result.dates, max = result.max, sched = this;
+    
+    dates = dates.slice(0,result.limit);
+    let count = dates.length;
+    log({result,dates},`dates ${dates.length} limit ${count}`);
     dates.forEach((date,d) => {
-      let uid = self[d] === true ? result.model.uid : self[d];
-      append_arr.push(sched.date_link(date, uid));
-      if (self[d] !== true) append_arr.push(`<span class='modified_indicator'>*</span>`);
+      let is_related = result.related_dates.some(rel_date => rel_date.equals(date));
+      append_arr.push(sched.date_link(date));
+      if (is_related) append_arr.push(`<span class='modified_indicator'>*</span>`);
       if (d < count - 1 && count > 2) append_arr.push(', ');
       if (d == count - 2 && !max && count > 1) append_arr.push(`${count == 2 ? ' and ' : 'and '}`);
       if (d == count - 1 && max) append_arr.push('... ');
     })
     return append_arr;
   }
-  date_link (date, uid) {
-    return $(`<span class='date_link'>${date.format('M/D/YYYY')}</span>`).data({date,uid}).on('click', this.date_link_click.bind(this));
+  date_link (date) {
+    return $(`<span class='date_link'>${date.date_num}</span>`).data({date}).on('click', this.date_link_click.bind(this));
   }
   date_link_click (ev) {
     let target = $(ev.target), tt = Features.ToolTip.find_containing_tooltip(target);
     let data = target.data(), date = data.date, uid = data.uid, fc = this.calendar.fullcal;
+    log({date},date.toISO());
     tt.hide(100);
-    fc.gotoDate(date.toISOString());
+    fc.gotoDate(date.toISO());
     let event_ele = $('.fc-event').filter(':visible').filter((e,ele) => {
       let fc_event = $(ele).data('fc_event'), this_uid = fc_event.extendedProps.ids ? fc_event.extendedProps.ids.uid : null;
-      return date.isSame(fc_event.start,'day') && this_uid == uid;
+      // log({evstart:fc_event.start,date:date.toJSDate()})
+      return date.equals(LUX.From.js(fc_event.start));
     });
     event_ele.addClass('pinkBgFlash');
   }
 
-  // related_models
   get save_blur_model () {
     return {ele: this.calendar.ele.find('.fc-view'),options:{loadingColor:'var(--pink)',blurCss:{backgroundColor:'var(--white50)'}}};    
   }
@@ -1476,16 +1437,18 @@ class Schedule {
     responses.forEach((response,r) => {
       let obj = schedule.response_to_obj(response);
       let group_id = `${source_id}_responses${r}`, description = {};
+      log({obj});
       try {
         if (obj.dates) {
           if (obj.dates.notSolo()) description['Linked Dates'] = obj.dates.join(', ');
           obj.dates.forEach(date => {
-            let start = moment(`${date} ${obj.time_start}`,'MM-DD-YYYY hh:mma'), end = moment(`${date} ${obj.time_end}`,'MM-DD-YYYY hh:mma');
+            // let start = moment(`${date} ${obj.time_start}`,'MM-DD-YYYY hh:mma'), end = moment(`${date} ${obj.time_end}`,'MM-DD-YYYY hh:mma');
+            let start = LUX.From.datetime(date, obj.time_start), end = LUX.From.datetime(date, obj.time_end);
             events.push({
               title: obj.title,
               classNames: `${obj.class_list} ${group_id}`,
-              start: start.toISOString(),
-              end: end.toISOString(),
+              start: start.toISO(),
+              end: end.toISO(),
               groupId: group_id,
               description,
               displayOrder: obj.displayOrder ? obj.displayOrder : 0,
@@ -1493,14 +1456,14 @@ class Schedule {
             })
           })
         } else {
-          let start = moment(`${obj.date_start} ${obj.time_start}`,'MM-DD-YYYY hh:mma'), 
-            end = moment(`${obj.date_start} ${obj.time_end}`,'MM-DD-YYYY hh:mma');
+          let start = LUX.From.datetime(obj.date_start, obj.time_start), 
+            end = LUX.From.datetime(obj.date_start, obj.time_end);
           description[`${obj.interval == 1 ? 'Weekly':`Every ${obj.interval} Weeks`}`] = obj.days.join(', ');
           description.merge({Starting: obj.date_start, Ending: obj.date_end ? obj.date_end : 'never'});
           let rrule = {
             freq: RRule.WEEKLY,
             interval: obj.interval,
-            dtstart: start.toISOString(),
+            dtstart: start.toISO(),
             byweekday: obj.days.map(day => RRule[day.substring(0,2).toUpperCase()])
           }, duration = end.diff(start);
           if (obj.date_end) rrule.until = moment(`${obj.date_end} ${obj.time_end}`,'MM-DD-YYYY hh:mma');
@@ -1536,29 +1499,26 @@ class Schedule {
       }
       
       try {
+        event.merge({start: model.start,end: model.end});
         if (model.rrule) {
-          let rrule_set = rrulestr(model.rrule, {forceset:true});
-          let start = moment(`${model.date} ${model.time_start}`,'MM-DD-YYYY hh:mma'), 
-            end = moment(`${model.date} ${model.time_end}`,'MM-DD-YYYY hh:mma'), duration = end.diff(start),
-            today = Schedule.moment_to_rdate(moment()), 
-            upcoming = schedule.upcoming(model,{limit:3,format:'M/D/YYYY',sort:{dir:'asc'}}), 
-            recent = schedule.recent(model,{limit:3,format:'M/D/YYYY',sort:{dir:'desc'}}),
+          let upcoming = schedule.upcoming(model, {limit:3,format:'M/D/YYYY',sort:{order:'asc'} }), 
+            recent = schedule.recent(model, {limit:3,format:'M/D/YYYY',sort:{order:'desc'} }),
             upcoming_ele = schedule.upcoming_ele(upcoming),
-            recent_ele = schedule.recent_ele(recent);
-          event.merge({duration, rrule: model.rrule, start: start.toISOString()});
+            recent_ele = schedule.recent_ele(recent),
+            duration = LUX.fromISO(model.end).diff(LUX.fromISO(model.start));
+          event.merge({rrule: model.rrule, duration});
+          event.description.merge(Appointment.recurring_description(model.recurrence));
           event.description.merge({
             'Upcoming': upcoming_ele,
             'Most Recent': recent_ele,
           });
           events.push(event);
         } else {
-          let date = model.date, start = moment(`${date} ${model.time_start}`,'MM-DD-YYYY hh:mma').toISOString(), end = moment(`${date} ${model.time_end}`,'MM-DD-YYYY hh:mma').toISOString();
-          event.merge({start,end});
           if (model.recurring_id) {
             let original_model = schedule.find(model.recurring_id);
             if (original_model) {
-              let upcoming = schedule.upcoming(original_model,{limit:3,format:'M/D/YYYY',sort:{dir:'asc'}}), 
-                recent = schedule.recent(original_model,{limit:3,format:'M/D/YYYY',sort:{dir:'desc'}}),
+              let upcoming = schedule.upcoming(original_model,{limit:3,format:'M/D/YYYY',sort:{order:'asc'}}), 
+                recent = schedule.recent(original_model,{limit:3,format:'M/D/YYYY',sort:{order:'desc'}}),
                 upcoming_ele = schedule.upcoming_ele(upcoming),
                 recent_ele = schedule.recent_ele(recent);
               event.description.merge(Appointment.recurring_description(original_model.recurrence));
@@ -1582,9 +1542,8 @@ class Schedule {
     if (!this.model) {feedback('No Model','Cannot save schedule, no instance attached'); return;}
     if (!this.uid) {feedback('No ID','Cannot save schedule, no instance attached'); return;}
     let columns = {}, model = this.model, uid = this.uid, view = this.calendar.ele.find('.fc-view');
-    columns[this.db_attr] = this.response || this.models;
+    columns[this.db_attr] = this.responses || this.models;
     if (columns[this.db_attr].is_array() && columns[this.db_attr].isEmpty()) columns[this.db_attr] = null;
-    log({uid,columns,wants_checkmark: true});
     if (!this.autosave) blur(view,'loading',{loadingColor:'var(--pink)'});
     let result = $.ajax({
       url: `/save/${model}`,
@@ -1602,6 +1561,7 @@ class Schedule {
     if (this.responses) this.events = this.form_responses_to_events(this.responses); 
     else if (this.models) this.events = await this.models_to_events(this.models);
     else this.loading = false;
+    // log({events:this.events})
     if (this.calendar && this.calendar.fullcal) this.source_add();
   }  
 }
@@ -1610,27 +1570,122 @@ class Appointment extends Model{
     attr_list = attr_list || Model.construct_from_form('#Appointment');
     super(attr_list, 'Appointment');
 
-    if (!this.attr_list.date_time_start && this.attr_list.date && this.attr_list.time) {
-      this.attr_list.date_time_start = Schedule.string_to_db_datetime(`${this.attr_list.date} ${this.attr_list.time}`);
-      let end = Schedule.datetime_to_moment(`${this.attr_list.date} ${this.attr_list.time}`).add(this.attr_list.duration,'minutes');
-      this.attr_list.date_time_end = Schedule.moment_to_db_datetime(end);
-    }
+    // if (this.attr_list.date && this.attr_list.time) {
+    //   this.attr_list.date_time_start = LUX.From.datetime(this.attr_list.date, this.attr_list.time);
+    //   let duration = LUXDur.fromObject({minutes:this.attr_list.duration});
+    //   this.attr_list.date_time_end = this.attr_list.date_time_start.plus(duration);
+    // }
 
-    if (this.attr_list.WhenWillThisAppointmentRepeat) {
-      let recur_form = $('#RecurringAppointment').getObj();
-      this.attr_list.recurrence = recur_form.response;
-    }
-    if (this.attr_list.recurrence && !this.attr_list.recurring_id) {
-      this.attr_list.recurring_id = this.uid;
-      this.attr_list.rrule = this.rrule;
-    }
-    this.schedule = $('.calendar').find('.schedule').filter((s,schedule) => $(schedule).data('modal') == 'Appointment').getObj();
-    if (this.schedule.edit) {
-      this.attr_list.uid = this.schedule.edit.uid;
-    }
-    this.event_in_schedule = this.uid ? this.schedule.find(this.uid) : null;
+    // if (this.attr_list.WhenWillThisAppointmentRepeat) {
+    //   let recur_form = $('#RecurringAppointment').getObj();
+    //   this.attr_list.recurrence = recur_form.response;
+    // }
+    // if (this.attr_list.recurrence && !this.attr_list.recurring_id) {
+    //   this.attr_list.recurring_id = this.uid;
+    //   this.attr_list.rrule = this.rrule;
+    // }
+    this.schedule = $('.calendar').getObj().schedules.find(s => s.modal.id == 'Appointment');
+    // // log({sch:this.schedule,sche_eles:$('.calendar').find('.schedule')});
+    // if (this.schedule.edit) {
+    //   this.attr_list.uid = this.schedule.edit.uid;
+    // }
+    // this.event_in_schedule = this.uid ? this.schedule.find(this.uid) : null;
   }
 
+  get rrule () { return this.rrule_obj.toString(); }
+  get rrule_obj () {
+    if (!this.attr_list.recurrence) return null;
+    let recur_obj = new Forms.FormResponse(this.attr_list.recurrence), 
+      dates = recur_obj.response_for('SelectDates'), days = recur_obj.response_for('SelectWeekDays'), 
+      until_date = recur_obj.response_for('EndDateOptional'), rrule_set = new RRuleSet(), 
+      start = this.start_lux, end = this.end_lux,
+      interval = recur_obj.response_for('HowOften');
+    if (!start || !end) {
+      log({start,end,recur_obj,appt:this});
+      throw new Error('Insufficient info for dtstart');
+    }
+    let date = start.date_num, exclusions = this.attr_list.exclusions, time_start = start.time, time_end = end.time;
+    try {
+      if (dates) {
+        if (!dates.is_array()) dates = dates.split(', ');
+        dates.smartPush(date);
+        let time_start = start.time;
+        dates.forEach(date => {rrule_set.rdate(LUX.From.datetime(date, time_start).rrule)});
+      } else {
+        let rrule = {
+          freq: RRule.WEEKLY,
+          interval: interval,
+          dtstart: start.rrule,
+          byweekday: days.map(day => RRule[day.substring(0,2).toUpperCase()]),
+          tzid: tz
+        };
+        if (until_date) rrule.until = LUX.From.datetime(until_date, time_end).toUTC().rrule;
+        rrule_set.rrule(new RRule(rrule));
+      }
+      if (exclusions) {
+        exclusions.forEach(date => {
+          let exdate = LUX.From.datetime(date, time_start).rrule;
+          rrule_set.exdate(exdate);
+        });
+      }
+      log({rrule_set,str:rrule_set.toString()});
+      return rrule_set;
+    } catch (error) {
+      log({error,start,attr_list:this.attr_list});
+      return null;
+    }
+  }
+  rrule_exclude (date_str) {
+    let recur_obj = new Forms.FormResponse(this.attr_list.recurrence), dates = recur_obj.response_for('SelectDates');
+    let exclusions = this.attr_list.exclusions || [];
+    exclusions.smartPush(date_str);
+    if (dates) {
+      dates = dates.split(', ');
+      let d = dates.indexOf(date_str);
+      dates.splice(d,1);
+      recur_obj.set_response_for('SelectDates', dates.join(', '))
+    }
+    this.attr_list.exclusions = exclusions;
+  }
+  update_dtstart (delta) {
+    this.attr_list.date_time_start = this.start_lux.plus(delta);
+    if (this.attr_list.recurrence) {
+      let recurrence = new Forms.FormResponse(this.attr_list.recurrence), dates = recurrence.response_for('SelectDates'), days = recurrence.response_for('SelectWeekDays');
+      log({dates,days});
+      if (dates) {
+        recurrence.set_response_for('SelectDates', LUX.DateShift(dates.split(', '), delta.days).join(', '));
+      } else if (days) {
+        recurrence.set_response_for('SelectWeekDays', LUX.Weekdays.shift(days, delta.days));
+      }
+      this.attr_list.recurrence = recurrence.json;
+    }
+  }
+  update_dtend (delta) {
+    log({delta});
+    this.attr_list.date_time_end = this.end_lux.plus(delta);
+  }
+  get start_lux () {
+    let start = this.attr_list.date_time_start || this.attr_list.start;
+    return start ? LUX.fromISO(start) : null;
+  }
+  get end_lux () {
+    let end = this.attr_list.date_time_end || this.attr_list.end;
+    return end ? LUX.fromISO(end) : null;
+  }
+  static recurring_description (recurrence, form = 'short') {
+    let recur_obj = new Forms.FormResponse(recurrence), dates = recur_obj.response_for('SelectDates'), days = recur_obj.response_for('SelectWeekDays'), interval = recur_obj.response_for('HowOften'), until = recur_obj.response_for('EndDate'), desc = {};
+    if (dates) {
+      if (form == 'long') {
+        dates = dates.split(', ');
+        desc.Recurring = `On these dates: ${dates.smartJoin()}`;
+      } else if (form == 'middle') {
+        dates = dates.split(', ');
+        desc.Recurring = `Only on selected dates (${dates.length} total)`;
+      } else desc.Recurring = `Only on selected dates`;
+    }
+    else if (days) desc.Recurring = `${interval == 1 ? 'Weekly' : `Every ${interval} weeks`} on ${days.smartJoin()} ${until ? `until ${until}` : 'indefinitely'}`;
+    return desc;
+  }
   static update_duration (services, ev) {
     let services_list = Model.list('service'), duration = 0, duration_obj = $('#Appointment').find('.duration').getObj();
     if (services instanceof Forms.Answer) services = services.get();
@@ -1640,116 +1695,52 @@ class Appointment extends Model{
     }
     return duration;
   }
-  get rrule () { return this.rrule_obj.toString(); }
-  get rrule_obj () {
-    if (!this.attr_list.recurrence) return null;
-    let recur_obj = new Forms.FormResponse(this.attr_list.recurrence), 
-      dates = recur_obj.response_for('SelectDates'), days = recur_obj.response_for('SelectWeekDays'), 
-      until = recur_obj.response_for('EndDateOptional'), rrule_set = new RRuleSet(), 
-      start = this.start_moment, end = this.end_moment,
-      interval = recur_obj.response_for('HowOften');
-    if (!start || !end) {
-      log({start,end,recur_obj,appt:this});
-      throw new Error('Insufficient info for dtstart');
-    }
-    let date = start.format('MM/DD/YYYY'), exclusions = this.attr_list.exclusions, time_start = start.format('hh:mma'), time_end = end.format('hh:mma');
-    try {
-      if (dates) {
-        if (!dates.is_array()) dates = dates.split(', ');
-        dates.smartPush(date);
-        dates.forEach(date => {rrule_set.rdate(Schedule.datetime_to_rdate(`${date} ${time_start}`))});
-      } else {
-        let rrule = {
-          freq: RRule.WEEKLY,
-          interval: interval,
-          dtstart: Schedule.moment_to_rdate(start),
-          byweekday: days.map(day => RRule[day.substring(0,2).toUpperCase()]),
-        };
-        if (until) rrule.until = Schedule.datetime_to_rdate(`${until} ${time_end}`);
-        rrule_set.rrule(new RRule(rrule));
-      }
-      if (exclusions) {
-        exclusions.forEach(date => {
-          let exdate = Schedule.datetime_to_moment(`${date} ${time_start}`);
-          rrule_set.exdate(Schedule.moment_to_rdate(exdate))
-        });
-      }
-      return rrule_set;
-    } catch (error) {
-      log({error,start,attr_list:this.attr_list});
-      return null;
-    }
-  }
-  rrule_exclude (date_str) {
-    let recur_obj = new Forms.FormResponse(this.attr_list.recurrence), dates = recur_obj.response_for('SelectDates'), exclusions = this.attr_list.exclusions || [];
-    exclusions.smartPush(date_str);
-    this.attr_list.recurrence = recur_obj.json;
-    this.attr_list.exclusions = exclusions;
-  }
-  get start_moment () {
-    if (this.attr_list.date_time_start) {
-      return Schedule.db_datetime_to_moment(this.attr_list.date_time_start);
-    } else if (this.attr_list.date && this.attr_list.time_start) {
-      return Schedule.datetime_to_moment(`${this.attr_list.date} ${this.attr_list.time_start}`);
-    } else return null;
-  }
-  get end_moment () {
-    if (this.attr_list.date_time_end) {
-      return Schedule.db_datetime_to_moment(this.attr_list.date_time_end);
-    } else if (this.attr_list.date && this.attr_list.time_end) {
-      return Schedule.datetime_to_moment(`${this.attr_list.date} ${this.attr_list.time_end}`);
-    } else return null;
-  }
-  static recurring_description (recurrence) {
-    let recur_obj = new Forms.FormResponse(recurrence), dates = recur_obj.response_for('SelectDates'), days = recur_obj.response_for('SelectWeekDays'), interval = recur_obj.response_for('HowOften'), until = recur_obj.response_for('EndDate'), desc = {};
-    if (dates) desc.Recurring = 'Only on selected dates';
-    else if (days) desc.Recurring = `${interval == 1 ? 'Weekly' : `Every ${interval} weeks`} on ${days.smartJoin()} until ${until ? until : 'forever'}`;
-    return desc;
-  }
   get schedule_obj () {
     try {
       let obj = {type:'Appointment',uid:this.uid};
       let services = this.attr_list.services, group_id = `${this.event_source_id}_${this.uid}`, 
-        start = this.start_moment, end = this.end_moment, 
+        start = this.start_lux, end = this.end_lux, 
         patient_id = this.attr_list.patient_id, 
-        practitioner_id = this.attr_list.practitioner_id, 
-        date = this.attr_list.date, duration = end.diff(start,'minutes');
+        practitioner_id = this.attr_list.practitioner_id;
+        // date = this.attr_list.date;
       obj.merge({
-        services, patient_id, practitioner_id, date, duration,
-        time_start: start.format('hh:mma'),
-        time_end: end.format('hh:mma'),
+        services, patient_id, practitioner_id, 
+        start: start.toISO(),
+        end: end.toISO(),
         recurring_id: this.attr_list.recurring_id,
       })
       if (this.attr_list.recurrence) {
         let recur_obj = new Forms.FormResponse(this.attr_list.recurrence), dates = recur_obj.response_for('SelectDates'), days = recur_obj.response_for('SelectWeekDays');
         obj.merge({
-          recurrence:this.attr_list.recurrence, 
-          rrule:this.rrule, 
-          exclusions: this.attr_list.exclusions
+          recurrence: this.attr_list.recurrence, 
+          rrule: this.rrule,
+          exclusions: this.attr_list.exclusions || [],
+          description: Appointment.recurring_description(this.attr_list.recurrence),
         });
-        let rrule_set = this.rrule_obj, upcoming = 'what', past = 'how';
-        // log({rrule_set});
-        if (dates) {
-          if (!dates.is_array()) dates = dates.split(', ');
-          dates.smartPush(date);
-          let time_start = start.format('hh:mma'), dtstart = Schedule.datetime_to_rdate(`${date} ${time_start}`);
-          obj.merge({
-            dates,
-            description: Appointment.recurring_description(this.attr_list.recurrence),
-          });
-        } else {
-          let interval = recur_obj.response_for('HowOften');
-          obj.merge({
-            days, interval,
-            date_start: this.attr_list.date,
-            date_end: recur_obj.response_for('EndDate'),
-            description: Appointment.recurring_description(this.attr_list.recurrence),
-          });
-        }
+        // let rrule_set = this.rrule_obj;
+        // if (dates) {
+        //   if (!dates.is_array()) dates = dates.split(', ');
+        //   dates.smartPush(start.date_num);
+        //   let time_start = start.format('hh:mma');
+        //   obj.merge({
+        //     dates,
+        //     description: Appointment.recurring_description(this.attr_list.recurrence),
+        //   });
+        // } else {
+        //   // let interval = recur_obj.response_for('HowOften');
+        //   obj.merge({
+        //     // days, 
+        //     date_start: start.date_num,
+        //     date_end: recur_obj.response_for('EndDate'),
+        //     description: Appointment.recurring_description(this.attr_list.recurrence),
+        //   });
+        // }
       }
+      log(obj, 'GETTING SCHEDULE OBJ');
       return obj;
     } catch (error) {
-
+      log({error});
+      return {};
     }
   }
   get db_columns () {
@@ -1766,31 +1757,68 @@ class Appointment extends Model{
   }
   async on_save () {
     let sched = this.schedule, edit = sched.edit, edit_recur = sched.edit_recur;
+
+    if (this.attr_list.date && this.attr_list.time) {
+      this.attr_list.date_time_start = LUX.From.datetime(this.attr_list.date, this.attr_list.time);
+      let duration = LUXDur.fromObject({minutes:this.attr_list.duration});
+      this.attr_list.date_time_end = this.attr_list.date_time_start.plus(duration);
+    }
+
+    if (this.attr_list.WhenWillThisAppointmentRepeat) {
+      let recur_form = $('#RecurringAppointment').getObj();
+      this.attr_list.recurrence = recur_form.response;
+      // log("HI");
+    }
+    if (this.attr_list.recurrence && !this.attr_list.recurring_id) {
+      this.attr_list.recurring_id = this.uid;
+      this.attr_list.rrule = this.rrule;
+    }
+    this.event_in_schedule = this.uid ? this.schedule.find(this.uid) : null;
+
+    log({edit,edit_recur});
     if (edit && edit_recur) {
       if (edit_recur == 'all') return true;
-      let existing = new Appointment(edit), date = this.attr_list.date;
-
+      
+      let existing = Appointment.original, date = this.attr_list.date;
+      // log({existing,editing:this,date,edit_recur});
+      // return false;
+      // existing.on_save = null;
       if (edit_recur == 'this') {
         existing.rrule_exclude(date);
-        existing.on_save = null;
+        this.attr_list.recurrence = null;
       } else if (edit_recur == 'future') {
-
+        let recurrence_old = existing.attr_list.recurrence, recurrence_new = this.attr_list.recurrence;
+        // this.attr_list.recurrence = recurrence_new;
+        let recur_old = new Forms.FormResponse(recurrence_old), recur_new = new Forms.FormResponse(recurrence_new);
+        let dates = recur_old.response_for('SelectDates'), days = recur_old.response_for('SelectWeekDays');
+        if (dates) {
+          let time = now(), break_at = LUX.From.date(date, undefined, time);
+          dates = dates.split(', ');
+          let before_dates = dates.filter(d => LUX.From.date(d,undefined,time) < break_at),
+            after_dates = dates.filter(d => LUX.From.date(d,undefined,time) >= break_at);
+          recur_old.set_response_for('SelectDates', before_dates.join(', '));
+          recur_new.set_response_for('SelectDates', after_dates.join(', '));
+          // existing.attr_list.recurrence = recur_old.json;
+          // this.attr_list.recurrence = recur_new.json;
+          // log({recur_old,recur_new,recurrence_new,recurrence_old});
+        }
       }
-      this.attr_list.recurring_id = existing.uid;
+      this.attr_list.recurring_id = existing.attr_list.recurring_id;
       this.clear_uid();
-      let appts = [this,existing], result_arr = await Model.save_multi(appts);
-      // log({result_arr},'multi result');
-      // result_arr.forEach((appt,a) => {})
+      let appts = [this,existing];
+      log({appts});
+      // return false;
+      let result_arr = await Model.save_multi(appts);
       return false;
     } 
     return true;
   }
-  async save_callback (data, multi = false) {
+  async save_callback (data) {
     this.uid = data.uid;
     this.attr_list.uid = data.uid;
     this.attr_list.google_id = data.google_id;
     this.attr_list.recurring_id = data.recurring_id;
-    // if (this.attr_list.recurrence && !this.attr_list.recurring_id) this.attr_list.recurring_id = data.uid;
+    log({model:this},`UID: ${this.uid}`);    
     this.event_in_schedule = await this.schedule.model_add(this);
   }
   async delete_callback () {
@@ -1802,12 +1830,7 @@ class Service extends Model {
     if (!attr_list) attr_list = Model.construct_from_form('#CreateService');
     super(attr_list, 'Service');
   }
-  // settings_onload () {
-  //   let service = this;
-  //   this.autosave = new Features.Autosave({
-  //     send: this.save,
-  //   });
-  // }
+
   get db_columns () {return ['name','service_category_id','description_calendar','description_admin','price','duration']}
   async settings_autosave () {
     log('hi');

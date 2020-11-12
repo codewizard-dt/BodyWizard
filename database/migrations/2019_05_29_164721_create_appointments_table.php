@@ -18,8 +18,8 @@ class CreateAppointmentsTable extends Migration
             $table->string('google_id');
             $table->unsignedInteger('patient_id')->nullable();
             $table->unsignedInteger('practitioner_id')->nullable();
-            $table->dateTimeTz('date_time_start');
-            $table->dateTimeTz('date_time_end');
+            $table->dateTime('date_time_start');
+            $table->dateTime('date_time_end');
             $table->json('recurrence')->nullable();
             $table->json('exclusions')->nullable();
             // $table->string('rrule')->nullable();

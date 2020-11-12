@@ -1,5 +1,6 @@
 import {system, practice, log, Features} from './functions';
 import {model, Models, class_map_linkable, linkable_lists} from './models';
+import {DateTime as LUX} from 'luxon';
 
 class FormEle {
   constructor(proxy) {
@@ -367,24 +368,11 @@ class FormResponse {
         let followups = items[item_name].items;
         if (followups) matches.push(...form_response.item_search_recursive(text, followups, exact_match));
       }
-      // items.forEach(item => {
-      //   if (exact_match && item.options.text.toLowerCase.includes(text.toLowerCase())) matches.push(item);
-      //   else if (search_array.every(str => item.options.text.toLowerCase().includes(str))) matches.push(item);
-      //   if (item.items && item.items.notEmpty()) matches.push(...form_response.item_search_recursive(text, item.items, exact_match));
-      // })
     } catch (error) {
       log({error});
     }
     return matches;
 
-    // let matches = [];
-    // for (let item_name in items) {
-    //   if (exact_match) 
-    //   if (item_name.includes(text)) matches.push(items[item_name]);
-    //   let followups = items[item_name].items;
-    //   if (followups) matches.push(...this.item_search_recursive(text, followups));
-    // }
-    // return matches;
   }
   response_for (text = null) {
     let item = this.item_search(text), answer = item ? item.answer : null;
@@ -393,7 +381,7 @@ class FormResponse {
   set_response_for (text, value) {
     let item = this.item_search(text);
     item.answer = value;
-    // log({item,value});
+    // log({item,value,fulljson:this.json});
   }
   get all_sections () {
     let sections = [];
@@ -1377,6 +1365,14 @@ class Answer {
     this.ele.addClass('text');
     this.input.attr('type','password');
   }
+  disable (options) { 
+    this.is_disabled = true; 
+    if (this.disable_unique) this.disable_unique(options); 
+    // let tooltip = options.tooltip || null;
+    // if (tooltip) new Features.ToolTip(tooltip.merge({target:this.input}));
+    // log({input:this.input})
+  }
+  enable (options) { this.is_disabled = true; if (this.enable_unique) this.enable_unique(); }
   async text () {
     this.input = $(`<input>`).appendTo(this.ele);
     if (this.options.placeholder) this.input.attr('placeholder', this.options.placeholder);
@@ -1385,6 +1381,8 @@ class Answer {
       let v = $.sanitize(this.input.val());
       return (v != '') ? v : null;
     }
+    this.disable_unique = () => { this.input.attr('readonly',true)};
+    this.enable_unique = () => { this.input.removeAttr('readonly')}
     this.placeholder_visible = false;
     if (this.options.name == 'phone') system.validation.input.phone(this.input);
     if (this.options.name == 'email') system.validation.input.email(this.input);
@@ -1712,65 +1710,88 @@ class Answer {
   async date () {
     let limit = Array.isArray(this.options.date_limit) ? this.options.date_limit[0] : this.options.date_limit;
     let selection_limit = Number.isNaN(Number(limit)) ? null : Number(limit);
+    // let selection_limit = 2;
     let css = {width:`${selection_limit ? `${selection_limit*8}em` : '40em'}`,maxWidth:'calc(100% - 3em)'};
     this.input = $(`<input placeholder='MM/DD/YYYY'>`).css(css).appendTo(this.ele);
     system.validation.input.date(this.input);
     let cal_icon = new Image();
     cal_icon.src = `/images/icons/cal_icon_yellow.png`;
     $(cal_icon).css({height:'2em',width:'2em',opacity:'60%',marginLeft:'0.5em',cursor:'pointer'});
-    let i = this.input, options = {
+    let d = this, i = this.input, options = {
       showTrigger:$(cal_icon),
-      onClose:function(dates){
+      onClose: function(dates){
         $('.datepick-trigger').animate({opacity:0.6})
-        let datepick_options = i.data('datepick').options, 
-          min = system.validation.date.datepick.shorthand.to_moment(datepick_options.minDate), 
-          max = system.validation.date.datepick.shorthand.to_moment(datepick_options.maxDate),
-          compare = system.validation.date.comparison;
-        if (dates.isEmpty()) {
-          let invalid = system.validation.date.is_invalid(i.val()), date = moment(i.val(),'MM/DD/YYYY',true);
-          if (invalid) i.warn('Invalid Date',{callback:function(){i.focus()}});
-          else if (min && compare(date,min).is_before) {
-            i.warn(`Must be on or after ${min.format('M/D/YYYY')}`,{callback:function(){i.focus()}});
-          } else if (max && compare(date,max).is_after) {
-            i.warn(`Must be on or before ${max.format('M/D/YYYY')}`,{callback:function(){i.focus()}});
-          }
-        }
+        let min = LUX.String.datepick.shorthand(d.options.minDate), 
+          max = LUX.String.datepick.shorthand(d.options.maxDate),
+          valid = LUX.String.datepick.validate(i.val(), min, max);
+        if (valid !== true) i.warn(valid);
       },
-      onShow:function(picker,instance){instance.elem.parent().find('.datepick-trigger').animate({opacity:1})},
+      onShow: function(picker,instance){
+        if (selection_limit && selection_limit != 1 && instance.selectedDates.length == selection_limit) {
+          i.warn('Maximum number selected');
+        }
+        instance.elem.parent().find('.datepick-trigger').animate({opacity:1})
+      },
       showAnim: 'fadeIn',
+      dateFormat: 'm/d/yyyy',
       multiSeparator: ', ',
     };
 
-    options.multiSelect = selection_limit ? selection_limit : 999;
+    if (selection_limit != 1) options.multiSelect = selection_limit ? selection_limit : 999;
+    // options.multiSelect = 2;
     if (this.options.minDate) options.minDate = this.options.minDate;
     if (this.options.maxDate) options.maxDate = this.options.maxDate;
     if (this.options.yearRange) options.yearRange = this.options.yearRange;
-    // log({end:options.multiSelect,start: this.options.date_limit[0],nan:Number.isNaN(this.options.date_limit[0])});
     this.input.datepick(options);
     this.ele.find('.datepick-trigger').on('mouseenter',function(){$(this).animate({opacity:1})})
       .on('mouseleave',function(){if ($('.datepick-popup').dne()) $(this).animate({opacity:0.6})});
     this.input = this.input.add(cal_icon);
     this.get = () => {
       let v = this.input.val();
-      return v != '' ? system.validation.date.sort(v) : null;
+      let sorted = v !== '' ? LUX.Sort(v) : null;
+      let value = sorted ? sorted.map(d => d.date_num).join(', ') : null;
+      return value;
     }
+
+    this.disable_unique = (options = {}) => { 
+      this.input.datepick('disable'); 
+      let fontSize = get_em_px(this.ele);
+      if (options.tooltip) new Features.ToolTip(options.tooltip.merge({
+        target:this.ele,
+        css:{backgroundColor:'var(--pink10o)',color:'var(--pink)',borderColor:'var(--pink50)'},
+        translate: {y: fontSize * 2}
+      }));
+    };
+    this.enable_unique = () => { 
+      this.input.datepick('enable');
+      let tt = this.ele.data('tooltip');
+      if (tt) tt.ele.remove();
+    };
+
   }
   async time () {
-    this.input = $(`<input placeholder='HH:MMa'>`).css({width:'5.3em'}).appendTo(this.ele);
+    this.input = $(`<input placeholder='H:MM A'>`).css({width:'5.5em'}).appendTo(this.ele);
     let i = this;
-    this.input.on('keydown',function(ev){
-      let v = $(this).val(), l = v.length, k = ev.key;
-      if (!k.key_is_allowed('0123456789:ampm')) ev.preventDefault();
-    }).on('change', function(){
-      setTimeout(i.followup_show.bind(i),100);
-    });
+    if (this.options.minTime) this.options.maxTime = this.options.maxTime || '12:00 AM';
+    system.validation.input.time(this.input).on('change', function(){
+      setTimeout(i.on_change.bind(i),100);
+    }).on('blur',function(){
+      // log(i.options);
+      setTimeout(function(){
+        let min = LUX.From.time(i.options.minTime), max = LUX.From.time(i.options.maxTime);
+        let valid = LUX.String.time.validate(input.val(), min, max);
+        if (valid !== true) input.warn(valid);          
+      },100)
+    })
     let input = this.input, clock_icon = new Image();
     clock_icon.src = `/images/icons/clock_icon_yellow.png`;
     $(clock_icon).css({height:'2em',width:'2em',opacity:'60%',marginLeft:'0.5em',cursor:'pointer'})
-    $(clock_icon).on('mouseenter',function(){$(this).animate({opacity:1})}).on('mouseleave',function(){if (!input.is(':focus')) $(this).animate({opacity:0.6})}).on('click',function(){i.focus()}).insertAfter(this.input);
+    $(clock_icon).on('mouseenter',function(){$(this).animate({opacity:1})}).on('mouseleave',function(){if (!input.is(':focus')) $(this).animate({opacity:0.6})}).on('click',function(){i.input.focus()}).insertAfter(this.input);
     this.input.on('blur',function(){$(clock_icon).animate({opacity:0.6})});
     this.options.scrollDefault = 'now';
+    this.options.timeFormat = 'g:i A';
     this.input.timepicker(this.options);
+    // this.input.on()
     this.get = () => {
       let v = this.input.val();
       return v != '' ? v : null;
@@ -2186,16 +2207,16 @@ var forms = {
       init('.submit.create',function(){
         $(this).on('click', async function(){
           try{
-            let instance = null, data = $(this).data();
+            let instance = null;
+            let model_name = $(this).data('model');
             if ($(this).hasClass('create')){
-              let model_name = $(this).data('model')
               instance = model_name.to_class_obj();
             } else if ($(this).hasClass('edit')) {
-              instance = model.current;
-              if (!instance.update_attr_by_form()) throw new Error('form error');
+              instance = Models[model_name].editing;
               log({instance});
+              if (!instance.update_attr_by_form()) throw new Error('form error');
             }
-            // log({data,type:}, 'save btn data');
+            // log({data,type}, 'save btn data');
             await instance.save();              
             system.initialize.newContent();
           }catch(error) {

@@ -47,6 +47,7 @@
   --gray93:rgba(210,210,210,0.93);
   --gray97:rgba(210,210,210,0.97);
   --darkgray:rgba(120,120,120,1);
+  --darkgray10:rgba(120,120,120,0.10);
   --darkgray30:rgba(120,120,120,0.30);
   --darkgray50:rgba(120,120,120,0.50);
   --darkgray70:rgba(120,120,120,0.70);
@@ -68,6 +69,12 @@
   --green90:rgba(46, 107, 53, 0.9);
   --fc-bg-event-color: var(--yellow50);
   --fc-today-bg-color: var(--purple5);
+  --fc-button-bg-color: var(--purple80);
+  --fc-button-border-color: var(--purple90);
+  --fc-button-active-border-color: var(--purple);
+  --fc-button-hover-border-color: var(--purple);
+  --fc-button-active-bg-color: var(--purple);
+  --fc-button-hover-bg-color: var(--purple90);
 }
 
 @font-face{
@@ -313,6 +320,27 @@ h1 b, h2 b, h3 b, h4 b {font-weight: 400}
 .loadTarget{
   min-height: 7em;
   position: relative;
+}
+.boxPink {
+  color: var(--pink);
+  border-radius: 3px;
+  border: 1px solid var(--pink50);
+  background-color: var(--pink5);
+  padding: 0.2em 0.5em;
+}
+.boxPurple {
+  color: var(--purple);
+  border-radius: 3px;
+  border: 1px solid var(--purple50);
+  background-color: var(--purple5);
+  padding: 0.2em 0.5em;
+}
+.boxYellow {
+  color: var(--yellow);
+  border-radius: 3px;
+  border: 1px solid var(--yellow50);
+  background-color: var(--yellow5);
+  padding: 0.2em 0.5em;
 }
 
 .purpleBorder{

@@ -1,12 +1,10 @@
 import {forms, Forms} from './forms';
 import {model, table, Models} from './models';
-import Moment from 'moment';
+import {DateTime as LUX} from 'luxon';
+import {Settings as LuxonSettings} from 'luxon';
 
 
-// $(".jump").on("click",function(){
-//   var target = "#"+$(this).data("target");
-//   $.scrollTo(target);
-// });
+
 export const debug = {
   get y() {return debug.bool},
   get d() {return debug.depth},
@@ -87,9 +85,6 @@ class Button {
       log({error,options});
     }
   }
-  get element () {
-    log({error: new Error('change btn element => ele')});
-  }
   relocate () {
     if (this.insertAfter) this.ele.insertAfter(this.insertAfter);
     else if (this.insertBefore) this.ele.insertBefore(this.insertBefore);
@@ -98,6 +93,7 @@ class Button {
 
   async click (ev) {
     let action = this.action, target = this.target, mode = this.mode, callback = this.callback;
+    // log({action,ev});
     try{
       if (action) action.bind(this.ele,ev)();
       if (mode && target){
@@ -202,10 +198,17 @@ class OptionBox {
   }
 
   add_info (ele) {
-    this.info.append(ele);
+    if (ele instanceof Button) {
+      let btn = ele;
+      this.info.append(btn.ele);
+      btn.ele.on('click', btn.click.bind(btn));
+    } else this.info.append(ele);
     return this;
   }
-  reset_header (str) {this.header.html(str)}
+  reset_header (str) {
+    this.header.html(str);
+    return this;
+  }
   reset_info (ele = null) {
     this.info.html('');
     if (ele) this.add_info(ele);
@@ -454,15 +457,39 @@ class Toggle {
     if (this.tooltip) this.tooltip.ele.remove();
     if (!options.dont_show) this.show(0);
     if (options.message) {
-      let ele = this.toggle_ele, tag = ele[0].nodeName, textAlign = ele.css('text-align');
+      let ele = this.toggle_ele, tag = options.message_tag || ele[0].nodeName, textAlign = ele.css('text-align');
       if (this.message_enable) this.message_enable.remove();
-      this.message_enable = $(`<${tag}/>`,{html:options.message,class:'pink'}).css({textAlign}).prependTo(this.target_ele);
+      this.message_enable = $(`<${tag}/>`,{html:options.message, class: options.message_class_list || 'boxPurple'}).css({textAlign}.merge(options.message_css || {marginTop: '0.5em'})).prependTo(this.target_ele);
     }
+  }
+  add_message (options = {}) {
+    let messages = this.messages || [], message_new = null, textAlign = this.toggle_ele.css('text-align');
+    let css = {textAlign}.merge({marginTop: '0.5em'});
+    if (options.message) {
+      let tag = options.message_tag || this.toggle_ele[0].nodeName;
+      message_new = $(`<${tag}/>`,{html:options.message, class: options.message_class_list || 'boxPurple'}).css(css.merge(options.message_css || {}));
+    } else if (options.ele) {
+      message_new = options.ele.addClass(options.message_class_list || 'boxPurple').css(css.merge(options.message_css || {}));
+    }
+    let last_msg = [...messages].pop() || this.message_enable;
+    messages.push(message_new);
+    this.messages = messages;
+    if (last_msg) message_new.insertAfter(last_msg);
+    else message_new.prependTo(this.target_ele);
+    return message_new;
+  }
+  reset_messages () {
+    if (this.message_enable) {
+      this.message_enable.remove();
+      this.message_enable = null;
+    }
+    if (this.messages) this.messages.forEach(msg => msg.remove());
+    this.messages = [];    
   }
   reset (time = 400) {
     this.is_disabled = false;
     this.to_initial_state(time);
-    if (this.message_enable) this.message_enable.remove();
+    this.reset_messages();
     if (this.tooltip) this.tooltip.ele.remove();
   }
 };
@@ -484,6 +511,7 @@ class ToolTip {
     this.tracking = options.tracking || false;
     this.ele.data('class_obj',this).slideFadeOut(0);
     this.hide_btn = ifu(options.hide_btn,true);
+    this.translate = {x: 0, y:0}.merge(options.translate || {});
     if (this.hide_btn) {
       let btn = new Image();
       btn.src = '/images/icons/red_x.png';
@@ -505,6 +533,7 @@ class ToolTip {
       if (!target.is(tip.target)) tip.hide(ev);
       if (next_tip) next_tip.show(ev);
     }).on('mouseenter', this.mousein.bind(this));
+    // log({tt:this,target:this.target});
   }
   message_append (msg) {
     if (typeof msg == 'object') {
@@ -571,13 +600,13 @@ class ToolTip {
     return pos_adjusted;
   }
   get position_fixed () {
-    let box_ele = this.ele[0].getBoundingClientRect(), box_target = this.target[0].getBoundingClientRect(), v = view(),    border = {right: box_target.x + box_ele.width + system.ui.scroll.bar_width(), bottom: box_target.bottom + box_ele.height, top: box_target.top - box_ele.height - 10}, pos_adjusted = {top: (border.top > 10) ? border.top : box_target.bottom + 10};
+    let box_ele = this.ele[0].getBoundingClientRect(), box_target = this.target[0].getBoundingClientRect(), v = view(),    border = {right: box_target.x + box_ele.width + system.ui.scroll.bar_width() + this.translate.x, bottom: box_target.bottom + box_ele.height + this.translate.y, top: box_target.top - box_ele.height - 10 + this.translate.y}, pos_adjusted = {top: (border.top > 10) ? border.top : box_target.bottom + 10 + this.translate.y};
     if (border.right > v.width) {
       pos_adjusted.right = 10; this.ele.css({left: 'unset'});
     } else {
-      this.ele.css({right: 'unset'}); pos_adjusted.left = box_target.x;
+      this.ele.css({right: 'unset'}); pos_adjusted.left = box_target.x + this.translate.x;
     }
-    // log({pos_adjusted,view:v, border, box_target, relPos: box_target.y / v.height});
+
 
     return pos_adjusted;
   }
@@ -1033,6 +1062,7 @@ export const system = {
         window.Models = Models;
         window.Features = Features;
         window.Forms = Forms;
+        window.LUX = LUX;
       }
       Object.freeze(user);
     },
@@ -1102,7 +1132,7 @@ export const system = {
         if (!notifications.ele.find('.notification').find('.title').get().find(
           existing => $(existing).data('id') == notification.id)
         ) {
-        log({notification}, `new notification ${moment().format('h:mma')}`);
+        // log({notification}, `new notification ${moment().format('h:mma')}`);
           let node = $(`<div class='tab notification'><div class='title'><span class='selector'></span>${notification.type}<span class='indicator unread'></span></div></div>`);
           node.prependTo(notifications.ele.find('.scrollList')).find('.title').data(system.validation.json(notification.data));
           node.on('click',notifications.click);
@@ -1532,19 +1562,31 @@ export const system = {
       loadingColor = options.loadingColor || 'var(--darkgray97)',
       blurCss = options.blurCss || null,
       delay = options.delay || 0;
-
-      if (!ele || !modal) {log({error:{ele,modal,time,callback}},'missing ele or modal'); return;}
+      if (!ele || !modal) {log({error:{options,ele,modal,time,callback}},'missing ele or modal'); return;}
       if (!$(ele).isSolo()) {log({error:{ele,modal,time,callback}},'ele not found'); return;}
       else ele = $(ele);
-      if (ele.find('.blur').exists()) unblur();
-      if (modal == '#loading' || modal == 'loading') modal = system.blur.modal.loading({loadingColor});
+      if (ele.find('.blur').exists()) unblur({ele});
+      if (modal == '#loading' || modal == 'loading') modal = system.blur.modal.loading({loadingColor,ele});
       else if (modal == '#checkmark' || modal == 'checkmark') modal = system.blur.modal.checkmark();
       else if (!$(modal).isSolo()) {log({error:{ele,modal,time,callback}},'invalid modal'); return;}
       else modal = $(modal);
+
+      if (Forms.FormEle.waiting_for_list(modal)) {
+        let orig_options = {}.merge(options), interim_options = {}.merge(options).merge({modal:'loading'});
+        system.blur.element(interim_options);
+        let waiting = setInterval(function(){
+          if (!Forms.FormEle.waiting_for_list(modal)) {
+            clearInterval(waiting);
+            system.blur.element(orig_options);
+          }
+        },100)
+        return;
+      }
+
       if (ele.is(modal)) {log({error:{ele,modal,time,callback}},'ele is modal'); return;}
       if (ele.is('body')) {
         unblurAll();
-        if (modal.is('.loading')) modal.removeClass('dark').addClass('light');
+        // if (modal.is('.loading')) modal.removeClass('dark').addClass('light');
       }
 
       ele.css(system.blur.ele.css(ele,modal));
@@ -1556,12 +1598,8 @@ export const system = {
       try{
         block.prependTo(ele).show();
         block.append(modal);
-        system.blur.resize(ele, modal);
+        // system.blur.resize(ele, modal);
         if (callback && typeof callback == 'function') setTimeout(callback, time+delay);
-        if (Forms.FormEle.waiting_for_list(modal)) {
-          log({ele,modal},'WAITING FOR LIST!');
-          alert("yeah i'm waiting!");
-        }
       }catch(error){
         log({error,options},'blur error');
       }
@@ -1578,18 +1616,19 @@ export const system = {
       }
       else {
         options.ele = $("body");
-        options.loadingColor = 'var(--white97)';
+        options.loadingColor = options.loadingColor || 'var(--darkgray97)';
       }
       options.modal = modal;
       return system.blur.element(options);
     },
-    resize: (ele, modal) => {
-      if (ele.is('body')) return;
-      let count = 0;
-      let maxHeight = ele.parent().height() * 0.96 - 1;
-      if (modal[0].scrollHeight > ele.height()) ele.height(modal[0].scrollHeight);
-      else ele.css('height','auto');
-    },
+    // resize: (ele, modal) => {
+      // log({ele,modal});
+      // if (ele.is('body')) return;
+      // let count = 0;
+      // let maxHeight = ele.parent().height() * 0.96 - 1;
+      // if (modal[0].scrollHeight > ele.height()) ele.height(modal[0].scrollHeight);
+      // else ele.css('height','auto');
+    // },
     modal: {
       loading: (options) => {
         let loadingColor = options.loadingColor || 'var(--darkgray97)', size = options.size || 4;
@@ -1625,7 +1664,7 @@ export const system = {
             backgroundColor: "var(--green10o)",
             border: "2px solid green"        
           })
-        }else if (modal.is('.loading')) css.boxShadow = 'unset';
+        } else if (modal.is('.loading')) css.boxShadow = 'unset';
         return css;
       },
       top: () => system.blur.block.top().children().first(),
@@ -1657,7 +1696,8 @@ export const system = {
           css.merge({
             height: '100vh', top,
             boxShadow: '0 0 20px 10px rgb(110,110,110) inset',
-          })
+          });
+          if (modal.is('.loading')) css.merge({backgroundColor:'var(--darkgray10'});
         } else {
           css.top = ele[0].scrollTop;
           if (!ele.isInside('blur')) {
@@ -1684,6 +1724,8 @@ export const system = {
         if ($(ele).dne()) throw new Error(`can't unblur because ele doesn't exist`);
         else if ($(ele).find('.blur').dne()) return;
         Icon.clear_spinners_within(ele);
+        ele.find('.blur').remove();
+        return;
       }
       if (fade) {
         top.fadeOut(fade,function(){
@@ -1693,6 +1735,7 @@ export const system = {
           $(this).remove();
         });
       }else {
+        // log({top,ele});
         if (!top) return;
         top.find('.loading').each((c,circle) => clearInterval($(circle).data('spinner')));
         top.children().appendTo('#ModalHome');
@@ -2088,6 +2131,11 @@ export const system = {
           if (l == 2) $(this).val(`${v}/`);
           if (l == 5) $(this).val(`${v}/`);
         })
+        return input;
+      },
+      time: (input) => {
+        input.allowKeys('0123456789:ampm ');
+        return input;
       },
       phone: (input) => {
         input.allowKeys('0123456789-() ');
@@ -2098,20 +2146,23 @@ export const system = {
           if (val.length > 10) {input.warn('Invalid phone number - too many digits'); return;}
           val = `(${val.substr(0,3)}) ${val.substr(3,3)}-${val.substr(6,4)}`;
           input.val(val);
-        })
+        });
+        return input;
       },
       email: (input) => {
         input.on('blur',function(){
           let val = input.val();
           if (!val.match(/.*@.*\..*/)) input.warn('Invalid email');
-        })
+        });
+        return input;
       },
       username: (input) => {
         input.allowKeys(/[a-zA-Z0-9_]/);
         input.on('blur',function(){
           let val = input.val();
           if (val.length < 5) input.warn('Must be at least 5 characters');
-        })
+        });
+        return input;
       }
     },
     get_ele: selector => {
@@ -2232,6 +2283,7 @@ window.user = system.user;
 window.initialize = system.initialize;
 window.modal = system.blur.modal;
 window.get_rem_px = system.display.size.font.get_root;
+window.get_em_px = (selector) => system.display.size.font.get_ele_font_size(selector);
 window.fix_width = system.display.size.width.fix;
 window.body = () => system.ui.body_dimensions();
 window.view = () => system.ui.viewport_dimensions();
@@ -2320,7 +2372,8 @@ export const practice = {
     practice.info = practiceData;
     let tz = practice.info.tz.replace(/ /g,'_');
     window.tz = tz;
-    moment.tz.setDefault(tz);
+    LuxonSettings.defaultZoneName = tz;
+    window.now = () => LUX.NOW;
     Object.freeze(practice);
   },
   get: function(key){
@@ -2565,199 +2618,6 @@ $.fn.appendKeyValuePair = function (key,value) {
   return this;
 };
 
-Object.defineProperties(Array.prototype, {
-  isSolo: {value: function(){return this.length === 1}},
-  isEmpty: {value: function(){return this.length === 0}},
-  notEmpty: {value: function(){return this.length > 0}},
-  notSolo: {value: function(){return this.length > 1}},
-  smartJoin: {value: function(str, options = {}){
-    if (typeof str == 'object') options = str;
-    else options.merge({str});
-    str = ifu(options.str, 'and');
-    let oxford = options.oxford || true, map = options.map || null, array = this;
-    if (map) array = this.map(map);
-    return system.validation.array.join(array,str,oxford)}
-  },
-  smartPush: {value: function(){
-    let count = this.length, values = [...arguments];
-    while (values.notEmpty()) {
-      let value = values.shift();
-      if (!this.includes(value)) this.push(value);
-    }
-    return this.length != count;
-  }}
-});
-Object.defineProperties(Object.prototype, {
-  json_if_valid: {value: function(){return this}},
-  slideFadeOut: {value: function(time,callback){
-    if (this.ele) return this.ele.slideFadeOut(time,callback);
-    else log({obj:this, error: new Error('no ele found in object')});
-  }},
-  slideFadeIn: {value: function(time,callback){
-    if (this.ele) return this.ele.slideFadeIn(time,callback);
-    else log({obj:this, error: new Error('no ele found in object')});
-  }},
-  slideFadeToggle: {value: function(time,callback){
-    if (this.ele) return this.ele.slideFadeToggle(time,callback);
-    else log({obj:this, error: new Error('no ele found in object')});
-  }},
-  define_attrs_by_form: {value: function(selector){
-    try {
-      let form = $(selector);
-      if (form.dne()) throw new Error('form does not exist');
-      if (form.length > 1) throw new Error('more than one form found');
-      let all_pass = true, instance = this;
-      this.attr_list = {};
-      form.find('.answer').each((a,answer) => {
-        let obj = $(answer).getObj(), response = $(answer).verify('required'), name = obj.options.name;
-        if (response === false) all_pass = false;
-        instance.attr_list[name] = response;
-      })
-      this.valid = all_pass;
-    }catch (error) {
-      log({error,selector});
-    }
-  }},
-  dot_notation_get: {value: function(nested_dot){
-    let split = nested_dot.split('.'), next = split.shift(), value = this[next];
-    try {
-      while (split.notEmpty()) {
-        if (value == undefined) return undefined;
-        if (typeof value != 'object') throw new Error('Cannot traverse fully into dot notation, ran into non-object');
-        next = split.shift();
-        value = value[next];
-      }
-    } catch (error) {
-      value = undefined;
-      log({error});
-    }
-    return value;
-  }},
-  to_key_value_html: {value: function(){
-    let wrapper = $('<div/>');
-    for (let key in this) {
-      let item = $('<div/>',{class:key.toKeyString()});
-      if (this.hasOwnProperty(key)) wrapper.append(
-        item.append(
-          `<b style='padding-right:5px'>${key}:</b>`,
-          this[key] instanceof jQuery ? this[key].clone(true) : `<span>${this[key]}</span>`
-          )
-        );
-    }
-    return wrapper;
-  }},
-  is_array: {value: function(){
-    return Array.isArray(this);
-  }},
-  is_empty: {value: function(){
-    for (let attr in this) {
-      if (this.hasOwnProperty(attr)) return false;
-    }
-    return true;
-  }},
-  merge: {value: function(obj){
-    if (typeof obj != 'object') throw new Error(`merge argument must be an object, ${typeof obj} given`);
-    $.extend(true,this,obj);
-    return this;
-  }},
-  duplicate: {value: function(){ return {}.merge(this) }},
-});
-Object.defineProperties(String.prototype, {
-  is_array: {value: function(){
-    return false;
-  }},  
-  toTitleCase: {value: function(){
-    return this.replace(/(?:^|\s)\w/g, function(match) {
-      return match.toUpperCase();
-    });
-  }},
-  camel: {value: function(){
-    return this[0].toLowerCase() + this.toTitleCase().substring(1).replace(/ /g, '');
-  }},
-  snake: {value: function(){
-    return this.toLowerCase().replace(/ /g, '_');
-  }},
-  lettersOnly: {value: function(){
-    return this.replace(/[^a-zA-Z]/g, '');
-  }},
-  lettersAndSpacesOnly: {value: function(){
-    return this.replace(/_/g,' ').replace(/[^a-zA-Z ]/g, '');
-  }},
-  removeSpaces: {value: function(){
-    return this.replace(/ /g,'');
-  }},
-  toKeyString: {value: function(add_spaces = false){
-    let str = this.lettersAndSpacesOnly().toTitleCase().removeSpaces();
-    return add_spaces ? str.addSpacesToKeyString() : str;
-  }},
-  addSpacesToKeyString: {value: function(){
-    let matches = this.match(/[A-Z]/g), str = this;
-    if (matches) matches.forEach((match,m) => {str = str.replace(match,`${m == 0 ? '' : ' '}${match}`)});
-    return str;
-  }},
-  toBool: {value: function(truthy = undefined, falsey = undefined){
-    return system.validation.boolean(this.valueOf(), truthy, falsey);
-  }},
-  json_if_valid: {value: function(){return system.validation.json(this.toString())}},  
-  to_class_obj: {value: function(attr_list){
-    let FoundClass = Models[this] || Features[this] || null;
-    return FoundClass ? new FoundClass(attr_list) : null;
-  }},
-  get_obj_val: {value: function(obj = null, ok_if_missing = false){
-    let split = this.valueOf().split('.'), obj_val = null;
-    try{
-      let first = split.shift();
-      if (first == 'system') obj_val = system;
-      else if (first == 'forms') obj_val = forms;
-      else if (first == 'model') obj_val = model;
-      else obj_val = obj ? obj[first] : Models[first] || Forms[first] || Features[first] || system[first] || window[first];
-      if (!obj_val) throw new Error(`${first} not given or found in window or class_map`);
-      if (obj_val) {
-        while (split.length > 0) {
-          let next = split.shift();
-          obj_val = obj_val[next];
-          if (obj_val == model.actions) {
-            obj_val = model.actions.bind(null,split.shift());
-          }
-        }
-      }
-      if (obj_val == undefined) throw new Error(`obj_val '${this}' not found`);
-    }catch(error) {
-      if (!ok_if_missing) log({error,string:this.valueOf()});
-      obj_val = null;
-    }
-    return obj_val;
-  }},
-  to_fx: {value: function(obj = null){
-    let fx = this.get_obj_val(obj);
-    if (fx && typeof fx != 'function') log({obj,string:this},`${this.valueOf()} not a function`);
-    return fx;
-  }},
-  moment_hmma: {value: function(){
-    return moment(this,'h:mma');
-  }},
-  countDecimals: {value: function(){
-    return Number(this).countDecimals();
-  }},
-  toFixed: {value: function(){
-    return Number(this).toFixed();
-  }},
-});
-Object.defineProperties(Number.prototype, {
-  is_array: {value: function(){
-    return Array.isArray(this);
-  }},
-  toKeyString: {value: function() {
-    return this.toString().toKeyString();
-  }}
-})
-Object.defineProperties(Boolean.prototype, {
-  toBool: {value: function(){return this.valueOf();}}
-})
-Number.prototype.countDecimals = function () {
-  if(Math.floor(this.valueOf()) === this.valueOf()) return 0;
-  return this.toString().split(".")[1].length || 0; 
-}
 
 $.fn.sortEle = function sortEle(selector = "div", attr = 'index') {
   $("> "+selector, this[0]).each((e,ele) => {log({e,ele})}).sort(dec_sort).appendTo(this[0]);
@@ -3949,8 +3809,8 @@ $(document).ready(function(){
     },2000)
   }
   if (user && user.is('patient')){
-    systemModalList.push("createAppointment","editAppointment","SelectServices","SelectPractitioner","SelectDateTime","ApptDetails","ServiceListModal","PractitionerListModal");
-    systemModals = systemModals.add($("#createAppointment, #editAppointment, #SelectServices, #SelectPractitioner, #SelectDateTime, #ApptDetails, #ServiceListModal, #PractitionerListModal"));
+    systemModalList.push("createAppointment","editAppointment","SelectServices","SelectPractitioner","SelectLUX","ApptDetails","ServiceListModal","PractitionerListModal");
+    systemModals = systemModals.add($("#createAppointment, #editAppointment, #SelectServices, #SelectPractitioner, #SelectLUX, #ApptDetails, #ServiceListModal, #PractitionerListModal"));
   }
   $(document).on('click','.cancel',function(ev){
     if ($(ev.target).hasClass('toggle')) return;

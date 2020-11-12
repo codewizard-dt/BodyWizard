@@ -5,6 +5,7 @@ use App\Traits\TrackChanges;
 use App\Traits\Encryptable;
 
 use App\Message;
+use \DateTime;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -31,59 +32,8 @@ class Appointment extends Model
     'date_time_start' => 'datetime',
     'date_time_end' => 'datetime',
   ];
-  // protected $dateFormat = 'm/d/Y h:ia';  
-  // protected $hidden = ['full_json'];
-  // protected $fillable = ['patient_id', 'practitioner_id', 'date_time', 'duration'];
   protected $guarded = [];
   protected $visible = ['id','uuid','patient_id','practitioner_id','date_time','duration','status'];
-
-//   public function __construct($attributes = []){
-//     parent::__construct($attributes);
-//     $this->auditOptions = [
-//       'audit_table' => 'appointments_audit',
-//       'includeFullJson' => false
-//     ];
-
-//     $this->tableValues = array(
-//       'tableId' => 'AppointmentList',
-//       'index' => 'id',
-//       'model' => "Appointment",
-//       'columns' => [
-//         'Patient' => 'name',
-//         'Date + Time' => 'date_time',
-//         'Services' => 'service_list',
-//       ],
-//       'hideOrder' => "",
-//       'filtersColumn' => array(),
-//       'filtersOther' => array(),
-//       'destinations' => array(
-//         'edit','delete'
-//       ),
-//       'btnText' => array(
-//         'edit','delete'
-//       ),
-//       'extraBtns' => []
-//     );
-//     $this->optionsNavValues = array(
-//       'model' => "Appointment",
-//       'destinations' => array(
-//         'edit','delete'
-//       ),
-//       'btnText' => array(
-//         'edit','delete'
-//       )
-//     );
-
-// // This will load a resource table for each connected model
-// // into the create.blade view for THIS model, creating modals that
-// // automatically popped up when required.
-// // [Model, relationship]
-//     $this->connectedModels = array(
-//       ['Service','many','morphToMany'],
-//       ['Patient','one','belongsTo'],
-//       ['Practitioner','one','belongsTo']
-//     );
-//   }
 
   public function moreOptions(){
 
@@ -234,7 +184,6 @@ class Appointment extends Model
   }
   public function patient(){
     return $this->belongsTo('App\Patient', 'patient_id');
-// return $this->patients->first();
   }
   public function practitioner(){
     return $this->belongsTo("App\Practitioner", 'practitioner_id');
