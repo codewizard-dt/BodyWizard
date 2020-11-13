@@ -1047,8 +1047,9 @@ class Schedule {
     this.refresh_events();
     return instance.schedule_obj;
   }
-  model_find_related (model) {
-    let models = this.models.filter(m => m.recurring_id && m.recurring_id == model.recurring_id && m.uid != model.uid);
+  model_find_related (model, exclude_self = false) {
+    let models = this.models.filter(m => m.recurring_id && m.recurring_id == model.recurring_id);
+    if (exclude_self) models = models.filter(m => m.uid != model.uid);
     return models;
   }
   async delete (response) {
@@ -1176,107 +1177,7 @@ class Schedule {
       if (this.edit) this.form.fill_by_response(this.edit);
       else if (options.fill) this.form.fill_by_key_value_object(options.fill);
     } else if (this.modal.id === 'Appointment') {
-      this.edit = options.response ? options.response : null;
-      let recur_toggle = this.modal.ele.find('.toggle_ele').getObj();
-      if (this.edit) {
-        Appointment.editing = new Appointment(options.response);
-        Appointment.original = new Appointment(options.response.duplicate());
-
-        Model.form_mode('edit', this.modal.ele);
-        let ev = this.edit_event, description = ev.extendedProps.description, answers = Forms.Answer.get_all_within(this.modal.ele,false), start = LUX.From.js(ev.start), end = LUX.From.js(ev.end), named = function(name) {return Forms.Answer.find(answers, {name})}, recur_form = this.form, header_text = `${description.Patient}<br>${start.date} ${start.time} - ${start.date != end.date ? `${end.date} ` : ''}${end.time}`;
-        header.html(header_text);
-        // log({edit:this.edit,start,end});
-        answers.forEach(answer => answer.to_initial_value());
-        named('date').value = start.date_num;
-        named('time').value = start.time;
-        named('duration').value = end.diff(start,'minutes').minutes;
-        named('services').value = this.edit.services;
-        named('patient_id').value = this.edit.patient_id;
-        named('practitioner_id').value = this.edit.practitioner_id;
-        let recurrence = this.edit.recurrence;
-        if (recurrence) {
-          recur_toggle.show(0); recur_form.fill_by_response(recurrence);
-          let header_str = `<b>${header_text}<br></b>Recurring Appointment`, 
-            recur_str = Appointment.recurring_description(recurrence)['Recurring'],
-            recur_str_middle = Appointment.recurring_description(recurrence,'middle')['Recurring'],
-            recur_str_long = Appointment.recurring_description(recurrence,'long')['Recurring'],
-            // recur_html = `<h3>${recur_str}</h3>`,
-            attr_ele = this.modal.ele.find('.section').first(),
-            modal = this.modal.ele;
-          recur_toggle.message = recur_str_long;
-          recur_toggle.exclusions = Appointment.original.attr_list.exclusions;
-          let recur_only = function() {
-              recur_toggle.reset_messages();
-              recur_toggle.enable({message:'<b>Currently Occurs</b> '+recur_toggle.message, message_class_list: 'boxPurple', message_tag:'h4'});
-              if (recur_toggle.exclusions && recur_toggle.exclusions.notEmpty()) {
-                log({exclusions:recur_toggle.exclusions});
-                let exclusions_box = recur_toggle.add_message({message:'<b>Exceptions:</b> <span></span><div style="font-size:0.7em" class="bold">THIS LIST OVERRIDES ALL OTHER RECURRING SETTINGS</div>', message_class_list: 'boxPink', message_tag:'h4'}), exclusions_list = exclusions_box.children('span');
-                recur_toggle.exclusions.forEach(excl => {
-                  let exclusion_click = $('<span/>',{text:excl}).css({cursor:'pointer'}).on('click', sched.exclusion_click);
-                  exclusions_list.append(exclusion_click);
-                })
-              }
-              recur_toggle.toggle_ele.parent().slideFadeIn(0);
-              attr_ele.slideFadeOut(0);
-              sched.edit_recur = 'all';
-              // log(`${recur_str} RECUR ONLY`);
-            }, attrs_only = function() {
-              recur_toggle.toggle_ele.parent().slideFadeOut(0);
-              attr_ele.slideFadeIn(0);
-              // log(`${recur_str} ATTRS ONLY`);
-            }, show_modal = function () { unblur(); blurTop(modal) };
-          if ($('#RecurEditOptions').dne()) {
-            this.recurrence_only_btn = new Features.Button({text: 'edit recurring options', class_list: 'purple70 xsmall', css: {margin:'0.1em'}, 
-              action: function(){ recur_only(); show_modal(); }
-            });
-            this.recur_options = new Features.OptionBox({id:'RecurEditOptions',header:header_str,header_html_tag:'h2'});
-            this.recur_options.add_info(`<h3>${recur_str_middle}</h3>`).add_info(this.recurrence_only_btn.ele);
-            this.recur_options.add_button_info(`<h2 class="pink bold">Edit Time, Services, or Practictioner</h2>`);
-            this.recur_options.add_button({text:'this event only',
-              action:function(){
-                sched.edit_recur = 'this';
-                named('date').value = LUX.From.js(sched.edit_event.start).date_num;
-                // recur_toggle.disable(`Not enabled since you're editing 'this event only'`);
-                attrs_only(); show_modal();
-              }});
-            this.recur_options.add_button({text:'this and future events', class_list:'pink70 xsmall',
-              action:function(){
-                let event = sched.edit_event;
-                sched.edit_recur = 'future';
-                named('date').value = LUX.From.js(event.start).date_num;
-                named('date').disable({tooltip:{message:'Editing multiple dates, date change disabled'}});
-                attrs_only(); show_modal();
-              }});
-            this.recur_options.add_button({text:'all events', class_list:'pink70 xsmall',
-              action:function(){
-                sched.edit_recur = 'all';
-                named('date').disable({tooltip:{message:`'Date' disabled since you are editing all occurences of this event`}});
-                attrs_only(); show_modal();
-              }});
-            this.recur_options.add_button({text:'cancel',class_list:'cancel xsmall',action:unblurAll});
-          } else {
-            this.recur_options.reset_header(header_str);
-            this.recur_options.reset_info(`<h3>${recur_str_middle}</h3>`).add_info(this.recurrence_only_btn);
-          }
-          blurTop($('#RecurEditOptions'));
-        } else {
-          recur_toggle.reset(0);
-          this.edit_recur = null;
-          blurTop(this.modal.ele);
-        }
-      } else {
-        Appointment.editing = null;
-        Model.form_mode('create',this.modal.ele);
-        blurTop(this.modal.ele);
-        header.text('New Appointment');
-        recur_toggle.reset(0);
-        if (options.fill) {
-          let answers = Forms.Answer.get_all_within(this.modal.ele,false), named = function(name) {return Forms.Answer.find(answers, {name})};
-          answers.forEach(answer => answer.value = null);
-          for (let attr in options.fill) {named(attr).value = options.fill[attr]}        
-        }
-      }
-
+      Appointment.form_open(sched, options);
     }
   }
   static string_to_luxon (string, format = 'MM/DD/YYYY h:mma') {
@@ -1294,33 +1195,34 @@ class Schedule {
     log({ev});
   }
   upcoming (model, options = {}) {
-    console.groupCollapsed(`${model.start} UPCOMING`);
     let schedule = this;
     let limit = options.limit || 3, wiggle_limit = limit + 1,
       sort = options.sort || null,
       include_related = ifu(options.include_related, true),
-      related = [], dates = LUX.RRule.Upcoming({rrule: model.rrule, limit:wiggle_limit}), related_dates = [];
-      // original = LUX.From.datetime(model.date_start, model.time_start);
-    if (include_related) {
-      related = this.model_find_related(model);
-      related.forEach(m => {
-        let dt = LUX.fromISO(m.start);
-        if (m.rrule) related_dates.push(...LUX.RRule.Upcoming({rrule: m.rrule, limit:wiggle_limit}));
-        else if (dt > LUX.NOW) related_dates.push(dt); 
-      })
+      related = [], related_dates = [],
+      recurring_id = model.recurring_id,
+      force_refresh = options.force_refresh || false;
+    this.rrule_cache = this.rrule_cache || {};
+    this.upcoming_cache = this.upcoming_cache || {};
+    let same_recurring_id = this.model_find_related(model)
+    if (!this.rrule_cache[recurring_id]) {
+      let related_rrulesets = same_recurring_id.map(m => m.rrule), merged_rrulesets = LUX.RRule.Merge(related_rrulesets);
+      this.rrule_cache[recurring_id] = merged_rrulesets;
     }
-    dates.push(...related_dates);
-    if (sort) dates = LUX.Sort(dates, sort);
-    console.groupEnd();
-
-    let result = {model, limit, dates, related_dates, max: dates.length > limit};
+    if (!this.upcoming_cache[recurring_id] || force_refresh) {
+      let dates = LUX.RRule.Upcoming({rrule: this.rrule_cache[recurring_id], limit:wiggle_limit})
+      same_recurring_id.forEach(m => { if (!m.rrule) dates.push(LUX.fromISO(m.start)) })
+      this.upcoming_cache[model.recurring_id] = dates;
+      log({rrule_cache: this.rrule_cache,upcoming_cache:this.upcoming_cache});
+    }
+    let rrule_set = this.rrule_cache[recurring_id], dates = this.upcoming_cache[recurring_id];
+    let result = {model, rrule_set, limit, dates, max: dates.length > limit};
     return result;
   }
   upcoming_ele (result) {
-    // return;
     let sched = this;
     let update = function(ev, more = 3) {
-      let ele = $(this).closest('.upcoming'), prev_result = ele.data(), limit = prev_result.limit, rrule_set = prev_result.rrule_set, new_result = sched.upcoming(prev_result.model, {limit: limit + more, sort: {order:'asc'}}), new_ele = sched.upcoming_ele(new_result);
+      let ele = $(this).closest('.upcoming'), prev_result = ele.data(), limit = prev_result.limit, rrule_set = prev_result.rrule_set, new_result = sched.upcoming(prev_result.model, {force_refresh:true, limit: limit + more, sort: {order:'asc'}}), new_ele = sched.upcoming_ele(new_result);
       ele.replaceWith(new_ele);
       Features.ToolTip.find_containing_tooltip(new_ele).check_right();    
     }
@@ -1331,34 +1233,34 @@ class Schedule {
     return list;
   }
   recent (model, options = {}) {
-    console.groupCollapsed(`${model.start} RECENT`);
     let schedule = this;
-    let limit = options.limit || 3,
-      sort = options.sort || {order:'desc'},
+    let limit = options.limit || 3, wiggle_limit = limit + 1,
+      sort = options.sort || null,
       include_related = ifu(options.include_related, true),
-      related = [], dates = LUX.RRule.Recent({rrule: model.rrule, limit}), related_dates = [];
-      if (include_related) {
-        related = this.model_find_related(model);
-        related.forEach(m => {
-          let dt = LUX.fromISO(m.start);
-          if (m.rrule) related_dates.push(...LUX.RRule.Recent({rrule: m.rrule, limit}));
-          else if (dt < LUX.NOW) related_dates.push(dt); 
-        })
-      }
-    dates.push(...related_dates);
-    log({sort});
-    if (sort) dates = LUX.Sort(dates, sort);
-
-    console.groupEnd();
-
-    let result = {model, limit, dates, related_dates, max: dates.length > limit};
+      related = [], related_dates = [],
+      recurring_id = model.recurring_id,
+      force_refresh = options.force_refresh || false;      
+    this.rrule_cache = this.rrule_cache || {};
+    this.recent_cache = this.recent_cache || {};
+    let same_recurring_id = this.model_find_related(model)
+    if (!this.rrule_cache[recurring_id]) {
+      let related_rrulesets = same_recurring_id.map(m => m.rrule), merged_rrulesets = LUX.RRule.Merge(related_rrulesets);
+      this.rrule_cache[recurring_id] = merged_rrulesets;
+    }
+    if (!this.recent_cache[recurring_id] || force_refresh) {
+      let dates = LUX.RRule.Recent({rrule: this.rrule_cache[recurring_id], limit:wiggle_limit})
+      same_recurring_id.forEach(m => { if (!m.rrule) dates.push(LUX.fromISO(m.start)) })
+      this.recent_cache[model.recurring_id] = dates;
+      // log({rrule_cache: this.rrule_cache,recent_cache:this.recent_cache});
+    }
+    let rrule_set = this.rrule_cache[recurring_id], dates = this.recent_cache[recurring_id];
+    let result = {model, rrule_set, limit, dates, max: dates.length > limit};
     return result;
   }
   recent_ele (result) {
-    // return;
     let sched = this;
     let update = function(ev, more = 3) {
-      let ele = $(this).closest('.recent'), prev_result = ele.data(), limit = prev_result.limit, new_result = sched.recent(prev_result.model, {limit: limit + more, sort: {order:'desc'}}), new_ele = sched.recent_ele(new_result);
+      let ele = $(this).closest('.recent'), prev_result = ele.data(), limit = prev_result.limit, rrule_set = prev_result.rrule_set, new_result = sched.recent(prev_result.model, {force_refresh:true, limit: limit + more, sort: {order:'desc'}}), new_ele = sched.recent_ele(new_result);
       ele.replaceWith(new_ele);
       Features.ToolTip.find_containing_tooltip(new_ele).check_right();    
     }
@@ -1369,16 +1271,12 @@ class Schedule {
     return list;
   }
   date_links (result) {
-    // log({result});
     let append_arr = [], dates = result.dates, max = result.max, sched = this;
     
     dates = dates.slice(0,result.limit);
     let count = dates.length;
-    log({result,dates},`dates ${dates.length} limit ${count}`);
     dates.forEach((date,d) => {
-      let is_related = result.related_dates.some(rel_date => rel_date.equals(date));
       append_arr.push(sched.date_link(date));
-      if (is_related) append_arr.push(`<span class='modified_indicator'>*</span>`);
       if (d < count - 1 && count > 2) append_arr.push(', ');
       if (d == count - 2 && !max && count > 1) append_arr.push(`${count == 2 ? ' and ' : 'and '}`);
       if (d == count - 1 && max) append_arr.push('... ');
@@ -1434,6 +1332,7 @@ class Schedule {
   }
   form_responses_to_events (responses) {
     let events = [], source_id = this.event_source_id, schedule = this, display = this.display;
+    log({display,schedule:this, bool: display == 'background'});
     responses.forEach((response,r) => {
       let obj = schedule.response_to_obj(response);
       let group_id = `${source_id}_responses${r}`, description = {};
@@ -1442,10 +1341,9 @@ class Schedule {
         if (obj.dates) {
           if (obj.dates.notSolo()) description['Linked Dates'] = obj.dates.join(', ');
           obj.dates.forEach(date => {
-            // let start = moment(`${date} ${obj.time_start}`,'MM-DD-YYYY hh:mma'), end = moment(`${date} ${obj.time_end}`,'MM-DD-YYYY hh:mma');
             let start = LUX.From.datetime(date, obj.time_start), end = LUX.From.datetime(date, obj.time_end);
             events.push({
-              title: obj.title,
+              title: display == 'background' ? '' : obj.title,
               classNames: `${obj.class_list} ${group_id}`,
               start: start.toISO(),
               end: end.toISO(),
@@ -1468,7 +1366,7 @@ class Schedule {
           }, duration = end.diff(start);
           if (obj.date_end) rrule.until = moment(`${obj.date_end} ${obj.time_end}`,'MM-DD-YYYY hh:mma');
           events.push({
-            title: obj.title,
+            title: display == 'background' ? '' : obj.title,
             classNames: `${obj.class_list} ${group_id}`,
             groupId: group_id,
             description,
@@ -1507,7 +1405,7 @@ class Schedule {
             recent_ele = schedule.recent_ele(recent),
             duration = LUX.fromISO(model.end).diff(LUX.fromISO(model.start));
           event.merge({rrule: model.rrule, duration});
-          event.description.merge(Appointment.recurring_description(model.recurrence));
+          event.description.merge(Appointment.recurring_description(model.recurrence, LUX.fromISO(model.start)));
           event.description.merge({
             'Upcoming': upcoming_ele,
             'Most Recent': recent_ele,
@@ -1521,7 +1419,7 @@ class Schedule {
                 recent = schedule.recent(original_model,{limit:3,format:'M/D/YYYY',sort:{order:'desc'}}),
                 upcoming_ele = schedule.upcoming_ele(upcoming),
                 recent_ele = schedule.recent_ele(recent);
-              event.description.merge(Appointment.recurring_description(original_model.recurrence));
+              event.description.merge(Appointment.recurring_description(original_model.recurrence,LUX.fromISO(original_model.start)));
               event.description.merge({
                 'Upcoming': upcoming_ele,
                 'Most Recent': recent_ele,
@@ -1563,7 +1461,7 @@ class Schedule {
     else this.loading = false;
     // log({events:this.events})
     if (this.calendar && this.calendar.fullcal) this.source_add();
-  }  
+  }
 }
 class Appointment extends Model{
   constructor (attr_list = null) {
@@ -1612,6 +1510,8 @@ class Appointment extends Model{
         let time_start = start.time;
         dates.forEach(date => {rrule_set.rdate(LUX.From.datetime(date, time_start).rrule)});
       } else {
+        let jsdate = start.toJSDate(), rrdate = start.rrule;
+        log({start,jsdate,rrdate},'DIFFERENT DATES RRULE');
         let rrule = {
           freq: RRule.WEEKLY,
           interval: interval,
@@ -1628,6 +1528,7 @@ class Appointment extends Model{
           rrule_set.exdate(exdate);
         });
       }
+      rrule_set.tzid(tz);
       log({rrule_set,str:rrule_set.toString()});
       return rrule_set;
     } catch (error) {
@@ -1672,7 +1573,113 @@ class Appointment extends Model{
     let end = this.attr_list.date_time_end || this.attr_list.end;
     return end ? LUX.fromISO(end) : null;
   }
-  static recurring_description (recurrence, form = 'short') {
+  static form_open (schedule, options = {}) {
+    let header = schedule.modal.ele.find('h1').first();
+    schedule.edit = options.response ? options.response : null;
+    let recur_toggle = schedule.modal.ele.find('.toggle_ele').getObj();
+    if (schedule.edit) {
+      Appointment.editing = new Appointment(options.response);
+      Appointment.original = new Appointment(options.response.duplicate());
+
+      Model.form_mode('edit', schedule.modal.ele);
+      let ev = schedule.edit_event, description = ev.extendedProps.description, answers = Forms.Answer.get_all_within(schedule.modal.ele,false), start = LUX.From.js(ev.start), end = LUX.From.js(ev.end), named = function(name) {return Forms.Answer.find(answers, {name})}, recur_form = schedule.form, header_text = `${description.Patient}<br>${start.date} ${start.time} - ${start.date != end.date ? `${end.date} ` : ''}${end.time}`;
+      header.html(header_text);
+      answers.forEach(answer => answer.to_initial_value());
+      named('date').value = start.date_num;
+      named('time').value = start.time;
+      named('duration').value = end.diff(start,'minutes').minutes;
+      named('services').value = schedule.edit.services;
+      named('patient_id').value = schedule.edit.patient_id;
+      named('practitioner_id').value = schedule.edit.practitioner_id;
+      let recurrence = schedule.edit.recurrence;
+      if (recurrence) {
+        recur_toggle.show(0); recur_form.fill_by_response(recurrence);
+        let header_str = `<b>${header_text}<br></b>Recurring Appointment`, 
+          recur_str = Appointment.recurring_description(recurrence,start)['Recurring'],
+          recur_str_middle = Appointment.recurring_description(recurrence,start,'middle')['Recurring'],
+          recur_str_long = Appointment.recurring_description(recurrence,start,'long')['Recurring'],
+          attr_ele = schedule.modal.ele.find('.section').first(),
+          modal = schedule.modal.ele;
+        recur_toggle.message = recur_str_long;
+        recur_toggle.exclusions = Appointment.original.attr_list.exclusions;
+        let recur_only = function() {
+            recur_toggle.reset_messages();
+            recur_toggle.enable({message:'<b>Currently Occurs</b> '+recur_toggle.message, message_class_list: 'boxPurple', message_tag:'h4'});
+            // if (recur_toggle.exclusions && recur_toggle.exclusions.notEmpty()) {
+            //   log({exclusions:recur_toggle.exclusions});
+            //   let exclusions_box = recur_toggle.add_message({message:'<b>Exceptions:</b> <span></span><div style="font-size:0.7em" class="bold">THIS LIST OVERRIDES ALL OTHER RECURRING SETTINGS</div>', message_class_list: 'boxPink', message_tag:'h4'}), exclusions_list = exclusions_box.children('span');
+            //   recur_toggle.exclusions.forEach(excl => {
+            //     let exclusion_click = $('<span/>',{text:excl}).css({cursor:'pointer'}).on('click', sched.exclusion_click);
+            //     exclusions_list.append(exclusion_click);
+            //   })
+            // }
+            recur_toggle.toggle_ele.parent().slideFadeIn(0);
+            attr_ele.slideFadeOut(0);
+            schedule.edit_recur = 'all';
+          }, attrs_only = function() {
+            recur_toggle.toggle_ele.parent().slideFadeOut(0);
+            attr_ele.slideFadeIn(0);
+          }, show_modal = function () { unblur(); blurTop(modal) };
+        if ($('#RecurEditOptions').dne()) {
+          schedule.recurrence_only_btn = new Features.Button({text: 'edit recurring options', class_list: 'purple70 xsmall', css: {margin:'0.1em'}, 
+            action: function(){ recur_only(); show_modal(); }
+          });
+          schedule.recur_options = new Features.OptionBox({id:'RecurEditOptions',header:header_str,header_html_tag:'h2'});
+          schedule.recur_options.add_info(`<h3>${recur_str_middle}</h3>`).add_info(schedule.recurrence_only_btn.ele);
+          schedule.recur_options.add_button_info(`<h2 class="pink bold">Edit Time, Services, or Practictioner</h2>`);
+          schedule.recur_options.add_button({text:'this event only',
+            action:function(){
+              schedule.edit_recur = 'this';
+              named('date').value = LUX.From.js(schedule.edit_event.start).date_num;
+              attrs_only(); show_modal();
+            }});
+          schedule.recur_options.add_button({text:'this and future events', class_list:'pink70 xsmall',
+            action:function(){
+              let event = schedule.edit_event;
+              schedule.edit_recur = 'future';
+              named('date').value = LUX.From.js(event.start).date_num;
+              named('date').disable({tooltip:{message:'Editing multiple dates, date change disabled'}});
+              attrs_only(); show_modal();
+            }});
+          schedule.recur_options.add_button({text:'all events', class_list:'pink70 xsmall',
+            action:function(){
+              schedule.edit_recur = 'all';
+              named('date').disable({tooltip:{message:`'Date' disabled since you are editing all occurences of this event`}});
+              attrs_only(); show_modal();
+            }});
+          schedule.recur_options.add_button({text:'cancel',class_list:'cancel xsmall',action:unblurAll});
+        } else {
+          schedule.recur_options.reset_header(header_str);
+          schedule.recur_options.reset_info(`<h3>${recur_str_middle}</h3>`).add_info(schedule.recurrence_only_btn);
+        }
+        blurTop($('#RecurEditOptions'));
+      } else {
+        recur_toggle.reset(0);
+        if (Appointment.editing.attr_list.recurring_id) {
+          let related = schedule.model_find_related(schedule.edit, true), str = '';
+          recur_toggle.enable({message:'<b>This will create another recurring rule.</b><br>',message_tag:'h4'});
+          recur_toggle.message_enable.append('Existing rules:<ul></ul>');
+          let list = recur_toggle.message_enable.find('ul').css({listStyle:'inside'});
+          log({related});
+          related.forEach(m => list.append($(`<li>${m.description.Recurring}</li>`).css({marginLeft:'5px'})) );
+        }
+        schedule.edit_recur = null;
+        blurTop(schedule.modal.ele);
+      }
+    } else {
+      Appointment.editing = null;
+      Model.form_mode('create',schedule.modal.ele);
+      blurTop(schedule.modal.ele);
+      header.text('New Appointment');
+      recur_toggle.reset(0);
+      if (options.fill) {
+        let answers = Forms.Answer.get_all_within(schedule.modal.ele,false), named = function(name) {return Forms.Answer.find(answers, {name})};
+        answers.forEach(answer => answer.value = null);
+        for (let attr in options.fill) {named(attr).value = options.fill[attr]}        
+      }
+    }
+  }
+  static recurring_description (recurrence, start_lux, form = 'short') {
     let recur_obj = new Forms.FormResponse(recurrence), dates = recur_obj.response_for('SelectDates'), days = recur_obj.response_for('SelectWeekDays'), interval = recur_obj.response_for('HowOften'), until = recur_obj.response_for('EndDate'), desc = {};
     if (dates) {
       if (form == 'long') {

@@ -10,6 +10,12 @@ Object.defineProperties(LUX, {
 			if (dt && dt.invalid != null) throw new Error('Invalid Luxon obj From.js');
 			return dt;
 		},
+		rrule: js_date => {
+			let dt = js_date ? LUX.fromJSDate(js_date, {zone: 'utc'}) : null;
+			if (dt && dt.invalid != null) throw new Error('Invalid Luxon obj From.js');
+			let dtz = dt.setZone(tz, {keepLocalTime:true});
+			return dtz;
+		},
 		time: (time_str, format = 'h:mm a') => {
 			let dt = time_str ? LUX.fromFormat(time_str,format) : null;
 			if (dt && dt.invalid != null) throw new Error('Invalid Luxon obj From.time');
@@ -121,20 +127,18 @@ Object.defineProperties(LUX, {
 	}},
 	RRule: {value: {
 		Parse: (rrule) => {
+			if (!rrule) return null;
 			if (typeof rrule == 'string') rrule = rrulestr(rrule,{forceset:true});
-			log({rrule,tz});
 			rrule = (rrule instanceof RRuleSet) ? rrule : null;
 			if (!rrule) throw new Error('rrule not parseable to RRuleSet');
-			rrule.tzid(tz);
 			return rrule;
 		},
 		Upcoming: (options = {}, datetime = LUX.NOW) => {
 			if (!options.rrule) throw new Error('rrule not given for Upcoming');
-			let rrule = LUX.RRule.Parse(options.rrule), limit = options.limit || 3, dates = [], working_datetime = datetime.rrule, dtstart = LUX.From.js(rrule.dtstart()), offset_start = dtstart ? dtstart.offset : 0;
+			let rrule = LUX.RRule.Parse(options.rrule), limit = options.limit || 3, dates = [], working_datetime = datetime.rrule;
 			while (dates.length < limit && working_datetime) {
-				log({working_datetime,dtstart,rrule}, LUX.From.js(working_datetime).toISO());
 				working_datetime = rrule.after(working_datetime);
-				if (working_datetime) dates.push(LUX.From.js(working_datetime));
+				if (working_datetime) dates.push(LUX.From.rrule(working_datetime));
 			}
 			return dates;
 		},
@@ -143,12 +147,23 @@ Object.defineProperties(LUX, {
 			let rrule = LUX.RRule.Parse(options.rrule), limit = options.limit || 3, dates = [], working_datetime = datetime.rrule;
 			while (dates.length < limit && working_datetime) {
 				working_datetime = rrule.before(working_datetime);
-				if (working_datetime) dates.push(LUX.From.js(working_datetime));
+				if (working_datetime) dates.push(LUX.From.rrule(working_datetime));
 			}
 			return dates;
 		},
-		Merge: (set_to_return, set_to_merge) => {
-
+		Merge: (rrule_array) => {
+			rrule_array = rrule_array.map(r => LUX.RRule.Parse(r));
+			let rrule_set = rrule_array.shift();
+			while (rrule_set === null) { rrule_set = rrule_array.shift() }
+			while (rrule_array.length > 0) {
+				let next = rrule_array.shift();
+				while (next === null) { next = rrule_array.shift() }
+		    next._rrule.forEach(rule => rrule_set.rrule(rule));
+		    next._exrule.forEach(rule => rrule_set.exrule(rule));
+		    next._rdate.forEach(date => rrule_set.rdate(date));
+		    next._exdate.forEach(date => rrule_set.exdate(date));
+			}
+			return rrule_set;
 		}
 	}},
 	NOW: {
@@ -173,7 +188,7 @@ Object.defineProperties(LUX.prototype, {
 		get () { return this.toFormat('MMM d') }
 	},
 	rrule: {
-		get () { return this.toJSDate() }
+		get () { return new Date(Date.UTC(this.year, this.month - 1, this.day, this.hour, this.minute)) }
 	},
 	start_of_week: {
 		get () { return this.weekday === 7 ? this : this.startOf('week') }
