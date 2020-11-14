@@ -3,8 +3,6 @@ import {model, table, Models} from './models';
 import {DateTime as LUX} from 'luxon';
 import {Settings as LuxonSettings} from 'luxon';
 
-
-
 export const debug = {
   get y() {return debug.bool},
   get d() {return debug.depth},
@@ -1598,7 +1596,7 @@ export const system = {
       try{
         block.prependTo(ele).show();
         block.append(modal);
-        // system.blur.resize(ele, modal);
+        system.blur.resize(ele, modal);
         if (callback && typeof callback == 'function') setTimeout(callback, time+delay);
       }catch(error){
         log({error,options},'blur error');
@@ -1621,14 +1619,14 @@ export const system = {
       options.modal = modal;
       return system.blur.element(options);
     },
-    // resize: (ele, modal) => {
-      // log({ele,modal});
-      // if (ele.is('body')) return;
-      // let count = 0;
-      // let maxHeight = ele.parent().height() * 0.96 - 1;
-      // if (modal[0].scrollHeight > ele.height()) ele.height(modal[0].scrollHeight);
-      // else ele.css('height','auto');
-    // },
+    resize: (ele, modal) => {
+      log({ele,modal});
+      if (ele.is('body')) return;
+      let count = 0;
+      let maxHeight = ele.parent().height() * 0.96 - 1;
+      if (modal[0].scrollHeight > ele.height()) ele.height(modal[0].scrollHeight);
+      else ele.css('height','auto');
+    },
     modal: {
       loading: (options) => {
         let loadingColor = options.loadingColor || 'var(--darkgray97)', size = options.size || 4;

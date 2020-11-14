@@ -1,6 +1,7 @@
 import {system, practice, log, Features} from './functions';
 import {model, Models, class_map_linkable, linkable_lists} from './models';
 import {DateTime as LUX} from 'luxon';
+import * as ICD from '@whoicd/icd11ect';
 
 class FormEle {
   constructor(proxy) {
@@ -1507,6 +1508,11 @@ class Answer {
       let t = new_obj.options.units || null;
       this.ele.children('span').text(t);
     }
+  }
+  async icd_code () {
+    this.input = $(`<input>`).appendTo(this.ele);
+    this.options.linked_to = 'ICDCodes';
+    await this.linked_popup_create();
   }
   async imageclick () {
     let height_map = {small: '25em', medium: '35em', large: '45em', x_large: '50em'};
