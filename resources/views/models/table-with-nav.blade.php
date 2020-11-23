@@ -2,29 +2,28 @@
     // called by GET /{model}/display/list
 $nospaces = removespaces($model);
 $class = "App\\$nospaces";
-$ctrl = new $class;
-$models = title(pluralSpaces($model));
+// $ctrl = new $class;
+$displayName = method_exists($class,'displayName') ? $class::displayName() : title(singularSpaces($model));
+$models = plural($displayName);
 
-try{
-  $tableOptions = $class::tableValues();
-}catch(\Exception $e){
-  reportError($e, 'table with nav 13');
-  dd($e);
-} 
+try{ $tableOptions = $class::TableOptions(); }
+catch(\Exception $e){ $tableOptions = ['columns'=>['Name'=>'name']]; } 
 
-$tableOptions['createBtnText'] = isset($tableOptions['createBtnText']) ? $tableOptions['createBtnText'] : "Add New $model";
-$tableOptions['displayName'] = isset($tableOptions['displayName']) ? $tableOptions['displayName'] : "$model";
+// $tableOptions['createBtnText'] = isset($tableOptions['createBtnText']) ? $tableOptions['createBtnText'] : "Add New $displayName";
+$tableOptions['displayName'] = $displayName;
 $tableOptions['modal'] = false;
 
-$collection = method_exists($class,'defaultCollection') ? $class::defaultCollection() : $class::all();
+$collection = method_exists($class,'DefaultCollection') ? $class::DefaultCollection()->get() : $class::all();
 $tableOptions['collection'] = $collection;
 $tableOptions['tableType'] = 'primary';
+$tableOptions['tableId'] = $nospaces.'List';
+$tableOptions['index'] = isset($tableOptions['index']) ? $tableOptions['index'] : 'id';
 
 $uid = getUid($nospaces);
 
 $instance = $class::find($uid);
 $navOptions = [];
-if ($instance && method_exists($instance, 'nav_options')) $navOptions = $instance->nav_options();
+if ($instance && method_exists($instance, 'table_nav_options')) $navOptions = $instance->table_nav_options();
 elseif ($instance) {
   $navOptions = [];
 }

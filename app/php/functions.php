@@ -28,9 +28,6 @@ function notificationData($notification, $format = 'string'){
     $data[$attr] = is_array($value) ? json_encode($value) : $value;
   }
   $collection = collect($data);
-  // $str = implode(" ", array_values($collection->map(function($value,$attr){
-  //       return "data-$attr='$value'";
-  //     })->toArray()));
   $str = dataAttrStr($collection);
   return $format == 'string' ? $str : $collection->toJson();
 }
@@ -116,7 +113,7 @@ function handleError($exception,$location=null) {
     preg_match_all($re, $msg, $matches, PREG_SET_ORDER, 0);
     Log::info(compact('matches','msg'));
     $type = singular(title($matches[0][2])); $value = $matches[0][1]; $attr = $matches[0][3];
-    $error = ['header' => "Duplicate $type",'message' => title($attr)." '$value' is already taken. Please try another $attr.", 'attr' => $attr];
+    $error = ['header' => "Duplicate ".title(singularSpaces($type)),'message' => title($attr)." '$value' already exists. Please try another $attr.", 'attr' => $attr];
   } elseif ($msg == 'no changes') {
     $error = ['header' => 'Error', 'message' => 'No changes were made.'];
   } else{
@@ -286,7 +283,7 @@ function handleError($exception,$location=null) {
 
 // Array related functions
 
-  function randomElement($array){
+  function random($array){
     return Arr::random($array);
   }
   function addTo(&$addToArray,$keyValueArray){
@@ -296,6 +293,10 @@ function handleError($exception,$location=null) {
   }
   function get($array, $key, $default = null) {
     return Arr::get($array,$key,$default);
+  }
+  function smart_merge(&$array1, $array2) {
+    $array1 = array_unique(array_merge($array1, $array2));
+    if (is_numeric(array_keys($array1)[0])) $array1 = array_values($array1);
   }
   function set(&$array, $key, $value) {
     try{
@@ -624,10 +625,21 @@ function handleError($exception,$location=null) {
   }
 
 // Model related functions
+  function isCollection($var) { return $var instanceof Illuminate\Database\Eloquent\Collection; }
+  function getInitial($instance,$attr) {
+    if ($instance == null) return null;
+    if (method_exists($instance, $attr)) {
+      $rel = $instance->$attr;
+      if (isCollection($rel)) $value = json_encode($rel->map(function($next){return $next->getKey();})->all());
+      else $value = $rel->getKey();
+    } else $value = $instance->$attr;
+    return $value;
+  }
   function basicList($model, $columns = ['name','uid']){
     $model = removespaces(title(unreplacespaces($model)));
     $class = "App\\$model";
-    $list = method_exists($class,'defaultCollection') ? $class::defaultCollection() : $class::all();
+    if (method_exists($class, 'BasicListAdditions')) smart_merge($columns,$class::BasicListAdditions());
+    $list = method_exists($class,'DefaultCollection') ? $class::DefaultCollection()->get() : $class::all();
     $list = $list->map(function($item,$uid) use ($columns){
       $attrs = [];
       collect($columns)->each(function($column) use (&$attrs, $item){
@@ -640,12 +652,10 @@ function handleError($exception,$location=null) {
   }
   function successResponse($model) {
     $instance = getInstanceFromUid($model); $name = $instance->name;
-    // if (session('model_action') == 'create') $str = '"' . $instance->name . '" successfully added as a new '.title(unreplacespaces(snake($model))).'!';
-    // else $str = $instance->name . ' information updated';
     if (session('model_action') == 'create') $str = "\"$name\" successfully added!";
     else $str = "\"$name\" information updated";
     $response = "<h1 class='paddedBig'>$str</h1>";
-    $response .= "<div class='button pink' data-mode='click' data-target='".Str::kebab($model)."-index'>continue</div>";
+    $response .= "<div class='button pink' data-action='menu.reload'>continue</div>";
     return $response;
   }
   function usertype() {return session('usertype') !== null ? session('usertype') : Auth::user()->default_role;}
@@ -715,13 +725,6 @@ function handleError($exception,$location=null) {
     }
     echo "</div>";
   }
-  function isCollection($var){
-    if ($var instanceof Illuminate\Database\Eloquent\Collection){
-      return true;
-    }else{
-      return false;
-    }
-  }
   function getNameFromUid($model,$uid){
     $c = "App\\$model";
     $instance = $c::find($uid);
@@ -763,46 +766,46 @@ function handleError($exception,$location=null) {
     return $id;
   }
   function checkAliases($instance,$method){
-      if (isset($instance->connectedModelAliases) and isset($instance->connectedModelAliases[$method])){
-          $method = $instance->connectedModelAliases[$method];
-      }
-      return $method;
+    if (isset($instance->connectedModelAliases) and isset($instance->connectedModelAliases[$method])){
+        $method = $instance->connectedModelAliases[$method];
+    }
+    return $method;
   }
   function extractEmbeddedImages($string,$instance,$attr){
-      $embeddedImgs = [];
-      $newImgs = preg_match_all('/src="data:([^;.]*);([^".]*)" data-filename="([^"]*)"/', $string, $newImgMatches, PREG_PATTERN_ORDER);
-      $oldImgs = preg_match_all('/src="data:([^;.]*);([^".]*)" data-uuid="([^"]*)" data-filename="([^"]*)"/', $string, $oldImgMatches, PREG_PATTERN_ORDER);
-      if ($newImgs!==false && $newImgs > 0){
-          for ($x = 0; $x < count($newImgMatches[1]); $x++){
-              $uuid = uuid();
-              $fullMatch = $newImgMatches[0][$x];
-              $mimeType = $newImgMatches[1][$x];
-              $dataStr = $newImgMatches[2][$x];
-              $fileName = $newImgMatches[3][$x];
-              $embedStr = 'src="%%EMBEDDED:'.$uuid.'%%"';
-              // array_push($embeddedImgs,[$uuid,$mimeType,$fileName,$dataStr]);
-              array_push($embeddedImgs,$uuid);
-              $string = str_replace($fullMatch,$embedStr,$string);
+    $embeddedImgs = [];
+    $newImgs = preg_match_all('/src="data:([^;.]*);([^".]*)" data-filename="([^"]*)"/', $string, $newImgMatches, PREG_PATTERN_ORDER);
+    $oldImgs = preg_match_all('/src="data:([^;.]*);([^".]*)" data-uuid="([^"]*)" data-filename="([^"]*)"/', $string, $oldImgMatches, PREG_PATTERN_ORDER);
+    if ($newImgs!==false && $newImgs > 0){
+        for ($x = 0; $x < count($newImgMatches[1]); $x++){
+            $uuid = uuid();
+            $fullMatch = $newImgMatches[0][$x];
+            $mimeType = $newImgMatches[1][$x];
+            $dataStr = $newImgMatches[2][$x];
+            $fileName = $newImgMatches[3][$x];
+            $embedStr = 'src="%%EMBEDDED:'.$uuid.'%%"';
+            // array_push($embeddedImgs,[$uuid,$mimeType,$fileName,$dataStr]);
+            array_push($embeddedImgs,$uuid);
+            $string = str_replace($fullMatch,$embedStr,$string);
 
-              $image = new Image;
-              $image->id = $uuid;
-              $image->mime_type = $mimeType;
-              $image->file_name = $fileName;
-              $image->data_string = $dataStr;
-              $image->save();
-          }
-      }
-      if ($oldImgs!==false && $oldImgs > 0){
-          for ($x = 0; $x < count($oldImgMatches[1]); $x++){
-              $fullMatch = $oldImgMatches[0][$x];
-              $uuid = $oldImgMatches[3][$x];
-              $embedStr = 'src="%%EMBEDDED:'.$uuid.'%%"';
-              $string = str_replace($fullMatch,$embedStr,$string);
-          }
-      }
-      $instance->$attr = $string;
-      $returnVal = ($embeddedImgs == []) ? false : $embeddedImgs;
-      return $returnVal;
+            $image = new Image;
+            $image->id = $uuid;
+            $image->mime_type = $mimeType;
+            $image->file_name = $fileName;
+            $image->data_string = $dataStr;
+            $image->save();
+        }
+    }
+    if ($oldImgs!==false && $oldImgs > 0){
+        for ($x = 0; $x < count($oldImgMatches[1]); $x++){
+            $fullMatch = $oldImgMatches[0][$x];
+            $uuid = $oldImgMatches[3][$x];
+            $embedStr = 'src="%%EMBEDDED:'.$uuid.'%%"';
+            $string = str_replace($fullMatch,$embedStr,$string);
+        }
+    }
+    $instance->$attr = $string;
+    $returnVal = ($embeddedImgs == []) ? false : $embeddedImgs;
+    return $returnVal;
   }
 
   function embeddedImgsToDataSrc($instanceWithImgs,$model){
@@ -859,66 +862,66 @@ function handleError($exception,$location=null) {
             return [$newMsgArr,$dataArr];
   }
 
-  // FUCK YEAH
-  // this function takes any string with %attr_names% and replaces them with values
-  // similarly takes any string with this format
-  //  
-  //       conditionalAttr     !!     any string including %attr_names%     !!      any string including %attr_names%
-  //
-  // and retrieves the first value if the 1st argument exists and is not null
-  //
-  //       OR simply any string with %attr_names%
-  // 
-  function complexAttr($str,$instance,$hasThrough = null){
-    if ($hasThrough == null){
-      if (strpos($str,"!!") > -1){
-        $arr = explode("!!",$str);
-        $conditionalAttr = $arr[0];
-        $true = $arr[1];
-        $false = $arr[2];
-        $str = (isset($instance->$conditionalAttr) and $instance->$conditionalAttr != null) ? $true : $false;
-      }
-      if (strpos($str,"%") > -1){
-        $attr = "";
-        $arr = explode("%",$str);
-        for ($x = 0; $x < count($arr); $x++){
-          if (isOdd($x)){
-            $attrName = $arr[$x];
-            $attr .= $instance->$attrName;
-          }
-          if (isEven($x)){
-            $attr .= $arr[$x];
-          }
-        }
-      }else{
-        $attr = $instance->$str;
-      }
-    }else{
-      if (strpos($str,"!!") > -1){
-        $arr = explode("!!",$str);
-        $conditionalAttr = $arr[0];
-        $true = $arr[1];
-        $false = $arr[2];
-        $str = (isset($instance->$hasThrough->$conditionalAttr) and $instance->$hasThrough->$conditionalAttr != null) ? $true : $false;
-      }
-      if (strpos($str,"%") > -1){
-        $attr = "";
-        $arr = explode("%",$str);
-        for ($x = 0; $x < count($arr); $x++){
-          if (isOdd($x)){
-            $attrName = $arr[$x];
-            $attr .= $instance->$hasThrough->$attrName;
-          }
-          if (isEven($x)){
-            $attr .= $arr[$x];
-          }
-        }
-      }else{
-        $attr = $instance->$hasThrough->$str;
-      }
-    }
-    return $attr;
-  }
+  // // FUCK YEAH
+  // // this function takes any string with %attr_names% and replaces them with values
+  // // similarly takes any string with this format
+  // //  
+  // //       conditionalAttr     !!     any string including %attr_names%     !!      any string including %attr_names%
+  // //
+  // // and retrieves the first value if the 1st argument exists and is not null
+  // //
+  // //       OR simply any string with %attr_names%
+  // // 
+  // function complexAttr($str,$instance,$hasThrough = null){
+  //   if ($hasThrough == null){
+  //     if (strpos($str,"!!") > -1){
+  //       $arr = explode("!!",$str);
+  //       $conditionalAttr = $arr[0];
+  //       $true = $arr[1];
+  //       $false = $arr[2];
+  //       $str = (isset($instance->$conditionalAttr) and $instance->$conditionalAttr != null) ? $true : $false;
+  //     }
+  //     if (strpos($str,"%") > -1){
+  //       $attr = "";
+  //       $arr = explode("%",$str);
+  //       for ($x = 0; $x < count($arr); $x++){
+  //         if (isOdd($x)){
+  //           $attrName = $arr[$x];
+  //           $attr .= $instance->$attrName;
+  //         }
+  //         if (isEven($x)){
+  //           $attr .= $arr[$x];
+  //         }
+  //       }
+  //     }else{
+  //       $attr = $instance->$str;
+  //     }
+  //   }else{
+  //     if (strpos($str,"!!") > -1){
+  //       $arr = explode("!!",$str);
+  //       $conditionalAttr = $arr[0];
+  //       $true = $arr[1];
+  //       $false = $arr[2];
+  //       $str = (isset($instance->$hasThrough->$conditionalAttr) and $instance->$hasThrough->$conditionalAttr != null) ? $true : $false;
+  //     }
+  //     if (strpos($str,"%") > -1){
+  //       $attr = "";
+  //       $arr = explode("%",$str);
+  //       for ($x = 0; $x < count($arr); $x++){
+  //         if (isOdd($x)){
+  //           $attrName = $arr[$x];
+  //           $attr .= $instance->$hasThrough->$attrName;
+  //         }
+  //         if (isEven($x)){
+  //           $attr .= $arr[$x];
+  //         }
+  //       }
+  //     }else{
+  //       $attr = $instance->$hasThrough->$str;
+  //     }
+  //   }
+  //   return $attr;
+  // }
 
 // Bug functions
   function reportBug($description, $details = null, $category = null, $location = null, User $user = null){
@@ -963,21 +966,5 @@ function handleError($exception,$location=null) {
     $active = Storage::disk('local')->get('active.json');
     $active = json_decode($active,true);
     return $active[$key];
-  }
-  function practiceConfig($path){
-    throw new Exception('using practiceConfig');
-  }
-  function addToConfig($configName,$key,$value){
-    throw new Exception('using addToConfig');
-  }
-  function removeFromConfig($configName,$key){
-    throw new Exception('using removeFromConfig');
-  }
-  function writeConfig($newData,$fileName){
-    throw new Exception('using writeConfig');
-  }
-
-  function getPracticeId(Request $request){
-    throw new Exception('using getPracticeId');
   }
 ?>

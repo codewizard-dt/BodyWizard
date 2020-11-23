@@ -1,7 +1,19 @@
-import {log, system} from '../functions';
-import {model} from '../models';
+import {log, system, menu} from '../functions';
+import {forms, Forms} from '../forms';
+import {model, table, Models} from '../models';
+// import {model} from '../models';
 import {DateTime as LUX} from 'luxon';
 
+Object.defineProperties(Array, {
+  intersect: {value: function(){
+    let arrays = [...arguments], working_array = arrays.shiftNotNull();
+    while (arrays.notEmpty()) {
+      let next_array = arrays.shiftNotNull();
+      if (next_array) working_array = working_array.filter(item => next_array.includes(item));
+    }
+    return working_array;
+  }}
+});
 Object.defineProperties(Array.prototype, {
   isSolo: {value: function(){return this.length === 1}},
   isEmpty: {value: function(){return this.length === 0}},
@@ -22,6 +34,11 @@ Object.defineProperties(Array.prototype, {
       if (!this.includes(value)) this.push(value);
     }
     return this.length != count;
+  }},
+  shiftNotNull: {value: function() {
+    let value = undefined;
+    do { value = this.shift() } while (value === null);
+    return value;
   }}
 });
 Object.defineProperties(Object.prototype, {
@@ -111,6 +128,9 @@ Object.defineProperties(String.prototype, {
       return match.toUpperCase();
     });
   }},
+  firstToUpper: {value: function(){
+    return this.charAt(0).toUpperCase() + this.slice(1);
+  }},
   camel: {value: function(){
     return this[0].toLowerCase() + this.toTitleCase().substring(1).replace(/ /g, '');
   }},
@@ -131,8 +151,7 @@ Object.defineProperties(String.prototype, {
     return add_spaces ? str.addSpacesToKeyString() : str;
   }},
   addSpacesToKeyString: {value: function(){
-    let matches = this.match(/[A-Z]/g), str = this;
-    if (matches) matches.forEach((match,m) => {str = str.replace(match,`${m == 0 ? '' : ' '}${match}`)});
+    let str = this.trim().replace(/[A-Z]/g, (letter,index) => (index == 0 || this.charAt(index - 1).match(/[A-Z]/)) ? letter : ` ${letter}`);
     return str;
   }},
   toBool: {value: function(truthy = undefined, falsey = undefined){
@@ -141,6 +160,7 @@ Object.defineProperties(String.prototype, {
   json_if_valid: {value: function(){return system.validation.json(this.toString())}},  
   to_class_obj: {value: function(attr_list){
     let FoundClass = Models[this] || Features[this] || null;
+    if (!FoundClass) log({error: new Error(`unable to create obj from ${this}, check Models export `)});
     return FoundClass ? new FoundClass(attr_list) : null;
   }},
   get_obj_val: {value: function(obj = null, ok_if_missing = false){
@@ -150,15 +170,14 @@ Object.defineProperties(String.prototype, {
       if (first == 'system') obj_val = system;
       else if (first == 'forms') obj_val = forms;
       else if (first == 'model') obj_val = model;
+      else if (first == 'menu') obj_val = menu;
       else obj_val = obj ? obj[first] : Models[first] || Forms[first] || Features[first] || system[first] || window[first];
       if (!obj_val) throw new Error(`${first} not given or found in window or class_map`);
       if (obj_val) {
         while (split.length > 0) {
           let next = split.shift();
           obj_val = obj_val[next];
-          if (obj_val == model.actions) {
-            obj_val = model.actions.bind(null,split.shift());
-          }
+          if (obj_val == model.actions) { obj_val = model.actions.bind(null,split.shift()); }
         }
       }
       if (obj_val == undefined) throw new Error(`obj_val '${this}' not found`);

@@ -52,7 +52,7 @@ class RefreshUserTables extends Command
 
         $practice = Practice::find($practiceId);
         $practice->reconnectDB();
-        RefreshTables::clearUserTables();
+        RefreshTables::truncateUserTables();
         $this->info("User tables cleared");
         RefreshTables::createDefaultUser();
         $this->info("Default Practitioner created");

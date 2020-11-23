@@ -12,7 +12,7 @@ class Submission extends Model
 {
     use Encryptable;
     //
-    public $tableValues;
+    public $TableOptions;
     public $optionsNavValues;
     public $connectedModels;
 
@@ -25,7 +25,7 @@ class Submission extends Model
         $this->connectedModels = [  
         ];
     }
-    static function tableValues(){
+    static function TableOptions(){
         $usertype = \Auth::user()->user_type;
         $commonArr = [
             'tableId' => 'SubmisisonList',

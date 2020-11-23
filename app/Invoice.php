@@ -23,7 +23,7 @@ class Invoice extends Model
   protected $hidden = ['autosave'];
   protected $fillable = ['invoiced_to_user_id','created_by_user_id','appointment_id','notes','autosave','total_charge','settled_at'];
 
-  public static function tableValues(){
+  public static function TableOptions(){
     $usertype = Auth::user()->user_type;
     $commonArr = [
       'tableId' => 'InvoiceList',

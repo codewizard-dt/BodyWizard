@@ -2,8 +2,8 @@
 use Illuminate\Support\Carbon;
 
 $chartnote = $instance;
-$appt = $chartnote ? $chartnote->appointment : \App\Appointment::find($request->where_array['appointment_id']);
-$date = Carbon::parse($request->where_array['appointment_datetime']);
+// $appt = $chartnote ? $chartnote->appointment : \App\Appointment::find($request->where_array['appointment_id']);
+// $date = Carbon::parse($request->where_array['appointment_datetime']);
 
 ?>
 

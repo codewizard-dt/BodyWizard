@@ -6,7 +6,7 @@
 
     // setting table options and getting collection
     try{
-        $tableOptions = $class::tableValues();
+        $tableOptions = $class::TableOptions();
     }catch(\Exception $e){
         reportError($e, 'table modal 19');
         dd($e);

@@ -16,35 +16,22 @@ class Form extends Model
 {
   use HasSettings;
 
-  protected $fillable = [
-    'form_id','version_id','form_name','questions','settings','has_submissions','full_json','locked','current','sections'
-  ];
   protected $primaryKey = 'form_uid';
   protected $visible = ['form_uid','form_id','version_id','form_name','settings','sections'];
-
-  public $tableValues;
-  public $optionsNavValues;
-  public $nameAttr;
-  public $connectedModels;
+  protected $guarded = [];
 
   protected $casts = [
     'sections' => 'array',
     'settings' => 'array',
-    'full_json' => 'json',
+    // 'full_json' => 'json',
   ];
 
-  public function __construct(){
-    $this->nameAttr = 'form_name';
-    $this->connectedModels = [
-      ['Service','many','morphToMany']
-    ];
+  public static function DefaultCollection(){
+    $forms = Form::whereNull('settings->system')->orWhere('settings->system','false');
+    if (Auth::user()->is_superuser) $forms = Form::orWhere('settings->system','true');
+    return $forms;
   }
-  public static function defaultCollection(){
-    if (Auth::user()->is_superuser) $list = Form::all();
-    else $list = Form::whereNull('settings->system')->orWhere('settings->system','false')->get();
-    return $list;
-  }
-  public static function tableValues(){
+  public static function TableOptions(){
     $usertype = Auth::user()->user_type;
     $commonArr = [
       'tableId' => 'FormList',
@@ -162,7 +149,7 @@ class Form extends Model
   }
   public static function nextFormId(){
     $max = Form::orderBy('form_id','desc')->limit(1)->get()->first();
-    $next = $max->form_id + 1;
+    $next = $max ? $max->form_id + 1 : 1;
     return $next;
   }
   public function nextVersionId(){
@@ -171,7 +158,7 @@ class Form extends Model
     return $next;
   }
 
-  public function nav_options() {
+  public function table_nav_options() {
     // defines any additional non-standard nav options
     // buttons, extraClasses, dataAttr
     $data = [

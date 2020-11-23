@@ -23,7 +23,7 @@ class Bug extends Model
   $this->connectedModels = [];
 }
 
-static function tableValues(){
+static function TableOptions(){
   return [
     'tableId' => 'BugList',
     'index' => 'id',

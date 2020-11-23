@@ -6,14 +6,14 @@ use Illuminate\Database\Eloquent\Model;
 
 class Attachment extends Model
 {
-    public $tableValues;
+    public $TableOptions;
     public $optionsNavValues;
     public $connectedModels;
     public $connectedModelAliases;
     public $nameAttr;
 
     public function __construct(){
-	    $this->tableValues = array(
+	    $this->TableOptions = array(
 	    	'tableId' => 'AttachmentList',
 	    	'index' => 'id',
             'model' => "Attachment",

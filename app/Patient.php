@@ -13,7 +13,7 @@ class Patient extends Model
   use TrackChanges;
   use SoftDeletes;
 
-  public $tableValues;
+  public $TableOptions;
   public $optionsNavValues;
   public $connectedModels;
   public $nameAttr;
@@ -29,26 +29,15 @@ class Patient extends Model
   protected $visible = ['user_id','name','email','username','date_of_birth','roles'];
   // protected $appends = ['name'];
 
-  public function __construct($attributes = []){
-    parent::__construct($attributes);
-    $this->auditOptions = [
-      'audit_table' => 'patients_audit',
-      'includeFullJson' => false
-    ];
-  }
-
   public static function returnUserIds($array){
     $userIds = Patient::find($array)->map(function($patient){
       return $patient->user->id;
     })->toArray();
     return $userIds;
   }
-  public static function tableValues(){
+  public static function TableOptions(){
     return array(
-      'tableId' => 'PatientList',
       'index' => 'id',
-      'model' => "Patient",
-      // 'with' => 'appointments',
       'columns' => [
         'Name' => 'name',
         'Phone' => 'phone',
@@ -56,49 +45,26 @@ class Patient extends Model
       ],
       'hideOrder' => ['Email','Phone','Last Seen'],
       'filters' => [],
-      'extraBtns' => [],
+      'extraBtns' => [
+        // 'manage categories' => '/ComplaintCategory/index'
+      ],
       'extraData' => [],
     );
   }
-  public function nav_options(){
+  public function table_nav_options(){
     return [];
   }
-  // public function navOptions(){
-  //   $dataAttrs = [
-  //     // [
-  //     //   'key' => 'isNewPatient',
-  //     //   'value' => $this->isNewPatient()
-  //     // ],
-  //   ];
-  //   $buttons = [
-  //     [
-  //       'text' => 'edit info',
-  //       'destination' => 'edit'
-  //     ],
-  //     [
-  //       'text' => 'portal settings',
-  //       'destination' => 'settings'
-  //     ],
-  //   ];
-  //   $extraClasses = "";
-  //   $data = [
-  //     'dataAttrs' => $dataAttrs,
-  //     'extraClasses' => $extraClasses,
-  //     'buttons' => $buttons,
-  //     'instance' => $this,
-  //     'model' => getModel($this)
-  //   ];
-  //   return $data;
-  // }
   public function modelDetails(){
-    $upcoming = $this->upcoming_appointments;
-    $recent = $this->prev_appointments;
+    // $upcoming = $this->upcoming_appointments;
+    // $recent = $this->prev_appointments;
+    $complaints = $this->complaints;
     return [
       'Legal Name' => $this->legal_name,
-      'Pronouns' => $this->pronouns,
+      'Pronouns' => $this->pronouns != null ? $this->pronouns : 'not given',
       'Phone' => $this->phone,
       'Email' => $this->email,
       'Username' => $this->username,
+      'Chief Complaints' => $complaints->count() > 0 ? $this->complaints->count() : 'none',
     ];
   }
   public function detailClick(){
@@ -114,6 +80,17 @@ class Patient extends Model
     else if ($this->user->getAttribute($key)) return $this->user->getAttribute($key);
     else return null;
   }
+
+  public function complaints() {
+    return $this->morphToMany('App\Complaint','complaintable');
+  }
+  public function appointments(){
+    return $this->morphToMany('App\Appointment','appointmentable');
+  }
+  public function submissions(){
+    return $this->hasMany("App\Submission");
+  }
+
 
   // public function getNameAttribute(){ return $this->user->name; }
 
@@ -186,14 +163,4 @@ class Patient extends Model
   //   $lastAppt = $this->appointments()->where("status->completed")->orderBy("date_time","desc")->get();
   //   return $lastAppt;
   // }
-  public function moreOptions(){
-  }
-
-
-  public function appointments(){
-    return $this->morphToMany('App\Appointment','appointmentable');
-  }
-  public function submissions(){
-    return $this->hasMany("App\Submission");
-  }
 }

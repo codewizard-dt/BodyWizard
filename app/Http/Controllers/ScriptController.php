@@ -45,8 +45,8 @@ class ScriptController extends Controller
       $model = "Treatment Plan";
     }
 
-    if (method_exists($ctrl,'tableValues')){
-      $options = $class::tableValues()['optionsNavValues'];
+    if (method_exists($ctrl,'TableOptions')){
+      $options = $class::TableOptions()['optionsNavValues'];
     }else{
       $options = $ctrl->optionsNavValues;
     }
@@ -64,7 +64,7 @@ class ScriptController extends Controller
     try{
       $instance = $class::findOrFail($uid);
       $navOptions = [];
-      if ($instance && method_exists($instance, 'nav_options')) $navOptions = $instance->nav_options();
+      if ($instance && method_exists($instance, 'table_nav_options')) $navOptions = $instance->table_nav_options();
       return view('models.navOptions.options-nav',array_merge($navOptions,['instance'=>$instance]));
     }catch(\Exception $e){
       reportError($e,'scriptcontroller 106');
@@ -98,22 +98,34 @@ class ScriptController extends Controller
     try{
       if ($uid != null){
         $instance = $class::findOrFail($uid);
+        $none_updated = true;
+        if ($relationships) {
+          foreach ($relationships as $rel => $info) {
+            $uids = $info['uids']; $method = $info['method'];
+            if ($method == 'sync') $sync = $instance->$rel()->sync($uids);
+            else throw new \Exception("Relationship method ($method) not defined");
+            if ($sync['attached'] || $sync['detached'] || $sync['updated']) $none_updated = false;
+          }
+        } else $none_updated = false;
         $instance->fill($columns);
-        if (!$instance->isDirty()) throw new \Exception('no changes');
+        if (!$instance->isDirty() && $none_updated) throw new \Exception('no changes');
         $instance->update($columns);
         session(['model_action' => 'update']);
       }else{
-        $instance = $class::create($columns);
+        Log::info($columns);
+        $instance = new $class();
+        $instance->fill($columns);
+        $instance->save();
         session(['model_action' => 'create']);
-      }
-
-      if ($relationships) {
-        foreach ($relationships as $rel => $info) {
-          $uids = $info['uids']; $method = $info['method'];
-          if ($method == 'sync') $instance->$rel()->sync($uids);
-          else throw new \Exception("Relationship method ($method) not defined");
+        if ($relationships) {
+          foreach ($relationships as $rel => $info) {
+            $uids = $info['uids']; $method = $info['method'];
+            if ($method == 'sync') $instance->$rel()->sync($uids);
+            else throw new \Exception("Relationship method ($method) not defined");
+          }
         }
       }
+
 
       setUid($model, $instance->getKey());
 
@@ -130,8 +142,9 @@ class ScriptController extends Controller
     $columns = $request->input('columns', null);
     $relationships = $request->input('relationships', null);
     $uid = $request->input('uid', null);
-    return $this->save($model, $columns, $relationships, $uid);
-    // return $response;
+    $save_result = $this->save($model, $columns, $relationships, $uid);
+    $list_update = basicList($model);
+    return compact('save_result','list_update');
   }
   public function save_multi (Request $request) {
     try {
@@ -168,8 +181,7 @@ class ScriptController extends Controller
   public function create_or_edit ($model, Request $request) {
     $class = "App\\$model"; $collection = null;
     try {
-      $where_array = $request->where_array;
-      $collection = $class::where($where_array)->get();
+      $collection = $class::where($request->where)->get();
       if ($collection->count() > 1) throw new \Exception('more than one found');
       $instance = $collection->count() == 1 ? $collection->first() : null;
       return view('models.create.template',compact('model','instance','request'));
@@ -177,7 +189,7 @@ class ScriptController extends Controller
       $error = handleError($e,'scriptcontroller retrieve_single');
       return compact('error');
     }
-    return $response;
+    // return $response;
   }
   public function edit($model, $uid, Request $request){
     try{

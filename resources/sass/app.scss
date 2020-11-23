@@ -8,9 +8,9 @@
 //@import '~bootstrap/scss/bootstrap';
 
 @import 'clear';
-@import 'style';
-@import 'forms';
 @import 'jquery.datepick';
 @import 'jquery.timepicker';
 @import 'ui.datepick';
-@import '@whoicd/icd11ect/style'
+@import '@whoicd/icd11ect/style';
+@import 'style';
+@import 'forms';

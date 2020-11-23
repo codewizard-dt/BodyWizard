@@ -3,65 +3,44 @@
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\HasSettings;
+
 
 class ServiceCategory extends Model
 {
-    //
-    // protected $fillable = [
-    //     'service_category_id','description'
-    // ];
 
-    public $tableValues;
-    public $optionsNavValues;
-    public $optionsNav;
+  use HasSettings;
 
-    public function __construct(){
-	    $this->tableValues = array(
-	    	'tableId' => 'ServiceCategoryList',
-	    	'index' => 'id',
-            'model' => 'Service Category',
-            'destinations' => array("service-categories-edit","service-categories-delete","service-categories-create"),
-            'btnText' => array("edit","delete","create new category"),
-	    	'columns' => array(
-                        array(
-                            "label" => 'Service Category',
-                            "className" => 'name',
-                            "attribute" => 'name'
-                        ),
-                        array(
-                            "label" => 'Description',
-                            "className" => 'description',
-                            "attribute" => 'description'
-                        )
-                    ),
-	    	'hideOrder' => "description",
-	    	'filtersColumn' => array(),
-	    	'filtersOther' => array(),
-            'destinations' => array(
-                'edit','delete','service-categories-create'
-            ),
-            'btnText' => array(
-                'edit','delete','create new category'
-            ),
-            'extraBtns' => [
-                ['back to services',"/Service/index"]
-            ]
-        );
-        $this->optionsNavValues = array(
-            'model' => "ServiceCategory",
-            'destinations' => [
-                'edit','delete','create'
-            ],
-            'btnText' => [
-                'edit','delete','create new category'
-            ]
-        );
-	}
+  protected $guarded = [];
+  protected $visible = ['name','description'];
 
-    public function moreOptions(){
+  static public function TableOptions() {
+    $filters = [];
+    // set($filters, 'phone.input', new_input(
+    //   'checkboxes',
+    //   ['list', 'preLabel'], 
+    //   [['512','213'], 'Area Code:']
+    // ), 'phone.attribute', 'phone');
+    return [
+      'tableId' => 'ServiceCategoryList',
+      'index' => 'id',
+      'model' => "ServiceCategory",
+      'columns' => [
+        'Category' => 'name',
+        'Description' => 'description',
+      ],
+      'hideOrder' => [],
+      'filters' => $filters,
+      'extraBtns' => [
+        'back to services' => '/Service/index'
+      ],
+    ];
+  }
+  static public function DefaultCollection() {
+    return ServiceCategory::orderBy('settings->display->order')->orderBy('name');
+  }
 
-    }
-    public function services(){
-        return $this->hasMany('App\Service');
-    }
+  public function services(){
+    return $this->hasMany('App\Service');
+  }
 }

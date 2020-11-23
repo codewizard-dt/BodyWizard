@@ -41,6 +41,18 @@ class RefreshTables extends Model
             return $e;
     	}
     }
+    public static function truncateUserTables(){
+        try{
+            DB::table('users')->truncate();            
+            DB::table('patients')->truncate();            
+            DB::table('practitioners')->truncate();            
+            DB::table('staff_members')->truncate();            
+            return true;
+        }catch(\Exception $e){
+            reportError($e,'RefreshTables');
+            return $e;
+        }
+    }
     public static function clearApptTables(){
         try{
             Invoice::where('appointment_id','!=',null)->delete();
@@ -135,6 +147,12 @@ class RefreshTables extends Model
         $patients = factory(User::class,10)->states('patient')->create();
         $practitioners = factory(User::class,2)->states('practitioner')->create();
         $staffmembers = factory(User::class,2)->states('staff member')->create();
+    }
+    public static function seedComplaintTables() {
+        $cat_ids = ComplaintCategory::select('id')->get()->map(function($cat){return $cat->id;})->toArray();
+        foreach ($cat_ids as $cat_id) {
+            $complaints = factory(Complaint::class,3)->create(['complaint_category_id'=>$cat_id]);
+        }
     }
     public static function seedApptTables($apptCount){
         $apptCount = (int)$apptCount;

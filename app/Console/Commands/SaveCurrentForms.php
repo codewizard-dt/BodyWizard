@@ -41,7 +41,8 @@ class SaveCurrentForms extends Command
      */
     public function handle()
     {
-        $forms = DB::table('forms')->get()->all();
+        // $forms = DB::table('forms')->where('settings->system','true')->select('form_name','settings','sections')->get()->all();
+        $forms = \App\Form::where('settings->system','true')->select('form_name','settings','sections')->get()->all();
         Storage::disk('local')->put('/basicEhr/forms.json',json_encode($forms));
         $this->info("forms saved");
     }

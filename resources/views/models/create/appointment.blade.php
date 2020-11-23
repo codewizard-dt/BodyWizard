@@ -20,6 +20,8 @@ $inputs = [];
   	['min','max','initial','step','units','preLabel','labelHtmlTag','labelCss','after_change_action'],
   	[0,600,0,1,'minutes','Duration','h2',['width'=>'100%','marginTop'=>'0.2em','color'=>'var(--purple)'],'Answer.hold']),
 );
+// $linkable_lists = [];
+// set($linkable_lists,'Patient', basicList('Patient'))
 ?>
 <div id="CreateAppointment" class='central large'>
 	<div class='body'>

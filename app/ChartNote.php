@@ -15,7 +15,7 @@ class ChartNote extends Model
   use Encryptable;
 
 
-  public $tableValues;
+  public $TableOptions;
   public $optionsNavValues;
   public $connectedModels;
   public $nameAttr;
@@ -41,7 +41,7 @@ class ChartNote extends Model
     return $response;
   }
   
-  static function tableValues(){
+  static function TableOptions(){
     return [
       'tableId' => 'ChartNoteList',
       'index' => 'id',

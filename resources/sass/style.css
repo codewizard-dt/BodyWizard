@@ -150,6 +150,7 @@ body {
   overflow-x: hidden;
   box-sizing: border-box;
   overflow-anchor: none;
+  overflow-wrap: break-word;
 }
 
 footer {
@@ -159,7 +160,7 @@ footer {
   background-color: var(--purple);
   font-family: Roboto;
   color: white;
-  margin-top: 1em;
+  /*margin-top: 1em;*/
   position: absolute;
   bottom:0;
   box-sizing: border-box;
@@ -578,6 +579,7 @@ a:hover {color:var(--pink);}
 .button.small {font-size: 0.9rem;}
 .button.xsmall {font-size: 0.8rem;}
 .button.xxsmall {font-size: 0.7rem;}
+.button.xxxsmall {font-size: 0.7rem; padding:0.5em; margin: 0.5em;}
 .button.purple {
   background-color: var(--purple);
   border-color: var(--purple);
@@ -1705,10 +1707,6 @@ a:hover {color:var(--pink);}
 }
 .blur .cancelX:hover{
   color: rgb(140,140,140);
-}
-body > .blur {
-  /*background-color: rgba(0,0,0,0.4) !important;*/
-  /*box-shadow: 0 0 20px 10px rgb(120,120,120) inset !important;*/
 }
 
 .blockable {

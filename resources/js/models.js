@@ -1,4 +1,3 @@
-// require ('./functions');
 import {system, practice, log, Features, menu} from './functions';
 import {forms, Forms} from './forms';
 
@@ -25,8 +24,8 @@ class ModelTable {
     this.rows.addHoverClassToggle();
 
     let filters = [];
-    init($('.filter_proxy').filter((f,filter) => $(filter).data('target') == ele.attr('id')),function(){
-      let filter = new Filter($(this));
+    init($('.filter').filter((f,filter) => $(filter).data('target') == ele.attr('id')),function(){
+      let filter = new Features.Filter($(this));
       filters.push(filter);
       fix_width(filter.ele);
     })
@@ -145,7 +144,7 @@ class ModelTable {
       $(this).addClass('active');
       blur(nav,'loading');
       await menu.fetch(`/options-nav/${ev.data.model}/${$(this).data('uid')}`, nav, true);
-      table.initialize.nav_options();
+      table.initialize.table_nav_options();
     }
   }
   selectModel(ev){
@@ -199,79 +198,16 @@ class ModelTable {
     if (modelTable.ele.is(':visible')) unblur();
   }
 }
-class Filter {
-  constructor(ele){
-    // log({ele});
-    this.ele = $(ele);
-    let data_attr = this.ele.data();
-    this.options = data_attr.options;
-    this.selector = data_attr.target;
-    this.ele.data('class_obj',this);
-    this.targets = $(`#${this.selector}`).exists() ? $(`#${this.selector}`) : $(`.${selector}`);
-    if (this.targets.dne()) throw new Error(`filter targets not found using selector: ${selector}`);
-    this.name = this.options.name || 'no_name';
-    this.type = data_attr.type || 'text';
-    this.item_tag = this.options.item_html_tag || 'div';
-    if (this.type == 'attribute') {
-      this.answer = this.ele.find('.answer').getObj();
-
-    }else if (this.type == 'text'){
-      this.answer = this.ele.find('.answer').getObj();
-    }
-    // log({filter:this});
-    this.ele.toggleClass('filter_proxy filter');
-  }
-
-  get items () {
-    let targets = this.targets, tag = this.item_tag, items = targets.find(tag).not('.no_filter');
-    log({items,item_tag:this.item_tag})
-    return items.exists() ? items : null;
-  }
-  get has_matches () {
-    let matches = null, search = this.search_values, type = this.type, items = this.items;
-    log({this:this});
-    if (search == null) {
-      matches = items;
-    } else if (items) {
-      let options = {className: this.name};
-      if (type == 'text') {
-        items.unmark(options);
-        items.mark(search,options);
-        matches = items.filter((i,item) => $(item).find('mark').exists());
-      } else if (type == 'attribute') {
-        let attribute = this.options.attribute;
-        matches = items.filter((i,item) => {
-          let value = $(item).data('filters')[attribute];
-          return Array.isArray(search) ? search.some(str => value.includes(str)) : value.includes(search);
-        });
-      }
-    }
-    log({matches,search});
-    this.matches = matches;
-    return matches && matches.exists();
-  }
-
-  update () {
-    this.search_values = this.answer.get();
-    if (this.has_matches) {
-      this.matches.show();
-      this.items.not(this.matches).hide();
-      this.targets.find(this.item_tag).filter('.no_match').hide();
-    } else {
-      this.items.hide();
-      this.targets.find(this.item_tag).filter('.no_filter').show();
-    }
-  }
-}
-
 class Model {
   constructor (attr_list, type) {
-    this.valid = attr_list ? true : false;
+    if (!attr_list) throw new Error('attr_list not provided to Model constructor');
+    else this.valid = true;
     this.attr_list = attr_list;
-    this.type = type;
+    this.type = type.toKeyString();
     if (this.attr_list.uid) {
       this.uid = this.attr_list.uid;
     }
+    log(this, `new ${type}`);
   }
 
   backup_attr_values (array) {
@@ -345,6 +281,7 @@ class Model {
   async edit () {
     if (!this.edit_unique) {
       await menu.fetch(`/edit/${this.type.toKeyString()}/${this.uid}`,'new_modal:EditModel');
+      Models[this.type.toKeyString()].editing = this;
     } else {
       await this.edit_unique();
     }
@@ -361,7 +298,7 @@ class Model {
   }
   async save (options = {}) {
     let type = this.type, model = this, columns = {}, relationships = {}, addl_post_data = {};
-    let proceed = true, clear_on_success = ifu(options.clear_on_success || true);
+    let proceed = true, clear_on_success = ifu(options.clear_on_success || true), clear_count = this.clear_count || options.clear_count || null;
     if (this.on_save) proceed = await this.on_save();
     if (!proceed) return;
     try {
@@ -373,23 +310,30 @@ class Model {
         let db_obj = this.db_save_obj, callback = this.save_callback ? this.save_callback.bind(this) : null;
         if (type == 'User') db_obj.uid = this.attr_list.user_id;
         log({db_obj, attr_list:this.attr_list},`saving new SINGLE ${this.type}`);
-        // return ;
+        if (this.wants_checkmark || options.wants_checkmark) db_obj.merge({wants_checkmark:true});
         let result = await $.ajax({
           url: `/save/${type}`,
           method: 'POST',
           data: db_obj,
           success: function(response){
-            if (system.validation.xhr.error.exists(response)) return;
+            if (system.validation.xhr.error.exists(response.save_result)) return;
             if (clear_on_success) {
-              if (save_blur) blur(save_blur.ele,'checkmark', { callback: function(){unblurAll({fade:400})}, delay: 500 });
-              else blurTop('checkmark', { callback: function(){unblurAll({fade:400})}, delay: 500 });
+              let blur_callback = function () {
+                log({clear_count});
+                if (clear_count) unblur({repeat:clear_count,fade:400});
+                else unblurAll({fade:400});
+              }
+              if (save_blur) blur(save_blur.ele,'checkmark', { callback: blur_callback, delay: 500 });
+              else blurTop('checkmark', { callback: blur_callback, delay: 500 });
             }
-            if (callback) callback(response);
-            else $('.loadTarget').last().html(response);
+            // log({response});
+            Model.update_list(type,response.list_update);
+            if (callback) callback(response.save_result);
+            else $('.loadTarget').last().html(response.save_result);
           }
         })
         return result;
-      }
+      } else throw new Error('cannot save invalid model, !this.valid');
     } catch (error) {
       log({error,attr_list:this.attr_list});
     }
@@ -424,7 +368,7 @@ class Model {
   }
   get db_save_obj () {
     let model = this, columns = {}, relationships = {}, uid = this.save_uid || this.uid || this.attr_list.uid || null;
-    if (!this.db_columns) throw new Error(`db_columns not defined for ${type}`);
+    if (!this.db_columns) throw new Error(`db_columns not defined for ${this.type}`);
     this.db_columns.forEach(column => {
       if (model.attr_list[column]) {
         let attr = model.attr_list[column];
@@ -452,18 +396,27 @@ class Model {
     let header = form.find('h1'), submit_btn = form.find('.submit.create, .submit.edit'), type = submit_btn.data('model');
     if (mode == 'create') {
       header.text(header.text().replace('Edit','Create'));
-      let text = options.btn_text || `create ${type}`;
+      let text = options.btn_text || `create ${type.addSpacesToKeyString()}`;
       submit_btn.addClass('create').removeClass('edit').text(text);      
     } else if (mode == 'edit') {
       header.text(header.text().replace('Create','Edit'));
-      let text = options.btn_text || `save changes to ${type}`;
+      let text = options.btn_text || `save changes to ${type.addSpacesToKeyString()}`;
       submit_btn.addClass('edit').removeClass('create').text(text);      
     }
   }
-  static list_has_column (list, column) {return list[0][column] != undefined;}
+  static popup_links(model) {
+    // log(Models);
+    let unique = Models[model].popup_links_unique;
+    return unique ? unique() : [];
+  }
+  static list_has_column (list, column) {return list && list[0] && list[0][column] != undefined;}
   static list_missing_columns (list, columns) {return columns.filter(column => !Model.list_has_column(list,column));}
   static list_is_pending (model) {return linkable_lists_pending[model] && linkable_lists_pending[model] === true;}
   static list (model) {return linkable_lists[model.toKeyString()] || null};
+  static async update_list (model, list) {
+    linkable_lists[model] = list;
+    log({model,list:linkable_lists.model});
+  }
   static async get_list (options = {}) {
     let model = options.model.toKeyString(), columns = options.columns || [], force = options.force || false, list = linkable_lists[model];
     columns.smartPush('name','uid');
@@ -547,10 +500,26 @@ class Model {
     })
     return instance;
   }
-  static async create_or_edit (where_array, type, options = {}) {
-    let data = {where_array}.merge(options);
-    await menu.fetch({url:`/create_or_edit/${type}`, target:`new_modal:NewOrEdit${type}`, method:"POST", data});
+  static async create_or_edit (options = {}) {
+    try {
+      if (!options.where) throw new Error('create_or_edit requires options.where');
+      if (!options.type) throw new Error('create_or_edit requires options.type');
+      let data = {where:options.where}.merge(options.ajax_data || {});
+      log(data,'create or edit request');
+      return await menu.fetch({
+        url:`/create_or_edit/${options.type}`, 
+        target:`new_modal:CreateOrEdit${options.type}`, 
+        method:"POST", 
+        data
+      });
+    } catch (error) {
+      log({error,options});
+    }
   }
+}
+
+class Category extends Model {
+  // constructor (attr_list, )
 }
 class SettingsManager {
   constructor (options, mode = 'display') {
@@ -918,11 +887,15 @@ class Calendar {
     if (ele.hasClass('Appointment')) {
       let cal = this, description = render_info.event.extendedProps.description;
       let groupId = render_info.event.groupId, schedule = cal.schedule_by_event(render_info.event);
-      let appt_details = schedule.response_by_group_id(groupId), appointment_id = appt_details.uid, appointment_datetime = render_info.event.start;
+      let appt_details = schedule.response_by_group_id(groupId), appointment_id = appt_details.uid, date_time_start = render_info.event.start;
       let chartnote_btn = new Features.Button({
         text:'chart note', class_list: 'xxsmall yellow', action: async function(){
           log({appt_details,groupId,render_info});
-          let note = await Model.create_or_edit({appointment_id,appointment_datetime},'ChartNote',{mode:'modal'});
+          let note = await Model.create_or_edit({
+            where: {appointment_id, date_time_start},
+            type: 'ChartNote',
+            ajax_data: {mode:'modal'}
+          });
           log({note});
         }, appendTo: message,
       }), invoice_btn = new Features.Button({
@@ -940,7 +913,6 @@ class Calendar {
         }, appendTo: message,
       })
       message.find('.generic, .Patient, .Practitioner, .Services').css({fontSize:'1.2em'});
-      // message.append(edit_btn.ele,chartnote_btn.ele,delete_btn.ele);
     }
   }
 }
@@ -1468,26 +1440,7 @@ class Appointment extends Model{
     attr_list = attr_list || Model.construct_from_form('#Appointment');
     super(attr_list, 'Appointment');
 
-    // if (this.attr_list.date && this.attr_list.time) {
-    //   this.attr_list.date_time_start = LUX.From.datetime(this.attr_list.date, this.attr_list.time);
-    //   let duration = LUXDur.fromObject({minutes:this.attr_list.duration});
-    //   this.attr_list.date_time_end = this.attr_list.date_time_start.plus(duration);
-    // }
-
-    // if (this.attr_list.WhenWillThisAppointmentRepeat) {
-    //   let recur_form = $('#RecurringAppointment').getObj();
-    //   this.attr_list.recurrence = recur_form.response;
-    // }
-    // if (this.attr_list.recurrence && !this.attr_list.recurring_id) {
-    //   this.attr_list.recurring_id = this.uid;
-    //   this.attr_list.rrule = this.rrule;
-    // }
     this.schedule = $('.calendar').getObj().schedules.find(s => s.modal.id == 'Appointment');
-    // // log({sch:this.schedule,sche_eles:$('.calendar').find('.schedule')});
-    // if (this.schedule.edit) {
-    //   this.attr_list.uid = this.schedule.edit.uid;
-    // }
-    // this.event_in_schedule = this.uid ? this.schedule.find(this.uid) : null;
   }
 
   get rrule () { return this.rrule_obj.toString(); }
@@ -1702,6 +1655,9 @@ class Appointment extends Model{
     }
     return duration;
   }
+  async retrieve_chart_note (appt_id, date_time_start, date_time_end) {
+
+  }
   get schedule_obj () {
     try {
       let obj = {type:'Appointment',uid:this.uid};
@@ -1774,7 +1730,6 @@ class Appointment extends Model{
     if (this.attr_list.WhenWillThisAppointmentRepeat) {
       let recur_form = $('#RecurringAppointment').getObj();
       this.attr_list.recurrence = recur_form.response;
-      // log("HI");
     }
     if (this.attr_list.recurrence && !this.attr_list.recurring_id) {
       this.attr_list.recurring_id = this.uid;
@@ -1787,9 +1742,6 @@ class Appointment extends Model{
       if (edit_recur == 'all') return true;
       
       let existing = Appointment.original, date = this.attr_list.date;
-      // log({existing,editing:this,date,edit_recur});
-      // return false;
-      // existing.on_save = null;
       if (edit_recur == 'this') {
         existing.rrule_exclude(date);
         this.attr_list.recurrence = null;
@@ -1843,6 +1795,83 @@ class Service extends Model {
     log('hi');
   }
 }
+class ServiceCategory extends Model {
+  constructor (attr_list = null) {
+    if (!attr_list) attr_list = Model.construct_from_form('#CreateServiceCategory');
+    super(attr_list, 'ServiceCategory');
+  }
+
+  get db_columns () {return ['name','description']}
+  async settings_autosave () {
+    log('hi');
+  }
+}
+class Complaint extends Model {
+  constructor (attr_list = null) {
+    let attrs = attr_list || Model.construct_from_form('#CreateComplaint');
+    super(attrs, 'complaint');
+  }
+  get db_columns () {
+    return ['name','description','complaint_category_id','settings'];
+  }
+  get db_relationships () {
+    return {icd_codes:'sync'};
+  }
+}
+class ComplaintCategory extends Model {
+  constructor (attr_list = null) {
+    let attrs = attr_list || Model.construct_from_form('#CreateComplaintCategory');
+    super(attrs, 'complaint category');
+  }
+  get db_columns () {
+    return ['name','description','settings'];
+  }
+}
+class IcdCode extends Model {
+  constructor (attr_list = null) {
+    let attrs = attr_list || IcdCode.construct_from_icd_tool();
+    super(attrs, 'icd code');
+    this.form = $('#CreateNewIcdCode');
+  }
+  static get form () { return $("#CreateNewIcdCode").exists() ? $("#CreateNewIcdCode") : null }
+  static popup_links_unique() {
+    let find_btn = new Features.Button({
+      text:'find new code',
+      class_list: 'xxsmall pink70',
+      url: '/create/IcdCode',
+      mode: 'load',
+      target: 'new_modal:CreateNewIcdCode',
+      callback: function(){
+        let form = $('#CreateNewIcdCode'), btn = form.find('.button.create'), icd_codes = form.parentModal().find('.icd_codes').getObj('answer');
+        log({btn,icd_codes,form});
+        btn.text('save and apply').data({
+          wants_checkmark:true,
+          clear_count:2,
+          save_callback: icd_codes.linked_list_update.bind(icd_codes),
+        });
+      }
+    });
+    return find_btn.ele;
+  }
+  get db_columns () {
+    return ['code','title','text','url'];
+  }
+  save_callback () {
+    IcdCode.entity = null;
+  }
+  static construct_from_icd_tool() {
+    if (!IcdCode.entity) {
+      feedback('No Code Selected','Select a code by clicking on it.');
+      return false;
+    }
+    return {
+      code: IcdCode.entity.code,
+      title: IcdCode.entity.title,
+      text: IcdCode.entity.bestMatchText.firstToUpper(),
+      url: IcdCode.entity.uri,
+    };
+  }
+}
 class Form extends Model {
   constructor (attr_list) {
     super(attr_list, 'Form');
@@ -1865,17 +1894,11 @@ class ChartNote extends Model {
   }
 }
 
-export const Models = {ModelTable, Filter, Model, SettingsManager, Practice, User, Patient, Practitioner, StaffMember, Calendar, Schedule, Appointment, Service, Form, ChartNote};
-// $(document).ready(function(){if (system.user.isSuper()) alert('yeah');window.Models = Models});
+export const Models = {ModelTable, Model, SettingsManager, Practice, User, Patient, Practitioner, StaffMember, Calendar, Schedule, Appointment, Service, ServiceCategory, Complaint, ComplaintCategory, IcdCode, Form, ChartNote};
 
-// $(document).ready(function(){
-//   class_map_all.merge({Form,FormEle,Patient,Practitioner,StaffMember,User,Service,Practice,model,Appointment})
-// });
 export const class_map_linkable = {Patient,Practitioner,StaffMember,Service,Form};
 export const linkable_lists = {};
 export const linkable_lists_pending = {};
-
-// const RRule = rrule.RRule, RRuleSet = rrule.RRuleSet;
 
 export const table = {
   list: () => $('.modelTable').get(),
@@ -1898,7 +1921,7 @@ export const table = {
         let newTable = new ModelTable($(this),1);
       })
     },
-    nav_options: function(){
+    table_nav_options: function(){
       init('.optionsNav',function(){
         if ($(this).data('uid') !== undefined) {
           let type = $(this).data('model'), options = $(this).data('options');

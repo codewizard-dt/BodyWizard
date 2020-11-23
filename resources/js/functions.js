@@ -91,17 +91,19 @@ class Button {
 
   async click (ev) {
     let action = this.action, target = this.target, mode = this.mode, callback = this.callback;
-    // log({action,ev});
+    log({action,ev,button:this});
     try{
       if (action) action.bind(this.ele,ev)();
       if (mode && target){
-        if ($(target).dne()) target = `#${target}`;
-        if ($(target).dne()) throw new Error(`Target not found`);
+        if (!['same_tab','new_modal'].some(t => target.includes(t))) {
+          if ($(target).dne()) target = `#${target}`;
+          if ($(target).dne()) throw new Error(`Target not found`);          
+        }
         if (mode == 'modal') blurTop(target);
         else if (mode == 'scroll') $.scrollTo(target);
         else if (mode == 'click') $(target).click();
         else if (mode == 'load') {
-          let result = await menu.fetch(url,target);
+          await menu.fetch(this.uri || this.url, target);
           if (typeof callback == 'function') callback();
         }
       }else if (mode && !target) throw new Error(`Target not defined for mode:${mode}`);
@@ -224,17 +226,167 @@ class OptionBox {
     return btn;
   }
 };
+class KeyValueBox {
+  constructor(options) {
+    log({options});
+    let pairs = options.json || {},
+      box_css = options.box_css || {},
+      key_css = options.key_css || {},
+      value_css = options.value_css || {};
+    this.wrap_ele_outer = $('<div/>',{css:{textAlign:'center'}});
+    this.flex = $('<div/>',{class:'flexbox column inline',css:box_css});
+    this.ele = options.ele || $('<div/>').appendTo('body');
+    this.ele.append(this.flex).wrap(this.wrap_ele_outer);
+    let max_width = 0;
+    for (let key in pairs) {
+      let value = pairs[key], 
+        key_ele = $('<div/>',{class:`key ${key.toKeyString()}`,text: key}).css(key_css), 
+        value_ele = $('<div/>',{class:`value ${key.toKeyString()}`}).css(value_css).append(value),
+        wrap_ele_inner = $('<div/>',{class:'flexbox',css:{width:'calc(100% - 1em)',padding:'0 1em',margin:'0 0.5em',flexWrap:'nowrap'}}).append(key_ele,value_ele);
+        this.flex.append(wrap_ele_inner);
+        if (key_ele[0].scrollWidth > max_width) max_width = key_ele[0].scrollWidth;
+    }
+    this.ele.find('.key').css({minWidth:max_width});
+  }
+}
+class Filter {
+  constructor(ele, options = {}){
+    this.ele = $(ele);
+
+    let data_attr = this.ele.data();
+    this.ele.wrap('<div/>');
+    this.ele = this.ele.parent();
+    this.ele.data('class_obj',this);
+    this.options = data_attr.options || options;
+    // log({filter:this,options:this.options});
+    if (options.ele_css) this.ele.css(options.ele_css);
+    if (!this.options.target) {
+      this.selector = data_attr.target || this.options.selector || null;
+      if (!this.selector) throw new Error(`'selector' is required to define target for filter`);
+      this.target = $(`#${this.selector}`).exists() ? $(`#${this.selector}`) : $(`.${this.selector}`);      
+      if (this.target.dne()) throw new Error(`filter targets not found using selector: ${this.selector}`);
+      if (this.target.length > 1) throw new Error(`2 filter targets found using selector: ${this.selector}`);
+    } else {
+      this.target = this.options.target;
+      if (this.target.dne()) throw new Error(`filter targets not found using options.target`);
+    }
+    let all_filters = this.target.data('filters') || [];
+    all_filters.push(this);
+    this.target.data('filters',all_filters);    
+    this.name = `${this.options.name || 'no_name'}${all_filters.indexOf(this)}`;
+    this.type = this.options.type || 'text';
+    this.item_tag = this.options.item_html_tag || 'div';
+    this.answer_ele = this.ele.find('.answer');
+    if (this.answer_ele.dne()) throw new Error(`'Answer' not found in main Filter ele`);
+    if (this.answer_ele.length > 1) throw new Error(`too many 'Answers' in main Filter ele`);
+    if (options.answer_css) this.answer_ele.css(options.answer_css);
+    this.answer = this.answer_ele.getObj();
+    this.ele.removeClass('filter').addClass('filter');
+  }
+
+  get items () {
+    let targets = this.target, tag = this.item_tag, items = targets.find(tag).not('.dont_filter');
+    return items.exists() ? items : null;
+  }
+  get no_match () { return this.target.find(this.item_tag).filter('.no_match') }
+  get no_selection () { return this.target.find(this.item_tag).filter('.no_selection') }
+  set no_selection_text (str) { 
+    let ele = this.no_selection;
+    if (ele.dne()) return;
+    let span = ele.find('span'), td = ele.find('td').first();
+    if (td.exists()) td.text(str);
+    else if (span.exists()) span.text(str);
+    else ele.text(str);
+  }
+  get all_filters () { return this.target.data('filters') }
+  get all_filters_active () { return this.all_filters.filter(filter => filter.active) }
+  get all_filters_active_names () { return this.all_filters_active.map(filter => filter.name) }
+  get all_filter_matches () { return this.all_filters.map(filter => filter.matches) }
+  get matches () {
+    let matches = null, search = this.answer.get(), type = this.type, items = this.items;
+    let options = {className: this.name};
+    if (search == null) {
+      matches = items;
+      items.unmark(options);
+      this.ele.removeClass('active');
+      this.active = false;
+      return null;
+    } else if (items) {
+      this.active = true;
+      this.ele.addClass('active');
+      if (type == 'text') {
+        items.unmark(options);
+        items.mark(search,options);
+        matches = items.filter((i,item) => $(item).find('mark').exists());
+      } else if (type == 'attribute') {
+        let attribute = this.options.attribute;
+        let attr_match = function(item_v,search_v) {
+          return search_v == item_v || search_v.includes(item_v);
+        }
+        matches = items.filter((i,item) => {
+          let item_value = $(item).data('filters')[attribute];
+          // log({search,item_value});
+          return Array.isArray(search) ? search.some(search_value => attr_match(item_value, search_value)) : attr_match(item_value, search);
+        });
+      } else if (type == 'class') {
+        if (!this.options.class) throw new Error('Must include options.class for Filter');
+        matches = items.filter(`.${this.options.class}`);
+        if (this.options.class == 'active') this.none_selected = matches.dne() ? true : false;
+      }
+    }
+    let response = matches.exists() ? matches.get() : [];
+    return response;
+  }
+  update () {
+    let match_arrays = this.all_filter_matches;
+    let no_active_filters = match_arrays.every(array => array === null);
+    let showing_active = this.all_filters_active_names.includes('active');
+    let intersection = Array.intersect(...match_arrays);
+    if (no_active_filters) {
+      this.items.show();
+      this.no_match.hide();
+      this.no_selection.hide();
+    } else if (intersection.notEmpty()) {
+      $(intersection).show()
+      this.items.not(intersection).hide();
+      this.no_match.hide();
+    } else {
+      this.items.hide();
+      if (showing_active) {
+        this.no_selection_text = this.all_filters_active.isSolo() ? 'None selected' : 'No selections match all filters';
+        this.no_selection.show();
+      }
+      else this.no_match.hide();
+    }
+    let tt = ToolTip.find_containing_tooltip(this.ele);
+    if (tt && tt.is_above_target) tt.prevent_next_hide().move();
+  }
+}
 class List {
   constructor (options = {}) {
     this.ele = $(`<div/>`,{class:'List'});
     let text = ifu(options.header, null), tag = options.header_html_tag || 'h3';
     if (text) this.header = $(`<${tag}>${text}</${tag}>`).appendTo(this.ele);
+    if (options.header_css) this.header.css(options.header_css);
+    if (options.header_class) this.header.addClass(options.header_class);
     this.ul = $(`<ul/>`).css({display:'inline-block'}).appendTo(this.ele);
+    if (options.with_search) {
+      let answer_css = {width: 'calc(100% - 0.5em'};
+      this.search_box = new Forms.Answer({type:'text',placeholder:'Type to search',settings:{placeholder_shift:false}});
+      this.active_only = new Forms.Answer({type:'checkboxes',list:['only selected items']});
+      this.filter_wrap = $(`<div/>`).insertBefore(this.ul).append(this.search_box.ele, this.active_only.ele);
+      new Filter(this.search_box.ele, {name:'search_box', target:this.ul, item_html_tag:'li', answer_css});
+      new Filter(this.active_only.ele, {name:'active', type:'class', class: 'active', target:this.ul, item_html_tag:'li', answer_css, ele_css: {padding:0,margin:'0'}});
+      this.add_item({text:'No matching items',class_list:'no_match'}).hide();
+      this.add_item({text:'None selected',class_list:'no_selection'}).hide();
+    }
     if (options.css) this.ele.css(options.css);
-    this.cssUlOnly = options.cssUlOnly || {};
-    this.ul.css(this.cssUlOnly.merge({width:'max-content',maxWidth:'35em'}));
+    this.ul_css = options.ul_css || {};
+    this.ul.css(this.ul_css.merge({width:'max-content',maxWidth:'35em'})).on('click','li',this.item_click.bind(this));
     this.action = ifu(options.action, null);
-    this.filter = options.filter || null;
+    // this.filter = options.filter || null;
+    this.limit = options.limit || 1;
+    this.limit = Number.isNaN(Number(this.limit)) ? null : Number(this.limit);
     if (this.filter) this.filter_create();
   }
 
@@ -244,19 +396,29 @@ class List {
   get values () {
     return this.items.get().map(item => $(item).data('value'));
   }
-  filter_create () {
-    log({filter:this.filter});
+  get active () {
+    let active = this.items.filter('.active');
+    return active.exists() ? active : null;
   }
-  filter_by_text (text) {
-    // if (Array.isArray(text)) 
+  item_click (ev) {
+    let has_limit = this.limit != null, item = $(ev.target).closest('li'), is_active = item.hasClass('active');
+    if (item.hasClass('no_match') || item.hasClass('no_selection')) return;
+    if (!has_limit) item.toggleClass('active');
+    else {
+      if (this.limit == 1) { this.ele.resetActives(); item.addClass('active')}
+      else {
+        if (is_active) item.removeClass('active');
+        else if (this.active.length < this.limit) item.addClass('active');
+        else new Warning({ele:this.ele,message:`Limited to ${this.active.length}`});
+      }
+    }
   }
   add_item (options = {}) {
     let text = options.text || 'text ?', action = options.action || null,
       item = $(`<li/>`,{class: options.class_list || '',html:`<span>${text}</span>`}).appendTo(this.ul), entire_li_clickable = options.entire_li_clickable || false, clickable_ele = entire_li_clickable ? item : item.find('span'), value = options.value || text;
     item.data('value',value);
-    // this.items.push({text,ele:item});
     if (action && typeof action == 'function'){
-      clickable_ele.css({cursor:'pointer'}).on('click',action).on('mouseenter',function(){item.css({backgroundColor:'var(--gray50)'})}).on('mouseleave',function(){item.css({backgroundColor:'transparent'})});
+      clickable_ele.addClass('clickable').on('click',action);
     }
     return item;
   }
@@ -264,6 +426,9 @@ class List {
     let item = this.items.get(index);
     if (!item) throw new Error(`Index ${index} does not exist`);
     $(item).slideFadeOut(function(){$(this).remove()});
+  }
+  remove_all () {
+    this.items.remove();
   }
 };
 class UpDown {
@@ -497,6 +662,7 @@ class ToolTip {
     this.ele = $(`<div/>`).addClass('tooltip').appendTo('body');
     this.target = options.target || null;
     if (!this.target) throw new Error('target not provided');
+    
     let existing = this.target.data('tooltip');
     if (existing) {existing.ele.remove();}
     this.target.data('tooltip', this);
@@ -523,16 +689,33 @@ class ToolTip {
     this.ele.css(this.css);
     if (this.class) this.ele.addClass(this.class);
     if (this.message) this.message_append(this.message);
-    this.target.on('mouseenter', this.show.bind(this));
-    this.target.on('mousemove', this.track.bind(this));
     this.target.on(`mouseleave ${this.hide_on}`, this.hide.bind(this));
+    if (this.target.is('input, textarea')) {
+      this.target.on('focus click',this.show.bind(this));
+      this.target.on('blur',this.input_blur.bind(this));
+    } else {
+      this.target.on('mousemove touchmove', function(ev){
+        this.show(ev); this.track(ev);
+      }.bind(this));
+    }
+    let drag = this.drag.bind(this)
     this.ele.on('mouseleave',function(ev){
       let target = $(ev.relatedTarget), next_tip = ToolTip.find_closest_tooltip(target);
       if (!target.is(tip.target)) tip.hide(ev);
+      if (target.is('input, textarea')) return;
       if (next_tip) next_tip.show(ev);
-    }).on('mouseenter', this.mousein.bind(this));
-    // log({tt:this,target:this.target});
+    }).on('mouseenter', this.mousein.bind(this)).
+    on('mousedown touchstart',function(ev){
+      let target = $(ev.target);
+      this.drag_start_mouse = {x: ev.pageX, y: ev.pageY};
+      this.drag_start_ele = this.pos;
+      $(document).on('mousemove touchmove', drag);
+    }.bind(this)).on('mouseup touchend',function(){
+      $(document).off('mousemove touchmove', drag);
+    }.bind(this))
   }
+  get is_visible() { return this.ele.is(':visible') }
+  prevent_next_hide() { this.prevent_hide = true; return this; }
   message_append (msg) {
     if (typeof msg == 'object') {
       let is_jquery = msg instanceof jQuery;
@@ -541,21 +724,34 @@ class ToolTip {
     this.ele.append(msg);
   }
   show (ev) {
-    let target = $(ev.relatedTarget);
-    if (target.isInside('.tooltip')) return;
-    $('.tooltip').hide();
-    if (this.match_border) this.ele.css({borderColor:this.target.css('background-color')});
     clearTimeout(this.hide_timeout);
+    if (this.is_visible) return;
+    this.hide_all_others();
+    if (this.match_border) this.ele.css({borderColor:this.target.css('background-color')});
     this.ele.show().animate({opacity:1});
     this.mouse_pos = ev;
     this.move(ev, false);
   }
   move (ev, animate = true) {
+    if (this.dragged_to) return;
     let target = ev ? $(ev.toElement) : null;
     if (target && target.isInside('.tooltip')) return;
     let pos = this.tracking ? this.position_track : this.position_fixed;
     if (animate) this.ele.animate(pos, 250);
     else this.ele.css(pos);
+    // log({this:this.pos,target:this.target_pos},`${this.pos.top} < ${this.target_pos.top}`);
+    // this.is_above_target = this.pos.top < this.target_pos.top;
+  }
+
+  drag (ev) {
+    let mouse_start = this.drag_start_mouse, ele_start = this.drag_start_ele, mouse_now = {x: ev.pageX, y: ev.pageY},
+      diff = {x: mouse_now.x - mouse_start.x, y: mouse_now.y - mouse_start.y};
+    let next = {x: ele_start.x + diff.x, y: ele_start.y + diff.y};
+    if (diff.x > 10 || diff.y > 10) {
+      this.dragged_to = next;
+      this.ele.css({left:next.x, top:next.y, right:'unset'});
+    }
+    return;
   }
   track (ev) {
     if (!this.tracking) return;
@@ -568,24 +764,32 @@ class ToolTip {
       },250);
     }
   }
-  mousein (ev) { clearTimeout(this.hide_timeout); clearTimeout(this.track_timeout); this.track_timeout = null }
+  mousein (ev) { 
+    clearTimeout(this.hide_timeout); clearTimeout(this.track_timeout); this.track_timeout = null;
+    this.prevent_hide = false;
+  }
   hide (ev, time = 500) {
+    if (this.prevent_hide) return;
     if (typeof ev == 'number') {time = ev; ev = undefined;}
-    let target = ev != undefined ? $(ev.relatedTarget) : null, tt = this;
-    if (target && target.isInside('.tooltip')) return;
+    let tt = this;
+        if (ev && ev.relatedTarget && $(ev.relatedTarget).isInside('.tooltip')) return;      
     this.hide_timeout = setTimeout(function(){
       tt.ele.slideFadeOut();
       tt.track_timeout = null;
       if (tt.on_hide && typeof tt.on_hide == 'function') tt.on_hide();
     }, time);
-    // this.track_timeout = null;
-    // if (this.on_hide && typeof this.on_hide == 'function') this.on_hide();
   }
+  input_blur (ev) {
+    if (ev.relatedTarget && !$(ev.relatedTarget).isInside('.tooltip')) this.hide(ev);
+  }  
   check_right () {
     let box = this.ele[0].getBoundingClientRect(), v = view(),
       border = {right: this.mouse.x + box.width + system.ui.scroll.bar_width()};
     if (border.right > v.width) this.ele.css({right: 10, left:'unset'});
   }
+  get pos () { return this.ele[0].getBoundingClientRect() }
+  get target_pos () { return this.target[0].getBoundingClientRect() }
+  get is_above_target () { return this.pos.top < this.target_pos.top }
   get position_track () {
     let box = this.ele[0].getBoundingClientRect(), v = view(),
       border = {right: this.mouse.x + box.width + system.ui.scroll.bar_width(), bottom: this.mouse.y + box.height},
@@ -598,19 +802,23 @@ class ToolTip {
     return pos_adjusted;
   }
   get position_fixed () {
-    let box_ele = this.ele[0].getBoundingClientRect(), box_target = this.target[0].getBoundingClientRect(), v = view(),    border = {right: box_target.x + box_ele.width + system.ui.scroll.bar_width() + this.translate.x, bottom: box_target.bottom + box_ele.height + this.translate.y, top: box_target.top - box_ele.height - 10 + this.translate.y}, pos_adjusted = {top: (border.top > 10) ? border.top : box_target.bottom + 10 + this.translate.y};
+    let box_ele = this.ele[0].getBoundingClientRect(), box_target = this.target[0].getBoundingClientRect(), v = view(),
+      border = {
+        right: box_target.x + box_ele.width + system.ui.scroll.bar_width() + this.translate.x, 
+        bottom: box_target.bottom + box_ele.height + 10 + this.translate.y, 
+        top: box_target.top - box_ele.height - 10 + this.translate.y,
+      }, pos_adjusted = {
+        top: (border.top > 10) ? border.top : (border.bottom > v.height - 10) ? 10 : box_target.bottom + 10 + this.translate.y
+      };
+    // this.is_above_target = (border.top >= 10);
     if (border.right > v.width) {
       pos_adjusted.right = 10; this.ele.css({left: 'unset'});
     } else {
       this.ele.css({right: 'unset'}); pos_adjusted.left = box_target.x + this.translate.x;
     }
-
-
     return pos_adjusted;
   }
   set mouse_pos (ev) {
-    // this.y = ev.pageY + 20;
-    // this.x = ev.pageX + 5;
     this.mouse = {x: ev.pageX + 5, y: ev.pageY + 10};
   }
   hide_all_others () {$('.tooltip').filter(':visible').not(this.ele).hide() }
@@ -857,7 +1065,7 @@ class Icon {
   }
 };
 
-export const Features = {Button, Editable, OptionBox, List, UpDown, Toggle, ToolTip, Warning, Autosave, Icon};
+export const Features = {Button, Filter, Editable, OptionBox, List, UpDown, Toggle, ToolTip, Warning, Autosave, Icon};
 
 export class Menu {
   constructor(element,data){
@@ -926,6 +1134,7 @@ export class Menu {
       let circle = system.blur.modal.loading('var(--purple70o)',6).css({marginTop:'3em'})
       $(target).html("").append(circle);
       system.modals.reset();
+      // menu.current_uri = uri;
       this.loading = menu.fetch(uri, target);
     }
   }
@@ -986,6 +1195,10 @@ export const menu = {
       blurTop('loading');
       data.mode = 'modal';
     }
+    if (target === 'same_tab') {
+      target = $('.loadTarget').last();
+      blur(target, 'loading');
+    }
     return $.ajax({
       url: url,
       headers: system.validation.xhr.headers.list(),
@@ -1009,9 +1222,8 @@ export const menu = {
     });
   },
   reload: () => {
-    let current = $('.menuBar').last().getObj(), active = current.active, url = active.data('uri');
+    let current = $('.menuBar').last().getObj(), active = current.active, url = menu.current_uri;
     log({current,active,url});
-    // unblurAll({callback:})
     blur($(current.target),'loading');
     menu.fetch(url, current.target);
   },
@@ -1429,6 +1641,10 @@ export const system = {
       unreadNotifications = system.validation.json(xhr.getResponseHeader('X-Unread-Notifications')),
       force_logout = xhr.getResponseHeader('X-FORCE-LOGOUT');
       log({xhr,json:xhr.responseJSON,responsetext:xhr.responseText},settings.url);
+      let exclude_from_reload = [
+        'notification', '/list', 'save/', 'edit','/options-nav','/delete','modal'
+      ];
+      if (!exclude_from_reload.some(e => settings.url.includes(e))) menu.current_uri = settings.url;
       if (force_logout != null && force_logout.toBool()) system.request.force_logout();
       if (uidList) {
         if (uidList === 'null') uids.clear();
@@ -1601,6 +1817,7 @@ export const system = {
       }catch(error){
         log({error,options},'blur error');
       }
+      system.display.initialize();
       return modal;
     },
     topmost: (modal, options = {}) => {
@@ -1620,7 +1837,7 @@ export const system = {
       return system.blur.element(options);
     },
     resize: (ele, modal) => {
-      log({ele,modal});
+      // log({ele,modal});
       if (ele.is('body')) return;
       let count = 0;
       let maxHeight = ele.parent().height() * 0.96 - 1;
@@ -1718,6 +1935,7 @@ export const system = {
       top = system.blur.block.top(),
       repeat = options.repeat || null,
       ele = options.ele || null;
+      ToolTip.hide_all();
       if (ele) {
         if ($(ele).dne()) throw new Error(`can't unblur because ele doesn't exist`);
         else if ($(ele).find('.blur').dne()) return;
@@ -1725,6 +1943,11 @@ export const system = {
         ele.find('.blur').remove();
         return;
       }
+      if (top.find('.browserContent').exists()) {
+        top.find('.browserContent').find('.closeicon').click();
+        return;
+      }
+
       if (fade) {
         top.fadeOut(fade,function(){
           top.find('.loading').each((c,circle) => clearInterval($(circle).data('spinner')));
@@ -1733,7 +1956,6 @@ export const system = {
           $(this).remove();
         });
       }else {
-        // log({top,ele});
         if (!top) return;
         top.find('.loading').each((c,circle) => clearInterval($(circle).data('spinner')));
         top.children().appendTo('#ModalHome');
@@ -1742,7 +1964,10 @@ export const system = {
       }
       if (repeat && repeat > 1) {
         repeat--;
-        system.blur.undo({delay,fade,callback,repeat});
+        let next = system.blur.undo.bind(null,{fade,callback,repeat});
+        log({next});
+        if (fade) setTimeout(next, fade+50);
+        else next();
       } else if (callback && typeof callback == 'function') setTimeout(callback, delay);
       Icon.clear_spinners_within('#ModalHome');
     },
@@ -2179,13 +2404,11 @@ export const system = {
   },
   display: {
     initialize: () => {
-      init('.flexbox.column',function(){
-        let keys = $(this).find('.key'), values = $(this).find('.value'), width_max_k = 0, width_max_v = 0;
-        keys.each(function(){let w = this.clientWidth; if (w > width_max_k) width_max_k = w;})
-        values.each(function(){let w = this.clientWidth; if (w > width_max_v) width_max_v = w;})
-        if (keys.exists()) keys.css({width:px_to_rem(width_max_k)});
-        if (values.exists()) values.css({width:px_to_rem(width_max_v)});
-      })
+      init($('.KeyValueBox').filter(':visible'),function(){
+        let ele = $(this), options = ele.data('options');
+        new KeyValueBox(options.merge({ele}));
+      });
+      system.display.size.footer.adjust_body_padding();
     },
     format: {
       readableJson: json => {
@@ -2225,6 +2448,12 @@ export const system = {
         if (typeof rem != 'number') throw new Error('rem must be number');
         return rem * get_rem_px();
       },
+      footer: {
+        adjust_body_padding: () => {
+          let height = $('footer').outerHeight();
+          $('body').css({paddingBottom:height});
+        }
+      }
     }
   },
   warn: (options = {}) => {
@@ -2408,7 +2637,7 @@ var systemModalList = ['Confirm','Warn','Error','Feedback','Refresh','Notificati
 
 function slideFadeOut(elem, time = 400, callback = null) {
   let t = "opacity "+time+"ms", fade = {opacity: 0, transition: t};
-  elem.css(fade).delay(100).slideUp(time);
+  elem.css(fade).delay(100).slideUp(time, function(){ /*$(this).css({opacity:1})*/ } );
 
   if (callback && typeof callback == 'function') setTimeout(callback,time+101);
 }
@@ -2451,6 +2680,9 @@ $.fn.getObj = function(type = null, include_parents = true) {
     log ({error,ele:this});
   }
   return obj;
+}
+$.fn.parentModal = function() {
+  return $(this).closest('.blur').parent();
 }
 $.fn.fixWidth = function() {
   this.each((e,ele) => fix_width(ele));
@@ -3107,7 +3339,11 @@ setTimeout(function(){
 // }
 
 $(document).keyup(function(e){
-  if (e.keyCode === 27 && $('.blur').exists()) unblur();
+  if (e.keyCode === 27) {
+    if ($('.tooltip').filter(':visible').exists()) ToolTip.hide_all();
+    else if ($('.blur').exists()) unblur();
+   // unblur();
+ }
 })
 $(document).on('click','.blur',function(ev){
   let target = $(ev.target), is_blur = target.is('.blur'), is_clickable = target.children('.checkmark, .loading').dne();

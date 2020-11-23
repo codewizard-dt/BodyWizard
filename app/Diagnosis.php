@@ -6,12 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class Diagnosis extends Model
 {
-    public $tableValues;
+    public $TableOptions;
     public $optionsNavValues;
     public $connectedModels;
 
     public function __construct(){
-	    $this->tableValues = array(
+	    $this->TableOptions = array(
 	    	'tableId' => 'DiagnosisList',
 	    	'index' => 'id',
             'model' => "Diagnosis",
@@ -86,7 +86,7 @@ class Diagnosis extends Model
 
     }
 
-    public function codes(){
-        return $this->morphToMany('App\Code', 'codeable');
-    }
+    // public function codes(){
+    //     return $this->morphToMany('App\Code', 'codeable');
+    // }
 }

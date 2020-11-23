@@ -251,6 +251,7 @@ textarea[data-followup]{
     flex-wrap: wrap;
     justify-content: center;
     align-items: center;
+    box-sizing: border-box;
 }
 .flexbox.inline{
     display: inline-flex;
@@ -258,19 +259,24 @@ textarea[data-followup]{
 .flexbox.column{
     flex-direction: column;
 }
-/*.flexbox.column > * {flex-grow: 1; width:100%;}*/
 .flexbox.column .key {
-    /*width: 33%;*/
+    font-weight: 700;
     display: inline-block;
-    padding: 0 0.4em 0 0;
+    padding-right: 0.5em;
     text-align: right;
-    /*background-color: var(--gray30);*/
+    box-sizing: border-box;
+    flex: 1 0 0;
+    /*min-width: 8em;*/
+    align-self: flex-start;
+    white-space: nowrap;
 }
 .flexbox.column .value {
-    /*width: 66%;*/
     display: inline-block;
     text-align: left;
-    /*background-color: var(--gray70);*/
+    box-sizing: border-box;
+    flex: 3 0 0;
+    align-self: flex-start;
+    /*min-width: 16em;*/
 }
 .flexbox.nowrap{
     flex-wrap: nowrap;
@@ -333,6 +339,8 @@ textarea[data-followup]{
 }
 .flexbox > * {
     display: inline-block;
+    /*max-width: 100%;*/
+    /*width:max-content;*/
 }
 .flexbox.styled > * {
     margin: 5px 5px 0 5px;
@@ -349,6 +357,18 @@ textarea[data-followup]{
     max-width: calc(50% - 0.4em);
     min-width: unset;
 }
+
+.ctw-input { width:19em; }
+.ctw-window { text-align: left; word-break: unset; }
+.ctw-window .overflowBox { max-height: 50vh; }
+.ctw-window .wordlist ul {margin-left:0;}
+.ctw-window .wordlist li {width:unset;}
+.ctw-window .sortoption {float:unset;}
+.ctw-window .entitylist ul.toplevel {margin-left: 0;}
+.ctw-window .listhead {margin:1.5em 0;}
+.ctw-window select {margin-top:1em;}
+.ctw-window .chdistro {margin-left:0;}
+.ctw-window .browser .browserContent { margin: 0; max-height: 100%; }
 
 label {
     display: inline-block;
@@ -663,24 +683,6 @@ form, .indent, .report, .w95 {
     display: inline-block;
 }
 
-.instructions {
-    background-color: rgb(189, 48, 40);
-    color:white;
-    padding:1em;
-    border-radius: 1em;
-    border-color: black;
-    margin-bottom: 2em;
-}
-
-.instructions > h3{
-    margin:0 -0.2em;
-    text-align:left;
-}
-
-
-.painScale {
-    margin:1em 0 0 1em;
-}
 
 .hideAllItems {
     margin:1em;
@@ -691,72 +693,6 @@ form, .indent, .report, .w95 {
     margin: auto 15px auto -10px;
 }
 
-#Letters ul {
-    display: inline-block;
-    border-width: 0 0 0 1px;
-    border-style: solid;
-    border-color: rgb(150,150,150);
-    padding: 1px 1px 1px 1em;
-    background-color: rgb(210,210,210);
-}
-
-#FNameLetter, #LNameLetter {
-    display: flex;
-    align-items: center;
-    border-style: solid;
-    border-width: 1px;
-    border-color: rgb(150,150,150);
-    background-color: rgb(230,230,230);
-}
-
-#FNameLetter span, #LNameLetter span {
-    flex: 0 1 8em;
-    padding:5px;
-    margin: 0;
-    vertical-align: middle;
-    text-align: center;
-}
-
-/*#PatientList {
-    position: relative;
-    text-align: justify;
-    background-color: rgb(230,230,230);
-    margin:0.5em 0;
-    border-radius: 5px;
-    border-style: solid;
-    border-width: 1px;
-    border-color: rgb(170,170,170);
-    overflow: hidden;
-    max-height: 10em;
-}
-*/
-#PatientList #empty {
-    padding: 0 20px 10px 20px;
-    display: inline-block;
-}
-
-#PatientData {
-    position: relative;
-    display: none;
-    text-align: justify;
-    background-color: rgb(230,230,230);
-    margin:0.5em 0;
-    border-radius: 5px;
-    border-style: solid;
-    border-width: 1px;
-    border-color: rgb(170,170,170);
-}
-
-#CategoryList, #ActionList, #SymptomList, #HerbList, #FormulaDesc, #CurrentFormula, #NewHerb, .FormulaDisplay, #PrevFormulas, #dateSelect ul{
-    background-color: rgb(230,230,230);
-    margin:0.5em 0;
-    border-radius: 5px;
-    border-style: groove;
-    border-width: 2px;
-    position: relative;
-}
-
-#ActionList, #SymptomList, #FormulaDesc, #CategoryList ul, #NewHerb {display: none;}
 
 #PaymentMethod .answer {font-size: 0.9em;}
 .answer.list li{
@@ -905,18 +841,6 @@ li[data-response='no response']{
     vertical-align: top;
     text-align: left;
 }
-.item input:not(.slider, .datePick, .timePick){
-    /*width: calc(100% - 0.4em);*/
-    /*max-width: 450px;*/
-}
-/*.item textarea{
-    width: calc(100% - 0.4em);
-    max-width:450px;
-    height:5em;
-}*/
-/*.ownLine textarea{
-    max-width: unset;
-}*/
 .number input{
     width:6em;
 }
@@ -951,13 +875,7 @@ form.disabled .plzCheck{
 #Templates{
     display: none;
 }
-.answer.textbox{
-    width: 100%;
-}
-.answer textarea{
-    width: 98%;
-    height: 4em;
-}
+.answer.textbox{ width: 100%; }
 
 ul.checkboxes, ul.radio {
     display: inline-flex;
@@ -985,7 +903,7 @@ ul.checkboxes, ul.radio {
     /*display: block;*/
 }
 
-.slider {
+.answer .slider {
     -webkit-appearance: none;
     /*width: 75%;*/
     height: 0.7em;
@@ -1002,7 +920,7 @@ ul.checkboxes, ul.radio {
     flex-grow: 15;
 }
 
-.slider::-webkit-slider-thumb {
+.answer .slider::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
     width: 1.2em;
@@ -1012,7 +930,7 @@ ul.checkboxes, ul.radio {
     cursor: pointer;
 }
 
-.slider::-moz-range-thumb {
+.answer .slider::-moz-range-thumb {
     width: 1.2em;
     height: 1.2em;
     border-radius: 50%;
@@ -1039,7 +957,7 @@ ul.checkboxes, ul.radio {
     display:inline-block;
 }
 
-.slider::after{
+.answer .slider::after{
     content:"";
     position: absolute;
     display: inline-block;
@@ -1538,7 +1456,7 @@ input#PatientName {
 }
 .text input, .textbox textarea{
     width: 100%;
-    /*max-width: 98%;*/
+    line-height: 1.4;
 }
 /*#TextOptions .answer, #TextBoxOptions .answer{
     display: inline-block;
@@ -1800,7 +1718,7 @@ input#PatientName {
     border-radius: 5px;
     border-width: 1px;
     border-style: solid;
-    border-color: rgb(120,120,120);
+    border-color: var(--purple70);
     margin: 0.5em;
     position: relative;
     overflow: hidden;
@@ -1808,9 +1726,18 @@ input#PatientName {
 
 .List li {
     transition: background-color 400ms;
+    border: 1px solid var(--purple20);
+    border-width: 0 0 1px 0;
+    padding: 0.1em 0;
 }
+.List li.clickable { cursor: pointer; }
+.List li.clickable:hover { background-color: var(--purple10); }
 .List span {
     padding: 0.25em 0.75em;
+}
+.List ul .active { 
+    background-color: var(--purple70) !important;
+    color:white;
 }
 
 #SectionOrder > div > span, #ItemOrder > div > span, #ItemFUOrder > div > span {
@@ -2107,7 +2034,10 @@ input#PatientName {
     color: var(--purple);
     margin: 0.5em 0;
 }
-.tableNav .label{flex-grow: 1;}
+.tableNav .label{
+    flex-grow: 1;
+    padding: 0 0.5em;
+}
 .Filters{
     margin: 0.5em 0;
     padding: 0.5em 0;
@@ -2526,15 +2456,16 @@ table img.checkmark {
 
 .filter {
     padding: 0.2em 0.5em;
-    margin:0.1em;
-    border-width: 0 3px;
+    margin: 0.1em 0;
+    border-width: 0 2px;
     border-color: transparent;
     box-sizing: border-box;
+    max-width: 100%;
 }
 .filter.active {
-    background-color: var(--yellow10);
+    background-color: var(--yellow5);
     border-style: solid;
-    border-color: var(--yellow);
+    border-color: var(--yellow50);
 }
 .filter .switch{
     font-size: 0.8em;
@@ -2584,11 +2515,11 @@ table img.checkmark {
 
 .modalForm {
     display:none;
-    max-height: 96%;
+    max-height: 95%;
     width: max-content;
-    max-width: 96%;
-    box-sizing: border-box;
-    overflow-y: auto;
+    max-width: 95%;
+    /*box-sizing: border-box;*/
+    overflow: hidden auto;
     transition: width 1000ms, height 1000ms;
 }
 .createModel {

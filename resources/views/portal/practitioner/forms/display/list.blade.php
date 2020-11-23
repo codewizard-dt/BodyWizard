@@ -25,7 +25,7 @@ $uid = session('form_uid')!==null ? session('form_uid') : null;
 
 <?php
 $formCtrl = new Form;
-$options = $formCtrl->tableValues;
+$options = $formCtrl->TableOptions;
 $options['collection'] = Form::all();
 $options['model'] = "Form";
 // dd(Form::all()->first());

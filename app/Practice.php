@@ -67,7 +67,7 @@ class Practice extends Model
     }
     return $practice;
   }
-  public static function tableValues() {
+  public static function TableOptions() {
     $filters = [];
     return [
       'tableId' => 'PracticeList',
@@ -87,7 +87,7 @@ class Practice extends Model
       'name' => $this->name,
     ];
   }
-  function nav_options() {
+  function table_nav_options() {
     $data = [];
     $data['buttons'] = [
       'schedule' => 'schedule_edit'
@@ -554,8 +554,10 @@ return isset($e) ? false : $key->getName();
 public function installBasicForms(){
   $this->reconnectDB();
   try{
-   $forms = json_decode(Storage::get('/basicEhr/forms.json'),true);
-   DB::table('forms')->insert($forms);
+    $forms = json_decode(Storage::get('/basicEhr/forms.json'),true);
+
+    foreach ($forms as $form) { Form::create($form); }
+    // DB::table('forms')->insert($forms);
   }catch(\Exception $e){
     reportError($e,'Practice.php 492');
   }

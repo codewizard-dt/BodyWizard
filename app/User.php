@@ -38,7 +38,7 @@ class User extends Authenticatable implements MustVerifyEmail
     'roles' => 'json',
   ];
 
-  public $tableValues;
+  public $TableOptions;
   public $optionsNavValues;
   public $nameAttr;
   public $connectedModels;
@@ -52,7 +52,7 @@ class User extends Authenticatable implements MustVerifyEmail
       'includeFullJson' => false
     ];
     $this->nameAttr = 'preferred_name!!%preferred_name% %last_name%!!%first_name% %last_name%';
-    $this->tableValues = array(
+    $this->TableOptions = array(
       'tableId' => 'UserList',
       'index' => 'id',
       'columns' => array(
@@ -94,7 +94,7 @@ class User extends Authenticatable implements MustVerifyEmail
   public static function admins(){
     return User::where('email','david@bodywizardmedicine.com')->get();
   }
-  public static function tableValues(){
+  public static function TableOptions(){
     $usertype = Auth::user()->user_type;
     if ($usertype == 'practitioner'){
       return 

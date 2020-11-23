@@ -21,7 +21,7 @@ class StaffMember extends Model
   protected $appends = ['name'];
 
 
-  public $tableValues;
+  public $TableOptions;
   public $optionsNavValues;
   public $nameAttr;
   public $connectedModels;

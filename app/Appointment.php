@@ -20,11 +20,6 @@ class Appointment extends Model
   use TrackChanges;
   use Encryptable;
 
-  public $tableValues;
-  public $optionsNavValues;
-  public $connectedModels;
-  public $auditOptions;
-
   protected $casts = [
     'status' => 'array',
     'recurrence' => 'array',
@@ -50,118 +45,118 @@ class Appointment extends Model
     return ['google_id'=>$appt->google_id,'uid'=>$appt->id,'recurring_id'=>$appt->recurring_id];
   }
 
-  static function allApptsStartingBetween(Carbon $min, Carbon $max, $eagerLoad = false){
-    if ($eagerLoad){
-      $appts = Appointment::orderBy('date_time')->with($eagerLoad)->get()->filter(function($appt) use ($min, $max){
-        return $appt->date_time->isBetween($min, $max);
-      });
-    }else{
-      $appts = Appointment::orderBy('date_time')->get()->filter(function($appt) use ($min, $max){
-        return $appt->date_time->isBetween($min,$max);
-      });
-    }
-    return $appts;
-  }
-  static function allApptsStartingAfter(Carbon $start, $eagerLoad = false){
-    if ($eagerLoad){
-      $appts = Appointment::orderBy('date_time')->with($eagerLoad)->get()->filter(function($appt) use ($start){
-        return $appt->date_time->isAfter($start);
-      });
-    }else{
-      $appts = Appointment::orderBy('date_time')->get()->filter(function($appt) use ($start){
-        return $appt->date_time->isAfter($start);
-      });
-    }
-    return $appts;        
-  }
-  static function allApptsStartingWithin24hr($eagerLoad = false){
-    $start = Carbon::now()->addDay();
-    $end = Carbon::now()->addDay()->addMinutes(15);
-    return Appointment::allApptsStartingBetween($start,$end,$eagerLoad);
-  }
-  static function allApptsStartingWithin48hr($eagerLoad = false){
-    $start = Carbon::now()->addDays(2);
-    $end = Carbon::now()->addDays(2)->addMinutes(15);
-    return Appointment::allApptsStartingBetween($start,$end,$eagerLoad);
-  }
-  static function allApptsStartingWithin72hr($eagerLoad = false){
-    $start = Carbon::now()->addDays(3);
-    $end = Carbon::now()->addDays(3)->addMinutes(15);
-    return Appointment::allApptsStartingBetween($start,$end,$eagerLoad);
-  }
-  static function allApptsNeedingReminder(){
-    $appts = Appointment::allApptsStartingWithin24hr('patient.user')
-    ->filter(function($appt){
-      $requested = $appt->patient->settings['reminders']['appointments'];
-      $lastReminder = lastInArray($appt->status['reminders']['sentAt']);
-      if (!$lastReminder && $requested){return true;}
-      elseif ($lastReminder){
-        $lastReminder = new Carbon($lastReminder);
-        $failsafe = Carbon::now()->subMinutes(30);
-        return $lastReminder->isBefore($failsafe);
-      }
-      return true;
-    });
-    return $appts;
-  }
-  static function recentAppointmentsWithoutNotes($daysBack = 30){
-    $midnight = Carbon::now()->setTime(23,59,0);  $start = Carbon::now()->subDays($daysBack);
-    $appts = Appointment::allApptsStartingBetween($start, $midnight, 'chartNote')->filter(function($appt){
-      return !$appt->chartNote;
-    });
-    return $appts;
-  }
-  static function recentAppointmentsWithUnsignedNotes($daysBack = 30){
-    $midnight = Carbon::now()->setTime(23,59,0);  $start = Carbon::now()->subDays($daysBack);
-    $appts = Appointment::allApptsStartingBetween($start, $midnight, 'chartNote')->filter(function($appt){
-      return $appt->chartNote && $appt->chartNote->signed_at === 'not signed';
-    });
-    return $appts;
-  }
-  static function recentAppointmentsWithoutInvoices($daysBack = 30){
-    $midnight = Carbon::now()->setTime(23,59,0);  $start = Carbon::now()->subDays($daysBack);
-    $appts = Appointment::allApptsStartingBetween($start, $midnight, 'invoice')->filter(function($appt){
-      return !$appt->invoice;
-    });
-    return $appts;
-  }
-  static function recentAppointmentsWithPendingInvoices($daysBack = 30){
-    $midnight = Carbon::now()->setTime(23,59,0);  $start = Carbon::now()->subDays($daysBack);
-    $appts = Appointment::allApptsStartingBetween($start, $midnight, 'invoice')->filter(function($appt){
-      if ($appt->invoice) Log::info($appt->invoice->settled_at);
-      return $appt->invoice && $appt->invoice->settled_at == 'pending';
-    });
-    return $appts;
-  }
+  // static function allApptsStartingBetween(Carbon $min, Carbon $max, $eagerLoad = false){
+  //   if ($eagerLoad){
+  //     $appts = Appointment::orderBy('date_time')->with($eagerLoad)->get()->filter(function($appt) use ($min, $max){
+  //       return $appt->date_time->isBetween($min, $max);
+  //     });
+  //   }else{
+  //     $appts = Appointment::orderBy('date_time')->get()->filter(function($appt) use ($min, $max){
+  //       return $appt->date_time->isBetween($min,$max);
+  //     });
+  //   }
+  //   return $appts;
+  // }
+  // static function allApptsStartingAfter(Carbon $start, $eagerLoad = false){
+  //   if ($eagerLoad){
+  //     $appts = Appointment::orderBy('date_time')->with($eagerLoad)->get()->filter(function($appt) use ($start){
+  //       return $appt->date_time->isAfter($start);
+  //     });
+  //   }else{
+  //     $appts = Appointment::orderBy('date_time')->get()->filter(function($appt) use ($start){
+  //       return $appt->date_time->isAfter($start);
+  //     });
+  //   }
+  //   return $appts;        
+  // }
+  // static function allApptsStartingWithin24hr($eagerLoad = false){
+  //   $start = Carbon::now()->addDay();
+  //   $end = Carbon::now()->addDay()->addMinutes(15);
+  //   return Appointment::allApptsStartingBetween($start,$end,$eagerLoad);
+  // }
+  // static function allApptsStartingWithin48hr($eagerLoad = false){
+  //   $start = Carbon::now()->addDays(2);
+  //   $end = Carbon::now()->addDays(2)->addMinutes(15);
+  //   return Appointment::allApptsStartingBetween($start,$end,$eagerLoad);
+  // }
+  // static function allApptsStartingWithin72hr($eagerLoad = false){
+  //   $start = Carbon::now()->addDays(3);
+  //   $end = Carbon::now()->addDays(3)->addMinutes(15);
+  //   return Appointment::allApptsStartingBetween($start,$end,$eagerLoad);
+  // }
+  // static function allApptsNeedingReminder(){
+  //   $appts = Appointment::allApptsStartingWithin24hr('patient.user')
+  //   ->filter(function($appt){
+  //     $requested = $appt->patient->settings['reminders']['appointments'];
+  //     $lastReminder = lastInArray($appt->status['reminders']['sentAt']);
+  //     if (!$lastReminder && $requested){return true;}
+  //     elseif ($lastReminder){
+  //       $lastReminder = new Carbon($lastReminder);
+  //       $failsafe = Carbon::now()->subMinutes(30);
+  //       return $lastReminder->isBefore($failsafe);
+  //     }
+  //     return true;
+  //   });
+  //   return $appts;
+  // }
+  // static function recentAppointmentsWithoutNotes($daysBack = 30){
+  //   $midnight = Carbon::now()->setTime(23,59,0);  $start = Carbon::now()->subDays($daysBack);
+  //   $appts = Appointment::allApptsStartingBetween($start, $midnight, 'chartNote')->filter(function($appt){
+  //     return !$appt->chartNote;
+  //   });
+  //   return $appts;
+  // }
+  // static function recentAppointmentsWithUnsignedNotes($daysBack = 30){
+  //   $midnight = Carbon::now()->setTime(23,59,0);  $start = Carbon::now()->subDays($daysBack);
+  //   $appts = Appointment::allApptsStartingBetween($start, $midnight, 'chartNote')->filter(function($appt){
+  //     return $appt->chartNote && $appt->chartNote->signed_at === 'not signed';
+  //   });
+  //   return $appts;
+  // }
+  // static function recentAppointmentsWithoutInvoices($daysBack = 30){
+  //   $midnight = Carbon::now()->setTime(23,59,0);  $start = Carbon::now()->subDays($daysBack);
+  //   $appts = Appointment::allApptsStartingBetween($start, $midnight, 'invoice')->filter(function($appt){
+  //     return !$appt->invoice;
+  //   });
+  //   return $appts;
+  // }
+  // static function recentAppointmentsWithPendingInvoices($daysBack = 30){
+  //   $midnight = Carbon::now()->setTime(23,59,0);  $start = Carbon::now()->subDays($daysBack);
+  //   $appts = Appointment::allApptsStartingBetween($start, $midnight, 'invoice')->filter(function($appt){
+  //     if ($appt->invoice) Log::info($appt->invoice->settled_at);
+  //     return $appt->invoice && $appt->invoice->settled_at == 'pending';
+  //   });
+  //   return $appts;
+  // }
 
-  static function firstThatNeedsForm($formId, $patientId = null){
-    if (!$patientId && session('uidList') !== null && isset(session('uidList')['Patient'])){
-      $patientId = session('uidList')['Patient'];
-    }
-    if ($patientId){
-      $appointments = Patient::find($patientId)->appointments->filter(function($appt,$a) use($formId){
-        return $appt->requiresForm($formId);
-      });
-    }else{
-      $appointments = Appointment::allApptsStartingAfter(Carbon::now()->subMonths(1),"patient")->filter(function($appt,$a) use($formId){
-        return $appt->requiresForm($formId);
-      });
-    }
-    $appt = $appointments->first();
-    return $appt;
-  }
-  static function defaultStatus(){
-    return [
-      'scheduled_at' => Carbon::now()->toDateTimeString(),
-      'rescheduled_at' => false,
-      'reminders' => [],
-      'confirmed' => [],
-      'canceled' => false,
-      'completed' => false,
-      'invoiced' => false,
-      'paid' => false
-    ];
-  }
+  // static function firstThatNeedsForm($formId, $patientId = null){
+  //   if (!$patientId && session('uidList') !== null && isset(session('uidList')['Patient'])){
+  //     $patientId = session('uidList')['Patient'];
+  //   }
+  //   if ($patientId){
+  //     $appointments = Patient::find($patientId)->appointments->filter(function($appt,$a) use($formId){
+  //       return $appt->requiresForm($formId);
+  //     });
+  //   }else{
+  //     $appointments = Appointment::allApptsStartingAfter(Carbon::now()->subMonths(1),"patient")->filter(function($appt,$a) use($formId){
+  //       return $appt->requiresForm($formId);
+  //     });
+  //   }
+  //   $appt = $appointments->first();
+  //   return $appt;
+  // }
+  // static function defaultStatus(){
+  //   return [
+  //     'scheduled_at' => Carbon::now()->toDateTimeString(),
+  //     'rescheduled_at' => false,
+  //     'reminders' => [],
+  //     'confirmed' => [],
+  //     'canceled' => false,
+  //     'completed' => false,
+  //     'invoiced' => false,
+  //     'paid' => false
+  //   ];
+  // }
 
   public function forms($usertype = null){
     foreach ($this->services as $service){
@@ -180,7 +175,7 @@ class Appointment extends Model
     return $this->morphToMany('App\Service', 'serviceable');
   }
   public function chartNote(){
-    return $this->hasOne('App\ChartNote');
+    return $this->morphToMany('App\ChartNote', 'chart_noteable');
   }
   public function patient(){
     return $this->belongsTo('App\Patient', 'patient_id');
@@ -195,25 +190,18 @@ class Appointment extends Model
     return $this->hasOne('App\Invoice');
   }
 
-  public function checkFormSubmission($formId){
-    $submission = $this->submissions->filter(function($submission) use($formId){
-      return $submission->form_id = $formId;
-    });
-    return ($submission->count() == 0) ? false : true;
-  }
-
-  public function getPatientUserModelsAttribute(){
-    reportError("don't use patient_user_models",'Appointment 259');
-// return $this->patients->map(function($patient){
-//     return $patient->user;
-// });
-  }
-  public function getLongDateTimeAttribute(){
-    return $this->date_time->format('h:ia \o\n D n/j/y');
-  }
-  public function getDateAttribute(){
-    return $this->date_time->format('n/j/y');        
-  }
+//   public function getPatientUserModelsAttribute(){
+//     reportError("don't use patient_user_models",'Appointment 259');
+// // return $this->patients->map(function($patient){
+// //     return $patient->user;
+// // });
+//   }
+//   public function getLongDateTimeAttribute(){
+//     return $this->date_time->format('h:ia \o\n D n/j/y');
+//   }
+//   public function getDateAttribute(){
+//     return $this->date_time->format('n/j/y');        
+//   }
   public function getServiceListAttribute(){
     $services = $this->services->map(function($service){
       return $service->name;

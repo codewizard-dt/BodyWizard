@@ -10,9 +10,6 @@ use Faker\Generator as Faker;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 
-
-include_once app_path("/php/functions.php");
-
 $factory->define(Appointment::class, function (Faker $faker) {
 	$practitionerIds = Practitioner::all()->modelKeys();
 	$practitionerId = Arr::random($practitionerIds);
@@ -30,18 +27,8 @@ $factory->define(Appointment::class, function (Faker $faker) {
     return [
         'uuid' => uuidNoDash(),
         'practitioner_id' => $practitionerId,
-        'date_time' => $random->toDateTimeString(),
-        'status' => [
-            'scheduled_at' => Carbon::now()->toDateTimeString(),
-            'rescheduled_at' => false,
-            'canceled' => false,
-            'completed' => false,
-            'invoiced' => false,
-            'paid' => false
-        ],
-        'duration' => 0,
-        'staff_member_note' => json_encode([$faker->paragraph($nbSentences = 1, $variableNbSentences = true)]),
-        'practitioner_note' => json_encode([$faker->paragraph($nbSentences = 3, $variableNbSentences = true)])
+        'date_time_start' => $random->toDateTimeString(),
+        'date_time_end' => $random->toDateTimeString(),
     ];
 });
 

@@ -4,15 +4,13 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Traits\TrackChanges;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 
 class Practitioner extends Model
 {
   use TrackChanges;
-  use SoftDeletes;
 
-  public $tableValues;
+  public $TableOptions;
   public $optionsNavValues;
   public $connectedModels;
   public $auditOptions;
@@ -25,17 +23,7 @@ class Practitioner extends Model
   protected $visible = ['id','user_id','name','email','username','date_of_birth','roles'];
   protected $appends = ['name'];
 
-  public function __construct($attributes = []){
-    parent::__construct($attributes);
-    $this->auditOptions = [
-      'audit_table' => 'practitioners_audit',
-      'includeFullJson' => false
-    ];
-    $this->connectedModels = array(
-    );
-  }
-
-  public static function tableValues(){
+  public static function TableOptions(){
     $filters = [];
     set($filters, 'phone.input', new_input(
       'checkboxes',
@@ -55,7 +43,7 @@ class Practitioner extends Model
       'extraBtns' => [],
     ];
   }
-  public function nav_options() {
+  public function table_nav_options() {
     $data = [];
     $data['buttons'] = [
       'schedule' => 'schedule_edit'

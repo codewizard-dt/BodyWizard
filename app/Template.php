@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Template extends Model
 {
-    public $tableValues;
+    public $TableOptions;
     public $optionsNavValues;
     public $connectedModels;
     public $connectedModelAliases;
@@ -14,7 +14,7 @@ class Template extends Model
     protected $hidden = ['full_json'];
 
     public function __construct(){
-	    $this->tableValues = array(
+	    $this->TableOptions = array(
 	    	'tableId' => 'TemplateList',
 	    	'index' => 'id',
             'model' => "Template",

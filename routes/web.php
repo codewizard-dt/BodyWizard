@@ -69,32 +69,33 @@ Route::get('/schedule/non-ehr', 'ScheduleController@nonEhrEventFeed');
 	Route::get('/retrieve/{model}/{uid}', 'ScriptController@fetchModel');
 	Route::post('/savePinnedNotes/{model}/{uid}', 'ScriptController@savePinnedNotes');
 
-Route::get('/home/appointments', 'AppointmentController@home');
+Route::get('/icd-api/token', 'CodeController@getIcdApiToken');
+// Route::get('/home/appointments', 'AppointmentController@home');
 Route::get('/appointments/calendar', 'AppointmentController@calendar');
-Route::get('/appointment/{uid}/get-chart-note', 'AppointmentController@getChartNote');
-Route::get('/appointment/{uid}/edit-chart-note', 'AppointmentController@editChartNote');
-Route::get('/ChartNote/create','ChartNoteController@create');
-Route::get('/ChartNote/{id}/view','ChartNoteController@view');
-Route::get('/ChartNote/{id}/edit','ChartNoteController@edit');
-Route::post('/ChartNote/{id}/autosave','ChartNoteController@autosave');
-Route::post('/ChartNote/{id}/sign','ChartNoteController@sign');
-Route::get('/ChartNote/load-form/{formId}','ChartNoteController@loadForm');
+// Route::get('/appointment/{uid}/get-chart-note', 'AppointmentController@getChartNote');
+// Route::get('/appointment/{uid}/edit-chart-note', 'AppointmentController@editChartNote');
+// Route::get('/ChartNote/create','ChartNoteController@create');
+// Route::get('/ChartNote/{id}/view','ChartNoteController@view');
+// Route::get('/ChartNote/{id}/edit','ChartNoteController@edit');
+// Route::post('/ChartNote/{id}/autosave','ChartNoteController@autosave');
+// Route::post('/ChartNote/{id}/sign','ChartNoteController@sign');
+// Route::get('/ChartNote/load-form/{formId}','ChartNoteController@loadForm');
 
-Route::get('/Invoice/create','InvoiceController@create');
-Route::get('/appointment/{uid}/get-invoice', 'AppointmentController@getInvoice');
-Route::get('/appointment/{uid}/edit-invoice', 'AppointmentController@editInvoice');
-Route::get('/Invoice/{id}/view','InvoiceController@view');
-Route::get('/Invoice/{id}/edit','InvoiceController@edit');
-Route::post('/Invoice/{id}/autosave','InvoiceController@autosave');
-Route::post('/Invoice/{id}/save','InvoiceController@save');
+// Route::get('/Invoice/create','InvoiceController@create');
+// Route::get('/appointment/{uid}/get-invoice', 'AppointmentController@getInvoice');
+// Route::get('/appointment/{uid}/edit-invoice', 'AppointmentController@editInvoice');
+// Route::get('/Invoice/{id}/view','InvoiceController@view');
+// Route::get('/Invoice/{id}/edit','InvoiceController@edit');
+// Route::post('/Invoice/{id}/autosave','InvoiceController@autosave');
+// Route::post('/Invoice/{id}/save','InvoiceController@save');
 
 Route::post('user/{userId}/invoice/{invoiceId}/get-payment-intent','StripeController@getPaymentIntent');
 
-Route::resource('appointments', 'AppointmentController');
-Route::get('/home/botanicals', 'BotanicalController@home');
-Route::get('/home/codes', 'CodeController@home');
-Route::get('/home/complaints', 'ComplaintController@home');
-Route::get('/home/diagnoses', 'DiagnosisController@home');
+// Route::resource('appointments', 'AppointmentController');
+// Route::get('/home/botanicals', 'BotanicalController@home');
+// Route::get('/home/codes', 'CodeController@home');
+// Route::get('/home/complaints', 'ComplaintController@home');
+// Route::get('/home/diagnoses', 'DiagnosisController@home');
 
 Route::match(['get','post'],'/form/display/{form}','FormController@get_html');
 Route::get('/form/preview/{form}','FormController@get_html_preview');

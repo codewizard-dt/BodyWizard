@@ -43,5 +43,9 @@ return [
             'tolerance' => env('STRIPE_WEBHOOK_TOLERANCE', 300),
         ],
     ],
+    'icd_api' => [
+        'id' => env('ICD_API_ID'),
+        'secret' => env('ICD_API_SECRET'),
+    ],
 
 ];

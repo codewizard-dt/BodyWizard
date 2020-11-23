@@ -2,6 +2,43 @@ import {system, practice, log, Features} from './functions';
 import {model, Models, class_map_linkable, linkable_lists} from './models';
 import {DateTime as LUX} from 'luxon';
 import * as ICD from '@whoicd/icd11ect';
+window.ICD = ICD;
+const EMBEDDED_ICD_SETTINGS = {
+    apiServerUrl: "https://id.who.int",   
+    apiSecured: true,
+    language: "en",
+    autoBind: false,
+    sourceApp: 'ClinicWizard',
+};
+const EMBEDDED_ICD_CALLBACKS = {
+  searchStartedFunction: () => {
+    log('start');
+  },
+  searchEndedFunction: () => {
+    log('stop');
+  },
+  selectedEntityFunction: (entity) => {
+    log({entity});
+    let form = Models.IcdCode.form, info_ele = form.find('#IcdCodeInfo'), code = info_ele.find('.value.Code'), desc = info_ele.find('.value.Description');
+    Models.IcdCode.entity = entity;
+    code.text(entity.code);
+    desc.text(`${entity.title} (${entity.bestMatchText})`);
+  },
+  getNewTokenFunction: async () => {
+    const url = '/icd-api/token';
+    try {
+        const response = await fetch(url);
+        const result = await response.json();
+        const token = result.token;
+        return token; // the function return is required 
+    } catch (e) {
+        console.log("Error during the request");
+    }
+
+  }
+}
+window.EMBEDDED_ICD_SETTINGS = EMBEDDED_ICD_SETTINGS;
+window.EMBEDDED_ICD_CALLBACKS = EMBEDDED_ICD_CALLBACKS;
 
 class FormEle {
   constructor(proxy) {
@@ -1048,9 +1085,8 @@ class Answer {
     this.type = data.type;
     this.mode = mode;
     if (!this[this.type]) throw new Error(`'${this.type}' not defined in class Answer`);
-    this.options = data.options;
-    this.name = data.options.name || data.name;
-    // if (this.name == "EndDateOptional") log({data,settings:data.settings});
+    this.options = data.options || data;
+    this.name = this.options.name || '';
     this.settings = {required: true, warning: true, autocomplete: false}.merge(data.settings || {});
     this.save_as_bool = this.options.save_as_bool || this.settings.save_as_bool || false;
     this.initial = data.initial || null;
@@ -1064,7 +1100,7 @@ class Answer {
     if (['date','number','time'].includes(this.type)) this.ele.addClass('flexbox left');
     this[this.type]();
     if (this.options.name && this.input) {
-      this.input.attr('name',this.options.name);
+      // this.input.attr('name',this.options.name);
       this.input.addClass(this.options.name);
     }
 
@@ -1086,19 +1122,9 @@ class Answer {
       if (label_css) this.postLabel.css(label_css);
     }
 
-    // if (this.options.inputCss) {
-    //   let validCss = this.options.inputCss.json_if_valid();
-    //   if (validCss) this.input.css(validCss);
-    //   else log(this,'invalid css');
-    // }
     this.input.css(system.validation.json(this.options.inputCss) || {});
     this.ele.css(system.validation.json(this.options.eleCss) || {});
     if (!this.settings.autocomplete) this.input.attr('autocomplete','off');
-    // if (this.options.eleCss) {
-    //   let validCss = this.options.eleCss.json_if_valid();
-    //   if (validCss) this.ele.css(validCss);
-    //   else log(this,'invalid css');
-    // }
     if (this.options.eleClass) {
       let classes = this.options.eleClass.split(' ');
       classes.forEach(c => {
@@ -1106,12 +1132,17 @@ class Answer {
         else this.ele.addClass(c);
       })
     }
+    if (this.options.inputClass) {
+      let classes = this.options.inputClass.split(' ');
+      classes.forEach(c => {
+        if (c.includes('!')) this.input.removeClass(c.replace('!',''));
+        else this.input.addClass(c);
+      })
+    }
     if (this.options.on_change_action && typeof this.options.on_change_action == 'string') this.options.on_change_action = this.options.on_change_action.to_fx();
     if (this.options.after_change_action && typeof this.options.after_change_action == 'string') {
       this.options.after_change_action = this.options.after_change_action.to_fx();
-      // log({fx:this.options.after_change_action});
     }
-    if (['date','time'].includes(this.type) || this.options.linked_to) this.input.attr('autocomplete','off');
     this.to_initial_value();
   }
 
@@ -1194,8 +1225,19 @@ class Answer {
   get has_label () {return this.options.preLabel || this.options.postLabel || false;}
   get filter () {return this.ele.closest('.filter').getObj()}
   get linked_uids () {
-    let uids = this.linked_selection.map(selection => selection.uid);
+    let selection = this.linked_selection;
+    if (!selection) return null;
+    // log({selection});
+    let uids = selection.get().map(s => $(s).data('value'));
+
     return this.linked_limit == 1 ? uids[0] : uids;
+  }
+  get linked_selection () {
+    let selected = null;
+    if (this.linked_list) {
+      selected = this.linked_list.active;
+    }
+    return selected;
   }
 
   on_change (ev) {
@@ -1203,7 +1245,6 @@ class Answer {
     if (this.has_filter) this.filter.update();
     if (this.options.on_change_action) this.options.on_change_action(this, ev);
     if (this.options.after_change_action) this.options.after_change_action(this, ev);
-    // log('hello');
   }
   followup_show (time = 400) {
     let item_ele = this.ele.closest('.item');
@@ -1269,44 +1310,42 @@ class Answer {
   async linked_popup_create () {
     this.waiting_for_list = true;
     let model = this.options.linked_to, answer = this;
-    this.linked_ele = $(`<div/>`).css({
-      display:'inline-block', position:'absolute', top: '100%', left: 0, zIndex: 50, backgroundColor: 'var(--white97)', outline: 'none'
-    }).attr('tabindex',0).appendTo(this.ele).hide().on('blur',function(ev){
-      let within_answer = answer.ele.find(ev.relatedTarget).exists();
-      if (!within_answer) answer.linked_ele.slideFadeOut();
-    });
-
+    let disp_model = model.toKeyString(true).replace('Icd ','ICD ').replace('Cpt ','CPT ');
+    this.linked_limit = this.options.listLimit || 1;
     this.linked_list = new Features.List({
-      header: 'Type to search',
-      header_html_tag: 'h5',
-      css: {backgroundColor:'var(--white97)',border:'2px solid var(--gray97)',borderRadius:'5px',padding:'0.5em 1em'},
+      header: `${disp_model} List`,
+      header_html_tag: 'h4',
+      header_class: 'bold',
+      with_search: true,
       cssLiOnly: {width:'max-content',maxWidth:'20em'},
       filter: this,
+      limit: this.linked_limit,
     });
-    this.linked_limit = this.options.listLimit || 1;
-    this.linked_list.ele.appendTo(this.linked_ele);
+    this.linked_tt = new Features.ToolTip({
+      message: this.linked_list.ele,
+      target: this.input,
+    });
+    if (this.options.list_separator == 'line break') this.options.list_separator = '\n';
     let list = this.linked_list, columns = this.options.linked_columns || [], data_list = await this.linked_list_get(this.options.linked_to, columns);
+    
     data_list.forEach(option => {
       list.add_item({text:option.name, value:option.uid, entire_li_clickable:true, action:answer.linked_select_click.bind(answer)});
     })
-    this.input.on('keyup', this.on_change.bind(this))
-    .on('focus',function(){ answer.linked_ele.slideFadeIn() }).on('blur',function(ev){
-      let within_answer = answer.ele.find(ev.relatedTarget).exists();
-      if (!within_answer) {
-        answer.followup_show();
-        answer.linked_ele.slideFadeOut();
-      }
-    })
+    this.input.on('keyup', this.on_change.bind(this));
+  
+    model = model.toKeyString();
+    this.linked_tt.ele.append(Models.Model.popup_links(model));
     this.waiting_for_list = false;
   }
+  async linked_list_update () {
+    let answer = this, list = this.linked_list, data_list = await Models.Model.get_list({model:this.options.linked_to,obj:this,columns:[]});
+    list.remove_all();
+    data_list.forEach(option => {
+      list.add_item({text:option.name, value:option.uid, entire_li_clickable:true, action:this.linked_select_click.bind(this)});
+    })
+  }
   linked_select_click (ev) {
-    let target = $(ev.target).closest('li'), val = target.data('value'), text = target.find('span').text();
-    let selection = this.linked_selection || [];
-    if (this.linked_limit == 1) {
-      selection = [{uid:val,text:text}];
-      this.linked_popup_hide();
-    }
-    this.linked_selection = selection;
+    let target = $(ev.target).closest('li'), val = target.data('value');
     this.linked_text_update();
     this.on_change(ev);
   }
@@ -1325,39 +1364,38 @@ class Answer {
     return {uid:item.uid,text:item.name};
   }
   linked_select_uid (uids) {
+    if (uids == null) return;
     try {
-      if (uids == null) this.linked_selection = null;
-      else {
-        if (!uids.is_array()) uids = [uids];
-        this.linked_selection = uids.map(uid => this.linked_find_data_by_uid(uid));
-      }
       if (this.type == 'list') {
         this.ele.resetActives();
-        if (uids) this.ele.find('li').filter((l,li) => uids.some(uid => $(li).data('value') == uid)).addClass('active');
+        this.ele.find('li').filter((l,li) => uids.some(uid => $(li).data('value') == uid)).addClass('active');
       } else if (this.type == 'checkboxes') {
-        alert('help');
+        // log({error: new Error('')})
+        log({uids});
       } else {
-        this.linked_text_update(); this.placeholder_shift();  
+        this.linked_text_update(uids);
       }
     } catch (error) {
       log({error,uids});
     }
   }
-  linked_text_update () {
-    let value = this.linked_selection ? system.validation.array.join(this.linked_selection.map(selected => selected.text)) : null;
-    this.input.val(value);
-  }
-  linked_popup_hide () {this.linked_ele.slideFadeOut(this.placeholder_shift.bind(this));}
-  linked_filter () {
-    let value = this.get();
-    if (value) {
-
-    } else this.linked_list;
-  }
-  linked_update_editor () {
-    let model = this.options.linked_to;
-    log({model});
-    forms.create.editor.options.linked_text_update_editor(model);
+  linked_text_update (uids = null) {
+    let a = this;
+    if (uids) {
+      if (!uids.is_array()) uids = [uids];
+      this.linked_list.ele.resetActives();
+      this.linked_list.items.filter((i,item) => uids.some(u => $(item).data('value') == u)).addClass('active');
+    }
+    setTimeout(function(){
+      let selection = a.linked_selection, value = '';
+      if (selection) {
+        value = selection.get().map(item => $(item).text());
+        if (a.options.list_separator) value = value.join(a.options.list_separator);
+        else value = value.smartJoin();
+      }
+      a.input.val(value);
+      a.placeholder_shift();
+    },50);
   }
 
   password () {
@@ -1375,15 +1413,15 @@ class Answer {
   }
   enable (options) { this.is_disabled = true; if (this.enable_unique) this.enable_unique(); }
   async text () {
-    this.input = $(`<input>`).appendTo(this.ele);
+    this.input = $(`<input>`).appendTo(this.ele).on('keyup',this.on_change.bind(this));
     if (this.options.placeholder) this.input.attr('placeholder', this.options.placeholder);
     this.get = () => {
-      if (this.linked_selection && this.linked_selection.notEmpty()) return this.linked_uids;
+      if (this.linked_list) return this.linked_uids;
       let v = $.sanitize(this.input.val());
       return (v != '') ? v : null;
     }
-    this.disable_unique = () => { this.input.attr('readonly',true)};
-    this.enable_unique = () => { this.input.removeAttr('readonly')}
+    this.disable_unique = () => { this.input.attr('disabled',true)};
+    this.enable_unique = () => { this.input.removeAttr('disabled')}
     this.placeholder_visible = false;
     if (this.options.name == 'phone') system.validation.input.phone(this.input);
     if (this.options.name == 'email') system.validation.input.email(this.input);
@@ -1392,11 +1430,11 @@ class Answer {
     if (this.options.linked_to) await this.linked_popup_create();
   }
   async textbox () {
-    this.input = $(`<textarea/>`).appendTo(this.ele);
+    this.input = $(`<textarea/>`).appendTo(this.ele).on('keyup',this.on_change.bind(this));
     if (this.options.placeholder) this.input.attr('placeholder', this.options.placeholder);
     this.if_null_str = 'boxxy';
     this.get = () => {
-      if (this.linked_selection && this.linked_selection.notEmpty()) return this.linked_uids;      
+      if (this.linked_list) return this.linked_uids;      
       let v = $.sanitize(this.input.val());
       return (v != '') ? v : null;
     }    
@@ -1606,15 +1644,20 @@ class Answer {
     }
     list.forEach(option => {
       option = Answer.split_values_and_text(option);      
-      $(`<label class='flexbox inline nowrap' style='margin:0 0.5em;transition:background-color 400ms;padding-left:0.5em;border-radius:5px'><input type='checkbox' value='${option.value}'><span style='padding:0 0.5em'>${option.text}</span></label>`).appendTo(this.input)
+      $(`<label class='flexbox inline nowrap' style='margin:0 0.5em;transition:background-color 400ms;padding-left:0.5em;border-radius:5px'><input type='checkbox' value='${option.value}'><span style='padding:0 0.5em;width:max-content'>${option.text}</span></label>`).appendTo(this.input)
     });
-    this.get = () => {
+    this.get = (from_text = false) => {
       let input = this, values = null;
       if (this.save_as_bool) {
         values = {};
-        this.input.find('input').each((i,input) => {
-          values[$(input).attr('value').toKeyString()] = $(input).is(':checked');
+        this.input.find('label').get().forEach(l => {
+          let i = $(l).find('input'), s = $(l).find('span');
+          let key = from_text ? s.text() : i.attr('value').toKeyString();
+          values[key] = i.is(':checked');
         });
+        // this.input.find('input').each((i,input) => {
+        //   values[$(input).attr('value').toKeyString()] = $(input).is(':checked');
+        // });
       } else {
         values = this.input.find(':checked').get().map(i => $(i).val()); 
       }
@@ -1892,7 +1935,6 @@ class InsertOptions {
     else this.show();
   }
 }
-// $(document).ready(function(){class_map_all.merge({Answer,forms,FormEle,Section,Item})});
 
 export const Forms = {FormEle, FormResponse, Section, Item, Answer};
 
@@ -2219,10 +2261,12 @@ var forms = {
               instance = model_name.to_class_obj();
             } else if ($(this).hasClass('edit')) {
               instance = Models[model_name].editing;
-              log({instance});
               if (!instance.update_attr_by_form()) throw new Error('form error');
             }
-            // log({data,type}, 'save btn data');
+            if ($(this).data('wants_checkmark')) instance.wants_checkmark = true;
+            if ($(this).data('clear_count')) instance.clear_count = $(this).data('clear_count');
+            if ($(this).data('save_callback')) instance.save_callback = $(this).data('save_callback');
+            log({instance},'pre-save instance');
             await instance.save();              
             system.initialize.newContent();
           }catch(error) {
@@ -2307,6 +2351,18 @@ var forms = {
         new Features.Toggle($(this));
       })
     },
+    embedded_icd: () => {
+      // if (!ICD.Settings.apiSecured) ICD.Handler.configure(EMBEDDED_ICD_SETTINGS,EMBEDDED_ICD_CALLBACKS);
+      let new_input = system.initialize.find('.ctw-input');
+      if (new_input && new_input.length > 0) {
+        ICD.Handler.configure(EMBEDDED_ICD_SETTINGS,EMBEDDED_ICD_CALLBACKS);
+        $('.ctw-input').each(function(){
+          $(this).attr('autocomplete','off');
+          let n = $(this).data('ctw-ino');
+          ICD.Handler.bind(n);
+        })
+      }
+    }
   },
 };
 

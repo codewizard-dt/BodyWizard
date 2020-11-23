@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Auth;
 class Message extends Model
 {
     use SoftDeletes;
-    public $tableValues;
+    public $TableOptions;
     public $optionsNavValues;
     public $connectedModels;
     public $connectedModelAliases;
@@ -23,7 +23,7 @@ class Message extends Model
     ];
 
     public function __construct(){
-	    $this->tableValues = array(
+	    $this->TableOptions = array(
 	    	'tableId' => 'MessageList',
 	    	'index' => 'id',
             'model' => "Message",
@@ -98,7 +98,7 @@ class Message extends Model
             'user' => 'sender'
         ];
     }
-    public static function tableValues(){
+    public static function TableOptions(){
         $usertype = Auth::user()->user_type;
         $commonArr = [
             'tableId' => 'MessageList',

@@ -199,22 +199,6 @@
       "uri":"/ChartNote/index"
     },
 
-    "codes-home": {
-      "text":"Code Center",
-      "dropdown":false,
-      "uri":"/home/codes"
-    },
-    "codes-index": {
-      "text":"Code Center",
-      "dropdown":false,
-      "uri":"/Code/index"
-    },
-    "codes-create": {
-      "text":"Add New Code",
-      "dropdown":false,
-      "uri":"/create/Code"
-    },
-
     "diagnoses-home": {
       "text":"Diagnosis",
       "dropdown": {
@@ -291,7 +275,7 @@
       "uri":"/home/forms"
     },
     "forms-index": {
-      "text":"Form List",
+      "text":"Available Forms",
       "dropdown":false,
       "uri":"/Form/index"
     },
@@ -388,10 +372,10 @@
           }
         },
         "diagnostics-list": {
-          "text":"Diagnostics",
+          "text":"Diagnosis",
           "dropdown": {
             "complaint-index": {
-              "text":"Complaints",
+              "text":"Chief Complaints",
               "uri":"/Complaint/index",
               "dropdown":false
             },
@@ -413,10 +397,10 @@
                 }
               }
             },
-            "code-index": {
-              "text":"Codes",
+            "icd-code-index": {
+              "text":"ICD Codes",
               "dropdown":false,
-              "uri":"/Code/index"
+              "uri":"/IcdCode/index"
             }
           }
         },
