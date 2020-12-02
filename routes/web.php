@@ -28,7 +28,8 @@ Route::domain('headspaceacupuncture.com')->group(function(){
 	});
 });
 
-Route::any('/notification-check', 'NotificationController@getUnread');
+Route::any('/notification-unread', 'NotificationController@getUnread');
+Route::post('/notification-retrieve', 'NotificationController@retrieve');
 Route::post('/notification-update', 'NotificationController@update');
 Route::post('/notification-delete', 'NotificationController@delete');
 

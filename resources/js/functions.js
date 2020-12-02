@@ -16,49 +16,38 @@ export const debug = {
     }
   }
 };
-export const log = function(info, text = null, allowArray = false){
+export const log = function(info, text = null){
   if (typeof info === 'string') text = info;
-  let error = ifu([info.error, info.errors], null, allowArray);
+  let error = ifu(info.error, info.errors, null);
   let data = {}, attrText = [];
   if (typeof info == 'object'){
-    for (let attr in info){
-      data[attr] = info[attr];
-      attrText.push(attr);
-    }
+    for (let attr in info){ data[attr] = info[attr]; attrText.push(attr); }
     attrText = attrText.join(', ');        
-  }else{
-    attrText = 'log info';
-  }
-  let stack_steps = (new Error()).stack.match(/at (.*) \((.*js):(.*):/g), stack_info = '';
+  } else attrText = 'log info';
+  let stack_steps = (new Error()).stack.match(/at (.*) \((.*js):(.*):/g), stack_info = '', fx = '', file = '';
   if (stack_steps && stack_steps[1]){
-    let last_step = stack_steps[1].match(/at (.*) \((.*js):(.*):/),
-      fx = last_step[1], file = last_step[2].split('/').pop(), line = last_step[3],
-      last_step_str = `   - ${file} ${line}`;    
-    stack_info = last_step_str;
+    let last_step = stack_steps[1].match(/at (.*) \((.*js):(.*):/);
+    file = last_step[2].split('/').pop();
+    fx = last_step[1];      
+    stack_info = ` - ${file}`;
   }
 
+  let style = 'color: green; font-weight: bold;';
+  text = ifn(text, info.text, attrText);
   if (error !== null || Array.isArray(error)) {
-    text = ifn([text, info.text], attrText);
     if (error instanceof Error) text = error.message;
-    delete data.text;
-    console.groupCollapsed('%c '+ text + ' ' + stack_info,'color: red; font-weight: bold;');
-    console.error(data);
-    if (error.stack) console.log(error.stack);
+    style = 'color: red; font-weight: bold;'
+  } 
+
+  delete data.text;
+  console.groupCollapsed(`%c ${text} ${stack_info}`,style);
+    console.log(`%c ${file} @ ${fx}`,style)
+    error ? console.error(data) : console.log(data);
+    if (error !== null && error.stack) console.log(error.stack);
     console.groupCollapsed('trace');
-    console.trace();
+      console.trace();
     console.groupEnd();
-    console.groupEnd();
-  }
-  else {
-    text = ifn([text, info.text], attrText);
-    delete data.text;
-    console.groupCollapsed('%c '+ text + ' ' + stack_info,'color: green; font-weight: bold;');
-    console.log(data);
-    console.groupCollapsed('trace');
-    console.trace();
-    console.groupEnd();
-    console.groupEnd();
-  }
+  console.groupEnd();
 };
 
 class Button {
@@ -182,30 +171,41 @@ class Editable {
 };
 class OptionBox {
   constructor (options = {}) {
-    let header = ifu(options.header, null), id = ifu(options.id, null),
-    header_html_tag = ifu(options.header_html_tag, 'h3');
-    this.ele = $(`<div class='prompt'></div>`);
-    if (options.css) this.ele.css(options.css);
+    this.define_by(options);
+    // let header = ifu(options.header, ''), id = ifu(options.id, null),
+    // header_html_tag = ifu(options.header_html_tag, 'h3');
+    this.header_text = this.header || '';
+    if (!this.header_html_tag) this.header_html_tag = 'h3';
+    this.ele = $(`<div class='prompt OptionBox'></div>`);
+    if (this.css) this.ele.css(this.css);
     this.ele.append(`<div class='body'><div class='info'></div></div>`,`<div class='options'></div>`);
     this.body = this.ele.find('.body');
     this.info = this.ele.find('.info');
     this.option_list = this.ele.find('.options');
-    this.header = header ? $(`<${header_html_tag} class='header'>${header}</${header_html_tag}>`).prependTo(this.body) : null;
+    this.header = $(`<${this.header_html_tag} class='header'>${this.header_text}</${this.header_html_tag}>`).prependTo(this.body);
 
     this.buttons = [];
-    if (id) this.ele.attr('id',id);
+    if (this.id) this.ele.attr('id',this.id);
     this.ele.appendTo('body');
   }
 
-  add_info (ele) {
-    if (ele instanceof Button) {
-      let btn = ele;
+  add_info (info) {
+    let options = this;
+    if (info instanceof Button) {
+      let btn = info;
       this.info.append(btn.ele);
       btn.ele.on('click', btn.click.bind(btn));
-    } else this.info.append(ele);
+    } else if (typeof info == 'string' || info instanceof jQuery) {
+      this.info.append(info);
+    // } else if (info.is_array()) {
+    //   info.forEach(i => this.add_info(i));
+    } else if (typeof info == 'object') {
+      let box = new KeyValueBox({json:info});
+      this.info.append(box.ele);
+    } else log({info});
     return this;
   }
-  reset_header (str) {
+  reset_header (str = '') {
     this.header.html(str);
     return this;
   }
@@ -216,6 +216,12 @@ class OptionBox {
   }
   add_button_info (ele) {
     this.option_list.prepend(ele);
+    return this;
+  }
+  remove_buttons () {
+    log({buttons:this.buttons});
+    this.buttons.forEach(b => b.ele.remove());
+    this.buttons = [];
     return this;
   }
   add_button (options) {
@@ -235,18 +241,25 @@ class KeyValueBox {
       value_css = options.value_css || {};
     this.wrap_ele_outer = $('<div/>',{css:{textAlign:'center'}});
     this.flex = $('<div/>',{class:'flexbox column inline',css:box_css});
-    this.ele = options.ele || $('<div/>').appendTo('body');
+    this.ele = (options.ele || $('<div/>').appendTo('body')).addClass('KeyValueBox');
     this.ele.append(this.flex).wrap(this.wrap_ele_outer);
-    let max_width = 0;
+    let max_width = 0, max_width_key = null;
     for (let key in pairs) {
-      let value = pairs[key], 
-        key_ele = $('<div/>',{class:`key ${key.toKeyString()}`,text: key}).css(key_css), 
+      let value = pairs[key];
+      // if (typeof value == 'string') value = value.replace(/\//g,'\/ ');
+      if (typeof value == 'object') value = system.display.format.readableJson(value);
+      let key_ele = $('<div/>',{class:`key ${key.toKeyString()}`,text: key}).css(key_css), 
         value_ele = $('<div/>',{class:`value ${key.toKeyString()}`}).css(value_css).append(value),
         wrap_ele_inner = $('<div/>',{class:'flexbox',css:{width:'calc(100% - 1em)',padding:'0 1em',margin:'0 0.5em',flexWrap:'nowrap'}}).append(key_ele,value_ele);
-        this.flex.append(wrap_ele_inner);
-        if (key_ele[0].scrollWidth > max_width) max_width = key_ele[0].scrollWidth;
+      this.flex.append(wrap_ele_inner);
+      if (key_ele[0].scrollWidth > max_width) {
+        max_width_key = key_ele;
+        max_width = key_ele[0].scrollWidth;
+      }
     }
+    log({max_width_key,max_width});
     this.ele.find('.key').css({minWidth:max_width});
+    this.ele.data('initialized',true);
   }
 }
 class Filter {
@@ -364,13 +377,15 @@ class Filter {
 }
 class List {
   constructor (options = {}) {
-    this.ele = $(`<div/>`,{class:'List'});
-    let text = ifu(options.header, null), tag = options.header_html_tag || 'h3';
+    for (let key in options) { this[key] = options[key] }
+    if (!this.ele) this.ele = $(`<div/>`,{class:'List'});
+
+    let text = ifu(this.header, null), tag = this.header_html_tag || 'h3';
     if (text) this.header = $(`<${tag}>${text}</${tag}>`).appendTo(this.ele);
-    if (options.header_css) this.header.css(options.header_css);
-    if (options.header_class) this.header.addClass(options.header_class);
+    if (this.header_css) this.header.css(this.header_css);
+    if (this.header_class) this.header.addClass(this.header_class);
     this.ul = $(`<ul/>`).css({display:'inline-block'}).appendTo(this.ele);
-    if (options.with_search) {
+    if (this.with_search) {
       let answer_css = {width: 'calc(100% - 0.5em'};
       this.search_box = new Forms.Answer({type:'text',placeholder:'Type to search',settings:{placeholder_shift:false}});
       this.active_only = new Forms.Answer({type:'checkboxes',list:['only selected items']});
@@ -380,14 +395,14 @@ class List {
       this.add_item({text:'No matching items',class_list:'no_match'}).hide();
       this.add_item({text:'None selected',class_list:'no_selection'}).hide();
     }
-    if (options.css) this.ele.css(options.css);
-    this.ul_css = options.ul_css || {};
-    this.ul.css(this.ul_css.merge({width:'max-content',maxWidth:'35em'})).on('click','li',this.item_click.bind(this));
-    this.action = ifu(options.action, null);
-    // this.filter = options.filter || null;
-    this.limit = options.limit || 1;
-    this.limit = Number.isNaN(Number(this.limit)) ? null : Number(this.limit);
-    if (this.filter) this.filter_create();
+    if (this.css) this.ele.css(this.css);
+    this.li_selectable = ifu(this.li_selectable,true);    
+    this.ul_css = this.ul_css || {};
+    this.ul.css(this.ul_css.merge({width:'max-content',maxWidth:'35em'}))
+    this.action = ifu(this.action, null);
+    // this.limit = this.limit || 1;
+    this.limit = Number.isNaN(Number(this.limit || 1)) ? null : Number(this.limit);
+    this.ele.data('initialized',true);
   }
 
   get items () {
@@ -400,7 +415,13 @@ class List {
     let active = this.items.filter('.active');
     return active.exists() ? active : null;
   }
-  item_click (ev) {
+  get active_values () { 
+    let active = this.active;
+    return active ? this.active.get().map(item => $(item).data('value')) : null;
+  }
+  find_by_value (value_array) { return this.items.filter( (i,item) => value_array.includes($(item).data('value') ) ) }
+  item_select (ev) {
+    if ($(ev.target).is('img')) return;
     let has_limit = this.limit != null, item = $(ev.target).closest('li'), is_active = item.hasClass('active');
     if (item.hasClass('no_match') || item.hasClass('no_selection')) return;
     if (!has_limit) item.toggleClass('active');
@@ -414,12 +435,24 @@ class List {
     }
   }
   add_item (options = {}) {
-    let text = options.text || 'text ?', action = options.action || null,
-      item = $(`<li/>`,{class: options.class_list || '',html:`<span>${text}</span>`}).appendTo(this.ul), entire_li_clickable = options.entire_li_clickable || false, clickable_ele = entire_li_clickable ? item : item.find('span'), value = options.value || text;
+    let text = options.text || 'text ?', 
+      action = options.action || null,
+      item = $(`<li/>`,{class: options.class_list || this.li_class || ''}).appendTo(this.ul), 
+      entire_li_clickable = ifu(options.entire_li_clickable, this.entire_li_clickable, true), 
+      clickable_ele = item, 
+      value = options.value || text, 
+      to_top = options.position ? options.position == 'top' ? true : false : false;
+    item.append(options.append ? options.append : `<span>${text}</span>`);
+    if (to_top) item.prependTo(this.ul);
+    if (this.li_css) item.css(this.li_css);
     item.data('value',value);
+    if (ifu(options.selectable, this.li_selectable)) item.on('click',this.item_select.bind(this));
+
     if (action && typeof action == 'function'){
+      if (!entire_li_clickable) clickable_ele = item.children().first();
       clickable_ele.addClass('clickable').on('click',action);
     }
+    this.ul.find('.no_items').not(item).hide();
     return item;
   }
   remove_by_index (index) {
@@ -842,21 +875,275 @@ class ToolTip {
   }
 };
 class Warning {
-  constructor (options) {
-    for (let option in options) this[option] = options[option];
+  constructor (options = {}) {
+    this.define_by(options);
   }
   show () {
     let message = this.message || 'no message given', 
       ele = this.ele || null;
-    ele.warn(message);
-    // if (eles) eles.not(ele).warn('');
+    if (ele) ele.warn(message);
   }
 };
+class Banner {
+  constructor (options = {}) {
+    this.define_by(options);
+    if (!this.ele) this.ele = $('<div/>',{class:'Banner'}).appendTo('body');
+    if (!this.message) this.message = 'HELLO';
+    this.ele.append(this.message);
+    this.ele.css((this.css || {}).merge((this.pos || {})));
+    if (this.color) this.ele.css(Banner[this.color]);
+    // if (this.color) log({c:this.color,color:Banner[this.color]},`${this.color}`);
+    if (this.onclick) this.ele.on('click',this.onclick).css({cursor:'pointer'});
+    this.ele.on('click',this.hide.bind(this));
+  }
+  static get pink () { return {backgroundColor: 'var(--pink10o)',borderColor:'var(--pink70)',color:'var(--pink)'} }
+  static get green () { return {backgroundColor: 'var(--green10o)',borderColor:'var(--green70)',color:'var(--green)'} }
+  flash (options = {}) {
+    let b = this, time = options.time_stay || this.time_stay || 5000,
+      time_in = options.time_in || this.time_in || 400,
+      time_out = options.time_out || this.time_out || 400,
+      callback_show = options.callback_show || this.callback_show || null,
+      callback_hide = options.callback_hide || this.callback_hide || null;
+    this.show({time:time_in, callback:callback_show});
+    setTimeout(function(){
+      b.hide({time:time_out, callback:callback_hide});
+    }, time_in + time);
+  }
+  show (options = {}) {
+    let time = options.time || this.time_in || 400,
+      callback = options.callback || this.callback_show || null;
+    this.ele.fadeIn(time, callback);
+  }
+  hide (options = {}) {
+    let time = options.time || this.time_out || 400,
+      callback = options.callback || this.callback_hide || null;
+    this.ele.fadeOut(time, callback);
+  }
+  message_update (message) { this.ele.html(''); this.ele.append(message); return this; }
+  onclick_update (fx = null) { 
+    if (this.onclick) this.ele.off('click',this.onclick).css({cursor:'default'});
+    if (fx) { this.onclick = fx; this.ele.on('click',this.onclick).css({cursor:'pointer'}); }
+    return this;
+  }
+}
+class Notification {
+  constructor(json, position = null) {
+    for (let key in json) { this[key] = json[key] }
+    this.lux = {
+      created: LUX.From.db(this.created_at),
+      read: this.read_at ? LUX.From.db(this.read_at) : null,
+    };
+    this.title = $('<span/>',{text:this.data.type,css:{flexGrow:'1',marginLeft:'15px',textAlign:'left'}});
+    this.datetime = $('<span/>',{text:this.lux.created.date_or_time});
+    let options = Notification.options, box = $('<div/>',{class:'flexbox notification_options'});
+    $(options.open).on('click', this.open.bind(this)).appendTo(box);
+    $(options.check).on('click', this.mark_as_read.bind(this)).appendTo(box);
+    $(options.del).on('click', this.delete.bind(this)).appendTo(box);
+    if (this.lux.read) options.indicator.removeClass('unread');
+    Notification.list.obj.add_item({
+      append: [this.title,this.datetime,box,options.indicator],
+      value: this.id, position,
+    })
+    Notification.last = this;
+    Notification.trigger_update();
+  }
+  open () { 
+    log({open:this});
+    let options = Notification.modal, modal = Notification.modal.ele;
+    options.reset_header(`${this.data.type}<br>${this.data.description}`).reset_info();
+    if (this.data.buttons) {
+      options.remove_buttons();
+      this.data.buttons.forEach(b => options.add_button(b));
+    }
+    let info = this.data.details || {};
+    if (info.location) options.header.append(`<br>${info.location}`);
+    if (info.details) options.add_info(info.details);
+    blurTop(modal);
+  }
+  mark_as_read () { Notification.mark_as_read([this.id]) }
+  mark_as_unread () { Notification.mark_as_unread([this.id]) }
+  delete () { Notification.delete([this.id]) }
+  static get all () { return Notification.list.obj.items.not('.no_items') }
+  static get selected_eles () { return Notification.list.obj.active }
+  static get selected_ids () { return Notification.list.obj.active_values }  
+  static get options () {
+    let indicator = $('<div/>',{class:'indicator unread'}),
+      open = new Image(), del = new Image(), check = new Image();
+    open.src = '/images/icons/open_arrow_yellow.png';
+    check.src = '/images/icons/checkmark_green.png'; 
+    del.src = '/images/icons/red_x.png';
+    return {indicator,open,check,del};
+  }
+  static alert (count) { 
+    Notification.sound.play().catch(error => {});
+  }
+  static ele_by_ids (id_array) { return Notification.list.obj.find_by_value(id_array) }
+  static async mark_as_read (id_array = null) {
+    let not_given = id_array === null || id_array instanceof jQuery.Event, n = Notification;
+    let ids = not_given ? n.selected_ids : id_array, eles = not_given ? n.selected_eles : n.ele_by_ids(id_array);
+    if (!ids) return;
+    eles.find('.unread').removeClass('unread');
+    let result = await $.ajax({
+      method: 'POST',
+      url: '/notification-update',
+      data: { status: 'read', ids },
+      success: function(result) {
+        if (result != 'checkmark') {
+          eles.find('.indicator').addClass('unread');
+          feedback('Error','There was an error updating the selected notifications');          
+        }
+      },
+      error: function() {
+        eles.find('.indicator').addClass('unread');
+        feedback('Error','There was an error updating the selected notifications');
+      }
+    })
+    n.indicator_update();
+  }
+  static async mark_as_unread (id_array = null) {
+    let not_given = id_array === null || id_array instanceof jQuery.Event, n = Notification;
+    let ids = not_given ? n.selected_ids : id_array, eles = not_given ? n.selected_eles : n.ele_by_ids(id_array);
+    if (!ids) return;
+    eles.find('.indicator').addClass('unread');
+    let result = await $.ajax({
+      method: 'POST',
+      url: '/notification-update',
+      data: { status: 'unread', ids },
+      success: function(result) {
+        if (result != 'checkmark') {
+          eles.find('.indicator').removeClass('unread');
+          feedback('Error','There was an error updating the selected notifications');          
+        }
+      },
+      error: function() {
+        eles.find('.indicator').removeClass('unread');
+        feedback('Error','There was an error updating the selected notifications');
+      }
+    })
+    n.indicator_update();
+  }
+  static async delete (id_array = null) {
+    let not_given = id_array === null || id_array instanceof jQuery.Event, n = Notification;
+    let ids = not_given ? n.selected_ids : id_array, eles = not_given ? n.selected_eles : n.ele_by_ids(id_array);
+    if (!ids) return;
+    eles.slideFadeOut();
+    n.dropdown.data('hold',true);
+    setTimeout(function(){n.dropdown.removeData('hold')},500);
+    let result = await $.ajax({
+      method: 'POST',
+      url: '/notification-delete',
+      data: { ids },
+      success: function(result) {
+        if (result != 'checkmark') {
+          eles.slideFadeIn();
+          feedback('Error','There was an error deleting the selected notifications');
+        } else {
+          eles.remove();
+          if (n.all.dne()) n.list.ele.find('.no_items').show();
+        }
+      },
+      error: function() {
+        eles.slideFadeIn();
+        feedback('Error','There was an error deleting the selected notifications');
+      }
+    })
+    log({all:n.all});
+    n.check_height();
+  }
+  static trigger_retrieve () {
+    if (Notification.retrieve_timer) clearTimeout(Notification.retrieve_timer);
+    Notification.retrieve_timer = setTimeout(Notification.retrieve, 2000);
+  }
+  static async retrieve () {
+    let n = Notification, ids = n.list.json.map(json => json.id);
+    Notification.retrieve_xhr = $.ajax({
+      method: 'POST',
+      url: '/notification-retrieve',
+      data: { ids },
+      success: function(response){
+        log({response});
+        response.forEach(json => new Notification(json));
+      },
+      complete: function() {
+        clearInterval(Notification.retrieve_interval);
+        Notification.retrieve_interval = setInterval(Notification.retrieve, 15*1000);
+      }
+    })
+  }
+  static select_all () { Notification.list.obj.items.not('.no_items').addClass('active') }
+  static unselect_all () { Notification.list.obj.items.removeClass('active') }
+  static trigger_update () {
+    if (Notification.update_timer) clearTimeout(Notification.update_timer);
+    Notification.update_timer = setTimeout(Notification.check_height, 1000);
+  }
+  static check_height () { 
+    let n = Notification, list = n.list.obj.ul, box = list[0].getBoundingClientRect(), too_tall = list[0].scrollHeight > list.height() + 1, at_top = ( list[0].scrollTop == 0 ), at_bottom = ( list[0].scrollTop == list[0].scrollHeight - list.height()), both = n.list.up.add(n.list.down);
+    n.indicator_update();
+    too_tall ? both.show() : both.hide();
+    at_top ? n.list.up.removeClass('active') : n.list.up.addClass('active');
+    at_bottom ? n.list.down.removeClass('active') : n.list.down.addClass('active');
+  }
+  static scroll_up () {
+    let top = Notification.list.obj.ul[0].scrollTop, half = Notification.list.obj.ul.height() / 2;
+    Notification.list.obj.ul.scrollTo(top - half, 400, {onAfter: Notification.check_height});
+  }
+  static scroll_down () {
+    let top = Notification.list.obj.ul[0].scrollTop, half = Notification.list.obj.ul.height() / 2;
+    Notification.list.obj.ul.scrollTo(top + half, 400, {onAfter: Notification.check_height});
+  }
+  static indicator_update () { 
+    let current = Notification.indicator_span.text() || 0,
+      count = Notification.dropdown.find('.unread').length,
+      diff = count - Number(current);
+    if (diff > 0) {
+      Notification.alert();
+      let message = `${diff} new notifications`, onclick = null;
+      if (diff == 1) {
+        message = Notification.last.data.type;
+        onclick = Notification.last.open.bind(Notification.last);
+      }
+      Notification.banner.message_update(message).onclick_update(onclick);
+      Notification.banner.flash();
+    }
+    Notification.indicator_span.text(count);
+    Notification.header_count.text(`(${count} unread)`);
+    if (Notification.dropdown.is(':visible') || count == 0) Notification.indicator.fadeOut();
+    else Notification.indicator.fadeIn();
+  }
+  static set menu_ele (ele) { 
+    let n = Notification;
+    n.sound = new Audio('/sounds/notification_1.mp3');
+    n.menu_tab = $(ele);
+    n.dropdown = $(ele).find('.dropDown');
+    n.list = {};
+    n.list.ele = n.dropdown.find('.List');
+    n.list.obj = new List(n.list.ele.data('options').merge({ele:n.list.ele}));
+    n.list.zero_count = n.list.obj.add_item({text:'No notifications',selectable:false,class_list:'no_items'});
+    n.header_count = $('<div/>',{class:'pink',css:{fontSize:'0.6em',transform:'translateY(-0.5em)'}}).appendTo(n.list.obj.header);
+    n.list.json = system.validation.json(n.list.obj.json);
+    n.list.json.forEach(json => new Notification(json));
+    n.trigger_update();
+    n.indicator = $('<div/>',{class:'indicator'}).appendTo(n.menu_tab);
+    n.indicator_span = $('<span/>').appendTo(n.indicator);
+    n.banner = new Banner({color:'pink'});
+    n.modal = new OptionBox({id:'NotificationInfo',header_html_tag:'h1'});
+    n.modal.ele.hide();
+    let up = new Image(), down = new Image();
+    up.src = '/images/icons/arrow_up_purple.png';
+    down.src = '/images/icons/arrow_down_purple.png';
+    n.list.up = $('<div/>',{class:'arrow up'}).append(up).insertBefore(n.list.obj.ul)
+      .on('click', Notification.scroll_up);
+    n.list.down = $('<div/>',{class:'arrow down'}).append(down).insertAfter(n.list.obj.ul)
+      .on('click', Notification.scroll_down);
+    log({Notification});
+  }
+}
 class Autosave {
   constructor (options = {}) {
     try {
       for (let option in options) {this[option] = options[option]}
       if (!this.send) throw new Error(`Autosave must have a 'send' ajax call`);
+      if (!this.obj) throw new Error(`Autosave must have an obj associated with it`);
       if (this.ele) {
         this.indicator = $(`<div/>`,{class:'autosave_indicator flexbox left'}).css({
           position: 'sticky', top: this.ele.getTopOffset(), left: 0, zIndex: 49, height: 0,
@@ -902,8 +1189,9 @@ class Autosave {
             autosave.bg.html('').css({backgroundColor:'var(--pink10o)',borderColor:'var(--pink50)',color:'var(--pink)'}).append(x.img,$(`<span/>`,{text: result.error.message}).css({fontSize:`${autosave.size/2}em`,marginLeft: '5px'})).on('click',function(){$(this).slideFadeOut(1000)});
             autosave.fadeout_timer = setTimeout(function(){autosave.bg.slideFadeOut(1000,function(){$(this).remove()})},5000);            
           }
-        }        
-        if (autosave.callback) autosave.callback(result);        
+        }
+        if (result.list_update && autosave.obj instanceof Models.Model) Models.Model.update_list(autosave.obj.type, result.list_update);
+        if (result.save_result && autosave.callback) autosave.callback(result.save_result);        
       },5000)
     }, five_seconds_less);
   }
@@ -1065,7 +1353,8 @@ class Icon {
   }
 };
 
-export const Features = {Button, Filter, Editable, OptionBox, List, UpDown, Toggle, ToolTip, Warning, Autosave, Icon};
+export const Features = {Notification, Button, Filter, Editable, OptionBox, List, UpDown, Toggle, ToolTip, Warning, Banner, Autosave, Icon};
+window.Notification = Notification;
 
 export class Menu {
   constructor(element,data){
@@ -1085,6 +1374,10 @@ export class Menu {
       $(tab).on('mouseenter mouseleave', {tabId:$(tab).attr('id')}, this.dropdownHover.bind(this));
       $(tab).on('click', {tabId:$(tab).attr('id')}, this.dropdownClick.bind(this));
       $(tab).data('hold',false);
+      let after_fx = $(tab).data('afterdropdown');
+      if (after_fx) $(tab).data('afterdropdown', after_fx.to_fx() || null);
+      let after_hide = $(tab).data('afterdropdownhide');
+      if (after_hide) $(tab).data('afterdropdownhide', after_hide.to_fx() || null);
     });
     this.image_tabs.each((t,tab) => {
       let image = new Image;
@@ -1125,16 +1418,13 @@ export class Menu {
     let target = this.element.data('target'), uri = ev.data.uri, tabId = ev.data.tabId,
     modal = $(ev.target).parents('.tab').filter((t,tab) => {return $(tab).data('modal') === true}).exists();
     tabs.set(this.name, tabId);
-    // if (this.loading) log({loading:this.loading});
     if (this.loading && this.loading.readyState != 4) this.loading.abort();
     this.hightlightActive();
     if (target == 'window') window.location.href = uri;
     else {
-      // let circle = $("<div id='loading' class='lds-ring dark'><div></div><div></div><div></div><div></div></div>");
       let circle = system.blur.modal.loading('var(--purple70o)',6).css({marginTop:'3em'})
       $(target).html("").append(circle);
       system.modals.reset();
-      // menu.current_uri = uri;
       this.loading = menu.fetch(uri, target);
     }
   }
@@ -1144,17 +1434,15 @@ export class Menu {
     else if (!mouseIn && showing) this.dropdownHide(tab);
   }
   dropdownShow(tab){
-    let fx = tab.data('afterdropdown') ? tab.data('afterdropdown').to_fx() : null;
+    let fx = tab.data('afterdropdown');
     tab.children('.dropDown').addClass('active').slideDown(400,fx);
     tab.children('.title').addClass('showingDD');
   }
   dropdownHide(tab){
-    tab.children('.dropDown').removeClass('active').slideUp(400);
-    tab.children('.title').removeClass('showingDD');
-    if (tab.is('#Notifications') && tab.hasClass('.multi')) {
-      tab.find('.dropDown').resetActives();
-      tab.removeClass('multi');
-    }
+    let fx = tab.data('afterdropdownhide'), dd = tab.children('.dropDown').first(), title = tab.children('.title').first();
+    if (dd.data('hold')) return;
+    dd.removeClass('active').slideUp(400,fx);
+    title.removeClass('showingDD');
   }
   dropdownClick(ev){
     let tab = $(`#${ev.data.tabId}`), title = tab.children('.title'), dropdown = tab.children('.dropDown'), evType = ev.type, target = ev.target;
@@ -1205,15 +1493,13 @@ export const menu = {
       data: data,
       method: method,
       success: (response, status, request) => {
+        Icon.clear_spinners_all();
         if (new_modal) {
           let split = target.split(':'), id = split[1] || null, 
             modal = id && $(`#${id}`).exists() ? $(`#${id}`) : $(`<div class='modalForm'${id ? `id='${id}'`:''}></div>`);
-          Icon.clear_spinners_all();
-          log({target,modal,response});
           modal.html(response);
           blurTop(modal);
         } else {
-          Icon.clear_spinners_all();
           if (replace_target) $(target).replaceWith(response);
           else $(target).html(response);
         }
@@ -1329,13 +1615,13 @@ export const system = {
     limit: 1,
     timer: null,
     scroll: {
-      list: $("#Notifications").find('.scrollList'),
-      pos: () => notifications.ele.find('.scrollList')[0].scrollTop,
-      is_at_top: () => {return notifications.scroll.pos() === 0},
-      is_at_bottom: () => {
-        let scroll = notifications.scroll, list = scroll.list;
-        return scroll.pos() + list[0].offsetHeight === list[0].scrollHeight;
-      },
+      // list: $("#Notifications").find('.scrollList'),
+      // pos: () => notifications.ele.find('.scrollList')[0].scrollTop,
+      // is_at_top: () => {return notifications.scroll.pos() === 0},
+      // is_at_bottom: () => {
+      //   let scroll = notifications.scroll, list = scroll.list;
+      //   return scroll.pos() + list[0].offsetHeight === list[0].scrollHeight;
+      // },
     },
     add: notificationJson => {
       notificationJson.forEach(notification => {
@@ -1388,90 +1674,90 @@ export const system = {
         return false;
       }
     },
-    update: {
-      ajax: async (status) => {
-        let ids = notifications.get.activeIds();
-        if (!status) {log({error:'status not defined',status:status}); return;}
-        notifications.update.list(status);
-        let result = await $.ajax({
-          url: '/notification-update',
-          method: 'POST',
-          data: {ids: ids, status: status}
-        })
-        let reverse = (status == 'read') ? 'unread' : 'read';
-        if (result.trim() != 'checkmark') {
-          log({error:result},'notification error');
-          notifications.update.list(reverse);
-        }
-      },
-      list: (status = null) => {
-        if (status) {
-          let active = notifications.get.active();
-          if (status == 'unread') active.find('.indicator').removeClass('read').addClass('unread');
-          else if (status == 'read') active.find('.indicator').removeClass('unread').addClass('read');
-        }
-        let unreadCount = notifications.ele.find('.indicator.unread').length;
-        notifications.count_ele.find('span').text(unreadCount);
-        notifications.unread_count = unreadCount;
-        let totalCount = notifications.ele.find('.notification').length;
-        if (totalCount == 0 && notifications.ele.find('.noNotifications').dne()) {
-          let noNotifications = $(`<div class='tab noNotifications'><div class='title'>No notifications</div></div>`);
-          notifications.ele.find('.scrollList').prepend(noNotifications);
-        }else if (totalCount != 0) notifications.ele.find('.noNotifications').remove();
-      },
-      arrow_ele: () => {
-        let list = notifications.ele.find('.scrollList'), arrows = notifications.ele.find('.up,.down');
-        if (list[0].scrollHeight == list[0].offsetHeight) arrows.slideFadeOut();
-        else arrows.slideFadeIn();
-      }
-    },
-    click: (ev) => {
-      let notification = $(ev.target);
-      if (notification.parent().hasClass('noNotifications')) return;
-      if (notifications.limit == 1) {
-        notifications.ele.resetActives();
-        notification.addClass('active');
-        notifications.update.ajax('read');
-        notifications.open(notification);
-        notifications.update.list('read');
-      }else{
-        notification.toggleClass('active');
-      }
-    },
-    open: notification => {
-      let data = notification.data(), message = $("#Notification").find('.message'), options = $("#Notification").find('.options');
-      options.find('.button.temp').remove();
-      message.html(`<h2 class='purple'>${data.type}</h2><h3>${data.description}</h3><div class='split3366KeyValues'></div>`);
-      let list = message.find('.split3366KeyValues'),
-      details = system.validation.json(data.details), buttons = system.validation.json(data.buttons);
-      try{
-        $.each(details, (key,value) => {
-          if (value === null) value = 'none';
-          log({key,value,list});
-          value = notifications.handle[typeof value](value);
-          list.append(`<div class='label'>${key}</div>`);
-          list.append(value);
-        })
-      }catch(error){
+    // update: {
+    //   ajax: async (status) => {
+    //     let ids = notifications.get.activeIds();
+    //     if (!status) {log({error:'status not defined',status:status}); return;}
+    //     notifications.update.list(status);
+    //     let result = await $.ajax({
+    //       url: '/notification-update',
+    //       method: 'POST',
+    //       data: {ids: ids, status: status}
+    //     })
+    //     let reverse = (status == 'read') ? 'unread' : 'read';
+    //     if (result.trim() != 'checkmark') {
+    //       log({error:result},'notification error');
+    //       notifications.update.list(reverse);
+    //     }
+    //   },
+    //   list: (status = null) => {
+    //     if (status) {
+    //       let active = notifications.get.active();
+    //       if (status == 'unread') active.find('.indicator').removeClass('read').addClass('unread');
+    //       else if (status == 'read') active.find('.indicator').removeClass('unread').addClass('read');
+    //     }
+    //     let unreadCount = notifications.ele.find('.indicator.unread').length;
+    //     notifications.count_ele.find('span').text(unreadCount);
+    //     notifications.unread_count = unreadCount;
+    //     let totalCount = notifications.ele.find('.notification').length;
+    //     if (totalCount == 0 && notifications.ele.find('.noNotifications').dne()) {
+    //       let noNotifications = $(`<div class='tab noNotifications'><div class='title'>No notifications</div></div>`);
+    //       notifications.ele.find('.scrollList').prepend(noNotifications);
+    //     }else if (totalCount != 0) notifications.ele.find('.noNotifications').remove();
+    //   },
+    //   arrow_ele: () => {
+    //     let list = notifications.ele.find('.scrollList'), arrows = notifications.ele.find('.up,.down');
+    //     if (list[0].scrollHeight == list[0].offsetHeight) arrows.slideFadeOut();
+    //     else arrows.slideFadeIn();
+    //   }
+    // },
+    // click: (ev) => {
+    //   let notification = $(ev.target);
+    //   if (notification.parent().hasClass('noNotifications')) return;
+    //   if (notifications.limit == 1) {
+    //     notifications.ele.resetActives();
+    //     notification.addClass('active');
+    //     notifications.update.ajax('read');
+    //     notifications.open(notification);
+    //     notifications.update.list('read');
+    //   }else{
+    //     notification.toggleClass('active');
+    //   }
+    // },
+    // open: notification => {
+    //   let data = notification.data(), message = $("#Notification").find('.message'), options = $("#Notification").find('.options');
+    //   options.find('.button.temp').remove();
+    //   message.html(`<h2 class='purple'>${data.type}</h2><h3>${data.description}</h3><div class='split3366KeyValues'></div>`);
+    //   let list = message.find('.split3366KeyValues'),
+    //   details = system.validation.json(data.details), buttons = system.validation.json(data.buttons);
+    //   try{
+    //     $.each(details, (key,value) => {
+    //       if (value === null) value = 'none';
+    //       log({key,value,list});
+    //       value = notifications.handle[typeof value](value);
+    //       list.append(`<div class='label'>${key}</div>`);
+    //       list.append(value);
+    //     })
+    //   }catch(error){
 
-      }
-      if (data.model && data.uid) {
-        uids.set(data.model,data.uid);
-      }
-      if (buttons) {
-        buttons.forEach(button => {
-          let btnOptions = {
-            class_list: "small yellow temp",
-            appendTo: options.find('.tempBtns'),
-            text: button.text,
-          }
-          if (button.type == 'click') btnOptions.action = function(){unblurAll();$(button.target).click();}
-          else if (button.type == 'viewModel') btnOptions.action = function(){log({btn:data},'view model')}
-            new Features.Button(btnOptions);
-        });
-      }
-      blurTop("#Notification");
-    },
+    //   }
+    //   if (data.model && data.uid) {
+    //     uids.set(data.model,data.uid);
+    //   }
+    //   if (buttons) {
+    //     buttons.forEach(button => {
+    //       let btnOptions = {
+    //         class_list: "small yellow temp",
+    //         appendTo: options.find('.tempBtns'),
+    //         text: button.text,
+    //       }
+    //       if (button.type == 'click') btnOptions.action = function(){unblurAll();$(button.target).click();}
+    //       else if (button.type == 'viewModel') btnOptions.action = function(){log({btn:data},'view model')}
+    //         new Features.Button(btnOptions);
+    //     });
+    //   }
+    //   blurTop("#Notification");
+    // },
     handle: {
       string: string => $(`<div class='value'>${string}</div>`),
       number: number => $(`<div class='value'>${number}</div>`),
@@ -1506,18 +1792,22 @@ export const system = {
     },
     initialize: {
       all: function(){
+        // Notification.menu_ele = $('#Notifications');
+        // return;
         init('#Notifications',function(){
-          notifications.ele = $("#Notifications").on('mouseenter',function(){
-            $(this).find('.indicator.count').animate({opacity:1});
-          }).on('mouseleave',function(){
-            $(this).find('.indicator.count').animate({opacity:0.6});          
-          });
-          $.each(notifications.initialize, function(name, initFunc){
-            if (!['all'].includes(name) && typeof initFunc === 'function') initFunc();
-          });
-          notifications.update.list();
-          if (notifications.timer) clearInterval(notifications.timer);
-          notifications.timer = setInterval(notifications.get.unread, 180000);        
+          Notification.menu_ele = $('#Notifications');
+          return;
+          // Notification.dropdown = $("#Notifications").on('mouseenter',function(){
+          //   $(this).find('.indicator.count').animate({opacity:1});
+          // }).on('mouseleave',function(){
+          //   $(this).find('.indicator.count').animate({opacity:0.6});          
+          // });
+          // $.each(notifications.initialize, function(name, initFunc){
+          //   if (!['all'].includes(name) && typeof initFunc === 'function') initFunc();
+          // });
+          // notifications.update.list();
+          // if (notifications.timer) clearInterval(notifications.timer);
+          // notifications.timer = setInterval(notifications.get.unread, 180000);        
         })
       },
       buttons: function(){
@@ -1634,11 +1924,19 @@ export const system = {
     },    
   },
   request: {
+    notifications_extracted: (data) => {
+      let regex = /###notifications(.*)###/;
+      let notifications = data.match(regex);
+      if (notifications) {
+        notifications = system.validation.json(notifications[1]);
+        if (notifications.notEmpty()) notifications.forEach(n => new Notification(n,'top'));
+      }
+      return data.replace(regex,'');
+    },
     check_headers: (xhr,settings,ev) => {
       let uidList = system.validation.json(xhr.getResponseHeader('X-Current-Uids')),
       tabList = system.validation.json(xhr.getResponseHeader('X-Current-Tabs')),
       csrf = xhr.getResponseHeader('X-CSRF-TOKEN'),
-      unreadNotifications = system.validation.json(xhr.getResponseHeader('X-Unread-Notifications')),
       force_logout = xhr.getResponseHeader('X-FORCE-LOGOUT');
       log({xhr,json:xhr.responseJSON,responsetext:xhr.responseText},settings.url);
       let exclude_from_reload = [
@@ -1652,10 +1950,10 @@ export const system = {
       }
       if (tabList) tabs.set(tabList);
       if (csrf) $('meta[name="csrf-token"]').attr('content',csrf);
-      if (unreadNotifications) {
-        if (unreadNotifications === 'send ajax') notifications.get.unread();
-        else notifications.add(unreadNotifications);
-      }    
+      // if (unreadNotifications) {
+      //   if (unreadNotifications === 'send ajax') notifications.get.unread();
+      //   else notifications.add(unreadNotifications);
+      // }    
     },
     force_logout: (forced = false) => {
       if (forced) {
@@ -1694,8 +1992,9 @@ export const system = {
         system.ui.initialize();
         system.display.initialize();
         menu.initialize.all();
+        notifications.initialize.all();
         if (forms !== undefined) forms.initialize.all();
-        if (notifications !== undefined) notifications.initialize.all();
+        // if (notifications !== undefined) notifications.initialize.all();
         if (table !== undefined) table.initialize.all();          
         resizeElements();
         masterStyle();
@@ -1800,7 +2099,6 @@ export const system = {
       if (ele.is(modal)) {log({error:{ele,modal,time,callback}},'ele is modal'); return;}
       if (ele.is('body')) {
         unblurAll();
-        // if (modal.is('.loading')) modal.removeClass('dark').addClass('light');
       }
 
       ele.css(system.blur.ele.css(ele,modal));
@@ -1855,9 +2153,10 @@ export const system = {
       checkmark: () => $('#CheckmarkBlur'),
       addX: (modal) => {
         if (modal.is('.loading') || modal.is('.checkmark')) return;
-        let options = modal.children('.options'), has_option_box = options.exists(), append_ele = has_option_box ? options : modal;
-        if (modal.find('.cancel').dne()) $("<div class='cancel button small'>dismiss</div>").appendTo(append_ele);
+        let options = modal.children('.options'), has_option_box = options.exists(), append_ele = has_option_box ? options : modal, btn_size = has_option_box ? 'xsmall' : 'small';
+        if (modal.find('.cancel').dne()) $(`<div class='cancel button ${btn_size}'>dismiss</div>`).appendTo(append_ele);
         if (modal.find('.cancelX').dne()) $("<div class='cancel cancelX'>x</div>").appendTo(append_ele);
+        if (has_option_box) modal.find('.cancel.button').appendTo(append_ele);
       },
       css: (ele, modal) => {
         let css = {
@@ -2217,92 +2516,6 @@ export const system = {
         }
       }
     },
-    date: {
-      datepick: {
-        shorthand: {
-          to_moment: (string) => {
-            if (string == null) return null;
-            let new_moment = moment();
-            let dir = string.slice(0,1), n = string.slice(1,-1), unit = string.slice(-1);
-            try{
-              if (dir == '-') new_moment.subtract(n,unit).startOf('day');
-              else new_moment.add(n,unit).endOf('day');
-            }catch(error){
-              log({error})
-            }
-            return new_moment;
-          }
-        }
-      },
-      moment_array: (dates, format = 'MM/DD/YYYY') => {
-        return dates.map(date => {
-          if (date instanceof Moment) return date;
-          else if (date instanceof Date) return moment(date);
-          else return Models.Schedule.string_to_moment(date, format);
-        })
-      },
-      sort: (dates, options = {}) => {
-        let dir = options.dir || 'asc',
-          format = options.format || 'MM/DD/YYYY',
-          separator = options.separator || ', ',
-          as_moment = options.as_moment || false;
-        if (typeof dates == 'string') return system.validation.date.sort_string(dates, separator, dir, format);
-        let moments = system.validation.date.moment_array(dates, format), 
-          ascending = system.validation.date.sort_moment(moments);
-        if (!as_moment) ascending = ascending.map(d => d.format(format));
-        return dir == 'desc' ? ascending.reverse() : ascending;
-      },
-      sort_moment: (moment_array) => moment_array.sort((a,b) => a.valueOf() - b.valueOf()),
-      sort_string: (date_str, separator = ', ', dir = 'asc', format = 'MM/DD/YYYY') => {
-        let array = date_str.split(separator), sorted = system.validation.date.sort(array, {dir, format});
-        return sorted.join(separator);
-      },
-      after: (dates, reference_date, options = {}) => {
-        let format = options.format || 'MM/DD/YYYY',
-          separator = options.separator || ', ',
-          sort = options.sort || null;
-        reference_date = reference_date instanceof Moment ? reference_date : Models.Schedule.string_to_moment(reference_date, format);
-        if (typeof dates == 'string') return system.validation.date.after_string(dates, reference_date, separator, format);
-        let moments = moments = system.validation.date.moment_array(dates, format), 
-          filtered = system.validation.date.after_moment(moments, reference_date);
-        if (sort) filtered = system.validation.date.sort(filtered, {dir:sort, as_moment:true});
-        return filtered.map(d => d.format(format));
-      },
-      after_moment: (moment_array, reference_moment) => moment_array.filter(m => m.isAfter(reference_moment)),
-      after_string: (moment_array, reference_moment, separator = ', ', format = 'MM/DD/YYYY') => {
-        throw new Error('after_string function not defined');
-      },
-      before: (dates, reference_date, options = {}) => {
-        let format = options.format || 'MM/DD/YYYY',
-          separator = options.separator || ', ',
-          sort = options.sort || null;
-        reference_date = reference_date instanceof Moment ? reference_date : Models.Schedule.string_to_moment(reference_date, format);
-        if (typeof dates == 'string') return system.validation.date.before_string(dates, reference_date, separator, format);
-        let moments = moments = system.validation.date.moment_array(dates, format), 
-          filtered = system.validation.date.before_moment(moments, reference_date);
-        if (sort) filtered = system.validation.date.sort(filtered, {dir:sort, as_moment:true});
-        return filtered.map(d => d.format(format));
-      },
-      before_moment: (moment_array, reference_moment) => moment_array.filter(m => m.isBefore(reference_moment)),
-      before_string: (moment_array, reference_moment, separator = ', ', format = 'MM/DD/YYYY') => {
-        throw new Error('before_string function not defined');
-      },
-      comparison: (comparison_date, reference_date = null) => {
-        if (!reference_date) reference_date = moment(); 
-        return {
-          is_same: comparison_date.isSame(reference_date),
-          is_before: comparison_date.isBefore(reference_date),
-          is_after: comparison_date.isAfter(reference_date),
-        }
-      },
-      is_invalid: (str, format = 'MM/DD/YYYY') => {
-        let date = moment(str,format,true), invalid = (!date._isValid && str != '');
-        return invalid;
-      },
-      is_in_range: (moment, min, max) => {
-
-      },
-    },
     json: data => {
       if (typeof data !== 'string'){return data;}
       try {
@@ -2408,6 +2621,10 @@ export const system = {
         let ele = $(this), options = ele.data('options');
         new KeyValueBox(options.merge({ele}));
       });
+      // init($('.List'),function(){
+      //   let ele = $(this), options = ele.data('options');
+      //   new List(options.merge({ele}));
+      // })
       system.display.size.footer.adjust_body_padding();
     },
     format: {
@@ -2560,22 +2777,32 @@ window.initAlt = (ele, attr, fx) => system.initialize.ele({select:ele,function:f
 window.toBool = (val, true_if_contains) => system.validation.boolean(val, true_if_contains);
 window.get_setting = (obj, string, fall_back) => system.validation.settings.get(obj,string,fall_back);
 window.ifu = function(val,backup,allowArray=false){
-    if (Array.isArray(val) && !allowArray){
-    let test = undefined; for (let x = 0; x < val.length - 1; x++){test = ifu(val[x], val[x+1]); if (test === val[x]) break;} val = test;
-    } 
-    if (debug.level(3)) console.log({val,allowArray},'using array as options');
-    return (typeof val !== 'undefined') ? val : backup;
-  };
+  let args = [...arguments], count = args.length, current = args.shift();
+  // console.groupCollapsed('ifu');
+  // console.log({args,current});
+  while (typeof current === 'undefined' && args.notEmpty()) { current = args.shift(); }
+  // console.log(current);
+  // console.groupEnd();
+  return current;
+};
 window.ifn = function(val,backup,allowArray=false){
-    if (Array.isArray(val) && !allowArray)
-      {let test = undefined; for (let x = 0; x < val.length - 1; x++){test = ifn(val[x], val[x+1]); if (test === val[x]) break;} val = test;} 
-    return (typeof val !== 'undefined' && val !== null) ? val : backup;
-  };
+  let args = [...arguments], count = args.length, current = args.shift();
+  while ((typeof current === 'undefined' || current === null) && args.notEmpty()) { current = args.shift(); }
+  return current;
+};
 window.iff = function(val,backup,allowArray=false){
-    if (Array.isArray(val) && !allowArray)
-      {let test = undefined; for (let x = 0; x < val.length - 1; x++){test = iff(val[x], val[x+1]); if (test === val[x]) break;} val = test;}
-    return val || backup;
-  };
+  let args = [...arguments], count = args.length, current = args.shift();
+  // console.groupCollapsed('IFF');
+  // console.log({args,current});
+  while (!current && args.notEmpty()) { current = args.shift(); }
+  // console.log(current);
+  // console.groupEnd();
+  return current;
+
+  // if (Array.isArray(val) && !allowArray)
+  //   {let test = undefined; for (let x = 0; x < val.length - 1; x++){test = iff(val[x], val[x+1]); if (test === val[x]) break;} val = test;}
+  // return val || backup;
+};
 
 
 export const uids = {
@@ -2752,16 +2979,15 @@ $.fn.getTopOffset = function (offset = 0) {
 }
 $.fn.smartScroll = function (settings = {}) {
   let duration = settings.duration || 1000,
-  callback = settings.callback || null,
-  offset = settings.offset || 0;
+    callback = settings.callback || null,
+    offset = settings.offset || 0,
+    force = settings.force || false;
   let ele = this.isInside('.blur') ? this.closest('.blur').children().first() : null;
-  delete settings.callback;
-  delete settings.duration;
+  delete settings.callback; delete settings.duration; delete settings.force;
   let is_visible = this.isVisible(offset);
   offset += this.getTopOffset();
   settings.offset =  -offset;
-  // log({is_visible,offset});
-  if (is_visible.top) {
+  if (is_visible.top && !force) {
     if (callback && typeof callback == 'function') callback();
   } else {
     if (!system.ui.scroll.pending) {
@@ -2912,7 +3138,13 @@ function toTitleCase(str) {
 
 var uidList, tabList, tabHeaderInfo = {};
 var SystemModalBtnFlash;
-$.ajaxSetup({headers:system.validation.xhr.headers.list(),dataFilter:data=>data.trim()});
+$.ajaxSetup({
+  headers:system.validation.xhr.headers.list(),
+  dataFilter: data => {
+    data = data.trim();
+    return system.request.notifications_extracted(data);
+  }
+});
 $(document).ajaxError(function(ev,xhr,settings,error){
   system.request.check_headers(xhr,settings,ev);  
   if (error !== 'abort'){
@@ -2958,333 +3190,219 @@ $(document).ajaxError(function(ev,xhr,settings,error){
 });
 
 
-function submitErrorReport(){
-  console.log($("#Error").find(".submit").data('error'));
-}
-function updateUidList(uidList = null){
-  if (uidList){
-    $("#uidList").text(uidList);
-  }else{
-    $.ajax({
-      url:"/getvar",
-      method:"POST",
-      data:{
-        "getVar":"uidList"
-      },
-      success:function(data){
-        $("#uidList").text(data);
-      }
-    })
+// function submitErrorReport(){
+//   console.log($("#Error").find(".submit").data('error'));
+// }
+// function updateUidList(uidList = null){
+//   if (uidList){
+//     $("#uidList").text(uidList);
+//   }else{
+//     $.ajax({
+//       url:"/getvar",
+//       method:"POST",
+//       data:{
+//         "getVar":"uidList"
+//       },
+//       success:function(data){
+//         $("#uidList").text(data);
+//       }
+//     })
 
-  }
-}
-function setUid(model, uid){
-  try{
-    uidList = JSON.parse($("#uidList").text());
-    if (uidList == null){uidList = {};};
-  }catch(e){
-    uidList = {};
-  }
-  uidList[model] = uid;
-  $("#uidList").text(JSON.stringify(uidList));
-}
-function getUids(model = null){
-  try{
-    var uidList = JSON.parse($("#uidList").text());
-    if (uidList == null){return null;}
-    else if (model == null){return uidList;}
-    else if (uidList[model] == undefined){return null;}
-    else{return uidList[model];}        
-  }catch(e){
-    return null;
-  }
-}
+//   }
+// }
+// function setUid(model, uid){
+//   try{
+//     uidList = JSON.parse($("#uidList").text());
+//     if (uidList == null){uidList = {};};
+//   }catch(e){
+//     uidList = {};
+//   }
+//   uidList[model] = uid;
+//   $("#uidList").text(JSON.stringify(uidList));
+// }
+// function getUids(model = null){
+//   try{
+//     var uidList = JSON.parse($("#uidList").text());
+//     if (uidList == null){return null;}
+//     else if (model == null){return uidList;}
+//     else if (uidList[model] == undefined){return null;}
+//     else{return uidList[model];}        
+//   }catch(e){
+//     return null;
+//   }
+// }
 
-var defaultCSS = {
-  "item": {
-    "inline":"false"
-  },
-  'section': {
-    'displayNumbers':"false"
-  }
-};
-function getDefaultCSS(type){
-  return defaultCSS[type];
-}
-function formatDate(jsDateObj) {
-  var day = jsDateObj.getDate(), monthIndex = jsDateObj.getMonth() +1, year = jsDateObj.getFullYear();
-  return monthIndex + "/"+ day + '/' + year;
-}
-function formatTime(jsDateObj){
-  var hour = jsDateObj.getHours(), mins = jsDateObj.getMinutes(), meridian = (hour - 11 > 0) ? "pm" : "am";
-  if (mins == "0"){mins = "00";}
-  if (hour > 12){hour = hour - 12;}
-  return hour + ":" + mins + meridian;
-}
+// var defaultCSS = {
+//   "item": {
+//     "inline":"false"
+//   },
+//   'section': {
+//     'displayNumbers':"false"
+//   }
+// };
+// function getDefaultCSS(type){
+//   return defaultCSS[type];
+// }
+// function formatDate(jsDateObj) {
+//   var day = jsDateObj.getDate(), monthIndex = jsDateObj.getMonth() +1, year = jsDateObj.getFullYear();
+//   return monthIndex + "/"+ day + '/' + year;
+// }
+// function formatTime(jsDateObj){
+//   var hour = jsDateObj.getHours(), mins = jsDateObj.getMinutes(), meridian = (hour - 11 > 0) ? "pm" : "am";
+//   if (mins == "0"){mins = "00";}
+//   if (hour > 12){hour = hour - 12;}
+//   return hour + ":" + mins + meridian;
+// }
 
 
 
 // EMAIL PHONE USERNAME FUNCTIONS
-function validateUsername(){
-// console.log("HI");
-var i = $(this);
-var val = i.val();
-var m = val.match(/[^a-zA-Z0-9._\-]/);
-val = val.replace(/[^a-zA-Z0-9._\-]/g,"");
-if (i.val()!=val){
-  i.off("keyup",validateUsername);
-  i.val(val);
-  var alertStr = (m == " ") ? "no spaces allowed" : m + " is not allowed";
-  alertBox(alertStr,i,"after",800);
-  setTimeout(function(){
-    i.on("keyup",validateUsername);
-  },801)
-}
-}
-function finalizeUsername(i){
-  var val = i.val();
-  if (val.length !=0 && (val.length < 5 || val.length > 15)){
-    i.off("focusout",finalizeUsername);
-    alertBox('must be between 5 and 15 characters',i,"after",800);
-    scrollToInvalidItem(i);
-    return false;
-  }
-  return true;
-}
-function validateEmail(){
-  var val = $(this).val(), i = $(this);
-  var m = val.match(/[^a-zA-Z0-9@._\-]/);
-  val = val.replace(/[^a-zA-Z0-9@._\-]/g,"");
-  if ($(this).val()!=val){
-    i.off("keyup",validateEmail);
-    $(this).val(val);
-    alertBox(m+" is an invalid character",$(this),"after",800);
-    setTimeout(function(){
-      i.on("keyup",validateEmail);
-    },801)
-  }
-}
-function finalizeEmail(i){
-  var val = i.val();
-  var pattern = /[a-zA-Z0-9._\-]*@[a-zA-Z0-9._\-]*\.[a-zA-Z0-9.]*/;
-  if (!pattern.test(val)){
-    scrollToInvalidItem(i);
-    alertBox('enter a valid email',i,"after",800);
-    return false;
-  }
-  return true;
-}
-function validatePhone(){
-  var i = $(this), val = i.val();
-  var m = val.match(/[^0-9.()-]/);
-  val = val.replace(/[^0-9.()-]/g,"");
-  if ($(this).val()!=val){
-    i.off("keyup",validatePhone);
-    $(this).val(val);
-    alertBox("numbers only",$(this),"after",800);
-    setTimeout(function(){
-      i.on("keyup",validatePhone);
-    },801)
-  }
-}
-function finalizePhone(i){
-  var val = i.val();
-  var digits = val.match(/\d/g);
-  if (digits != null && digits.length!=10){
-    scrollToInvalidItem(i);
-    alertBox("invalid phone number",i,"after",800);
-    return false;
-  }else if (digits != null){
-    var ph = digits[0]+digits[1]+digits[2]+"-"+digits[3]+digits[4]+digits[5]+"-"+digits[6]+digits[7]+digits[8]+digits[9];
-    i.val(ph);
-    return true;
-  }else{
-    alertBox("required",i,"after",800);
-    return false;
-  }
-}
-function checkPasswordStrength(i){
-  var pw = i.val(), errors = [];
-  if (!/[a-z]/.test(pw)){
-    errors.push('Password must contain a lower case letter.');
-  }
-  if (!/[A-Z]/.test(pw)){
-    errors.push('Password must contain an upper case letter.');
-  }
-  if (!/[0-9]/.test(pw)){
-    errors.push('Password must contain a number.');
-  }
-  if (pw.length < 5){
-    errors.push('Password must be at least 6 characters.');
-  }
-  if (errors.length == 0){
-    return true;
-  }else{
-    str = errors.join("<br>");
-    feedback("Attention",str);
-    return false;
-  }
-}
-
-// function feedback(header, message, delay = null){
-//   header = $(`<h2>${header}</h2>`)
-//   if (message instanceof jQuery) message = message;
-//   else if (typeof message == 'string') message = $(`<div>${message}</div>`);
-//   $("#Feedback").find('.message').html('').append(header).append(message);
-
-//   if (delay != null){
+// function validateUsername(){
+// // console.log("HI");
+// var i = $(this);
+// var val = i.val();
+// var m = val.match(/[^a-zA-Z0-9._\-]/);
+// val = val.replace(/[^a-zA-Z0-9._\-]/g,"");
+// if (i.val()!=val){
+//   i.off("keyup",validateUsername);
+//   i.val(val);
+//   var alertStr = (m == " ") ? "no spaces allowed" : m + " is not allowed";
+//   alertBox(alertStr,i,"after",800);
+//   setTimeout(function(){
+//     i.on("keyup",validateUsername);
+//   },801)
+// }
+// }
+// function finalizeUsername(i){
+//   var val = i.val();
+//   if (val.length !=0 && (val.length < 5 || val.length > 15)){
+//     i.off("focusout",finalizeUsername);
+//     alertBox('must be between 5 and 15 characters',i,"after",800);
+//     scrollToInvalidItem(i);
+//     return false;
+//   }
+//   return true;
+// }
+// function validateEmail(){
+//   var val = $(this).val(), i = $(this);
+//   var m = val.match(/[^a-zA-Z0-9@._\-]/);
+//   val = val.replace(/[^a-zA-Z0-9@._\-]/g,"");
+//   if ($(this).val()!=val){
+//     i.off("keyup",validateEmail);
+//     $(this).val(val);
+//     alertBox(m+" is an invalid character",$(this),"after",800);
 //     setTimeout(function(){
-//       blurTopMost("#Feedback");            
-//     },delay);
-//   }else{
-//     blurTopMost("#Feedback");   
+//       i.on("keyup",validateEmail);
+//     },801)
 //   }
 // }
-var confirmInterval = null;
-// function confirm(header, message, yesText = null, noText = null, delay = null, affirmative = null, negative = null){
-//   confirmBool = undefined;
-//   if (typeof delay == 'function'){
-//     negative = affirmative;
-//     affirmative = delay;
-//     delay = null;
+// function finalizeEmail(i){
+//   var val = i.val();
+//   var pattern = /[a-zA-Z0-9._\-]*@[a-zA-Z0-9._\-]*\.[a-zA-Z0-9.]*/;
+//   if (!pattern.test(val)){
+//     scrollToInvalidItem(i);
+//     alertBox('enter a valid email',i,"after",800);
+//     return false;
 //   }
-//   header = $(`<h2 class='purple'>${header}</h2>`);
-//   if (message instanceof jQuery) message = message;
-//   else if (typeof message == 'string') message = $(`<div>${message}</div>`);
-//   $("#Confirm").find('.message').html('').append(header).append(message);
-//   if (yesText){$("#Confirm").find(".confirmY").text(yesText);}
-//   else{$("#Confirm").find(".confirmY").text("confirm");}
-//   if (noText){$("#Confirm").find(".confirmN").text(noText);}
-//   else{$("#Confirm").find(".confirmN").text("cancel");}
-
-//   if (delay != null){
-//     setTimeout(function(){
-//       blurTopMost("#Confirm");            
-//     },delay);
-//   }else{
-//     blurTopMost("#Confirm");   
-//   }
-//   // if (!affirmative || typeof affirmative != 'function') return;
-//   confirmInterval = setInterval(function(){
-//     if (confirmBool != undefined){
-//       clearInterval(confirmInterval);
-//       if (confirmBool === true && typeof affirmative == 'function'){
-//         affirmative();
-//       }else if (confirmBool === false && typeof negative == 'function'){
-//         negative();
-//       }
-//       confirmBool = undefined;
-//     }
-//   },100)
+//   return true;
 // }
-// async function confirm(settings){
-//   if (typeof settings != 'object'){
-//     feedback('old funx','trying to use confirm');
-//     log({error:'using old confirm'},'old confirm');
-//     return;
-//   }
-//   let header = settings.header || 'Confirm',
-//   message = settings.message || 'Confirming something but no message given',
-//   btntext_yes = settings.btntext_yes || 'confirm',
-//   btntext_no = settings.btntext_no || 'cancel',
-//   delay = settings.delay || null,
-//   callback_affirmative = settings.callback_affirmative || null,
-//   callback_negative = settings.callback_negative || null,
-//   modal = $("#Confirm");
-//   if (typeof header == 'string') header = $(`<h2 class='purple'>${header}</h2>`);
-//   if (typeof message == 'string') message = $(`<div>${message}</div>`);
-//   modal.find('.message').html("").append(header).append(message);
-//   modal.find('.confirmY').text(btntext_yes);
-//   modal.find('.confirmN').text(btntext_no);
-//   blurTopMost("#Confirm");
-//   let confirmed = await new Promise((resolve,reject) => {
-//     modal.on('click','.confirmY',function(){resolve(true)});
-//     modal.on('click','.confirmN',function(){resolve(false)});
+// function validatePhone(){
+//   var i = $(this), val = i.val();
+//   var m = val.match(/[^0-9.()-]/);
+//   val = val.replace(/[^0-9.()-]/g,"");
+//   if ($(this).val()!=val){
+//     i.off("keyup",validatePhone);
+//     $(this).val(val);
+//     alertBox("numbers only",$(this),"after",800);
 //     setTimeout(function(){
-//       reject('Please confirm or cancel');
-//     },10000)
-//   });
-//   log({confirmed});
-//   if (delay){
-//     setTimeout(handleConfirmCallback.bind(null,confirmed,callback_affirmative,callback_negative),delay);
-//   }else{
-//     handleConfirmCallback(confirmed,callback_affirmative,callback_negative);
+//       i.on("keyup",validatePhone);
+//     },801)
 //   }
 // }
-// function handleConfirmCallback(confirmed, affirmative, negative){
-//   if (confirmed && affirmative) affirmative();
-//   else if (!confirmed && negative) negative();
+// function finalizePhone(i){
+//   var val = i.val();
+//   var digits = val.match(/\d/g);
+//   if (digits != null && digits.length!=10){
+//     scrollToInvalidItem(i);
+//     alertBox("invalid phone number",i,"after",800);
+//     return false;
+//   }else if (digits != null){
+//     var ph = digits[0]+digits[1]+digits[2]+"-"+digits[3]+digits[4]+digits[5]+"-"+digits[6]+digits[7]+digits[8]+digits[9];
+//     i.val(ph);
+//     return true;
+//   }else{
+//     alertBox("required",i,"after",800);
+//     return false;
+//   }
+// }
+// function checkPasswordStrength(i){
+//   var pw = i.val(), errors = [];
+//   if (!/[a-z]/.test(pw)){
+//     errors.push('Password must contain a lower case letter.');
+//   }
+//   if (!/[A-Z]/.test(pw)){
+//     errors.push('Password must contain an upper case letter.');
+//   }
+//   if (!/[0-9]/.test(pw)){
+//     errors.push('Password must contain a number.');
+//   }
+//   if (pw.length < 5){
+//     errors.push('Password must be at least 6 characters.');
+//   }
+//   if (errors.length == 0){
+//     return true;
+//   }else{
+//     str = errors.join("<br>");
+//     feedback("Attention",str);
+//     return false;
+//   }
 // }
 
 function alertBox(message, ele, where = 'below', time = 1500, offset = null){
   var hEle = ele.outerHeight(), wEle = ele.outerWidth(), wrap, wAlert, hAlert, readonly = ele.attr('readonly'), css;
   if (ele.parent().is('.number')) hEle = ele.parent().outerHeight();
-  if (ele.is('.radio, .checkboxes')){
-    console.log(hEle);
-// time = 'nofade';
-}
-if (time=="nofade"){
-  wrap = $('<span class="zeroWrap a"><span class="alert">'+message+'</span></span>');
-  time = 2000;
-}else{
-  wrap = $('<span class="zeroWrap a f"><span class="alert f">'+message+'</span></span>');
-}
+  // if (ele.is('.radio, .checkboxes')){
+  //   console.log(hEle);
+  // }
+  if (time=="nofade"){
+    wrap = $('<span class="zeroWrap a"><span class="alert">'+message+'</span></span>');
+    time = 2000;
+  }else{
+    wrap = $('<span class="zeroWrap a f"><span class="alert f">'+message+'</span></span>');
+  }
 
-if ($.inArray(ele.css('position'), ['fixed','absolute','relative']) == -1){
-  ele.css('position','relative');
-}
-wrap.appendTo("body");
-wAlert = wrap.find('.alert').outerWidth();
-hAlert = wrap.find('.alert').outerHeight();
-if (where=="after"){
-  wrap.insertBefore(ele);
-  css = {top:0.5*hEle,left:wEle+5};
-}else if (where=="ontop"){
-  wrap.appendTo(ele);
-  css = {top:0.5*hEle,left:0.5*wEle-0.5*wAlert};
-}else if (where=="before"){
-  wrap.insertBefore(ele);
-  css = {top:0.5*hEle,left:-wAlert-5};
-}else if (where=="above"){
-  wrap.insertBefore(ele);
-  css = {left:0.5*wEle,top:-hAlert-5};
-}else if (where=="below"){
-  wrap.insertBefore(ele);
-  css = {left:0.5*wEle,bottom:-1.05*hAlert};
-}
-console.log(where,ele,css);
+  if ($.inArray(ele.css('position'), ['fixed','absolute','relative']) == -1){
+    ele.css('position','relative');
+  }
+  wrap.appendTo("body");
+  wAlert = wrap.find('.alert').outerWidth();
+  hAlert = wrap.find('.alert').outerHeight();
+  if (where=="after"){
+    wrap.insertBefore(ele);
+    css = {top:0.5*hEle,left:wEle+5};
+  }else if (where=="ontop"){
+    wrap.appendTo(ele);
+    css = {top:0.5*hEle,left:0.5*wEle-0.5*wAlert};
+  }else if (where=="before"){
+    wrap.insertBefore(ele);
+    css = {top:0.5*hEle,left:-wAlert-5};
+  }else if (where=="above"){
+    wrap.insertBefore(ele);
+    css = {left:0.5*wEle,top:-hAlert-5};
+  }else if (where=="below"){
+    wrap.insertBefore(ele);
+    css = {left:0.5*wEle,bottom:-1.05*hAlert};
+  }
 
-wrap.css(css);
+  wrap.css(css);
 
-if (offset!==null){
-  $(".alert").css("transform","translate("+offset+")");
-}
+  if (offset!==null){
+    $(".alert").css("transform","translate("+offset+")");
+  }
 
-// if (ele.is('ul')){
-// var bgColor = (ele.data('bgColor') != undefined) ? ele.data('bgColor') : ele.css('background-color');
-// ele.data('bgColor',bgColor);
-// ele.css('background-color','rgb(234,78,80)');
-// setTimeout(function(){
-//     ele.css("background-color",bgColor);
-// },time)
-// }else{
-  var borderColor = (ele.data('borderColor') != undefined) ? ele.data('borderColor') : ele.css('border-color');
-  ele.data('borderColor',borderColor);
-  ele.css("border-color","rgb(234,78,80)").attr("readonly","true");
   setTimeout(function(){
-    ele.css("border-color",borderColor);
-    if (readonly != undefined){
-      ele.attr('readonly',readonly);
-    }else{
-      ele.removeAttr("readonly");
-      ele.focus();
-    }
+    $(".zeroWrap.a.f, .alert.f").slideFadeOut(600,function(){$(".zeroWrap.a.f, .alert.f").remove();})
   },time)
-// }
-
-setTimeout(function(){
-  $(".zeroWrap.a.f, .alert.f").slideFadeOut(600,function(){$(".zeroWrap.a.f, .alert.f").remove();})
-},time)
 
 }
 // function confirmBox(str,What,Where,Fade,Offset){
@@ -3764,72 +3882,74 @@ function resizeImageClicks(){
       var heightInPx = img.outerHeight(), newHeight;
       width = heightInPx * ratio;
       newWidth = width;
-// console.log(img,height);
-img.css({width:width});
-// console.log(img.css('width'));
-if (visible){
-  while(newWidth > parentWidth){
-    newWidth = newWidth*0.95;
+  // console.log(img,height);
+  img.css({width:width});
+  // console.log(img.css('width'));
+  if (visible){
+    while(newWidth > parentWidth){
+      newWidth = newWidth*0.95;
+    }
+    if (newWidth != width){
+      newHeight = newWidth / ratio;
+      img.css({width:newWidth,height:newHeight});
+    }
   }
-  if (newWidth != width){
-    newHeight = newWidth / ratio;
-    img.css({width:newWidth,height:newHeight});
-  }
-}
-},501)
+  },501)
   });
 }
 
-function resizeMobileMenuAndFooter(){
-  var siteMenu = $(".siteMenu").first();
-  var tabs = siteMenu.add("#MenuDisplay").children(".tab").not("#Notifications, #mobilePlaceholder, #MobileMenu"), hasPlaceholder = ($("#mobilePlaceholder").length == 1);
-  if (!siteMenu.hasClass("mobile")){
-    menuWidth = siteMenu.outerWidth();
-  }
-  var logo = $("#NavBar").find('.logo'), logoW = logo[0].scrollWidth, menuW = siteMenu[0].scrollWidth, em;
-  em = getEm();
-  var w = $("body").width();
-  var tooWide = ((logoW + menuW + 6*em) > w), wideEnough = null;
-  if (siteMenu.data('width') != undefined){
-    wideEnough = ((logoW + siteMenu.data('width') + 6*em) < w);
-  }
-// if (p > 0.6){
-  if (tooWide){
-    siteMenu.data('width',menuW);
-    siteMenu.addClass("mobile");
-    if (hasPlaceholder){
-      $("#mobilePlaceholder").replaceWith(tabs);
-    }else{
-      tabs.appendTo("#MenuDisplay");    
-    }
-  }else if (wideEnough){
-    siteMenu.removeClass("mobile");
-    tabs.appendTo(siteMenu);
-    siteMenu.find(".dropDown").removeClass("active");
-    siteMenu.removeData('width');
-  }
-  moveNotifications();
+// function resizeMobileMenuAndFooter(){
+//   throw new Error('rewrite this resizeMobileMenuAndFooter function');
+//   var siteMenu = $(".siteMenu").first();
+//   var tabs = siteMenu.add("#MenuDisplay").children(".tab").not("#Notifications, #mobilePlaceholder, #MobileMenu"), hasPlaceholder = ($("#mobilePlaceholder").length == 1);
+//   if (!siteMenu.hasClass("mobile")){
+//     menuWidth = siteMenu.outerWidth();
+//   }
+//   var logo = $("#NavBar").find('.logo'), logoW = logo[0].scrollWidth, menuW = siteMenu[0].scrollWidth, em;
+//   em = getEm();
+//   var w = $("body").width();
+//   var tooWide = ((logoW + menuW + 6*em) > w), wideEnough = null;
+//   if (siteMenu.data('width') != undefined){
+//     wideEnough = ((logoW + siteMenu.data('width') + 6*em) < w);
+//   }
+//   if (tooWide){
+//     siteMenu.data('width',menuW);
+//     siteMenu.addClass("mobile");
+//     if (hasPlaceholder){
+//       $("#mobilePlaceholder").replaceWith(tabs);
+//     }else{
+//       tabs.appendTo("#MenuDisplay");    
+//     }
+//   }else if (wideEnough){
+//     siteMenu.removeClass("mobile");
+//     tabs.appendTo(siteMenu);
+//     siteMenu.find(".dropDown").removeClass("active");
+//     siteMenu.removeData('width');
+//   }
+//   moveNotifications();
 
-  if (w < 480){$("footer").find(".logo, .icons, .contact, .hours").addClass("mobile");}
-  else if (w < 750){
-    $("footer").find(".logo, .icons").addClass("mobile");
-    $("footer").find(".contact, .hours").removeClass("mobile");
-  }
-  else {$("footer").find(".logo, .icons, .contact, .hours").removeClass("mobile");}
-}
-function moveNotifications(){
-  var siteMenu = $(".siteMenu").first(), mobileNow = siteMenu.hasClass('mobile');
-  if (mobileNow){
-    $("#Notifications").prependTo(siteMenu);
-  }else{
-    $("#Notifications").insertBefore(siteMenu.find(".divide"));
-  }
-}
-function listenMobileMenuExit(e){
-  if (!$(e.target).is(".tab, .title, .dropdown, li, #MenuToggle")){
-    $("#MenuToggle").click();
-  }
-}
+//   if (w < 480){$("footer").find(".logo, .icons, .contact, .hours").addClass("mobile");}
+//   else if (w < 750){
+//     $("footer").find(".logo, .icons").addClass("mobile");
+//     $("footer").find(".contact, .hours").removeClass("mobile");
+//   }
+//   else {$("footer").find(".logo, .icons, .contact, .hours").removeClass("mobile");}
+// }
+// function moveNotifications(){
+//   throw new Error('rewrite this moveNotifications function');
+
+//   var siteMenu = $(".siteMenu").first(), mobileNow = siteMenu.hasClass('mobile');
+//   if (mobileNow){
+//     $("#Notifications").prependTo(siteMenu);
+//   }else{
+//     $("#Notifications").insertBefore(siteMenu.find(".divide"));
+//   }
+// }
+// function listenMobileMenuExit(e){
+//   if (!$(e.target).is(".tab, .title, .dropdown, li, #MenuToggle")){
+//     $("#MenuToggle").click();
+//   }
+// }
 
 var timer;
 function resizeElements(ev){
@@ -3987,25 +4107,25 @@ function singular(model){
 // };
 
 
-function initializeNewContent(){
-  throw new Error(`don't use initializeNewContent`);
-  if (typeof notify !== 'undefined'){
-    initializeNewForms();
-    initializeNewModelForms();
-    table.initialize.all();
-    initializeSettingsForm();
-    appointment.initialize.all();
-    initializeScheduleForms();
-    checkNotifications();
-    chartnote.initialize.all();
-    invoice.initialize.all();
-  }
-  initializeNewMenus();
-  initializeEditables();
-  initializeLinks();
-  resizeElements();
-  masterStyle();
-}
+// function initializeNewContent(){
+//   throw new Error(`don't use initializeNewContent`);
+//   if (typeof notify !== 'undefined'){
+//     initializeNewForms();
+//     initializeNewModelForms();
+//     table.initialize.all();
+//     initializeSettingsForm();
+//     appointment.initialize.all();
+//     initializeScheduleForms();
+//     checkNotifications();
+//     chartnote.initialize.all();
+//     invoice.initialize.all();
+//   }
+//   initializeNewMenus();
+//   initializeEditables();
+//   initializeLinks();
+//   resizeElements();
+//   masterStyle();
+// }
 
 // var loadingRing = "<div class='lds-ring dark'><div></div><div></div><div></div><div></div></div>", loadingRingCSS = {top:"50%",transform:"translate(-50%,-50%)"}, vhIndicator, vhIndicatorHeight = undefined, inputHasFocus = false, rapidChangeTimer = null;
 // function checkRapidVhShrink(ev){

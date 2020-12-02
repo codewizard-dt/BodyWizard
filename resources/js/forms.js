@@ -42,6 +42,7 @@ window.EMBEDDED_ICD_CALLBACKS = EMBEDDED_ICD_CALLBACKS;
 
 class FormEle {
   constructor(proxy) {
+    console.groupCollapsed('creating FormEle');
     let options = $(proxy).data(), json = options.json;
     this.mode = ifu(options.mode, 'display');
     this.json = ifu(options.json, {});
@@ -53,7 +54,12 @@ class FormEle {
     this.ele = $(`<div/>`,{class:'form central full',id: (this.form_name || '').toKeyString()});
     $(proxy).replaceWith(this.ele);
     this.ele.data('class_obj',this);
-    this.section_list = new Features.List({header:'Sections'});
+    this.section_list = new Features.List({
+      header:'Sections',
+      entire_li_clickable: false,
+      li_class: 'flexbox spread',
+      li_selectable: false,
+    });
     this.section_array = [];
     let form = this;
     this.add_header();
@@ -78,10 +84,10 @@ class FormEle {
       ele: $("#FormBuilder"),
       delay: 10000,
       send: this.autosave_send.bind(this),
-      callback: this.autosave_callback.bind(this)
+      callback: this.autosave_callback.bind(this),
+      obj: this,
     });
-
-    // log({form:this}, `new FormEle`);
+    console.groupEnd();
   }
 
   add_header () {
@@ -139,7 +145,6 @@ class FormEle {
     let get = function (name) {return manager.get_setting(name)};
     if (get('display.HideFormTitle')) this.header.slideFadeOut(time);
     else this.header.slideFadeIn(time);
-    // let submit_btn = this.submit_btn.ele || this.submit_btn;
     if (get('display.SubmitButton') == 'hide') this.submit_btn.ele.slideFadeOut(time);
     else this.submit_btn.ele.slideFadeIn(time);
   }
@@ -191,8 +196,7 @@ class FormEle {
 
     let list_item = this.section_list.add_item({
       text: section.name,
-      class_list: 'flexbox',
-      action: function() {section.ele.smartScroll()},
+      action: function() {section.ele.smartScroll({force:true})},
     });
     if (this.mode == 'build') {
       let arrows = new Features.UpDown({
@@ -206,7 +210,7 @@ class FormEle {
         width:'1.1em',height:'1.1em',marginLeft:'0.1em',opacity:0.6,cursor:'pointer'
       }).on('click', section.delete.bind(section)).addOpacityHover();
       let section_options = $("<span class='flexbox'></span>").append(arrows.ele, remove_icon);
-      list_item.addClass('spread').append(section_options);
+      list_item.append(section_options);
     }
     section.settings_apply();
   }
@@ -283,10 +287,7 @@ class FormEle {
     })
     return answers;
   }
-  reset_answers () {
-    Answer.reset_all();
-    // this.ele.find('.answer').each((a,answer) => $(answer).data('class_obj').to_initial_value());
-  }
+  reset_answers () { Answer.reset_all(); }
   fill_by_response (json) {
     this.followup_time = 0;
     try {
@@ -328,7 +329,8 @@ class FormEle {
       this.settings_manager.has_changes = false;
       this.section_array.forEach(section => section.has_changes_reset());      
     }
-    log(data,'form autosave send data');
+    log(data,'form autosave send data from FormEle');
+
     return $.ajax({
       url:'/save/Form',
       method: 'POST',
@@ -336,6 +338,7 @@ class FormEle {
     })    
   }
   async autosave_callback (data) {
+    log(data, 'AUTOSAVE RESPONSE & CALLBACK');
     if (data.form_uid) {
       this.form_uid = data.form_uid;
       this.form_id = data.form_id;
@@ -799,9 +802,23 @@ class Item {
         usePreLabel: true,
         labelHtmlTag: 'h4',
         listLimit: 1,
-      }})
+      }
+    });
+    if (user.isSuper()) {
+      popup.add({name: 'settings', type: 'checkboxes', 
+        options:{
+          list: ['save_as_bool'],
+          preLabel: 'Super User Settings',
+          save_as_bool: true,
+          keys_as_is: true,
+          labelHtmlTag: 'h4',
+          // listLimit: 1,
+        }
+      });      
+    }
   }
   settings_apply() {
+    // log(`form is in ${this.mode} mode`);
     if (this.mode == 'build') return;
     let manager = this.settings_manager || new Models.SettingsManager({obj:this});
     let get = function (name) {return manager.get_setting(name)};
@@ -889,7 +906,6 @@ class Item {
       items.push(item.item_db);
     }
     this.options.items = items;
-    log({options:this.options},"OPTIONS");
     return this.options;
   }
   get response() {
@@ -1087,6 +1103,7 @@ class Answer {
     if (!this[this.type]) throw new Error(`'${this.type}' not defined in class Answer`);
     this.options = data.options || data;
     this.name = this.options.name || '';
+    this.setting_name = data.setting_name || this.name;
     this.settings = {required: true, warning: true, autocomplete: false}.merge(data.settings || {});
     this.save_as_bool = this.options.save_as_bool || this.settings.save_as_bool || false;
     this.initial = data.initial || null;
@@ -1251,7 +1268,7 @@ class Answer {
     if (item_ele.dne() || this.mode == 'build') return;
     let followup_time = this.ele.getObj('form').followup_time, item = item_ele.getObj();
     time = followup_time != undefined ? followup_time : time;
-    let items = item.items, value = this.get(), show_me_eles = $();
+    let items = item.items, value = this.get(false, true), show_me_eles = $();
     if (items && items.notEmpty()) {
       items.forEach(followup => {
         let c = followup.options.condition, show_me = false;
@@ -1646,18 +1663,15 @@ class Answer {
       option = Answer.split_values_and_text(option);      
       $(`<label class='flexbox inline nowrap' style='margin:0 0.5em;transition:background-color 400ms;padding-left:0.5em;border-radius:5px'><input type='checkbox' value='${option.value}'><span style='padding:0 0.5em;width:max-content'>${option.text}</span></label>`).appendTo(this.input)
     });
-    this.get = (from_text = false) => {
-      let input = this, values = null;
-      if (this.save_as_bool) {
+    this.get = (keys_from_text = false, as_array = false) => {
+      let input = this, values = null, as_is = this.options.keys_as_is || this.settings.keys_as_is || false;
+      if (this.save_as_bool && !as_array) {
         values = {};
         this.input.find('label').get().forEach(l => {
           let i = $(l).find('input'), s = $(l).find('span');
-          let key = from_text ? s.text() : i.attr('value').toKeyString();
+          let key = keys_from_text ? s.text() : as_is ? i.attr('value') : i.attr('value').toKeyString();
           values[key] = i.is(':checked');
         });
-        // this.input.find('input').each((i,input) => {
-        //   values[$(input).attr('value').toKeyString()] = $(input).is(':checked');
-        // });
       } else {
         values = this.input.find(':checked').get().map(i => $(i).val()); 
       }
@@ -1900,7 +1914,7 @@ class InsertOptions {
     this.plus_sign.src = '/images/icons/plus_sign_white.png';
     $(this.plus_sign).css({height:'0.6em',width:'0.6em',padding:'0.3em',transition:'width 1600ms, height 1600ms, transform 1600ms',cursor:'pointer'});
     this.buttons = $(`<div class='flexbox'></div>`).css({width:'0',height:'0',transition:'width 400ms, height 400ms',overflow:'hidden',flexWrap:'nowrap'}).appendTo(this.ele);
-    let buttons = ifu(options.buttons, null, true), button_wrap = this.buttons;
+    let buttons = ifu(options.buttons, null), button_wrap = this.buttons;
     if (buttons){
       buttons.forEach(button => {
         button.class_list += ' white xxsmall';
@@ -1942,26 +1956,6 @@ var forms = {
   current: null,
   reset: () => {
     forms.current = null;
-  },
-  retrieve: function(form, includeInvisible = false, forceAutoSave = false){
-    throw new Error('using forms.retrieve which is deprecated');
-  },
-  disable: function(form){
-    form.find('input, textarea').attr('readonly',true);
-    form.find('.signature').filter(":visible").each(function(){
-      $(this).jSignature('disable');
-    });
-    form.find('.number').off("mousedown touchstart",".change",startChange);
-    form.find('.number').off("mouseup touchend",".change",stopChange);
-    form.find('.number').off('keyup',"input",inputNum);
-    form.find('.signature').find('.clear').hide();
-    form.find('.radio, .checkboxes, .imageClick, .number').addClass('disabled');
-    form.find('.button.cancel').text("close");
-    form.find('.slider, select').attr('disabled',true);
-    form.find('.datepicker').each(function(){
-      $(this).datepick('disable');
-    })
-    form.addClass('disabled');
   },
   create: {
     editor: {
@@ -2210,7 +2204,7 @@ var forms = {
         uid: forms.current.form_uid,
         columns: forms.current.form_db,
       }
-      log(data,'form autosave send data');
+      log(data,'form autosave send data from forms.autosave.send');
       // return;
       return $.ajax({
         url:'/save/Form',
@@ -2518,105 +2512,105 @@ var notes = {
 export {forms, notes};
 
 
-function initializeAdditionalNoteForm(targetObj = null, callback = null){
-  console.log('use notes.initialize');
-  return false;
-  if (targetObj) notes.targetObj = targetObj;
-  if (callback && typeof callback == 'function') notes.callback = callback;
-  var form = filterByData('#AddNote','hasDynamicFx',false), addBtn = $('#AddNoteBtn');
-  if (form.dne()) return;
-  $("#NoteList").on('click','.delete', notes.remove);
-  addBtn.on('click', notes.add);
-  form.data('hasDynamicFx',true);
-}
-function autoSavePinnedNotes(){
-  console.log('use notes.autosave');
-}
-function updatePinnedNotesOptionsNav(notes){
-  var pinnedNotes = $(".optionsNav").find(".value.pinnedNotes");
-  if (pinnedNotes.dne()) return;
-  pinnedNotes.html("");
-  $.each(notes,function(n,note){
-    if (note.title) pinnedNotes.append("<div><span><span class='bold'>"+note.title+"</span>: "+note.text+"</span></div>");
-    else pinnedNotes.append("<div><span>"+note.text+"</span></div>");
-  });
-  if (pinnedNotes.html() == "") pinnedNotes.html("None");
-}
-function fillNotes(notes){
-  console.log('use notes.autofill');
-}
-function initializeNoApptsBtn(message){
-  var btn = filterUninitialized("#NoEligibleApptsBtn");
-  btn.on('click',function(){
-    confirm('No Eligible Appointments',message,'create new appointment','dismiss',null,function(){clickTab("appointments-index");unblurAll();})
-  });
-  btn.data('initalized',true);
-}
-function initializeSelectNewApptBtns(fadeTheseIn = null){
-  log('use appointments.initialize');
-  return; 
-  var selectBtn = filterUninitialized('.selectNewAppt');
-  selectBtn.on('click',function(){
-    showOtherAppts(fadeTheseIn);
-  });
-  selectBtn.data('initialized',true);
-}
-function showOtherAppts(fadeTheseIn = null){
-  log('use appointments.initialize');
-  return; 
-  $(".selectNewAppt").hide();
-  fadeTheseIn = fadeTheseIn ? $(fadeTheseIn).add("#ApptLegend") : $("#ApptLegend");
-  fadeTheseIn.slideFadeIn();
-  $("#CurrentAppt").slideFadeOut();
-  $('.confirmApptBtn').addClass('disabled');
-}
-function selectThisAppt(){
-  log('use appointment.initialize.externalSeleCtAndLoad');
-  return;
-  if ($(this).hasClass('active') || $(this).closest("#ApptLegend").length == 1){
-    return;
-  }else{
-    $(".appt").removeClass('active');
-    $(this).addClass('active');     
-    $("#ApptSummary").html($(this).html().split("<br>").join(", ") + "<br>" + $(this).data('services'));
-    $('.confirmApptBtn').removeClass('disabled');
-    var newText;
-    if ($(this).hasClass('hasNote')){newText = 'finish note';}
-    else if ($(this).hasClass('noNote')){newText = 'start note';}
-    else if ($(this).hasClass('hasInvoice')){newText = 'finish invoice';}
-    else if ($(this).hasClass('noInvoice')){newText = 'create invoice';}
-    $(".confirmApptBtn").text(newText);
-  }
-}
-function initializeApptClicks(){
-  var appts = filterUninitialized('.appt');
-  if (appts.dne()) return;
-  appts.on('click',selectThisAppt);
-  appts.data('initialized');
-}
+// function initializeAdditionalNoteForm(targetObj = null, callback = null){
+//   console.log('use notes.initialize');
+//   return false;
+//   if (targetObj) notes.targetObj = targetObj;
+//   if (callback && typeof callback == 'function') notes.callback = callback;
+//   var form = filterByData('#AddNote','hasDynamicFx',false), addBtn = $('#AddNoteBtn');
+//   if (form.dne()) return;
+//   $("#NoteList").on('click','.delete', notes.remove);
+//   addBtn.on('click', notes.add);
+//   form.data('hasDynamicFx',true);
+// }
+// function autoSavePinnedNotes(){
+//   console.log('use notes.autosave');
+// }
+// function updatePinnedNotesOptionsNav(notes){
+//   var pinnedNotes = $(".optionsNav").find(".value.pinnedNotes");
+//   if (pinnedNotes.dne()) return;
+//   pinnedNotes.html("");
+//   $.each(notes,function(n,note){
+//     if (note.title) pinnedNotes.append("<div><span><span class='bold'>"+note.title+"</span>: "+note.text+"</span></div>");
+//     else pinnedNotes.append("<div><span>"+note.text+"</span></div>");
+//   });
+//   if (pinnedNotes.html() == "") pinnedNotes.html("None");
+// }
+// function fillNotes(notes){
+//   console.log('use notes.autofill');
+// }
+// function initializeNoApptsBtn(message){
+//   var btn = filterUninitialized("#NoEligibleApptsBtn");
+//   btn.on('click',function(){
+//     confirm('No Eligible Appointments',message,'create new appointment','dismiss',null,function(){clickTab("appointments-index");unblurAll();})
+//   });
+//   btn.data('initalized',true);
+// }
+// function initializeSelectNewApptBtns(fadeTheseIn = null){
+//   log('use appointments.initialize');
+//   return; 
+//   var selectBtn = filterUninitialized('.selectNewAppt');
+//   selectBtn.on('click',function(){
+//     showOtherAppts(fadeTheseIn);
+//   });
+//   selectBtn.data('initialized',true);
+// }
+// function showOtherAppts(fadeTheseIn = null){
+//   log('use appointments.initialize');
+//   return; 
+//   $(".selectNewAppt").hide();
+//   fadeTheseIn = fadeTheseIn ? $(fadeTheseIn).add("#ApptLegend") : $("#ApptLegend");
+//   fadeTheseIn.slideFadeIn();
+//   $("#CurrentAppt").slideFadeOut();
+//   $('.confirmApptBtn').addClass('disabled');
+// }
+// function selectThisAppt(){
+//   log('use appointment.initialize.externalSeleCtAndLoad');
+//   return;
+//   if ($(this).hasClass('active') || $(this).closest("#ApptLegend").length == 1){
+//     return;
+//   }else{
+//     $(".appt").removeClass('active');
+//     $(this).addClass('active');     
+//     $("#ApptSummary").html($(this).html().split("<br>").join(", ") + "<br>" + $(this).data('services'));
+//     $('.confirmApptBtn').removeClass('disabled');
+//     var newText;
+//     if ($(this).hasClass('hasNote')){newText = 'finish note';}
+//     else if ($(this).hasClass('noNote')){newText = 'start note';}
+//     else if ($(this).hasClass('hasInvoice')){newText = 'finish invoice';}
+//     else if ($(this).hasClass('noInvoice')){newText = 'create invoice';}
+//     $(".confirmApptBtn").text(newText);
+//   }
+// }
+// function initializeApptClicks(){
+//   var appts = filterUninitialized('.appt');
+//   if (appts.dne()) return;
+//   appts.on('click',selectThisAppt);
+//   appts.data('initialized');
+// }
 
 
 
-function getModelNotes(model,uid){
-  $.ajax({
-    url:'/addNote/'+model+"/"+uid,
-    method: "GET",
-    success: function(data){
-      if ($("#AddNoteModal").exists()){
-        $("#AddNoteModal").html(data).data({model:model,uid,uid});
-      }else{
-        $("<div/>",{
-          id: 'AddNoteModal',
-          class: 'modalForm',
-          data: {model:model,uid:uid},
-          html: data
-        }).appendTo("body");
-      }
-      minifyForm($("#AddNote"));
-      var modelInfo = $("#AddNoteModal").find('.instance').data();
-      initializeAdditionalNoteForm(autoSavePinnedNotes);
-      blurTopMost('#AddNoteModal');
-      notes.autofill(modelInfo.notes);
-    }
-  })
-}
+// function getModelNotes(model,uid){
+//   $.ajax({
+//     url:'/addNote/'+model+"/"+uid,
+//     method: "GET",
+//     success: function(data){
+//       if ($("#AddNoteModal").exists()){
+//         $("#AddNoteModal").html(data).data({model:model,uid,uid});
+//       }else{
+//         $("<div/>",{
+//           id: 'AddNoteModal',
+//           class: 'modalForm',
+//           data: {model:model,uid:uid},
+//           html: data
+//         }).appendTo("body");
+//       }
+//       minifyForm($("#AddNote"));
+//       var modelInfo = $("#AddNoteModal").find('.instance').data();
+//       initializeAdditionalNoteForm(autoSavePinnedNotes);
+//       blurTopMost('#AddNoteModal');
+//       notes.autofill(modelInfo.notes);
+//     }
+//   })
+// }

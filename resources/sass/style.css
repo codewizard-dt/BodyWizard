@@ -265,13 +265,13 @@ h5 span {font-size: 0.9em;}
 .white{color: white;}
 .shadow{text-shadow: 0 0 8px white;}
 .whiteBg{background-color: white;}
-.pinkBg{background-color: var(--pink);}
-.pinkBg10{background-color: var(--pink10);}
-.purpleBg{background-color: var(--purple);}
-.yellowBg{background-color: var(--yellow);}
-.yellowBg10{background-color: var(--yellow10);}
-.yellowBg20{background-color: var(--yellow20);}
-.yellowBg30{background-color: var(--yellow30);}
+.pinkBg{background-color: var(--pink); border-color: var(--pink70)}
+.pinkBg10{background-color: var(--pink10); border-color: var(--pink70)}
+.purpleBg{background-color: var(--purple); border-color: var(--purple70);}
+.yellowBg{background-color: var(--yellow); border-color: var(--yellow70)}
+.yellowBg10{background-color: var(--yellow10); border-color: var(--yellow70)}
+.yellowBg20{background-color: var(--yellow20); border-color: var(--yellow70)}
+.yellowBg30{background-color: var(--yellow30); border-color: var(--yellow70)}
 .shaded10{background-color: var(--white10);}
 .shaded30{background-color: var(--white30);}
 .shaded50{background-color: var(--white50);}
@@ -499,7 +499,7 @@ a:hover {color:var(--pink);}
   width:100%;
   z-index: 51;
   height: 4em;
-  background-color: rgba(255,255,255,0.93);
+  background-color: var(--white97);
 }
 
 #NavBar .logo {
@@ -1330,11 +1330,15 @@ a:hover {color:var(--pink);}
 }
 #Notifications {
   display: inline-block;
+  cursor: default;
 }
 #Notifications .multiBtns .button{
 }
 #Notifications .multiBtns {
-  margin: 0.5em -10px 0 -10px;
+  margin: 0 -10px;
+  padding: 0.2em 0;
+  border-top-width: 1px;
+  border-top-style: solid;
 }
 #Notifications .dropDown .title{
   padding-left: 18px;
@@ -1346,22 +1350,62 @@ a:hover {color:var(--pink);}
   color: var(--yellow);
   background-color: var(--yellow10);
 }
-#Notifications .up > img, #Notifications .down > img {
+#Notifications .arrow > img {
   width:1em;
   height:1em;
-  opacity:0.6;
+  /*opacity:0.6;*/
   transition: opacity 400ms;
 }
-#Notifications .up, #Notifications .down {
+#Notifications .arrow {
   transition: background-color 400ms, opacity 400ms;
-  border-radius: 3px;
+  border-radius: 0 0 3px 3px;
   user-select: none;
+  height: 1em;
+  opacity:0.6;
+  margin: -0.4em auto;
+  padding: 1px;
+  width: 4em;
+  border-width: 1px;
+  box-sizing: border-box;
 }
-#Notifications .scrollList{
-  overflow: hidden;
-  max-height: 65vh;
-  margin:0.5em -0.8em;
+#Notifications .arrow.up { border-radius: 3px 3px 0 0; }
+#Notifications .arrow.down { border-radius: 0 0 3px 3px; }
+#Notifications .arrow.active {
+  /*opacity:0.8;*/
+  background-color: var(--purple10);
+  border: 1px solid var(--purple10);
+  cursor: pointer;
 }
+#Notifications .arrow.active:hover {
+  opacity:0.8;
+  /*background-color: var(--purple30);*/
+}
+#Notifications .arrow.active:hover > img { opacity: 1; }
+
+#Notifications .notification_options {
+  border: 1px solid var(--purple10);
+  border-radius: 3px;
+  margin-left: 1em;
+}
+#Notifications li.active .notification_options {
+  background-color: var(--white80);
+}
+#Notifications li.active .unread {
+  background-color: var(--pink);
+  box-shadow: 0 0 3px 3px var(--white70);  
+}
+#Notifications .notification_options > img {
+  width: 1.5em;
+  height: 1.5em;
+  opacity: 0.7;
+  cursor: pointer;
+  transition: opacity 400ms;
+  margin: 1px 2px;
+}
+#Notifications .notification_options > img:hover {
+  opacity: 1;
+}
+
 #Notifications .indicator {
   position: absolute;
   bottom: 0;
@@ -1379,6 +1423,11 @@ a:hover {color:var(--pink);}
   bottom: 0.5em;
   right: 0.9em;
   z-index: 52;
+  opacity: 0.7;
+}
+#Notifications > .indicator > span {
+  position: relative;
+  top: 1px;
 }
 #Notifications .dropDown .selector {
   position: absolute;
@@ -1396,38 +1445,37 @@ a:hover {color:var(--pink);}
   height:10px;
   padding: 0;
 }
-#Notifications.multi .selector {
-  display: inline-block;
-}
-#Notifications .dropDown .active .selector {
-  box-shadow: 0 0 3px 3px var(--green70);
-  background-color: var(--green);
-}
 #Notifications .dropDown .indicator{
-  top:50%;
-  right:5px;
-  width:10px;
-  height:10px;
+  top: 50%;
+  left: 10px;
+  width: 10px;
+  height: 10px;
   padding: 0;
   border-radius: 10px;
-  transform: translate(-50%,-50%);
+  transform: translateY(-50%);
   background-color: transparent;
 }
-#Notifications .title .indicator.unread {
+#Notifications .indicator.unread {
   background-color: var(--pink70);
   box-shadow: 0 0 3px 3px var(--pink30);
 }
 
-#Notifications .list{
-  display: none;
-  max-height: 85vh;
-  /*box-sizing: border-box;*/
-  overflow-y: auto;
-  padding:14px;
-}
 #Notifications .button{
   font-size: 0.7em;
   margin: 0.5em;
+}
+
+.Banner {
+  position: fixed;
+  top: 5em;
+  right: 3.5em;
+  z-index: 9999;
+  display: none;
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 5px;
+  padding: 0.5em 1em;
+  background-color: var(--white97);
 }
 
 #LoginForm a{
@@ -1493,7 +1541,7 @@ a:hover {color:var(--pink);}
   display: inline-block;
 }
 
-.menuBar li{
+.menuBar li:not(.flexbox){
   display: inline-block;
 }
 

@@ -23,12 +23,11 @@ class Form extends Model
   protected $casts = [
     'sections' => 'array',
     'settings' => 'array',
-    // 'full_json' => 'json',
   ];
 
-  public static function DefaultCollection(){
+  public static function DefaultCollection($sys = false){
     $forms = Form::whereNull('settings->system')->orWhere('settings->system','false');
-    if (Auth::user()->is_superuser) $forms = Form::orWhere('settings->system','true');
+    if (Auth::user()->is_superuser && $sys) $forms = $forms->orWhere('settings->system','true');
     return $forms;
   }
   public static function TableOptions(){

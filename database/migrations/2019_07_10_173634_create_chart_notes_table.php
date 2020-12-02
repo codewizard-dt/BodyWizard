@@ -19,7 +19,7 @@ class CreateChartNotesTable extends Migration
             $table->unsignedInteger('practitioner_id');
             $table->unsignedInteger('appointment_id');
             $table->datetime('date_time_start');
-            $table->datetime('date_time_end');
+            $table->datetime('date_time_end')->nullable();
             $table->json('notes')->nullable();
             $table->json('signature')->nullable();
             $table->datetime('signed_at')->nullable();

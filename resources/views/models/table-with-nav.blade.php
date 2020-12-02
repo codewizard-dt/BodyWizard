@@ -13,7 +13,7 @@ catch(\Exception $e){ $tableOptions = ['columns'=>['Name'=>'name']]; }
 $tableOptions['displayName'] = $displayName;
 $tableOptions['modal'] = false;
 
-$collection = method_exists($class,'DefaultCollection') ? $class::DefaultCollection()->get() : $class::all();
+$collection = method_exists($class,'DefaultCollection') ? $class::DefaultCollection(true)->get() : $class::all();
 $tableOptions['collection'] = $collection;
 $tableOptions['tableType'] = 'primary';
 $tableOptions['tableId'] = $nospaces.'List';

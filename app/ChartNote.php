@@ -23,10 +23,12 @@ class ChartNote extends Model
 
   protected $casts = [
     'signature' => 'array',
-    'signed_at' => 'datetime'
+    'signed_at' => 'datetime',
+    'date_time_start' => 'datetime',
+    'date_time_end' => 'datetime',
   ];
   protected $with = ['appointment','patient'];
-  protected $fillable = ['patient_id','practitioner_id','appointment_id','notes','autosave','signature','signed_at'];
+  protected $fillable = ['patient_id','practitioner_id','appointment_id','notes','signature','signed_at'];
   protected $hidden = ['autosave'];
 
   static public function successResponse(){

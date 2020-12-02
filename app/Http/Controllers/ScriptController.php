@@ -143,8 +143,9 @@ class ScriptController extends Controller
     $relationships = $request->input('relationships', null);
     $uid = $request->input('uid', null);
     $save_result = $this->save($model, $columns, $relationships, $uid);
-    $list_update = basicList($model);
-    return compact('save_result','list_update');
+    $model_list_update = basicList($model);
+    $notification_update = Auth::user()->unreadNotifications->toJson();
+    return compact('save_result','model_list_update','notification_update');
   }
   public function save_multi (Request $request) {
     try {
@@ -155,6 +156,7 @@ class ScriptController extends Controller
         $uid = get($model,'uid',null);
         return $this->save($model['type'],$columns,$relationship,$uid);
       })->toArray();
+      throw new \Exception('Update ScriptController save_multi to include list_update and notification_update');
     } catch (\Exception $e) {
       $error = handleError($e,'scriptcontroller save 100');
       $response = compact('error');
@@ -179,14 +181,14 @@ class ScriptController extends Controller
     return 'hello';
   }
   public function create_or_edit ($model, Request $request) {
-    $class = "App\\$model"; $collection = null;
+    $class = "App\\$model"; $collection = null; $limit = $request->limit || 1;
     try {
-      $collection = $class::where($request->where)->get();
-      if ($collection->count() > 1) throw new \Exception('more than one found');
+      $collection = $class::where($request->where)->limit($limit + 1)->get();
+      if ($collection->count() > $limit) throw new \Exception("more than $limit found");
       $instance = $collection->count() == 1 ? $collection->first() : null;
       return view('models.create.template',compact('model','instance','request'));
     } catch (\Exception $e) {
-      $error = handleError($e,'scriptcontroller retrieve_single');
+      $error = handleError($e,'scriptcontroller create_or_edit');
       return compact('error');
     }
     // return $response;

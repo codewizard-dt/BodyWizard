@@ -4,7 +4,7 @@
 	$modal = isset($modal) && $modal ? 'true' : 'false';
 ?>
 @if ($name == 'notifications')
-	@include ('portal.user.notification-nav')
+	@include ('layouts.notifications')
 @else
 	<div id="{{ $name }}" class="tab{{$divide}}" data-uri="{{$uri}}" data-modal="{{$modal}}">
 		<div class="title" @if(isset($image_url))data-image='{{$image_url}}' @endif data-uri="{{ $uri }}">{{ $text }}</div>

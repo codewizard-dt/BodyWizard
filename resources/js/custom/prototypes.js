@@ -1,4 +1,4 @@
-import {log, system, menu} from '../functions';
+import {log, system, menu, Features} from '../functions';
 import {forms, Forms} from '../forms';
 import {model, table, Models} from '../models';
 // import {model} from '../models';
@@ -42,6 +42,7 @@ Object.defineProperties(Array.prototype, {
   }}
 });
 Object.defineProperties(Object.prototype, {
+  define_by: {value: function(object) { for (let key in object) this[key] = object[key] }},
   json_if_valid: {value: function(){return this}},
   slideFadeOut: {value: function(time,callback){
     if (this.ele) return this.ele.slideFadeOut(time,callback);
@@ -141,7 +142,7 @@ Object.defineProperties(String.prototype, {
     return this.replace(/[^a-zA-Z]/g, '');
   }},
   lettersAndSpacesOnly: {value: function(){
-    return this.replace(/_/g,' ').replace(/[^a-zA-Z ]/g, '');
+    return this.replace(/_/g,' ').replace(/[^a-zA-Z0-9 ]/g, '');
   }},
   removeSpaces: {value: function(){
     return this.replace(/ /g,'');
@@ -166,12 +167,16 @@ Object.defineProperties(String.prototype, {
   get_obj_val: {value: function(obj = null, ok_if_missing = false){
     let split = this.valueOf().split('.'), obj_val = null;
     try{
-      let first = split.shift();
+      let first = split.shift(), check_me = [Models,Forms,Features,system,window];
       if (first == 'system') obj_val = system;
       else if (first == 'forms') obj_val = forms;
       else if (first == 'model') obj_val = model;
       else if (first == 'menu') obj_val = menu;
-      else obj_val = obj ? obj[first] : Models[first] || Forms[first] || Features[first] || system[first] || window[first];
+      else if (obj) obj_val = obj[first];
+      while (check_me.notEmpty() && !obj_val) {
+        let check = check_me.shift();
+        obj_val = check[first];
+      }
       if (!obj_val) throw new Error(`${first} not given or found in window or class_map`);
       if (obj_val) {
         while (split.length > 0) {
@@ -182,7 +187,7 @@ Object.defineProperties(String.prototype, {
       }
       if (obj_val == undefined) throw new Error(`obj_val '${this}' not found`);
     }catch(error) {
-      if (!ok_if_missing) log({error,string:this.valueOf()});
+      if (!ok_if_missing) log({obj,error,string:this.valueOf()});
       obj_val = null;
     }
     return obj_val;

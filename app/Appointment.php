@@ -28,7 +28,8 @@ class Appointment extends Model
     'date_time_end' => 'datetime',
   ];
   protected $guarded = [];
-  protected $visible = ['id','uuid','patient_id','practitioner_id','date_time','duration','status'];
+  // protected $visible = ['id','uuid','patient_id','practitioner_id','date_time','duration','status'];
+  // protected $with = ['Patient','Practitioner'];
 
   public function moreOptions(){
 

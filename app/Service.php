@@ -48,11 +48,11 @@ class Service extends Model
   public static function BasicListAdditions() { return ['duration','price','settings']; }
   public function modelDetails(){
     return [
-      'service name' => $this->name,
-      'category' => $this->category,
-      'description' => $this->description_calendar,
-      'duration' => $this->duration . ' minutes',
-      'price' => Practice::getFromSession()->currency['symbol'].$this->price,
+      'Service Name' => $this->name,
+      'Category' => $this->category,
+      'Description' => $this->description_calendar,
+      'Duration' => $this->duration . ' minutes',
+      'Price' => Practice::getFromSession()->currency['symbol'].$this->price,
     ];
   }
   public function detailClick(){

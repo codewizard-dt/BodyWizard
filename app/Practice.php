@@ -82,12 +82,12 @@ class Practice extends Model
       'extraBtns' => [],
     ];
   }
-  function modelDetails() {
+  public function modelDetails() {
     return [
       'name' => $this->name,
     ];
   }
-  function table_nav_options() {
+  public function table_nav_options() {
     $data = [];
     $data['buttons'] = [
       'schedule' => 'schedule_edit'
@@ -96,7 +96,6 @@ class Practice extends Model
   }
 
   public function navBarInfo(){
-    // $tz = $this->contact_info ? $this->contact_info['timezone'] : 'America/Chicago';
     return [
       'currency' => $this->currency,
       'tz' => $this->get_setting('contact_info.timezone', 'America/Chicago'),
@@ -193,30 +192,30 @@ class Practice extends Model
         return $user->patient->id == $appt['extendedProps']['patient']['id'];
       })->toArray();
     }
-        // if ($usertype == 'practitioner'){
-        //     // $array = [];
-        //     // foreach ($appointments as $id => $event){
-        //     //     $array[] = $event;
-        //     // }
-        //     // return $array;
-        //     return array_values($appointments);
-        // }
-        // elseif ($usertype == 'patient'){
-        //     $array = [];
-        //     $patientId = $user->patient->id;
-        //     // $appointments
+// if ($usertype == 'practitioner'){
+//     // $array = [];
+//     // foreach ($appointments as $id => $event){
+//     //     $array[] = $event;
+//     // }
+//     // return $array;
+//     return array_values($appointments);
+// }
+// elseif ($usertype == 'patient'){
+//     $array = [];
+//     $patientId = $user->patient->id;
+//     // $appointments
 
-        //     $userPatientId = $user->patient->id;
-        //     foreach($appointments as $id => $event){
-        //         // RETURNS ONLY THIS PATIENT'S APPOINTMENTS
-        //         $apptPatientId = $event['extendedProps']['patient']['id'];
-        //         // $patientUserIds = Patient::returnUserIds($patientIds);
-        //         if ($userPatientId == $apptPatientId){
-        //             $array[] = $event;
-        //         }
-        //     }
-        //     return $array;
-        // }
+//     $userPatientId = $user->patient->id;
+//     foreach($appointments as $id => $event){
+//         // RETURNS ONLY THIS PATIENT'S APPOINTMENTS
+//         $apptPatientId = $event['extendedProps']['patient']['id'];
+//         // $patientUserIds = Patient::returnUserIds($patientIds);
+//         if ($userPatientId == $apptPatientId){
+//             $array[] = $event;
+//         }
+//     }
+//     return $array;
+// }
     return $appointments;
   }
   public function getAnonEventsAttribute(){
@@ -260,10 +259,6 @@ class Practice extends Model
     $dbname = $this->dbname;
     config(['database.connections.mysql.database' => $dbname]);
     DB::reconnect();
-  }
-  public function updateFullCalFeed(){
-    $fullcal = [];
-
   }
   public function updateEntireEventFeed(){
     $calendarId = $this->calendar_id;
@@ -315,7 +310,7 @@ class Practice extends Model
         $id = $event->id;
         $title = $event->summary;
 
-                // DEFINE EVENT DATETIME DETAILS
+    // DEFINE EVENT DATETIME DETAILS
         if (isset($event->recurrence)){
           $start = Carbon::parse($start);
           $end = Carbon::parse($end);
@@ -332,7 +327,7 @@ class Practice extends Model
               'exTime' => $start->format('\THis')
             ]
           );
-                        // Log::info($rrule);
+            // Log::info($rrule);
         }elseif (isset($event->recurringEventId)){
           $startCarbon = Carbon::parse($start);
           $endCarbon = Carbon::parse($end);
@@ -360,7 +355,7 @@ class Practice extends Model
           );
         }
 
-                // DEFINE EVENT TYPE
+    // DEFINE EVENT TYPE
         $type = (isset($event->extendedProperties) && isset($event->extendedProperties->private['type'])) ? $event->extendedProperties->private['type'] : 'nonEHR';
         if ($type == "EHR:appointment"){
           $ehrArr[$id] = $newEvent;
@@ -371,7 +366,7 @@ class Practice extends Model
         }
       }
 
-            // EXCLUDE MODIFIED DATES FOR RECURRING EVENTS
+// EXCLUDE MODIFIED DATES FOR RECURRING EVENTS
       foreach ($recurringEventExceptions as $id => $exDate){
         if (isset($nonEhrArr[$id])){
           $time = $nonEhrArr[$id]['extendedProps']['exTime'];
@@ -403,7 +398,7 @@ class Practice extends Model
       $this->appointments_enc = json_encode($ehrArr);
       $this->other_events_enc = json_encode($nonEhrArr);
       $this->anon_appt_feed = $anonArr;
-            // Log::info($this);
+// Log::info($this);
       $this->save();
     }catch(Exception $e){
       reportError($e,'practice.php 341');
@@ -435,148 +430,145 @@ class Practice extends Model
     return true;
   }
 
-    // FOR INITIALIZING A NEW PRACTICE
   public static function createCalendar($name){
-   $service = app('GoogleCalendar');
-   $calendar = new \Google_Service_Calendar_Calendar();
-   $calendar->setSummary($name." EHR");
-   $calendar->setTimeZone('America/Chicago');
+    $service = app('GoogleCalendar');
+    $calendar = new \Google_Service_Calendar_Calendar();
+    $calendar->setSummary($name." EHR");
+    $calendar->setTimeZone('America/Chicago');
 
-   try{
-     $createdCalendar = $service->calendars->insert($calendar);
-     $calendarId = $createdCalendar->getId();
-   }catch(\Exception $e){
-    reportError($e,'Practice.php 381');
-  }
-
-  return isset($e) ? $e : $calendarId;
-}
-public function shareCalendar($email){
- $service = app('GoogleCalendar');
- $rule = new \Google_Service_Calendar_AclRule();
- $scope = new \Google_Service_Calendar_AclRuleScope();
-
- $scope->setType("user");
- $scope->setValue($email);
- $rule->setScope($scope);
- $rule->setRole("owner");
- 
- $calId = $this->calendar_id;
- 
- try{
-   $createdRule = $service->acl->insert($calId, $rule);
- }catch(\Exception $e){
-  reportError($e,'Practice.php 401');
-}
-return isset($e) ? $e : $calId;
-}
-public function newCalWebHook(){
-  $calendarId = $this->calendar_id;
-  $client = app('GoogleClient');
-  $service = app('GoogleCalendar');
-  $channel = new \Google_Service_Calendar_Channel();
-  $channel->setId(uuid());
-  $channel->setAddress('https://bodywizard.ngrok.io/push/google/calendar');
-  $channel->setType('web_hook');
-  try{
-   $watch = $service->events->watch($calendarId, $channel);
-   $newConfig = ["id" => $watch->getId(), "expires" => $watch->getExpiration()];
- }catch (\Exception $e){
-  reportError($e,'Practice.php 417');
-}
-return isset($e) ? $e : $newConfig;
-}
-public static function checkCalWebHook($practiceId){
-  $client = app('GoogleClient');
-  $service = app('GoogleCalendar');
-  $webhook = config("practices.$practiceId.app.webhooks.calendar");
-  $expires = Carbon::createFromTimestampMs($webhook['expires']);
-  $cutoff = Carbon::now()->addHours(26);
-  $needNew = $expires->isBefore($cutoff);
-            // Log::info($expires);
-            // Log::info($cutoff);
-  return $needNew;
-}
-public function createDatabase($dbname){
- $client = app('GoogleClient');
- $client->addScope("https://www.googleapis.com/auth/sqlservice.admin");
- $service = new \Google_Service_SQLAdmin($client);
- $database = new \Google_Service_SQLAdmin_Database();
- $database->setName($dbname);
- $database->setCharset('utf8');
- $database->setCollation('utf8_general_ci');
- $project = config('google.project_id');
- $instance = config('google.sql_instance');
- try{
-   $result = $service->databases->insert($project, $instance, $database);
-   config(['database.connections.mysql.database' => $dbname]);
-   Artisan::call("migrate");
- }catch(\Exception $e){
-  reportError($e,'Practice.php 447');
-}
-
-return isset($e) ? $e : true;
-}
-public function refreshUsers(){
-  $practiceId = $this->practice_id;
-  try{
-    Artisan::call("refresh:users $practiceId --factory");
-  }catch(\Exception $e){
-    reportError($e,'Practice.php 457');
-  }
-  return isset($e) ? $e : true;
-}
-public function makeCryptoKey(){
- $kms = app('GoogleKMS');
- $keyRing = config('google.kms_keyring');
- $key = new CryptoKey();
-    	    // $keyName = snake($practiceName)."_".$practiceId;
- $keyName = $this->practice_id;
-
- $duration = new Duration;
- $duration->setSeconds(90*24*60*60);
- $nextRotation = new Timestamp;
- $nextRotation->fromDateTime(Carbon::now()->addDays(90));
-
- $key->setPurpose(CryptoKeyPurpose::ENCRYPT_DECRYPT);
- $key->setRotationPeriod($duration);
- $key->setNextRotationTime($nextRotation);
- $keyRing = config('google.kms_keyring');
- 
- try{
-   $key = $kms->createCryptoKey($keyRing, $keyName, $key);  
- }catch(\Exception $e){
-  reportError($e,'Practice.php 481');
-}
-
-return isset($e) ? false : $key->getName();
-}
-public function installBasicForms(){
-  $this->reconnectDB();
-  try{
-    $forms = json_decode(Storage::get('/basicEhr/forms.json'),true);
-
-    foreach ($forms as $form) { Form::create($form); }
-    // DB::table('forms')->insert($forms);
-  }catch(\Exception $e){
-    reportError($e,'Practice.php 492');
-  }
-  return isset($e) ? $e : true;
-}
-public function clearCalendar($calendarId = null){
-  if (!$calendarId){$calendarId = $this->calendar_id;}
-  $service = app('GoogleCalendar');
-  try{
-    $events = $service->events->listEvents($calendarId);
-    foreach($events->getItems() as $event){
-      $eventId = $event->getId();
-      $service->events->delete($calendarId,$eventId);
+    try{
+      $createdCalendar = $service->calendars->insert($calendar);
+      $calendarId = $createdCalendar->getId();
+    }catch(\Exception $e){
+      reportError($e,'Practice.php 381');
     }
-    return true;
-  }catch(\Exception $e){
-    Log::info($e);
-    return false;
+    return isset($e) ? $e : $calendarId;
   }
-}
+  public function shareCalendar($email){
+    $service = app('GoogleCalendar');
+    $rule = new \Google_Service_Calendar_AclRule();
+    $scope = new \Google_Service_Calendar_AclRuleScope();
+
+    $scope->setType("user");
+    $scope->setValue($email);
+    $rule->setScope($scope);
+    $rule->setRole("owner");
+
+    $calId = $this->calendar_id;
+
+    try{
+      $createdRule = $service->acl->insert($calId, $rule);
+    }catch(\Exception $e){
+      reportError($e,'Practice.php 401');
+    }
+    return isset($e) ? $e : $calId;
+  }
+  public function newCalWebHook(){
+    $calendarId = $this->calendar_id;
+    $client = app('GoogleClient');
+    $service = app('GoogleCalendar');
+    $channel = new \Google_Service_Calendar_Channel();
+    $channel->setId(uuid());
+    $channel->setAddress('https://bodywizard.ngrok.io/push/google/calendar');
+    $channel->setType('web_hook');
+    try{
+      $watch = $service->events->watch($calendarId, $channel);
+      $newConfig = ["id" => $watch->getId(), "expires" => $watch->getExpiration()];
+    }catch (\Exception $e){
+      reportError($e,'Practice.php 417');
+    }
+    return isset($e) ? $e : $newConfig;
+  }
+  public static function checkCalWebHook($practiceId){
+    $client = app('GoogleClient');
+    $service = app('GoogleCalendar');
+    $webhook = config("practices.$practiceId.app.webhooks.calendar");
+    $expires = Carbon::createFromTimestampMs($webhook['expires']);
+    $cutoff = Carbon::now()->addHours(26);
+    $needNew = $expires->isBefore($cutoff);
+    return $needNew;
+  }
+  public function createDatabase($dbname){
+    $client = app('GoogleClient');
+    $client->addScope("https://www.googleapis.com/auth/sqlservice.admin");
+    $service = new \Google_Service_SQLAdmin($client);
+    $database = new \Google_Service_SQLAdmin_Database();
+    $database->setName($dbname);
+    $database->setCharset('utf8');
+    $database->setCollation('utf8_general_ci');
+    $project = config('google.project_id');
+    $instance = config('google.sql_instance');
+    try{
+      $result = $service->databases->insert($project, $instance, $database);
+      config(['database.connections.mysql.database' => $dbname]);
+      Artisan::call("migrate");
+    }catch(\Exception $e){
+      reportError($e,'Practice.php 447');
+    }
+    return isset($e) ? $e : true;
+  }
+  public function refreshUsers(){
+    $practiceId = $this->practice_id;
+    try{
+      Artisan::call("refresh:users $practiceId --factory");
+    }catch(\Exception $e){
+      reportError($e,'Practice.php 457');
+    }
+    return isset($e) ? $e : true;
+  }
+  public function makeCryptoKey(){
+    $kms = app('GoogleKMS');
+    $keyRing = config('google.kms_keyring');
+    $key = new CryptoKey();
+    $keyName = $this->practice_id;
+
+    $duration = new Duration;
+    $duration->setSeconds(90*24*60*60);
+    $nextRotation = new Timestamp;
+    $nextRotation->fromDateTime(Carbon::now()->addDays(90));
+
+    $key->setPurpose(CryptoKeyPurpose::ENCRYPT_DECRYPT);
+    $key->setRotationPeriod($duration);
+    $key->setNextRotationTime($nextRotation);
+    $keyRing = config('google.kms_keyring');
+
+    try{
+      $key = $kms->createCryptoKey($keyRing, $keyName, $key);  
+    }catch(\Exception $e){
+      reportError($e,'Practice.php 481');
+    }
+
+    return isset($e) ? false : $key->getName();
+  }
+  public function reinstallBasicForms(){
+    $this->reconnectDB();
+    Form::truncate()->get();
+    return $this->installBasicForms();
+  }
+  public function installBasicForms(){
+    $this->reconnectDB();
+    try{
+      $forms = json_decode(Storage::get('/basicEhr/forms.json'),true);
+      foreach ($forms as $form) { Form::create($form); }
+    }catch(\Exception $e){
+      reportError($e,'Practice.php 492');
+    }
+    return isset($e) ? $e : true;
+  }
+  public function clearCalendar($calendarId = null){
+    if (!$calendarId){$calendarId = $this->calendar_id;}
+    $service = app('GoogleCalendar');
+    try{
+      $events = $service->events->listEvents($calendarId);
+      foreach($events->getItems() as $event){
+        $eventId = $event->getId();
+        $service->events->delete($calendarId,$eventId);
+      }
+      return true;
+    }catch(\Exception $e){
+      Log::info($e);
+      return false;
+    }
+  }
 
 }

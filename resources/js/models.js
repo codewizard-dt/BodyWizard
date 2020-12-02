@@ -292,13 +292,30 @@ class Model {
     if (!this.settings_unique) {
       let model = this;
       await menu.fetch(`/settings/${this.type.toKeyString()}/${this.uid}`,'new_modal:SettingsModal');
-      let answers = Forms.Answer.get_all_within("#SettingsModal");
-      if (this.settings_autosave) answers.forEach(answer => answer.options.after_change_action = model.settings_autosave);
+      this.settings_manager = new SettingsManager({
+        obj: this,
+        save: this.settings_autosave.bind(this),
+        callback: this.settings_autosave_callback.bind(this),
+      }, 'edit');
+
+      let answers = Forms.Answer.get_all_within("#SettingsModal"), settings_manager = this.settings_manager;
+      if (this.settings_autosave) answers.forEach(answer => {
+        answer.options.after_change_action = settings_manager.update.bind(settings_manager,answer);
+      });
     } else await this.settings_unique();
+  }
+  async settings_autosave () {
+    this.settings_autosave_unique();
+    // this.settings_manager.autosave.trigger();
+    let db_settings_obj
+    log({model:this},'settings_autosave');
+  }
+  async settings_autosave_callback () {
+    log({model:this},'settings_autosave_callback');
   }
   async save (options = {}) {
     let type = this.type, model = this, columns = {}, relationships = {}, addl_post_data = {};
-    let proceed = true, clear_on_success = ifu(options.clear_on_success || true), clear_count = this.clear_count || options.clear_count || null;
+    let proceed = true, clear_on_success = ifu(options.clear_on_success, true), clear_count = this.clear_count || options.clear_count || null;
     if (this.on_save) proceed = await this.on_save();
     if (!proceed) return;
     try {
@@ -309,7 +326,6 @@ class Model {
         
         let db_obj = this.db_save_obj, callback = this.save_callback ? this.save_callback.bind(this) : null;
         if (type == 'User') db_obj.uid = this.attr_list.user_id;
-        log({db_obj, attr_list:this.attr_list},`saving new SINGLE ${this.type}`);
         if (this.wants_checkmark || options.wants_checkmark) db_obj.merge({wants_checkmark:true});
         let result = await $.ajax({
           url: `/save/${type}`,
@@ -319,15 +335,14 @@ class Model {
             if (system.validation.xhr.error.exists(response.save_result)) return;
             if (clear_on_success) {
               let blur_callback = function () {
-                log({clear_count});
                 if (clear_count) unblur({repeat:clear_count,fade:400});
                 else unblurAll({fade:400});
               }
               if (save_blur) blur(save_blur.ele,'checkmark', { callback: blur_callback, delay: 500 });
               else blurTop('checkmark', { callback: blur_callback, delay: 500 });
             }
-            // log({response});
-            Model.update_list(type,response.list_update);
+            Model.update_list(type,response.model_list_update);
+            Notification.update_list(response.notification_update);
             if (callback) callback(response.save_result);
             else $('.loadTarget').last().html(response.save_result);
           }
@@ -528,8 +543,8 @@ class SettingsManager {
     if (!this.obj.settings) this.obj.settings = {};
     SettingsManager.convert_obj_values_to_bool(this.obj.settings);
     if (!this.autosave && mode == 'edit') {
-      if (!this.save || typeof this.save != 'function') throw new Error('must supply a save function');
-      if (this.callback && typeof this.callback != 'function') this.callback = null;
+      if (!this.save || typeof this.save != 'function') throw new Error('Must supply a save function for Autosave');
+      if (this.callback && typeof this.callback != 'function') throw new Error('Invalid callback function for Autosave');
       let settings_manager = this;
       this.autosave = new Features.Autosave({
         ele: $("#SettingsModal"),
@@ -539,42 +554,47 @@ class SettingsManager {
           return settings_manager.save();
         },
         callback: settings_manager.callback,
+        obj: this.obj,
       })
     }
+    log({settings_manager:this},`new SettingsManager, obj is ${this.obj.constructor.name}`);
   }
   get_setting (nested_dot) {
-    nested_dot = `settings.${nested_dot}`;
+    if (nested_dot.split('.')[0] != 'settings') nested_dot = `settings.${nested_dot}`;
     let value = this.obj.dot_notation_get(nested_dot);
     return typeof value == 'string' ? value.toBool() : value;
   }
   update (answer) {
     this.has_changes = true;
-    let split = answer.name.split('.'), master = {}, working = master;
-    let value = answer.get();
+    let setting_name = answer.setting_name;
+    if (!setting_name) throw new Error(`answer.setting_name not defined for ${this.obj.constructor.name}`);
+    let split = setting_name.split('.'), master = {}, working = master;
+    let value = answer.get(), as_bool = answer.save_as_bool;
+    console.groupCollapsed(`UPDATE ${this.obj.constructor.name} with ${setting_name} ${as_bool?'as bool':'not as bool'}`);
     if (value != null && typeof value == 'object') {
-      log({working,master,value},`1`)
       while (split.notEmpty()) {
         let next = split.shift();
-        working[next] = {};
-        working = working[next];
+        if (next != 'settings') {
+          working[next] = {};
+          working = working[next];
+        }
       }      
       working.merge(value);
     } else {
-      log({working,master,value},`2`)
       while (split.notSolo()) {
         let next = split.shift();
-        working[next] = {};
-        working = working[next];
-        log({working,next,value},`3`);
+        if (next != 'settings') {
+          working[next] = {};
+          working = working[next];
+        }
       }
       working[split.shift()] = value;
-      log({working,master,value},`4`)
-      // working = value;
     }
-    log({value,master,working},`${typeof value}`);
+    log({working,master});
     this.obj.settings.merge(master);
     if (this.obj.settings_apply) this.obj.settings_apply(400);
-    log({obj:this.obj,answer,response:answer.get()},'UPDATE');
+    log({settings:this.obj.settings,response:value});
+    console.groupEnd();
   }
   popup_create (header = '') {
     let update = this.update.bind(this), manager = this;
@@ -587,12 +607,14 @@ class SettingsManager {
         match_border: false,
         on_hide: function () {if (manager.has_changes) manager.autosave.trigger()},
       }), add = function (input) {
-        let name = input.name, existing = null, initial = null;
-        if (input.options.usePreLabel) existing = manager.get_setting(`${name}.${input.options.preLabel.toKeyString()}`);
-        else existing = manager.get_setting(name);
-        initial = input.options.save_as_bool ? SettingsManager.array_of_true_values(existing) : existing;
-        if (manager.obj instanceof Forms.Section) log({initial,existing,input});
+        let name = input.name, as_bool = input.options.save_as_bool || false;
+        if (!name) throw new Error('cannot add setting without input.name');
+        let setting_name = input.options.usePreLabel ? `${name}.${input.options.preLabel.toKeyString()}` : name;
+        input.setting_name = name;
+        let existing = manager.get_setting(setting_name);
+        let initial = as_bool ? SettingsManager.array_of_true_values(existing) : existing;
         input.merge({options: {on_change_action: update}, initial});
+        log({input,name,existing,initial},`adding ${setting_name} ${as_bool?'as BOOL':'as NOT BOOL'} to ${manager.obj.constructor.name}`);
         let answer = new Forms.Answer(input);
         tooltip.message_append(answer.ele.addClass('flexbox left').css({width:'auto'}).wrap(`<div class='flexbox'></div>`));
       };
@@ -758,26 +780,29 @@ class Calendar {
       eventMouseEnter: function(info) {calendar.event_mouseenter(info)},
       eventMouseLeave: function(info) {calendar.event_mouseleave(info)},
       eventDidMount: function(info) {calendar.event_mount(info)},
-      // eventRender: function(info) {
-      //   if (calendar.event_render(info) === false) return false;
-      // },
       eventSources: this.event_sources,
       eventOrder: "displayOrder,start,-duration,allDay,title",
     };
     if (this.options.fullcal) fullcal_options.merge(this.options.fullcal);
     this.fullcal = new FullCal(this.ele[0], fullcal_options);
     this.fullcal.render();
-    // return;
     let view = this.ele.find('.fc-view');
     blur(view,'loading',{loadingColor:'var(--pink)',blurCss:{backgroundColor:'var(--white50)'}});      
     let cal = this, wait = setInterval(function(){
       if (cal.schedules.every(schedule => schedule.loading === false)) {
         clearInterval(wait);
         setTimeout(function(){unblur({ele:view})},100);
-        log({view,schedules:cal.schedules},'done');
       }
     },100);
-    if (this.schedule_active.modal.id == 'Appointment') this.schedule_active.autosave = new Features.Autosave({send: this.schedule_active.save.bind(this.schedule_active), delay:5000, message: 'All schedule changes saved', ele: this.ele});
+    if (this.schedule_active.modal.id == 'Appointment') {
+      this.schedule_active.autosave = new Features.Autosave({
+        send: this.schedule_active.save.bind(this.schedule_active), 
+        delay:5000, 
+        message: 'All schedule changes saved', 
+        ele: this.ele,
+        obj: this,
+      });
+    }
   }
   get event_list () {return this.events ? this.events : []}
   get event_sources () {
@@ -1185,7 +1210,7 @@ class Schedule {
       let dates = LUX.RRule.Upcoming({rrule: this.rrule_cache[recurring_id], limit:wiggle_limit})
       same_recurring_id.forEach(m => { if (!m.rrule) dates.push(LUX.fromISO(m.start)) })
       this.upcoming_cache[model.recurring_id] = dates;
-      log({rrule_cache: this.rrule_cache,upcoming_cache:this.upcoming_cache});
+      // log({rrule_cache: this.rrule_cache,upcoming_cache:this.upcoming_cache});
     }
     let rrule_set = this.rrule_cache[recurring_id], dates = this.upcoming_cache[recurring_id];
     let result = {model, rrule_set, limit, dates, max: dates.length > limit};
@@ -1304,11 +1329,10 @@ class Schedule {
   }
   form_responses_to_events (responses) {
     let events = [], source_id = this.event_source_id, schedule = this, display = this.display;
-    log({display,schedule:this, bool: display == 'background'});
     responses.forEach((response,r) => {
       let obj = schedule.response_to_obj(response);
       let group_id = `${source_id}_responses${r}`, description = {};
-      log({obj});
+      // log({obj});
       try {
         if (obj.dates) {
           if (obj.dates.notSolo()) description['Linked Dates'] = obj.dates.join(', ');
@@ -1404,7 +1428,7 @@ class Schedule {
         log({error,model});
       }
     })
-    log({models,events},'models to events');
+    // log({models,events},'models to events');
     this.loading = false;
     return events;
   }
@@ -1791,8 +1815,11 @@ class Service extends Model {
   }
 
   get db_columns () {return ['name','service_category_id','description_calendar','description_admin','price','duration']}
-  async settings_autosave () {
-    log('hi');
+  get db_relationships () {
+    return {forms:'sync'};
+  }  
+  async settings_autosave_unique () {
+    let form = $('#SettingsModal'), answers = Answers.get_all_within(form);
   }
 }
 class ServiceCategory extends Model {
@@ -1802,9 +1829,9 @@ class ServiceCategory extends Model {
   }
 
   get db_columns () {return ['name','description']}
-  async settings_autosave () {
-    log('hi');
-  }
+  // async settings_autosave () {
+  //   log('hi');
+  // }
 }
 class Complaint extends Model {
   constructor (attr_list = null) {
@@ -1881,6 +1908,10 @@ class Form extends Model {
   }
   async edit_unique () {
     $('#forms-edit').click();
+  }
+  async settings_unique () {
+    let model = this;
+    await menu.fetch(`/settings/Form/${this.uid}`,'new_modal:SettingsModal');    
   }
   static async preview_by_uid (uid) {menu.fetch(`/form/preview/${uid}`,'new_modal:FormPreview');}
 }

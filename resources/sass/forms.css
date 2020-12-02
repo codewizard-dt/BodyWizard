@@ -265,8 +265,7 @@ textarea[data-followup]{
     padding-right: 0.5em;
     text-align: right;
     box-sizing: border-box;
-    flex: 1 0 0;
-    /*min-width: 8em;*/
+    flex: 0 0 0;
     align-self: flex-start;
     white-space: nowrap;
 }
@@ -276,7 +275,6 @@ textarea[data-followup]{
     box-sizing: border-box;
     flex: 3 0 0;
     align-self: flex-start;
-    /*min-width: 16em;*/
 }
 .flexbox.nowrap{
     flex-wrap: nowrap;
@@ -284,6 +282,9 @@ textarea[data-followup]{
 }
 .flexbox.spread{
     justify-content: space-between;
+}
+.flexbox.spacey{
+    justify-content: space-around;
 }
 .flexbox.left{
     justify-content: flex-start;
@@ -356,6 +357,10 @@ textarea[data-followup]{
 .flexbox > .answer.textbox, .flexbox > .answer.number {
     max-width: calc(50% - 0.4em);
     min-width: unset;
+}
+
+.KeyValueBox > .flexbox.column { 
+    width: 100%;
 }
 
 .ctw-input { width:19em; }
@@ -1730,8 +1735,8 @@ input#PatientName {
     border-width: 0 0 1px 0;
     padding: 0.1em 0;
 }
-.List li.clickable { cursor: pointer; }
-.List li.clickable:hover { background-color: var(--purple10); }
+.List .clickable { cursor: pointer; }
+.List li:hover { background-color: var(--purple10); }
 .List span {
     padding: 0.25em 0.75em;
 }
@@ -2518,7 +2523,7 @@ table img.checkmark {
     max-height: 95%;
     width: max-content;
     max-width: 95%;
-    /*box-sizing: border-box;*/
+    box-sizing: border-box;
     overflow: hidden auto;
     transition: width 1000ms, height 1000ms;
 }

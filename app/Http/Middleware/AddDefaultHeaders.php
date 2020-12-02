@@ -16,11 +16,17 @@ public function handle($request, Closure $next)
 	$user = Auth::check() ? Auth::user() : null;
 
 	if ($user){
-		$notifications = $user->unreadNotifications;
-    $isNotificationCheck = ($request->path() == 'notification-check');
-    $notification_json = $notifications->map(function($n){
-	    	return ['type'=>notificationType($n),'data'=>notificationData($n,'json'),'id'=>$n->id];
-	   })->toJson();
+		if ($request->ajax()) {			
+			$ids = session()->get('notification_ids',[]);
+			$notifications = $user->notifications()->select('id','type','data','created_at','read_at')->whereNotIn('id',$ids)->get();
+			if ($notifications->count() > 0) {
+				smart_merge($ids,$notifications->map(function($n){return $n['id'];})->toArray());
+				session(['notification_ids'=>$ids]);
+				$content = $response->content().'###notifications'.$notifications->toJson().'###';
+				$response->setContent($content);				
+			}
+		}
+    $isNotificationCheck = ($request->path() == 'notification-retrieve');
     $forceLogout = false;
     if (!$isNotificationCheck) session(['realTimestamp' => time()]);
     else {
@@ -34,8 +40,7 @@ public function handle($request, Closure $next)
 	    'X-FORCE-LOGOUT' => $forceLogout ? 'true' : 'false',
 		];
 			    // 'X-Unread-Notifications' => strlen($notification_json) < 15000 ? $notification_json : 'send ajax',
-
-		if (!$isNotificationCheck) $headers['X-Unread-Notifications'] = strlen($notification_json) < 1500 ? $notification_json : 'send ajax';
+		// if (!$isNotificationCheck) $headers['X-Unread-Notifications'] = strlen($notification_json) < 1500 ? $notification_json : 'send ajax';
 		$response->withHeaders($headers);
 	}else{
 		$response->withHeaders([
@@ -43,7 +48,6 @@ public function handle($request, Closure $next)
 	    'X-Current-Tabs' => null,
 	    'X-CSRF-TOKEN' => null,
 	    'X-FORCE-LOGOUT' => null,
-	    'X-Unread-Notifications' => null,
 		]);
 	}
 

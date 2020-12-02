@@ -35,6 +35,7 @@ Object.defineProperties(LUX, {
 			if (dt && dt.invalid != null) throw new Error(`Invalid Luxon obj From.datetime datestr='${date_str}' timestr='${time_str}'`);
 			return dt;
 		},
+		db: str => LUX.fromSQL(str),
 	}},
 	Sort: {value: (datetimes, options = {}) => {
 	  let order = options.order || 'asc';
@@ -172,25 +173,12 @@ Object.defineProperties(LUX, {
 });
 
 Object.defineProperties(LUX.prototype, {
-	time: {
-		get () {	return this.toLocaleString(LUX.TIME_SIMPLE); }
-	},
-	time_24: {
-		get () { return this.toLocaleString(LUX.TIME_24_WITH_SECONDS) }
-	},
-	datetime_db: {
-		get () { return `${this.toFormat('yyyy-MM-dd')} ${this.time_24}` }
-	},
-	date_num: {
-		get () {	return this.toLocaleString(LUX.DATE_SHORT); }
-	},
-	date: {
-		get () { return this.toFormat('MMM d') }
-	},
-	rrule: {
-		get () { return new Date(Date.UTC(this.year, this.month - 1, this.day, this.hour, this.minute)) }
-	},
-	start_of_week: {
-		get () { return this.weekday === 7 ? this : this.startOf('week') }
-	}
+	time: {	get () { return this.toLocaleString(LUX.TIME_SIMPLE); } },
+	time_24: {	get () { return this.toLocaleString(LUX.TIME_24_WITH_SECONDS) } },
+	datetime_db: { get () { return `${this.toFormat('yyyy-MM-dd')} ${this.time_24}` } },
+	date_or_time: { get () { return this.hasSame(LUX.NOW, 'day') ? this.time : this.date } },	
+	date_num: {	get () { return this.toLocaleString(LUX.DATE_SHORT); } },
+	date: {	get () { return this.toFormat('MMM d') } },
+	rrule: { get () { return new Date(Date.UTC(this.year, this.month - 1, this.day, this.hour, this.minute)) } },
+	start_of_week: { get () { return this.weekday === 7 ? this : this.startOf('week') } }
 })

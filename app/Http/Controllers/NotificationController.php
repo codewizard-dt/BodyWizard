@@ -18,14 +18,18 @@ class NotificationController extends Controller
     $json = Auth::user()->unreadNotifications->map(function($notification){
       return ['data'=>notificationData($notification,'json'),'type'=>notificationType($notification),'id'=>$notification->id];
     })->toJson();
-    // Log::info($json);
     return $json;
+  }
+  public function retrieve (Request $request) {
+    $ids = $request->ids;
+    $new = Auth::user()->notifications()->select(['id','data','created_at','read_at','type']);
+    if ($ids) $new->whereNotIn('id',$ids);
+    return $new->get()->toArray();
   }
   public function update(Request $request){
     $status = $request->status;
     $ids = $request->ids;
     $notifications = Auth::user()->notifications()->whereIn('id',$ids);
-    // Log::info($notifications);
     try{
       if ($status == 'unread') $notifications->update(['read_at' => null]);
       elseif ($status == 'read') $notifications->update(['read_at' => now()]);
