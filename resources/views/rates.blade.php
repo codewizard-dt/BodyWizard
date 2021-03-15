@@ -9,7 +9,7 @@
 @endpush
 
 @section('content')
-        <div class='splash top' id='shelf-1'>
+        <div class='splash top' id='shelf_1'>
             <h1 class='paddedXSmall shaded30 purple'>Appointments and Rates</h1>
         </div>
         <div class='menuBar website' id='RateMenu' data-populated='no' data-target='window' data-mode='scroll'>

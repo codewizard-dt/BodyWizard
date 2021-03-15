@@ -97,7 +97,7 @@
 			<a href="/"><img class="oldLogo" src="/images/logo/headspace-logo.png" alt="Head Space Acupuncture"></a>
         </nav>
 
-        <div id='acu-chin-1' class='splash btnPopDown'>
+        <div id='acu_chin_1' class='splash btnPopDown'>
             <div class="wrapper paddedBig">
             	<div class="logoWarp">
 	                <div class='logo'></div>        		

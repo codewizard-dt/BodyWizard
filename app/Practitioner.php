@@ -3,25 +3,50 @@
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\IsUser;
 use App\Traits\TrackChanges;
+use App\Traits\TableAccess;
+use App\Traits\HasSettings;
 
 
 class Practitioner extends Model
 {
+  use IsUser;
   use TrackChanges;
-
-  public $TableOptions;
-  public $optionsNavValues;
-  public $connectedModels;
-  public $auditOptions;
-  public $nameAttr;
+  use TableAccess;
+  use HasSettings;
 
   protected $casts = [
     'schedule' => 'array'
   ];
   protected $guarded = [];
-  protected $visible = ['id','user_id','name','email','username','date_of_birth','roles'];
-  protected $appends = ['name'];
+  protected $visible = ['id','user_id','roles'];
+  protected $with = ['User'];
+
+  static public $instance_actions = [];
+  static public $static_actions = [];
+
+  static public function table() {
+    $columns = [
+      'Name' => 'name',
+      'Phone' => 'phone',
+      'Email' => 'email',      
+    ];
+    $filters = [];
+    $buttons = [];
+    $data = [];
+    return compact('columns','filters','buttons','data');
+  }
+  public function details() {
+    $instance = [
+      // 'Category' => $this->category_name,
+      // 'Description' => $this->description,
+    ];
+    $buttons = [];
+    return compact('instance','buttons');
+  }
+
+
 
   public static function TableOptions(){
     $filters = [];
@@ -67,15 +92,6 @@ class Practitioner extends Model
   public function user(){
     return $this->belongsTo('App\User','user_id');
   }
-  public function __get($key) {
-    if ($this->getAttribute($key)) return $this->getAttribute($key); 
-    else if ($this->user->getAttribute($key)) return $this->user->getAttribute($key);
-    else return null;
-  }
-  public function getNameAttribute(){
-    return $this->user->name;
-  }
-
   
   public function moreOptions(){
 

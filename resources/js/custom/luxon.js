@@ -128,34 +128,46 @@ Object.defineProperties(LUX, {
 	}},
 	RRule: {value: {
 		Parse: (rrule) => {
-			if (!rrule) return null;
-			if (typeof rrule == 'string') rrule = rrulestr(rrule,{forceset:true});
-			rrule = (rrule instanceof RRuleSet) ? rrule : null;
-			if (!rrule) throw new Error('rrule not parseable to RRuleSet');
-			return rrule;
+			try {
+				if (!rrule) return null;
+				if (typeof rrule == 'string') rrule = rrulestr(rrule,{forceset:true});
+				rrule = (rrule instanceof RRuleSet) ? rrule : null;
+				if (!rrule) throw new Error('rrule not parseable to RRuleSet');
+				return rrule;
+			} catch (error) {
+				log({error,rrule});
+			}
 		},
 		Upcoming: (options = {}, datetime = LUX.NOW) => {
-			if (!options.rrule) throw new Error('rrule not given for Upcoming');
-			let rrule = LUX.RRule.Parse(options.rrule), limit = options.limit || 3, dates = [], working_datetime = datetime.rrule;
-			while (dates.length < limit && working_datetime) {
-				working_datetime = rrule.after(working_datetime);
-				if (working_datetime) dates.push(LUX.From.rrule(working_datetime));
+			try {
+				if (!options.rrule) throw new Error('rrule not given for Upcoming');
+				let rrule = LUX.RRule.Parse(options.rrule), limit = options.limit || 3, dates = [], working_datetime = datetime.rrule;
+				while (dates.length < limit && working_datetime) {
+					working_datetime = rrule.after(working_datetime);
+					if (working_datetime) dates.push(LUX.From.rrule(working_datetime));
+				}
+				return dates;
+			} catch (error) {
+				log({error, options, datetime});
 			}
-			return dates;
 		},
 		Recent: (options = {}, datetime = LUX.NOW) => {
-			if (!options.rrule) throw new Error('rrule not given for Upcoming');
-			let rrule = LUX.RRule.Parse(options.rrule), limit = options.limit || 3, dates = [], working_datetime = datetime.rrule;
-			while (dates.length < limit && working_datetime) {
-				working_datetime = rrule.before(working_datetime);
-				if (working_datetime) dates.push(LUX.From.rrule(working_datetime));
+			try {
+				if (!options.rrule) throw new Error('rrule not given for Upcoming');
+				let rrule = LUX.RRule.Parse(options.rrule), limit = options.limit || 3, dates = [], working_datetime = datetime.rrule;
+				while (dates.length < limit && working_datetime) {
+					working_datetime = rrule.before(working_datetime);
+					if (working_datetime) dates.push(LUX.From.rrule(working_datetime));
+				}
+				return dates;
+			} catch (error) {
+				log({error, options, datetime});
 			}
-			return dates;
 		},
 		Merge: (rrule_array) => {
 			rrule_array = rrule_array.map(r => LUX.RRule.Parse(r));
-			let rrule_set = rrule_array.shift();
-			while (rrule_set === null) { rrule_set = rrule_array.shift() }
+			let rrule_set = rrule_array.shiftNotNull();
+			// while (rrule_set === null) { rrule_set = rrule_array.shift() }
 			while (rrule_array.length > 0) {
 				let next = rrule_array.shift();
 				while (next === null) { next = rrule_array.shift() }
@@ -165,6 +177,11 @@ Object.defineProperties(LUX, {
 		    next._exdate.forEach(date => rrule_set.exdate(date));
 			}
 			return rrule_set;
+		},
+		toText: (rrule, as_array = true) => {
+			let array = LUX.RRule.Parse(rrule)._rrule.map(r => r.toText());
+			let map = str => str.ucFirst();
+			return as_array ? array.map(map) : array.smartJoin({map});
 		}
 	}},
 	NOW: {
@@ -174,11 +191,18 @@ Object.defineProperties(LUX, {
 
 Object.defineProperties(LUX.prototype, {
 	time: {	get () { return this.toLocaleString(LUX.TIME_SIMPLE); } },
+	time_narrow: {	get () { 
+		let format = {hour:'numeric',dayPeriod:'narrow'};
+		if (this.minute != 0) format.merge({minute:'2-digit'});
+		return this.toLocaleString(format).replace(' ','').toLowerCase(); 
+	} },
 	time_24: {	get () { return this.toLocaleString(LUX.TIME_24_WITH_SECONDS) } },
 	datetime_db: { get () { return `${this.toFormat('yyyy-MM-dd')} ${this.time_24}` } },
 	date_or_time: { get () { return this.hasSame(LUX.NOW, 'day') ? this.time : this.date } },	
+	date_narrow: {	get () { return this.toLocaleString({month:'numeric',day:'numeric'}) } },
+	date_time_narrow: { get () { return `${this.date_narrow} ${this.time_narrow}` } },	
 	date_num: {	get () { return this.toLocaleString(LUX.DATE_SHORT); } },
-	date: {	get () { return this.toFormat('MMM d') } },
+	date: {	get () { return this.toLocaleString({month:'short',day:'numeric'}) } },
 	rrule: { get () { return new Date(Date.UTC(this.year, this.month - 1, this.day, this.hour, this.minute)) } },
 	start_of_week: { get () { return this.weekday === 7 ? this : this.startOf('week') } }
 })

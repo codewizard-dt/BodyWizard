@@ -8,15 +8,14 @@ $inputs = [];
     ['Description (used for forms + charting)']));
   set($inputs, 'complaint_category_id', new_input('text',
     ['placeholder','linked_to'], 
-    ['Complaint Category','complaint_category']));
+    ['Complaint Category','ComplaintCategory']));
   set($inputs, 'icd_codes', new_input('textbox',
-    ['placeholder','linked_to','list_separator','listLimit','inputCss'], 
-    ['Applicable ICD Codes (used as suggestions when charting)','icd_code','line break','none',['height'=>'10em']]));
+    ['placeholder','linked_to','list_separator','listLimit','input_css'], 
+    ['Applicable ICD Codes (used as suggestions when charting)','IcdCode','line break','none',['height'=>'10em']]));
 $initial = collect($inputs)->mapWithKeys(function($input,$attr) use ($instance){
   return [$attr => getInitial($instance, $attr)];
 })->toArray();
 ?>
-<div class='paddedBig'>
 	<h1>Create Chief Complaint</h1>
 	<div id="CreateComplaint" class='central large left'>
 		<div class="section">
@@ -30,4 +29,3 @@ $initial = collect($inputs)->mapWithKeys(function($input,$attr) use ($instance){
 	</div>
 	<div class='button pink submit create' data-model='Complaint'>add service</div>	
 	@if(isset($mode) && $mode == 'modal')<div class='button cancel'>cancel</div>@endif
-</div>

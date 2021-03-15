@@ -29,7 +29,7 @@ trait TrackChanges
   }
   public function saveDirtyChanges($changes){
     $table = $this->getAuditTableName();
-    $encrypted = usesTrait($this,"Encryptable");
+    $encrypted = uses_trait($this,"Encryptable");
     $isLocal = (env('APP_ENV') == 'local');
 
     if ($encrypted && !$isLocal){

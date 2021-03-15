@@ -12,7 +12,7 @@
 		<div id="Current{{$model}}" class="optionsNav" data-uid="{{$uid}}" data-model="{{$model}}" data-options='{{$attrs}}'>
 			<div class="navDetails">
 				@include ('models.navOptions.nav-buttons',compact('buttons'))
-				@include ('models.navOptions.model-details',compact('details'))
+				@include ('models.navOptions.model-details',compact('model','details'))
 			</div>
 		</div>
 		<div class="toggle_proxy up" data-arrow_position='below' data-target_ele='Current{{$model}}'>
@@ -21,7 +21,7 @@
 		
 	</div>
 @else
-	<div class="optionsNavWrapper">
+	<div class="optionsNavWrapper empty">
 		<h3 class="optionsNavHeader purple paddedSmall topOnly"></h3>
 		<div class="optionsNav"></div>
 	</div>

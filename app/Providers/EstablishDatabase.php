@@ -23,15 +23,7 @@ class EstablishDatabase extends ServiceProvider
      */
     public function boot()
     {
-        //
         $practice = Practice::getFromRequest(request());
-        $practice->reconnectDB();
-        // $domain = \Request::getHost();
-        // if ($domain != 'localhost' && $domain != 'gae-dev-test-dot-bodywizard.appspot.com'){
-        //     $practice = \App\Practice::where('host',$domain)->get()->first();
-        //     if ($practice){
-        //         $practice->reconnectDB();
-        //     }            
-        // }
+        if ($practice) $practice->reconnectDB();
     }
 }

@@ -20,43 +20,59 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+
 use App\Traits\Encryptable;
+use App\Traits\TableAccess;
 use App\Traits\HasSettings;
-
-
 
 class Practice extends Model
 {
   use Encryptable;
+  use TableAccess;
   use HasSettings;
 
-  protected $connection = 'practices';
-  protected $table = 'practice_info';
+  protected $connection = 'clinicwizard_base';
+  // protected $connection = 'old_practices';
+  // protected $table = 'practice_info';
   protected $casts = [
-    'contact_info' => 'array',
-    'cal_webhook' => 'array',
-    'anon_appt_feed' => 'array',
+    // 'contact_info' => 'array',
+    // 'cal_webhook' => 'array',
+    // 'anon_appt_feed' => 'array',
     'settings' => 'array',
-    'schedule' => 'array'
+    'schedule' => 'array',
   ];
   protected $primaryKey = 'practice_id';
-  protected $visible = ['settings','name'];
   protected $guarded = [];
   public $incrementing = false;
 
-  public $practiceId;
-  public $calendarId;
-  public $database;
-  public $practitioners;
+  static public $instance_actions = [];
+  static public $static_actions = [];
+  static public $list_cols = ['duration','price'];
+  static public function table() {
+    $columns = [
+      'Host Address' => 'host',
+      'Active' => 'setting:active:false:active',      
+    ];
+    $bool_cols = ['active'];
+    $filters = [];
+    $data = [
+    ];
+    return compact('columns', 'filters', 'data', 'bool_cols');
+  }
+  public function details() {
+    $instance = [
+    ];
+    return compact('instance');
+  }
 
-  public static function getFromRequest(Request $request){
+  static public function getFromRequest(Request $request){
     $host = $request->getHost();
     $practices = Practice::where('host',$host)->get();
     $practice = ($practices->count() == 0) ? Practice::find('body_wizard_medicine_8f935c6718b4402') : $practices->first();
     if ($practices->count() > 1) reportError('Multiple practices with the same host: '.$practice->host,['location'=>'Practice.php 49']);
     return $practice ? $practice : null;
   }
-  public static function getFromSession(){
+  static public function getFromSession(){
     if (app()->runningInConsole()){
       $practiceId = getActiveStorage('Practice');
       $practice = Practice::find($practiceId);
@@ -67,161 +83,168 @@ class Practice extends Model
     }
     return $practice;
   }
-  public static function TableOptions() {
-    $filters = [];
-    return [
-      'tableId' => 'PracticeList',
-      'header' => 'Available Practices',
-      'index' => 'id',
-      'model' => "Practice",
-      'columns' => [
-        'Name' => 'name',
-      ],
-      'hideOrder' => [],
-      'filters' => $filters,
-      'extraBtns' => [],
-    ];
+
+
+  public function getTimezoneAttribute() {
+    return $this->get_setting('Business Contact Info.Address.tz', 'America/Chicago');
   }
-  public function modelDetails() {
-    return [
-      'name' => $this->name,
-    ];
+  public function getBusinessHoursAttribute() {
+    return $this->get_setting('Business Hours', []);
   }
-  public function table_nav_options() {
-    $data = [];
-    $data['buttons'] = [
-      'schedule' => 'schedule_edit'
-    ];
-    return $data;
+  public function getFullCalBizHoursAttribute() {
+    $array = [];
+    function time ($str) {
+      return (new \Carbon\Carbon($str))->toTimeString();
+    }
+    collect($this->business_hours)->each(function($hours,$day) use(&$array){
+      $val = [];
+      if ($day == 'Sunday') {set($val, 'daysOfWeek', [0], 'startTime', time($hours[0]), 'endTime', time($hours[1]));}
+      else if ($day == 'Monday') {set($val, 'daysOfWeek', [1], 'startTime', time($hours[0]), 'endTime', time($hours[1]));}
+      else if ($day == 'Tuesday') {set($val, 'daysOfWeek', [2], 'startTime', time($hours[0]), 'endTime', time($hours[1]));}
+      else if ($day == 'Wednesday') {set($val, 'daysOfWeek', [3], 'startTime', time($hours[0]), 'endTime', time($hours[1]));}
+      else if ($day == 'Thursday') {set($val, 'daysOfWeek', [4], 'startTime', time($hours[0]), 'endTime', time($hours[1]));}
+      else if ($day == 'Friday') {set($val, 'daysOfWeek', [5], 'startTime', time($hours[0]), 'endTime', time($hours[1]));}
+      else if ($day == 'Saturday') {set($val, 'daysOfWeek', [6], 'startTime', time($hours[0]), 'endTime', time($hours[1]));}
+      logger(compact('day','hours','val'));
+      if (!empty($val)) array_push($array, $val);
+    });
+    return $array;
   }
+
+
+  // static public function TableOptions() {
+  //   $filters = [];
+  //   return [
+  //     'tableId' => 'PracticeList',
+  //     'header' => 'Available Practices',
+  //     'index' => 'id',
+  //     'model' => "Practice",
+  //     'columns' => [
+  //       'Name' => 'name',
+  //     ],
+  //     'hideOrder' => [],
+  //     'filters' => $filters,
+  //     'extraBtns' => [],
+  //   ];
+  // }
+  // public function modelDetails() {
+  //   return [
+  //     'name' => $this->name,
+  //   ];
+  // }
+  // public function table_nav_options() {
+  //   $data = [];
+  //   $data['buttons'] = [
+  //     'schedule' => 'schedule_edit'
+  //   ];
+  //   return $data;
+  // }
 
   public function navBarInfo(){
     return [
       'currency' => $this->currency,
-      'tz' => $this->get_setting('contact_info.timezone', 'America/Chicago'),
+      'tz' => $this->timezone,
     ];
   }
 
-  public function setAppointmentsEncAttribute($value){
-    $this->attributes['appointments_enc'] = $this->encryptKms($value);
-  }
-  public function getAppointmentsEncAttribute($value){
-    return $this->decryptKms($value);
-  }
-  public function setOtherEventsEncAttribute($value){
-    $this->attributes['other_events_enc'] = $this->encryptKms($value);
-  }
-  public function getOtherEventsEncAttribute($value){
-    return $this->decryptKms($value);
-  }
-  public function getCalendarSettingsAttribute(){
-    $settings = $this->settings;
-    if (!$settings || !isset($settings['calendar'])){
-      return [
-        "interval" => 30,
-        "overlap" => false,
-        "maxSlotsDisplayed" => 3
-      ];
-    }
-    else{
-      return $settings['calendar'];
-    }
-  }
-  public function getPracticeScheduleAttribute(){
-    $schedule = $this->schedule;
-    if (!$schedule || !isset($schedule['practice'])){
-      return [
-        [
-          "days" => ["Sunday" => false,"Monday" => true,"Tuesday" => true,"Wednesday" => true,"Thursday" => true,"Friday" => true,"Saturday" => false],
-          "start_time" => "9:00am",
-          "end_time" => "5:00pm",
-          "break" => false
-        ]
-      ];
-    }
-    else{
-      return $schedule['practice'];;
-    }
-  }
-  public function getPractitionerScheduleAttribute(){
-    $schedule = $this->schedule;
-    if (!$schedule || !isset($schedule['practitioner'])){
-      return [];
-    }
-    else{
-      return $schedule['practitioner'];;
-    }
-  }
-  public function getBusinessHoursAttribute(){
-    $schedule = $this->schedule;
-    if (!$schedule || !isset($schedule['business_hours'])){
-      return [
-        ["daysOfWeek"=>[1,2,3,4,5],"startTime"=>"09:00:00","endTime"=>"17:00:00","rendering"=>"background"]
-      ];
-    }
-    else{
-      return $schedule['business_hours'];;
-    }
-  }
-  public function getTimeSlotsAttribute(){
-    $calSettings = $this->calendar_settings;
-    $practiceSched = $this->practice_schedule;
-    $practiceSched = scheduleToEvents($practiceSched);
-    $earliest = Carbon::parse($practiceSched['earliest']);
-    $latest = Carbon::parse($practiceSched['latest']);
 
-    $times = [];
-    while ($earliest->isBefore($latest)){
-      $times[] = ['carbon' => $earliest->toTimeString(),'display' => $earliest->format('g:i a')];
-      $earliest->addMinutes($calSettings['interval']);
-    }
-    return $times;
-  }
+  // public function setAppointmentsEncAttribute($value){
+  //   $this->attributes['appointments_enc'] = $this->encryptKms($value);
+  // }
+  // public function getAppointmentsEncAttribute($value){
+  //   return $this->decryptKms($value);
+  // }
+  // public function setOtherEventsEncAttribute($value){
+  //   $this->attributes['other_events_enc'] = $this->encryptKms($value);
+  // }
+  // public function getOtherEventsEncAttribute($value){
+  //   return $this->decryptKms($value);
+  // }
+  // public function getCalendarSettingsAttribute(){
+  //   $settings = $this->settings;
+  //   if (!$settings || !isset($settings['calendar'])){
+  //     return [
+  //       "interval" => 30,
+  //       "overlap" => false,
+  //       "maxSlotsDisplayed" => 3
+  //     ];
+  //   }
+  //   else{
+  //     return $settings['calendar'];
+  //   }
+  // }
+  // public function getPracticeScheduleAttribute(){
+  //   $schedule = $this->schedule;
+  //   if (!$schedule || !isset($schedule['practice'])){
+  //     return [
+  //       [
+  //         "days" => ["Sunday" => false,"Monday" => true,"Tuesday" => true,"Wednesday" => true,"Thursday" => true,"Friday" => true,"Saturday" => false],
+  //         "start_time" => "9:00am",
+  //         "end_time" => "5:00pm",
+  //         "break" => false
+  //       ]
+  //     ];
+  //   }
+  //   else{
+  //     return $schedule['practice'];;
+  //   }
+  // }
+  // public function getPractitionerScheduleAttribute(){
+  //   $schedule = $this->schedule;
+  //   if (!$schedule || !isset($schedule['practitioner'])){
+  //     return [];
+  //   }
+  //   else{
+  //     return $schedule['practitioner'];;
+  //   }
+  // }
+  // public function getBusinessHoursAttribute(){
+  //   $schedule = $this->schedule;
+  //   if (!$schedule || !isset($schedule['business_hours'])){
+  //     return [
+  //       ["daysOfWeek"=>[1,2,3,4,5],"startTime"=>"09:00:00","endTime"=>"17:00:00","rendering"=>"background"]
+  //     ];
+  //   }
+  //   else{
+  //     return $schedule['business_hours'];;
+  //   }
+  // }
+  // public function getTimeSlotsAttribute(){
+  //   $calSettings = $this->calendar_settings;
+  //   $practiceSched = $this->practice_schedule;
+  //   $practiceSched = scheduleToEvents($practiceSched);
+  //   $earliest = Carbon::parse($practiceSched['earliest']);
+  //   $latest = Carbon::parse($practiceSched['latest']);
+
+  //   $times = [];
+  //   while ($earliest->isBefore($latest)){
+  //     $times[] = ['carbon' => $earliest->toTimeString(),'display' => $earliest->format('g:i a')];
+  //     $earliest->addMinutes($calSettings['interval']);
+  //   }
+  //   return $times;
+  // }
   public function getAppointmentsAttribute(){
-    $user = Auth::user();
-    $usertype = $user->user_type;
-    $userId = $user->id;
-    $practice = Practice::getFromSession();
-    $appointments = $practice->appointments_enc;
-    if (!$appointments || empty($appointments) || $appointments == '[]'){
-      return [];
-    }
-    $appointments = array_values($appointments);
-    if ($usertype == 'patient'){
-      $appointments = collect($appointments)->filter(function($appt){
-        return $user->patient->id == $appt['extendedProps']['patient']['id'];
-      })->toArray();
-    }
-// if ($usertype == 'practitioner'){
-//     // $array = [];
-//     // foreach ($appointments as $id => $event){
-//     //     $array[] = $event;
-//     // }
-//     // return $array;
-//     return array_values($appointments);
-// }
-// elseif ($usertype == 'patient'){
-//     $array = [];
-//     $patientId = $user->patient->id;
-//     // $appointments
-
-//     $userPatientId = $user->patient->id;
-//     foreach($appointments as $id => $event){
-//         // RETURNS ONLY THIS PATIENT'S APPOINTMENTS
-//         $apptPatientId = $event['extendedProps']['patient']['id'];
-//         // $patientUserIds = Patient::returnUserIds($patientIds);
-//         if ($userPatientId == $apptPatientId){
-//             $array[] = $event;
-//         }
-//     }
-//     return $array;
-// }
-    return $appointments;
+    throw new \Exception('appointmnts booo');
+    // $user = Auth::user();
+    // $usertype = $user->user_type;
+    // $userId = $user->id;
+    // $practice = Practice::getFromSession();
+    // $appointments = $practice->appointments_enc;
+    // if (!$appointments || empty($appointments) || $appointments == '[]'){
+    //   return [];
+    // }
+    // $appointments = array_values($appointments);
+    // if ($usertype == 'patient'){
+    //   $appointments = collect($appointments)->filter(function($appt){
+    //     return $user->patient->id == $appt['extendedProps']['patient']['id'];
+    //   })->toArray();
+    // }
+    // return $appointments;
   }
-  public function getAnonEventsAttribute(){
-    $events = array_values($this->anon_appt_feed);
-    return $events;
-  }
+  // public function getAnonEventsAttribute(){
+  //   $events = array_values($this->anon_appt_feed);
+  //   return $events;
+  // }
   public function getAvailablePaymentMethodsAttribute(){
     $settings = $this->settings;
     return ($settings && isset($settings['paymentMethods'])) ? $settings['paymentMethods'] : ['cash','check'];
@@ -244,16 +267,16 @@ class Practice extends Model
     }
     return $currency;
   }
-  public function getEmailAttribute(){
-    $contactInfo = $this->contact_info;
-    $email = ($contactInfo && isset($contactInfo['email'])) ? $contactInfo['email'] : null;
-    return $email;
-  }
-  public function getTaxOptionsAttribute(){
-    $settings = $this->settings;
-    $taxOptions = ($settings && isset($settings['taxOptions'])) ? $settings['taxOptions'] : [];
-    return $taxOptions;
-  }
+  // public function getEmailAttribute(){
+  //   $contactInfo = $this->contact_info;
+  //   $email = ($contactInfo && isset($contactInfo['email'])) ? $contactInfo['email'] : null;
+  //   return $email;
+  // }
+  // public function getTaxOptionsAttribute(){
+  //   $settings = $this->settings;
+  //   $taxOptions = ($settings && isset($settings['taxOptions'])) ? $settings['taxOptions'] : [];
+  //   return $taxOptions;
+  // }
 
   public function reconnectDB(){
     $dbname = $this->dbname;
@@ -261,174 +284,177 @@ class Practice extends Model
     DB::reconnect();
   }
   public function updateEntireEventFeed(){
-    $calendarId = $this->calendar_id;
-    $calendar = app('GoogleCalendar');
-    try{
-      $optParams = [
-        'maxResults' => 250
-      ];
-      $results = $calendar->events->listEvents($calendarId, $optParams);
-      $events = [];
-      while(true) {
-        foreach ($results->getItems() as $event) {
-          $events[] = $event;
-        }
-        $pageToken = $results->getNextPageToken();
-        if ($pageToken) {
-          $optParams = array('pageToken' => $pageToken);
-          $results = $calendar->events->listEvents($calendarId, $optParams);
-        } else {
-          break;
-        }
-      }
-    }
-    catch(\Exception $e){
-      reportError($e, 'Practice.php 223');
-      $events = null;
-    }
+    throw new Error('dont use Practice->updateEntireEventFeed');
+//     $calendarId = $this->calendar_id;
+//     $calendar = app('GoogleCalendar');
+//     try{
+//       $optParams = [
+//         'maxResults' => 250
+//       ];
+//       $results = $calendar->events->listEvents($calendarId, $optParams);
+//       $events = [];
+//       while(true) {
+//         foreach ($results->getItems() as $event) {
+//           $events[] = $event;
+//         }
+//         $pageToken = $results->getNextPageToken();
+//         if ($pageToken) {
+//           $optParams = array('pageToken' => $pageToken);
+//           $results = $calendar->events->listEvents($calendarId, $optParams);
+//         } else {
+//           break;
+//         }
+//       }
+//     }
+//     catch(\Exception $e){
+//       reportError($e, 'Practice.php 223');
+//       $events = null;
+//     }
 
-    $ehrArr = [];
-    $nonEhrArr = [];
-    $recurringEventExceptions = [];
+//     $ehrArr = [];
+//     $nonEhrArr = [];
+//     $recurringEventExceptions = [];
 
-    if (!empty($events)) {
-      $apptIds = [];
-      foreach ($events as $event) {
-        $newEvent = [];
-        unset($start, $end, $allDay, $id, $title, $extendedProperties);
+//     if (!empty($events)) {
+//       $apptIds = [];
+//       foreach ($events as $event) {
+//         $newEvent = [];
+//         unset($start, $end, $allDay, $id, $title, $extendedProperties);
 
-        $start = $event->start->dateTime;
-        $allDay = false;
-        if (empty($start)) {
-          $start = $event->start->date;
-          $allDay = true;
-        }
-        $end = $event->end->dateTime;
-        if (empty($end)) {
-          $end = $event->end->date;
-        }
-        $id = $event->id;
-        $title = $event->summary;
+//         $start = $event->start->dateTime;
+//         $allDay = false;
+//         if (empty($start)) {
+//           $start = $event->start->date;
+//           $allDay = true;
+//         }
+//         $end = $event->end->dateTime;
+//         if (empty($end)) {
+//           $end = $event->end->date;
+//         }
+//         $id = $event->id;
+//         $title = $event->summary;
 
-    // DEFINE EVENT DATETIME DETAILS
-        if (isset($event->recurrence)){
-          $start = Carbon::parse($start);
-          $end = Carbon::parse($end);
-          $duration = $start->diff($end)->format("%H:%I");
-          $dtstart = "DTSTART:".$start->format('Ymd\THis');
-          $rrule = $dtstart."\n".$event->recurrence[0];
-          $newEvent = array(
-            "id" => $id,
-            "title" => $title,
-            "allDay" => $allDay,
-            'rrule' => $rrule,
-            'duration' => $duration,
-            'extendedProps' => [
-              'exTime' => $start->format('\THis')
-            ]
-          );
-            // Log::info($rrule);
-        }elseif (isset($event->recurringEventId)){
-          $startCarbon = Carbon::parse($start);
-          $endCarbon = Carbon::parse($end);
-          $duration = $startCarbon->diff($endCarbon)->format("%H:%I");
-          $exDate = $startCarbon->format('Ymd');
+//     // DEFINE EVENT DATETIME DETAILS
+//         if (isset($event->recurrence)){
+//           $start = Carbon::parse($start);
+//           $end = Carbon::parse($end);
+//           $duration = $start->diff($end)->format("%H:%I");
+//           $dtstart = "DTSTART:".$start->format('Ymd\THis');
+//           $rrule = $dtstart."\n".$event->recurrence[0];
+//           $newEvent = array(
+//             "id" => $id,
+//             "title" => $title,
+//             "allDay" => $allDay,
+//             'rrule' => $rrule,
+//             'duration' => $duration,
+//             'extendedProps' => [
+//               'exTime' => $start->format('\THis')
+//             ]
+//           );
+//             // Log::info($rrule);
+//         }elseif (isset($event->recurringEventId)){
+//           $startCarbon = Carbon::parse($start);
+//           $endCarbon = Carbon::parse($end);
+//           $duration = $startCarbon->diff($endCarbon)->format("%H:%I");
+//           $exDate = $startCarbon->format('Ymd');
 
-          $newEvent = array(
-            "start" => $start,
-            "end" => $end,
-            "allDay" => $allDay,
-            "id" => $id,
-            "title" => $title,
-            'extendedProps' => [
-              'recurringEventId' => $event->recurringEventId
-            ]
-          );
-          $recurringEventExceptions[$event->recurringEventId] = $exDate;
-        }else{
-          $newEvent = array(
-            "start" => $start,
-            "end" => $end,
-            "allDay" => $allDay,
-            "id" => $id,
-            "title" => $title
-          );
-        }
+//           $newEvent = array(
+//             "start" => $start,
+//             "end" => $end,
+//             "allDay" => $allDay,
+//             "id" => $id,
+//             "title" => $title,
+//             'extendedProps' => [
+//               'recurringEventId' => $event->recurringEventId
+//             ]
+//           );
+//           $recurringEventExceptions[$event->recurringEventId] = $exDate;
+//         }else{
+//           $newEvent = array(
+//             "start" => $start,
+//             "end" => $end,
+//             "allDay" => $allDay,
+//             "id" => $id,
+//             "title" => $title
+//           );
+//         }
 
-    // DEFINE EVENT TYPE
-        $type = (isset($event->extendedProperties) && isset($event->extendedProperties->private['type'])) ? $event->extendedProperties->private['type'] : 'nonEHR';
-        if ($type == "EHR:appointment"){
-          $ehrArr[$id] = $newEvent;
-          $apptIds[] = $id;
-        }elseif($type == "nonEHR"){
-          $newEvent['extendedProps']['type'] = 'nonEHR';
-          $nonEhrArr[$id] = $newEvent;
-        }
-      }
+//     // DEFINE EVENT TYPE
+//         $type = (isset($event->extendedProperties) && isset($event->extendedProperties->private['type'])) ? $event->extendedProperties->private['type'] : 'nonEHR';
+//         if ($type == "EHR:appointment"){
+//           $ehrArr[$id] = $newEvent;
+//           $apptIds[] = $id;
+//         }elseif($type == "nonEHR"){
+//           $newEvent['extendedProps']['type'] = 'nonEHR';
+//           $nonEhrArr[$id] = $newEvent;
+//         }
+//       }
 
-// EXCLUDE MODIFIED DATES FOR RECURRING EVENTS
-      foreach ($recurringEventExceptions as $id => $exDate){
-        if (isset($nonEhrArr[$id])){
-          $time = $nonEhrArr[$id]['extendedProps']['exTime'];
-          $nonEhrArr[$id]['rrule'] .= "\nEXDATE:".$exDate.$time;
-        }
-      }
+// // EXCLUDE MODIFIED DATES FOR RECURRING EVENTS
+//       foreach ($recurringEventExceptions as $id => $exDate){
+//         if (isset($nonEhrArr[$id])){
+//           $time = $nonEhrArr[$id]['extendedProps']['exTime'];
+//           $nonEhrArr[$id]['rrule'] .= "\nEXDATE:".$exDate.$time;
+//         }
+//       }
 
-      $appointmentData = Appointment::whereIn('uuid',$apptIds)->with('services','patient','practitioner','chartNote')->get()->map(function($appt){
-        return $appt->getDetailsForFullCal();
-      });
-      foreach ($appointmentData as $apptDetails){
-        $uuid = $apptDetails['googleUuid'];
-        $extProps = isset($ehrArr[$uuid]['extendedProps']) ? array_merge($ehrArr[$uuid]['extendedProps'],$apptDetails) : $apptDetails;
-        $ehrArr[$uuid]['extendedProps'] = $extProps;
-      }
-    }
-    $anonArr = [];
-    foreach($ehrArr as $id => $event){
-      $anonArr[$id] = 
-      [
-        'start' => $event['start'],
-        'end' => $event['end'],
-        'practitionerId' => $event['extendedProps']['practitioner']['id'],
-        'overlap' => null,
-        'uuid' => $id
-      ];
-    }
-    try{
-      $this->appointments_enc = json_encode($ehrArr);
-      $this->other_events_enc = json_encode($nonEhrArr);
-      $this->anon_appt_feed = $anonArr;
-// Log::info($this);
-      $this->save();
-    }catch(Exception $e){
-      reportError($e,'practice.php 341');
-    }
+//       $appointmentData = Appointment::whereIn('uuid',$apptIds)->with('services','patient','practitioner','chartNote')->get()->map(function($appt){
+//         return $appt->getDetailsForFullCal();
+//       });
+//       foreach ($appointmentData as $apptDetails){
+//         $uuid = $apptDetails['googleUuid'];
+//         $extProps = isset($ehrArr[$uuid]['extendedProps']) ? array_merge($ehrArr[$uuid]['extendedProps'],$apptDetails) : $apptDetails;
+//         $ehrArr[$uuid]['extendedProps'] = $extProps;
+//       }
+//     }
+//     $anonArr = [];
+//     foreach($ehrArr as $id => $event){
+//       $anonArr[$id] = 
+//       [
+//         'start' => $event['start'],
+//         'end' => $event['end'],
+//         'practitionerId' => $event['extendedProps']['practitioner']['id'],
+//         'overlap' => null,
+//         'uuid' => $id
+//       ];
+//     }
+//     try{
+//       $this->appointments_enc = json_encode($ehrArr);
+//       $this->other_events_enc = json_encode($nonEhrArr);
+//       $this->anon_appt_feed = $anonArr;
+// // Log::info($this);
+//       $this->save();
+//     }catch(Exception $e){
+//       reportError($e,'practice.php 341');
+//     }
 
-    return isset($e) ? $e : true;
+//     return isset($e) ? $e : true;
   }
-  public function savePractitionerSchedules(){
-    $practitionerArr = [];
-    foreach (Practitioner::where('schedule','!=','null')->get() as $practitioner){
-      $user_id = $practitioner->user->id;
-      $practitioner = [
-        'user_id' => $user_id,
-        'practitioner_id' => $practitioner->id,
-        'name' => $practitioner->name,
-        'schedule' => $practitioner->schedule,
-        'exceptions' => $practitioner->schedule_exceptions
-      ];
-      $practitionerArr[] = $practitioner;
-    }
-    $schedule = $this->schedule;
-    if (!$schedule){
-      $this->schedule = ['practitioner'=>$practitionerArr];
-    }elseif (!isset($schedule['practitioner'])){
-      $schedule['practitioner'] = $practitionerArr;
-      $this->schedule = $schedule;
-    }
-    $this->save();
-    return true;
-  }
+
+
+  // public function savePractitionerSchedules(){
+  //   $practitionerArr = [];
+  //   foreach (Practitioner::where('schedule','!=','null')->get() as $practitioner){
+  //     $user_id = $practitioner->user->id;
+  //     $practitioner = [
+  //       'user_id' => $user_id,
+  //       'practitioner_id' => $practitioner->id,
+  //       'name' => $practitioner->name,
+  //       'schedule' => $practitioner->schedule,
+  //       'exceptions' => $practitioner->schedule_exceptions
+  //     ];
+  //     $practitionerArr[] = $practitioner;
+  //   }
+  //   $schedule = $this->schedule;
+  //   if (!$schedule){
+  //     $this->schedule = ['practitioner'=>$practitionerArr];
+  //   }elseif (!isset($schedule['practitioner'])){
+  //     $schedule['practitioner'] = $practitionerArr;
+  //     $this->schedule = $schedule;
+  //   }
+  //   $this->save();
+  //   return true;
+  // }
 
   public static function createCalendar($name){
     $service = app('GoogleCalendar');

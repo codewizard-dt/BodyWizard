@@ -10,9 +10,9 @@ $formJSON = str_replace("'","\u0027",$form->full_json);
     <div id='formdata' data-mode='view' data-formuid='{{ $uid }}' data-formid='{{ $formId }}' data-json='{{ $formJSON }}'></div>
     {{ $form->form_name }} (preview)<br>{{ $today }}
 </h1>
-<div class="button xxsmall yellow70 optionBtn" data-type='section' id="SectionOptionsBtn">section options</div>
-<div class="button xxsmall yellow70 optionBtn" data-type='item' id="ItemOptionsBtn">item options</div>
-<div class="button xxsmall pink disabled" id="SaveDisplayOptions">save changes</div>
+<div class="button xsmall yellow70 optionBtn" data-type='section' id="SectionOptionsBtn">section options</div>
+<div class="button xsmall yellow70 optionBtn" data-type='item' id="ItemOptionsBtn">item options</div>
+<div class="button xsmall pink disabled" id="SaveDisplayOptions">save changes</div>
 <?php 
 $form->formDisplay(true);
 ?>

@@ -14,24 +14,18 @@ class AppointmentController extends Controller
     $this->middleware('auth');
   }
 
-  public function home(){
-    $usertype = Auth::user()->user_type;
-    return view("portal.$usertype.appointments.home");        
-  }
+  // public function home () {
+  //   $usertype = Auth::user()->user_type;
+  //   return view("portal.$usertype.appointments.home");        
+  // }
 
-  public function calendar(Request $request) {
+  public function calendar (Request $request) {
     return view('models.appointments.calendar',compact('request'));
   }
-  public function index()
-  {
-    $usertype = Auth::user()->user_type;
-    return view("portal.$usertype.appointments.display");
-  }
 
-  public function editChartNote($uid, Request $request){
-    return view('portal.practitioner.chart_notes.edit',['apptId'=>$uid]);
-  }
-  public function editInvoice($uid, Request $request){
-    return view('portal.practitioner.invoices.edit',['apptId'=>$uid]);
+  public function feed (Request $request) {
+    $appts = Appointment::all();
+    // logger(request()->all());
+    return $appts->toJson();
   }
 }

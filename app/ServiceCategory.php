@@ -3,12 +3,14 @@
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\TableAccess;
 use App\Traits\HasSettings;
+
 
 
 class ServiceCategory extends Model
 {
-
+  use TableAccess;
   use HasSettings;
 
   protected $guarded = [];

@@ -2,6 +2,7 @@ import {forms, Forms} from './forms';
 import {model, table, Models} from './models';
 import {DateTime as LUX} from 'luxon';
 import {Settings as LuxonSettings} from 'luxon';
+import JankyStar from './karaoke';
 
 export const debug = {
   get y() {return debug.bool},
@@ -16,6 +17,7 @@ export const debug = {
     }
   }
 };
+window.debug = debug;
 export const log = function(info, text = null){
   if (typeof info === 'string') text = info;
   let error = ifu(info.error, info.errors, null);
@@ -54,12 +56,12 @@ class Button {
   constructor(options){
     let errors = [];
     try{
-      for (let attr in options) {this[attr] = options[attr]}
+      this.define_by(options);
       if (!this.ele) this.ele = $("<div/>",{text: this.text}).appendTo('body');
       this.ele.data('class_obj',this);
       if (!this.class_list) this.class_list = 'button';
       else if (!this.class_list.includes('button')) this.class_list += ' button';
-      if (this.action && typeof this.action == 'string') this.action = this.action.to_fx();
+      if (this.action) this.action = this.action.to_fx;
       if (this.css) this.ele.css(this.css);
       if (this.id) this.ele.attr('id',this.id);
       if (options.css) this.ele.css(options.css);
@@ -68,6 +70,9 @@ class Button {
       this.ele.data('generic_fx',true);
       if (this.tooltip) new ToolTip({target:this.ele}.merge(this.tooltip));
       this.relocate();
+      this.disabled_warning = new Warning({
+        ele: this.ele, string: this.disabled_message || 'button disabled',
+      })
     }catch (error) {
       log({error,options});
     }
@@ -77,10 +82,15 @@ class Button {
     else if (this.insertBefore) this.ele.insertBefore(this.insertBefore);
     else if (this.appendTo) this.ele.appendTo(this.appendTo);
   }
+  text_update (string) { this.ele.text(string) }
 
   async click (ev) {
+    if (this.ele.hasClass('disabled')) {this.disabled_warning.show(); return;}
     let action = this.action, target = this.target, mode = this.mode, callback = this.callback;
-    log({action,ev,button:this});
+    if (!this.ele.hasClass('cancel')) log({action,ev,button:this},`BTN ${this.ele.text()}`);
+    else {
+      Blur.undo({time:400}); return;
+    }
     try{
       if (action) action.bind(this.ele,ev)();
       if (mode && target){
@@ -92,7 +102,7 @@ class Button {
         else if (mode == 'scroll') $.scrollTo(target);
         else if (mode == 'click') $(target).click();
         else if (mode == 'load') {
-          await menu.fetch(this.uri || this.url, target);
+          await Menu.fetch({url: this.uri || this.url, target});
           if (typeof callback == 'function') callback();
         }
       }else if (mode && !target) throw new Error(`Target not defined for mode:${mode}`);
@@ -116,15 +126,16 @@ class Editable {
     id: id,
   });
   this.name = name;
-  $(`<div class='pair'></div>`).append(`<input type='text' placeholder='${name.toTitleCase()}'>`).append(`<span class='value'></span>`).appendTo(this.ele);
-  $(`<div class ='toggle edit'>(edit ${name})<div>`).on('click',{obj:this},this.edit.bind(this)).appendTo(this.ele);
-  let btn_save = $(`<div class ='toggle save'>(save)<div>`).on('click',{obj:this},this.save.bind(this)).appendTo(this.ele);
-  $(`<div class ='toggle cancel'>(cancel)<div>`).on('click',{obj:this},this.cancel.bind(this)).appendTo(this.ele);
+  this.pair_ele = $(`<div class='pair'></div>`).append(`<input type='text' placeholder='${name.toTitleCase()}'>`).appendTo(this.ele);
+  this.value_ele = $(`<span class='value'></span>`).appendTo(this.pair_ele);
+  this.edit_toggle = $(`<div class ='toggle edit'>(edit ${name})<div>`).on('click',{obj:this},this.edit.bind(this)).appendTo(this.ele);
+  this.save_btn = $(`<div class ='toggle save'>(save)<div>`).on('click',{obj:this},this.save.bind(this)).appendTo(this.ele);
+  this.cancel_btn = $(`<div class ='toggle cancel'>(cancel)<div>`).on('click',{obj:this},this.cancel.bind(this)).appendTo(this.ele);
   if (replace) replace.replaceWith(this.ele);
   if (initial) this.text = initial;
   else this.edit();
   this.ele.find('input').on('keyup',function(ev){
-    if (ev.keyCode == '13') btn_save.click();
+    if (ev.keyCode == '13') this.save_btn.click();
   })
   this.callback = (callback && typeof callback == 'function') ? callback : null;
   }
@@ -171,22 +182,31 @@ class Editable {
 };
 class OptionBox {
   constructor (options = {}) {
+    if (options instanceof jQuery && options.is('.OptionBox')) {
+      let ele = options, data = options.data();
+      options = {ele}.merge(data);
+    }
+
     this.define_by(options);
-    // let header = ifu(options.header, ''), id = ifu(options.id, null),
-    // header_html_tag = ifu(options.header_html_tag, 'h3');
     this.header_text = this.header || '';
     if (!this.header_html_tag) this.header_html_tag = 'h3';
-    this.ele = $(`<div class='prompt OptionBox'></div>`);
-    if (this.css) this.ele.css(this.css);
+    if (!this.button_header_html_tag) this.button_header_html_tag = this.header_html_tag;
+    if (!this.ele) this.ele = $(`<div class='OptionBox'></div>`).appendTo('body');
+    this.ele.data({initialized:true});
+    // if (this.css) this.ele.css(this.css);
     this.ele.append(`<div class='body'><div class='info'></div></div>`,`<div class='options'></div>`);
     this.body = this.ele.find('.body');
     this.info = this.ele.find('.info');
     this.option_list = this.ele.find('.options');
     this.header = $(`<${this.header_html_tag} class='header'>${this.header_text}</${this.header_html_tag}>`).prependTo(this.body);
 
-    this.buttons = [];
+    this.button_array = [];
+    if (this.buttons) this.buttons.forEach(b => this.add_button(b));
     if (this.id) this.ele.attr('id',this.id);
-    this.ele.appendTo('body');
+    if (this.class_list) this.ele.addClass(this.class_list);
+    if (this.message) this.add_info(this.message);
+    if (this.button_info) this.add_button_info(this.button_info);
+    // this.ele.appendTo('body');
   }
 
   add_info (info) {
@@ -197,12 +217,10 @@ class OptionBox {
       btn.ele.on('click', btn.click.bind(btn));
     } else if (typeof info == 'string' || info instanceof jQuery) {
       this.info.append(info);
-    // } else if (info.is_array()) {
-    //   info.forEach(i => this.add_info(i));
     } else if (typeof info == 'object') {
-      let box = new KeyValueBox({json:info});
+      let box = new KeyValueBox({json:info}.merge(this.key_value_options || {}));
       this.info.append(box.ele);
-    } else log({info});
+    } else log({error: new Error(`info type '${typeof info} not recognized`),info});
     return this;
   }
   reset_header (str = '') {
@@ -214,245 +232,397 @@ class OptionBox {
     if (ele) this.add_info(ele);
     return this;
   }
+  reset_button_info (ele) {
+    if (this.button_info_ele) this.button_info_ele.remove();
+    this.add_button_info(ele);
+  }
   add_button_info (ele) {
-    this.option_list.prepend(ele);
+    if (typeof ele == 'string') ele = $(`<${this.button_header_html_tag}/>`, {text: ele, class: this.button_header_class_list || 'pink bold'});
+    this.button_info_ele = ele.prependTo(this.option_list);
     return this;
   }
   remove_buttons () {
-    log({buttons:this.buttons});
-    this.buttons.forEach(b => b.ele.remove());
-    this.buttons = [];
+    // log({buttons:this.button_array});
+    this.button_array.forEach(b => b.ele.remove());
+    this.button_array = [];
     return this;
   }
   add_button (options) {
-    let text = ifu(options.text, 'button'), action = ifu(options.action, null), class_list = ifu(options.class_list, 'pink xsmall'), appendTo = this.option_list, tooltip = options.tooltip || null;
+    let text = ifu(options.text, 'button'), action = ifu(options.action, null), class_list = ifu(options.class_list, 'pink small'), appendTo = this.option_list, tooltip = options.tooltip || null;
+    if (!['small','xs','medium'].some(c => class_list.includes(c))) class_list += ' small';
     let btn = new Features.Button({text,action,class_list,appendTo});
-    this.buttons.push(btn);
+    this.button_array.push(btn);
     if (tooltip) new ToolTip({target:btn.ele}.merge(tooltip));
     return btn;
+  }
+  hide (time = 0) { this.ele.slideFadeOut(time) }
+  blur (ele = null) {
+    if (!ele) blurTop(this.ele);
+    else blur(ele, this.ele);
   }
 };
 class KeyValueBox {
   constructor(options) {
-    log({options});
-    let pairs = options.json || {},
-      box_css = options.box_css || {},
-      key_css = options.key_css || {},
-      value_css = options.value_css || {};
+    this.define_by(options);
+    // this.options = options;
+    this.keys = [];
+    this.values = [];
+    this.items = [];
+    this.headers = [];
     this.wrap_ele_outer = $('<div/>',{css:{textAlign:'center'}});
-    this.flex = $('<div/>',{class:'flexbox column inline',css:box_css});
-    this.ele = (options.ele || $('<div/>').appendTo('body')).addClass('KeyValueBox');
+    let class_list = this.inline_values ? 'flexbox' : 'flexbox column';
+    this.flex = $('<div/>',{class:class_list, css: this.box_css||{} });
+    this.color = this.color || 'purple';
+    this.ele = (this.ele || $('<div/>').appendTo('body')).addClass(`KeyValueBox ${this.color}`);
+    if (this.id) this.ele.attr('id',this.id);
     this.ele.append(this.flex).wrap(this.wrap_ele_outer);
-    let max_width = 0, max_width_key = null;
-    for (let key in pairs) {
-      let value = pairs[key];
-      // if (typeof value == 'string') value = value.replace(/\//g,'\/ ');
-      if (typeof value == 'object') value = system.display.format.readableJson(value);
-      let key_ele = $('<div/>',{class:`key ${key.toKeyString()}`,text: key}).css(key_css), 
-        value_ele = $('<div/>',{class:`value ${key.toKeyString()}`}).css(value_css).append(value),
-        wrap_ele_inner = $('<div/>',{class:'flexbox',css:{width:'calc(100% - 1em)',padding:'0 1em',margin:'0 0.5em',flexWrap:'nowrap'}}).append(key_ele,value_ele);
-      this.flex.append(wrap_ele_inner);
-      if (key_ele[0].scrollWidth > max_width) {
-        max_width_key = key_ele;
-        max_width = key_ele[0].scrollWidth;
-      }
+    if (this.header) this.add_header(this.header, this.header_options || {});
+    this.new_pairs = this.json || {};
+    this.include_null = this.include_null || false;
+    this.ele.data({initialized:true, class_obj: this});
+    if (this.headers_to_hide) this.headers.forEach(h => {if (this.headers_to_hide.includes(h.textContent)) KeyValueBox.header_toggle.bind($(h),0)()});
+    return this;
+  }
+  realign () {
+    if (!this.ele.is(':visible')) return;
+    this.header_groups.forEach(pairs => {
+      let max_width = 0, keys = pairs.find('.key'), values = pairs.find('.value');
+      keys.css({minWidth:'max-content'}).each((k,key_ele) => {
+        if (key_ele.scrollWidth > max_width) { max_width = key_ele.scrollWidth }
+      });
+      keys.css({minWidth: max_width});
+      max_width = 0;
+      values.css({minWidth:'min-content'}).each((k,value_ele) => {
+        if (value_ele.scrollWidth > max_width) { max_width = value_ele.scrollWidth }
+      });
+      values.css({minWidth: max_width});
+      if (this.value_css) values.css(this.value_css);
+    })
+  }
+  get header_groups () {
+    let groups = [], group = $(), next = this.ele.find('.pair').first();
+    while (next.exists()) {
+      if (next.is('.pair')) group = group.add(next);
+      else { groups.push(group); group = $() }
+      next = next.next();
+      if (next.dne()) groups.push(group);
     }
-    log({max_width_key,max_width});
-    this.ele.find('.key').css({minWidth:max_width});
-    this.ele.data('initialized',true);
+    return groups;
+  }
+  static realign (ele = null) {
+    $(ele || 'body').find('.KeyValueBox').get().forEach(kv => $(kv).getObj().realign());
+  }
+  reset_items () { $(this.items).remove(); this.items = []; }
+  reset_headers () { $(this.headers).remove(); this.headers = []; }
+  reset_all () { this.reset_items(); this.reset_headers(); }
+
+  unused_header_clear () {
+    this.headers.forEach(h => {if ($(h).next().is('h4')) {
+      $(h).remove(); this.headers.splice(this.headers.indexOf(h),1);
+    }});
+  }
+  add_header (header, options = {}) {
+    options.merge(this.header_options || {});
+    let css = (options.css || {}).merge({display:'block'});
+    let tag = options.html_tag || 'div';
+    let class_list = options.class_list || '';
+    if (typeof header == 'string') header = $(`<${tag} class='kv_header box bigger ${this.color}'>${header}</${tag}>`);
+    this.flex.append(header.css(css).addClass(class_list));
+    this.headers.push(header[0]);
+    if (this.header_toggle) {
+      header.addClass('toggleable');
+      header.on('click',KeyValueBox.header_toggle.bind(header));  
+    }
+  }
+  set new_pairs (json) {
+    let map = this.transform_fx || null;
+    if (typeof map == 'string') {
+      map = map.to_fx.bind(this);
+      log({map,box:this},'string to fx');
+    }
+    if (json.is_array()) {
+      if (json.notEmpty()) {
+        json.forEach((value, v) => {
+          value = map ? map(v, value) : value;
+          let is_jquery = value instanceof jQuery;
+          if (this.include_null && value === null) value = 'null';
+          if (value !== null) {
+            if (typeof value == 'object' && !is_jquery) value = system.display.format.readableJson(value);
+            let value_ele = $('<div/>',{class:`value ${v.toKeyString()}`}).append(value),
+              pair_ele = $('<div/>',{class:'flexbox pair'}).append(value_ele);
+            // let value_ele = $('<div/>',{class:`value ${v.toKeyString()}`}).css(this.value_css || {}).append(value),
+            //   pair_ele = $('<div/>',{class:'flexbox pair'}).append(value_ele).css({padding:'1em 0',borderTop:'1px solid var(--gray50)'}.merge(this.pair_css));
+            this.items.push(pair_ele[0]);
+            this.values.push(value_ele[0]);
+            this.flex.append(pair_ele);
+          }        
+        })
+      } else {
+        let text = this.empty_array_placeholder || 'none';
+        let value_ele = $('<div/>',{class:`value empty_array`}).append(text),
+          pair_ele = $('<div/>',{class:'flexbox pair'}).append(value_ele);
+        // let value_ele = $('<div/>',{class:`value empty_array`}).css(this.value_css || {}).append(text),
+        //   pair_ele = $('<div/>',{class:'flexbox pair'}).append(value_ele).css(this.pair_css || {});
+        this.items.push(pair_ele[0]);
+        this.values.push(value_ele[0]);
+        this.flex.append(pair_ele);
+      }
+    } else {
+      let pairs = json;
+      for (let key in pairs) {
+        let value = map ? map.bind(this)(key, pairs[key]) : pairs[key], is_jquery = value instanceof jQuery;
+        if (this.include_null && value === null) value = 'null';
+        if (value !== null) {
+          if (typeof value == 'object' && !is_jquery) value = system.display.format.readableJson(value);
+          let key_text = key.toTitleCase().addSpacesToKeyString();
+          let key_span = $('<span/>',{text:key_text,class:this.key_class || null});
+          let key_ele = $('<div/>',{class:`key ${key.toKeyString()}`}).append(key_span).css(this.key_css || {}), 
+            value_ele = $('<div/>',{class:`value ${key.toKeyString()}`}).css(this.value_css || {}).append(value),
+            pair_ele = $('<div/>',{class:'flexbox pair'}).append(key_ele,value_ele).css(this.pair_css || {});
+          this.items.push(pair_ele[0]);
+          this.keys.push(key_ele[0]);
+          this.values.push(value_ele[0]);
+          this.flex.append(pair_ele);
+        }
+      }      
+    }
+    if (this.on_completion_array) this.on_completion_array.forEach(fx => fx());
+    this.realign();
+  }
+  set on_completion (fx) {
+    let array = this.on_completion_array == undefined ? this.on_completion_array = [] : this.on_completion_array;
+    array.push(fx);
+  }
+  set_order (class_array, ele = null) {
+    if (!ele) ele = this.ele;
+    class_array.forEach(c => {ele.find(`.${c}`).appendTo(ele)});
+  }
+  static header_toggle (time = 400) {
+    let eles = $(), next = this.next(), visible = next.is(':visible');
+    while (next.is('.pair')) { eles = eles.add(next); next = next.next(); }
+    if (visible) { eles.slideFadeOut(time); this.addClass('hiding'); } 
+    else { eles.slideFadeIn(time); this.removeClass('hiding'); }
   }
 }
-class Filter {
-  constructor(ele, options = {}){
-    this.ele = $(ele);
-
-    let data_attr = this.ele.data();
-    this.ele.wrap('<div/>');
-    this.ele = this.ele.parent();
-    this.ele.data('class_obj',this);
-    this.options = data_attr.options || options;
-    // log({filter:this,options:this.options});
-    if (options.ele_css) this.ele.css(options.ele_css);
-    if (!this.options.target) {
-      this.selector = data_attr.target || this.options.selector || null;
-      if (!this.selector) throw new Error(`'selector' is required to define target for filter`);
-      this.target = $(`#${this.selector}`).exists() ? $(`#${this.selector}`) : $(`.${this.selector}`);      
-      if (this.target.dne()) throw new Error(`filter targets not found using selector: ${this.selector}`);
-      if (this.target.length > 1) throw new Error(`2 filter targets found using selector: ${this.selector}`);
-    } else {
-      this.target = this.options.target;
-      if (this.target.dne()) throw new Error(`filter targets not found using options.target`);
-    }
-    let all_filters = this.target.data('filters') || [];
-    all_filters.push(this);
-    this.target.data('filters',all_filters);    
-    this.name = `${this.options.name || 'no_name'}${all_filters.indexOf(this)}`;
-    this.type = this.options.type || 'text';
-    this.item_tag = this.options.item_html_tag || 'div';
-    this.answer_ele = this.ele.find('.answer');
-    if (this.answer_ele.dne()) throw new Error(`'Answer' not found in main Filter ele`);
-    if (this.answer_ele.length > 1) throw new Error(`too many 'Answers' in main Filter ele`);
-    if (options.answer_css) this.answer_ele.css(options.answer_css);
-    this.answer = this.answer_ele.getObj();
-    this.ele.removeClass('filter').addClass('filter');
+class FilterNew {
+  constructor (options = {}) {
+    this.define_by(options);
+    // log({options});
+    if (!this.ele) this.ele = $('<div/>',{class:'Filter'});
+    if (!this.answer) this.answer = new Forms.Answer(options);
+    if (!this.filter_type) throw new Error('filter_type is required');
+    this.ele.data({initialized:true,class_obj:this});
+    this.answer.options.after_change_action = this.filter.bind(this);
+    this.answer.ele.addClass('purple').appendTo(this.ele);
+    if (this.class_list) this.ele.addClass(this.class_list);
+    if (this.target.filter_objs === undefined) this.target.filter_objs = [];
+    this.target.filter_objs.push(this);
   }
-
-  get items () {
-    let targets = this.target, tag = this.item_tag, items = targets.find(tag).not('.dont_filter');
-    return items.exists() ? items : null;
+  get items () { return this.target.ele.find(this.selector).not('.no_items, .no_selection') }
+  // get items () { return this.target.ele.find(this.selector) }
+  get no_items () { return this.target.ele.find(this.selector).filter('.no_items') }
+  get no_selection () { return this.target.ele.find(this.selector).filter('.no_selection') }
+  get column_filter_classes () {
+    return this.target.filter_objs.filter(f => f.filter_type == 'column').map(f => `.${f.options.name}`);
   }
-  get no_match () { return this.target.find(this.item_tag).filter('.no_match') }
-  get no_selection () { return this.target.find(this.item_tag).filter('.no_selection') }
-  set no_selection_text (str) { 
-    let ele = this.no_selection;
-    if (ele.dne()) return;
-    let span = ele.find('span'), td = ele.find('td').first();
-    if (td.exists()) td.text(str);
-    else if (span.exists()) span.text(str);
-    else ele.text(str);
-  }
-  get all_filters () { return this.target.data('filters') }
-  get all_filters_active () { return this.all_filters.filter(filter => filter.active) }
-  get all_filters_active_names () { return this.all_filters_active.map(filter => filter.name) }
-  get all_filter_matches () { return this.all_filters.map(filter => filter.matches) }
   get matches () {
-    let matches = null, search = this.answer.get(), type = this.type, items = this.items;
-    let options = {className: this.name};
-    if (search == null) {
-      matches = items;
-      items.unmark(options);
-      this.ele.removeClass('active');
-      this.active = false;
-      return null;
-    } else if (items) {
-      this.active = true;
-      this.ele.addClass('active');
-      if (type == 'text') {
+    try {
+      let items = this.items;
+      let search = this.answer.get({as_text:true}), matches = null;
+      let class_name = this.name || this.options.name;
+      let options = {className: class_name};
+      if (search == null) {
         items.unmark(options);
+        this.ele.removeClass('active');
+        return null;
+      } else if (this.filter_type == 'text') {
+        items.unmark(options);
+        options.merge({accuracy: 'complementary', exclude: this.column_filter_classes});
         items.mark(search,options);
-        matches = items.filter((i,item) => $(item).find('mark').exists());
-      } else if (type == 'attribute') {
-        let attribute = this.options.attribute;
-        let attr_match = function(item_v,search_v) {
-          return search_v == item_v || search_v.includes(item_v);
-        }
-        matches = items.filter((i,item) => {
-          let item_value = $(item).data('filters')[attribute];
-          // log({search,item_value});
-          return Array.isArray(search) ? search.some(search_value => attr_match(item_value, search_value)) : attr_match(item_value, search);
-        });
-      } else if (type == 'class') {
-        if (!this.options.class) throw new Error('Must include options.class for Filter');
-        matches = items.filter(`.${this.options.class}`);
-        if (this.options.class == 'active') this.none_selected = matches.dne() ? true : false;
-      }
+        matches = items.filter((i,item) => $(item).find(`mark.${class_name}`).exists());
+      } else if (this.filter_type.includes('column')) {
+        let columns = items.find(`.${class_name}`);
+        columns.unmark(options);
+        if (this.options.type != 'text') options.merge({acrossElement:true,separateWordSearch:false});
+        columns.mark(search, options);
+        matches = items.filter((i,item) => $(item).find(`mark.${class_name}`).exists());
+      } else if (this.filter_type == 'active') {
+        matches = items.filter('.active');
+      } else throw new Error(`filter_type = ${this.filter_type} not defined`)
+      this.ele.addClass('active');
+      log({search,matches,options},`filter ${class_name}`);
+      return matches && matches.exists() ? matches.get() : [];
+    } catch (error) {
+      log({error,filter:this});
     }
-    let response = matches.exists() ? matches.get() : [];
-    return response;
   }
-  update () {
-    let match_arrays = this.all_filter_matches;
-    let no_active_filters = match_arrays.every(array => array === null);
-    let showing_active = this.all_filters_active_names.includes('active');
-    let intersection = Array.intersect(...match_arrays);
-    if (no_active_filters) {
-      this.items.show();
-      this.no_match.hide();
-      this.no_selection.hide();
-    } else if (intersection.notEmpty()) {
-      $(intersection).show()
-      this.items.not(intersection).hide();
-      this.no_match.hide();
-    } else {
-      this.items.hide();
-      if (showing_active) {
-        this.no_selection_text = this.all_filters_active.isSolo() ? 'None selected' : 'No selections match all filters';
-        this.no_selection.show();
-      }
-      else this.no_match.hide();
+  filter (answer, ev) {
+    let items = this.items;
+    let all_filters = this.target.filter_objs, match_arrays = all_filters.map(f => f.matches);
+    if (match_arrays.every(a => a === null)) { items.show(); return; }
+    let match_intersect = Array.intersect(...match_arrays);
+    items.add(this.no_items).add(this.no_selection).hide();
+    $(match_intersect).show();
+    if (match_intersect.isEmpty()) {
+      this.no_selection.show();
+      log('hi');
     }
-    let tt = ToolTip.find_containing_tooltip(this.ele);
-    if (tt && tt.is_above_target) tt.prevent_next_hide().move();
+    log({all_filters,match_arrays,match_intersect});
   }
 }
 class List {
   constructor (options = {}) {
-    for (let key in options) { this[key] = options[key] }
-    if (!this.ele) this.ele = $(`<div/>`,{class:'List'});
+    try {
+      this.define_by(options);
+      if (!this.ele) this.ele = $(`<div/>`,{class:'List'});
+      this.ele.removeAttr('data-options');
+      if (this.id) this.ele.attr('id',this.id);
+      let text = ifu(this.header, null), tag = this.header_html_tag || 'h3';
+      if (text) this.header = $(`<${tag}>${text}</${tag}>`).appendTo(this.ele);
+      if (this.header_class) this.header.addClass(this.header_class);
+      if (this.subheader) this.subheader = $(`<div>${this.subheader}</div>`).appendTo(this.ele);
+      if (this.subheader_class) this.subheader.addClass(this.subheader_class);
+      this.ul = $(`<ul/>`).css({display:'inline-block'}).appendTo(this.ele);
+      if (this.css) this.ele.css(this.css);
+      this.li_selectable = ifu(this.li_selectable,true);    
+      this.ul_css = this.ul_css || {}; 
+      this.ul.css(this.ul_css.merge({width:'max-content',maxWidth:'35em'}))
+      if (this.ul_class) this.ul.addClass(this.ul_class);
+      if (this.color) {
+        this.ele.addClass(this.color);
+        if (this.header) this.header.addClass(this.color);
+        if (this.subheader) this.subheader.addClass(this.color);
+        this.ul.addClass(this.color);
+      }
+      if (typeof this.action == 'string') this.action = this.action.to_fx;
+      this.limit = Number.isNaN(Number(this.limit || 1)) ? null : Number(this.limit || 1);
+      if (this.limit !== null) this.limit_warning = new Warning({ele:this.ul,message:`Limited to ${this.limit}`});
+      this.no_items = this.add_item({text:this.no_item_text || 'none',class_list:'no_items',skip_check:true}).hide()
+      this.no_selection = this.add_item({text:this.no_selection_text || 'no matches',class_list:'no_selection',skip_check:true}).hide();
+      if (this.json && this.json.is_array()) this.json.forEach(i => this.add_item(i));
+      if (this.with_search) this.add_filters();
+      if (this.header_toggle) {
+        let toggle_options = {
+          toggle_ele: this.header,
+          target_ele: this.ul,          
+          arrow_position: 'below',
+          arrow_css: {marginTop:'-0.2em'},
+          initial_state: 'visible',
+        }.merge(this.toggle_options || {});
+        // log({toggle_options,options,this:this,this_toggle:this.toggle_options});
+        this.toggle = new Toggle(toggle_options);
+      }
+      if (this.confirm_options) {
+        this.confirm = new Confirm(this.confirm_options);
+        this.items.addClass('clickable');
+      }
+      this.ele.data({'initialized':true,class_obj:this});
 
-    let text = ifu(this.header, null), tag = this.header_html_tag || 'h3';
-    if (text) this.header = $(`<${tag}>${text}</${tag}>`).appendTo(this.ele);
-    if (this.header_css) this.header.css(this.header_css);
-    if (this.header_class) this.header.addClass(this.header_class);
-    this.ul = $(`<ul/>`).css({display:'inline-block'}).appendTo(this.ele);
-    if (this.with_search) {
-      let answer_css = {width: 'calc(100% - 0.5em'};
-      this.search_box = new Forms.Answer({type:'text',placeholder:'Type to search',settings:{placeholder_shift:false}});
-      this.active_only = new Forms.Answer({type:'checkboxes',list:['only selected items']});
-      this.filter_wrap = $(`<div/>`).insertBefore(this.ul).append(this.search_box.ele, this.active_only.ele);
-      new Filter(this.search_box.ele, {name:'search_box', target:this.ul, item_html_tag:'li', answer_css});
-      new Filter(this.active_only.ele, {name:'active', type:'class', class: 'active', target:this.ul, item_html_tag:'li', answer_css, ele_css: {padding:0,margin:'0'}});
-      this.add_item({text:'No matching items',class_list:'no_match'}).hide();
-      this.add_item({text:'None selected',class_list:'no_selection'}).hide();
+      // this.post_add_check();
+    } catch (error) {
+      log({error,this:this,options});
     }
-    if (this.css) this.ele.css(this.css);
-    this.li_selectable = ifu(this.li_selectable,true);    
-    this.ul_css = this.ul_css || {};
-    this.ul.css(this.ul_css.merge({width:'max-content',maxWidth:'35em'}))
-    this.action = ifu(this.action, null);
-    // this.limit = this.limit || 1;
-    this.limit = Number.isNaN(Number(this.limit || 1)) ? null : Number(this.limit);
-    this.ele.data('initialized',true);
   }
 
-  get items () {
-    return this.ul.find('li');
+  add_filters () {
+    let target = this, selector = 'li';
+    this.search_box = new FilterNew({target, selector, 
+      name: 'text', type:'text', filter_type: 'text',
+      placeholder:'Type to search', 
+      settings:{placeholder_shift:false}
+    });
+    this.active_only = new FilterNew({target, selector, 
+      name: 'is_active', filter_type: 'active',
+      type:'checkboxes',
+      list:['only selected items']
+    });
+    this.filter_wrap = $(`<div/>`).insertBefore(this.ul).append(this.search_box.ele, this.active_only.ele);
   }
-  get values () {
-    return this.items.get().map(item => $(item).data('value'));
+  post_add_check (item) {
+    let items = this.items, visible = items.filter(':visible');
+    if (items.dne()) { this.no_items.show(); this.no_selection.hide(); }
+    else if (this.ul.is(':visible') && visible.dne()) { this.no_items.hide(); this.no_selection.show(); }
+    else { this.no_items.hide(); this.no_selection.hide(); }
+    if (this.post_add_fx) {this.post_add_fx.to_fx(item);}
   }
-  get active () {
-    let active = this.items.filter('.active');
-    return active.exists() ? active : null;
+  post_select_check (item) {
+    if (this.post_select_fx) this.post_select_fx.to_fx(item);
   }
+  get items () { return this.ul.find('li').not('.no_items, .no_selection'); }
+  get values () { return this.items.get().map(item => $(item).data('value')); }
+  get active () { return this.items.filter('.active'); }
   get active_values () { 
     let active = this.active;
     return active ? this.active.get().map(item => $(item).data('value')) : null;
   }
-  find_by_value (value_array) { return this.items.filter( (i,item) => value_array.includes($(item).data('value') ) ) }
-  item_select (ev) {
-    if ($(ev.target).is('img')) return;
-    let has_limit = this.limit != null, item = $(ev.target).closest('li'), is_active = item.hasClass('active');
+  get tt () { return this.ele.getObj('tooltip') }
+  find_by_value (value_array) { 
+    if (!value_array.is_array()) value_array = [value_array];    
+    return this.items.filter( (i,item) => value_array.includes($(item).data('value')) ) 
+  }
+  async item_select (ev) {
+    if ($(ev.target).is('img') || !this.li_selectable) return;
+    let pass = true;
+    let has_limit = this.limit != null, item = $(ev.target).closest('li'), was_active = item.hasClass('active'), 
+      at_limit = !has_limit ? false : this.active.length == this.limit;
     if (item.hasClass('no_match') || item.hasClass('no_selection')) return;
+    if (at_limit && this.limit != 1) {
+      this.limit_warning.show();
+      return;
+    }
+    let text = item.text();
+    if (this.confirm) {
+      let message = was_active ? 'You are un-selecting this item' : 'You are selecting this item';
+      if (this.confirm.message_active && was_active) message = this.confirm.message_active;
+      else if (this.confirm.message_inactive && !was_active) message = this.confirm.message_inactive; 
+      pass = await this.confirm.prompt({
+        header: `${was_active ? 'Remove' : 'Add'} ${text}?`,
+        message,
+        yes_text: `${was_active ? 'remove' : 'add'} ${text}`,
+        no_text: `cancel`,
+        button_info: `Do you want to proceed?`,
+        item, was_active, value: item.data('value'), text, model: this.model || null,
+      })
+    };
+    if (!pass) return;
     if (!has_limit) item.toggleClass('active');
     else {
-      if (this.limit == 1) { this.ele.resetActives(); item.addClass('active')}
+      if (this.limit == 1 && was_active) { item.removeClass('active') }
+      else if (this.limit == 1) { this.ele.resetActives(); item.addClass('active') }
       else {
-        if (is_active) item.removeClass('active');
-        else if (this.active.length < this.limit) item.addClass('active');
-        else new Warning({ele:this.ele,message:`Limited to ${this.active.length}`});
+        if (was_active) item.removeClass('active');
+        else item.addClass('active');
       }
     }
+    this.post_select_check();
   }
   add_item (options = {}) {
-    let text = options.text || 'text ?', 
-      action = options.action || null,
-      item = $(`<li/>`,{class: options.class_list || this.li_class || ''}).appendTo(this.ul), 
+    if (this.transform_fx && !options.skip_check) options = this.transform_fx(options);
+    let text = this.text_dot ? options.dot_notation_get(this.text_dot) : options.text || 'text ?', 
+      value = this.value_dot ? options.dot_notation_get(this.value_dot) : options.value || text;
+    let action = options.action || this.action || null,
+      item = $(`<li/>`,{class: options.class_list || this.li_class || ''}).appendTo(this.ul).show(), 
       entire_li_clickable = ifu(options.entire_li_clickable, this.entire_li_clickable, true), 
       clickable_ele = item, 
-      value = options.value || text, 
+      selectable = ifu(options.selectable, this.li_selectable, false),
       to_top = options.position ? options.position == 'top' ? true : false : false;
+    // log({options,to_top},`${text}`);
+    if (this.initial && this.initial.is_array() && this.initial.includes(value)) item.addClass('active');
     item.append(options.append ? options.append : `<span>${text}</span>`);
     if (to_top) item.prependTo(this.ul);
     if (this.li_css) item.css(this.li_css);
-    item.data('value',value);
-    if (ifu(options.selectable, this.li_selectable)) item.on('click',this.item_select.bind(this));
+    item.data({value});
 
-    if (action && typeof action == 'function'){
+    if (item.hasClass('no_selection') || item.hasClass('no_items')) return item;
+
+    if (selectable) item.on('click',this.item_select.bind(this));
+    if (action){
       if (!entire_li_clickable) clickable_ele = item.children().first();
-      clickable_ele.addClass('clickable').on('click',action);
+      clickable_ele.on('click', action.to_fx);
     }
-    this.ul.find('.no_items').not(item).hide();
+    if (selectable || action) clickable_ele.addHoverClassToggle().addClass('clickable');
+    if (!options.skip_check) this.post_add_check(item);
+    else log({options});
     return item;
   }
   remove_by_index (index) {
@@ -460,20 +630,24 @@ class List {
     if (!item) throw new Error(`Index ${index} does not exist`);
     $(item).slideFadeOut(function(){$(this).remove()});
   }
-  remove_all () {
-    this.items.remove();
+  remove_by_value (value, time = 400) {
+    let item = this.items.get().filter(i => $(i).data('value') === value);
+    if (item.isEmpty()) throw new Error(`Value ${value} does not exist`);
+    if (time) $(item).slideFadeOut(time, function(){$(this).remove()});
+    else $(item).remove();
+    setTimeout(_ => {this.post_add_check()},time || 0);
   }
+  remove_all () { this.items.remove(); this.post_add_check(); }
 };
 class UpDown {
   constructor (options) {
-    this.ele = $("<div/>",{class:'UpDown flexbox'}).css({width:'1em',position:'relative'});
+    this.ele = $("<div/>",{class:'UpDown flexbox'}).css({width:'1em',position:'relative'}.merge(options.ele_css || {}));
     let has_label = options.preLabel || options.postLabel || null;
     let up = new Image(), down = new Image();
     up.src = down.src = `/images/icons/arrow_down_purple.png`;
     $(up).css({transform:'rotate(180deg)',opacity:0.5,width:'1em',height:'1em',cursor:'pointer'}).addClass('up');
     $(down).css({opacity:0.5,width:'1em',height:'1em',cursor:'pointer'}).addClass('down');
-    $(up).add(down).on('mouseenter',function(){$(this).animate({opacity:1})})
-      .on('mouseleave',function(){$(this).animate({opacity:0.5},100)})
+    $(up).add(down).addOpacityHover();
     this.ele.append(up,down);
     let css = options.css || null, action = options.action || null, callback = options.callback || null;
     if (action) {
@@ -487,6 +661,7 @@ class UpDown {
       else log({error:'invalid callback',options:options});
     }
     let updown = this;
+    // if (this.action == )
     if (this.action) {
       this.ele.on('mousedown touchstart','.up, .down', function(ev){
         if (updown.action) updown.action(ev);
@@ -543,13 +718,13 @@ class UpDown {
   static unset_indices(all_to_sort) {all_to_sort.removeData('index');}
   static shift_index_up(target, all_to_sort) {
     let prev = target.prev();
-    if (prev.dne()) return;
+    if (prev.dne() || prev.is('.no_sort')) return;
     prev.data().index++;
     target.data().index--;
   }
   static shift_index_down(target, all_to_sort) {
     let next = target.next();
-    if (next.dne()) return;
+    if (next.dne() || next.is('.no_sort')) return;
     next.data().index--;
     target.data().index++;
   }
@@ -561,7 +736,8 @@ class Toggle {
         let ele = options, data = options.data();
         options = {toggle_ele:ele}.merge(data);
       }
-      this.toggle_ele = $(options.toggle_ele).css('cursor','pointer').data({class_obj: this});
+      this.define_by(options);
+      ['toggle_ele','target_ele'].forEach(o => {if (!this[o]) throw new Error(`toggle options missing "${o}"`)});
       this.target_ele = $(options.target_ele);
       if (this.target_ele.dne()) this.target_ele = $(`#${options.target_ele}`);
       if (this.target_ele.dne()) this.target_ele = $(`.${options.target_ele}`);
@@ -570,6 +746,11 @@ class Toggle {
         if (!options.allow_multi) throw new Error(`multiple (${this.target_ele.length}) targets found, not allowed`);
         else log({error:new Error(`multiple (${this.target_ele.length}) targets found, check arrow direction`)})
       }
+      this.toggle_ele = $(options.toggle_ele).data({class_obj: this})
+      this.toggle_ele.addClass(`${this.toggle_ele_class_list || ''} Toggle`);
+      if (this.target_ele.is('.form')) this.toggle_ele.addClass('lined');
+      this.target_ele.addClass('target_ele');
+
       let toggle_box = this.toggle_ele[0].getBoundingClientRect(),
         target_box = this.target_ele[0].getBoundingClientRect();
       this.target_is_below = (toggle_box.top < target_box.top) ? true : false;
@@ -577,45 +758,37 @@ class Toggle {
       this.callback_show = options.callback_show || null;
       this.initial_state = options.initial_state || 'visible';
       this.hover_text = ifu(options.hover_text, null);
+
+      let color = this.color = this.color || 'purple';
       this.arrow_position = options.arrow_position || 'left';
       if (this.toggle_ele.find('.arrow').exists()) this.arrow = this.toggle_ele.find('.arrow')[0];
-      else {
-        this.arrow = new Image();
-        this.arrow.src = `/images/icons/arrow_down_purple.png`;
-        $(this.arrow).css({height:'1em',width:'1em',opacity:'0.3',cursor:'pointer',transition:'transform 400ms'});
-      }
+      else this.arrow = new Icon({type:'arrow',size:1,color,dir:'down'});
       this.text = this.toggle_ele.text().trim();
       this.text_ele = $(`<div/>`,{text:this.text,class:'toggleText'});
+      // this.target_ele.addClass('Toggle').data({initialized:true,class_obj:this});
 
-      let t = this;
-      $(this.toggle_ele).on('mouseenter',function(){
-        $(t.arrow).animate({opacity:1});
-        $(t.text_ele).animate({letterSpacing:'0.02em'},200)
-      }).on('mouseleave',function(){setTimeout(function()
-        {$(t.arrow).animate({opacity:0.3});
-        $(t.text_ele).animate({letterSpacing:'0em'})},200)
-      }).on('click',function(){
-        let hide_me = t.target_ele.is(':visible');
-        if (hide_me) t.hide();
-        else t.show();
+      $(this.toggle_ele).addClass(color).on('click', _ => {
+        let hide_me = this.target_ele.is(':visible');
+        if (hide_me) this.hide();
+        else this.show();
       });
-      let text_ele_css = {cursor:'pointer',color:'purple'};
       if (this.arrow_position == 'left') {
-        text_ele_css.merge({marginLeft:'0.5em'});
-        this.toggle_ele.addClass('toggle_ele flexbox left').html('').prepend(this.arrow, this.text_ele);
+        this.toggle_ele.addClass('toggle_ele flexbox left').html('').prepend(this.arrow.img, this.text_ele);
+        this.target_ele.addClass('left');
       } else if (this.arrow_position == 'below') {
-        this.toggle_ele.addClass('toggle_ele').html('').prepend(this.text_ele, this.arrow);
-        $(`<div>`,{class:'flexbox'}).insertBefore(this.arrow).append(this.arrow);
+        this.toggle_ele.addClass('toggle_ele below').html('').prepend(this.text_ele, this.arrow.img);
+        $(`<div>`,{class:'flexbox'}).insertBefore(this.arrow.img).append(this.arrow.img);
       }
-      this.text_ele.css(text_ele_css);
-      this.to_initial_state(0);
-      // if (this.initial_state == 'hidden') this.hide(0);
-      // else this.show(0);
+      if (this.wrap) {
+        let wrap = $(`<div/>`).css(this.wrap_css || {});
+        this.toggle_ele.wrap(wrap);
+      }
+      this.to_initial_state();
     }catch(error){
       log({error,options},`toggle constructor error`);
     }
   }
-  to_initial_state (time = 400) {
+  to_initial_state (time = 0) {
     if (this.initial_state == 'hidden') this.hide(time);
     else this.show(time);
   }
@@ -626,6 +799,8 @@ class Toggle {
     if (arrow_left) angle = '0';
     else angle = '180';
     this.target_ele.slideFadeIn(time);
+    this.toggle_ele.addClass('showing');
+    KeyValueBox.realign(this.target_ele);
     $(this.arrow).css({transform:`rotate(${angle}deg)`});          
     if (this.callback_show && typeof this.callback_show == 'function') this.callback_show();
     return this;
@@ -634,45 +809,38 @@ class Toggle {
     let target_below = this.target_is_below, arrow_left = this.arrow_position == 'left',
       angle = 0;
     if (arrow_left) angle = '-90';
-    else angle = '0';
-    // log({target_below,arrow_left,angle});
     this.target_ele.slideFadeOut(time);
+    this.toggle_ele.removeClass('showing');
     $(this.arrow).css({transform:`rotate(${angle}deg)`});
     if (this.callback_hide && typeof this.callback_hide == 'function') this.callback_hide();
     return this;
   }
-  disable (message = null) {
+  disable (options = {}) {
+    let message = options.message;
     this.hide(0);
-    this.is_disabled = true;
+    this.is_disabled = true; this.toggle_ele.addClass('disabled');
     if (message) {
-      this.tooltip = new ToolTip({ target: this.toggle_ele, message, hide_btn: false });
+      let tt = this.tooltip;
+      if (tt) tt.enable();
+      else this.tooltip = new ToolTip({target: this.toggle_ele, message, color:this.color, no_hide_x:true});
     }
   }
   enable (options = {}) {
-    this.is_disabled = false;
-    if (this.tooltip) this.tooltip.ele.remove();
+    this.is_disabled = false; this.toggle_ele.removeClass('disabled');
+    if (this.tooltip) this.tooltip.disable();
     if (!options.dont_show) this.show(0);
     if (options.message) {
-      let ele = this.toggle_ele, tag = options.message_tag || ele[0].nodeName, textAlign = ele.css('text-align');
       if (this.message_enable) this.message_enable.remove();
-      this.message_enable = $(`<${tag}/>`,{html:options.message, class: options.message_class_list || 'boxPurple'}).css({textAlign}.merge(options.message_css || {marginTop: '0.5em'})).prependTo(this.target_ele);
+      this.message_enable = this.add_message({message:options.message});
     }
   }
+  get messages () { return this.message_array == undefined ? this.message_array = [] : this.message_array }
   add_message (options = {}) {
-    let messages = this.messages || [], message_new = null, textAlign = this.toggle_ele.css('text-align');
-    let css = {textAlign}.merge({marginTop: '0.5em'});
-    if (options.message) {
-      let tag = options.message_tag || this.toggle_ele[0].nodeName;
-      message_new = $(`<${tag}/>`,{html:options.message, class: options.message_class_list || 'boxPurple'}).css(css.merge(options.message_css || {}));
-    } else if (options.ele) {
-      message_new = options.ele.addClass(options.message_class_list || 'boxPurple').css(css.merge(options.message_css || {}));
-    }
-    let last_msg = [...messages].pop() || this.message_enable;
-    messages.push(message_new);
-    this.messages = messages;
-    if (last_msg) message_new.insertAfter(last_msg);
-    else message_new.prependTo(this.target_ele);
-    return message_new;
+    let tag = options.message_tag || this.toggle_ele[0].nodeName;
+    let message = $(`<${tag}/>`,{html:options.message, class: 'box purple toggle_msg'});
+    message.prependTo(this.target_ele);
+    this.messages.push(message);
+    return message;
   }
   reset_messages () {
     if (this.message_enable) {
@@ -683,146 +851,247 @@ class Toggle {
     this.messages = [];    
   }
   reset (time = 400) {
-    this.is_disabled = false;
+    this.enable();
     this.to_initial_state(time);
     this.reset_messages();
     if (this.tooltip) this.tooltip.ele.remove();
+  }
+  static get_all_within (ele) {
+    return $(ele).find('.Toggle').get().map(t => $(t).getObj());
+  }
+
+  static ele () {
+    let response = null;
+    try {
+      if (!this) throw new Error('must bind this function');
+      let ele = $(this);
+      if (ele.dne()) throw new Error('ele does not exist');
+      let args = [...arguments];
+      if (args[0] instanceof Forms.Answer) {
+        response = args[0].get();
+        if (response) ele.slideFadeIn();
+        else ele.slideFadeOut();
+        if (typeof response != 'boolean') throw new Error('caution: using non-bool value');
+      } else ele.slideFadeToggle();
+    } catch (error) {
+      log({error,response,this:this});
+    }
   }
 };
 class ToolTip {
   constructor (options) {
     let tip = this;
-    this.ele = $(`<div/>`).addClass('tooltip').appendTo('body');
+    this.define_by(options);
+    this.ele = $(`<div/>`).data({class_obj:this}).addClass('tooltip hidden').appendTo('body');
     this.target = options.target || null;
     if (!this.target) throw new Error('target not provided');
     
     let existing = this.target.data('tooltip');
-    if (existing) {existing.ele.remove();}
+    if (existing) {existing.remove();}
+    this.with_arrow = ifu(options.with_arrow, true);
     this.target.data('tooltip', this);
-    this.css = options.css || {};
-    this.class = options.class || null;
-    this.message = options.message || null;
-    this.on_hide = options.on_hide || null;
-    this.match_border = options.match_border || false;
     this.hide_on = options.hide_on || '';
-    this.tracking = options.tracking || false;
-    this.ele.data('class_obj',this).slideFadeOut(0);
-    this.hide_btn = ifu(options.hide_btn,true);
     this.translate = {x: 0, y:0}.merge(options.translate || {});
-    if (this.hide_btn) {
-      let btn = new Image();
-      btn.src = '/images/icons/red_x.png';
-      $(btn).css({width:'1em',height:'1em',position:'absolute',top:'0.2em',right:'0.2em',opacity:0.5,cursor:'pointer'})
-        .on('mouseenter',function(){$(this).animate({opacity:1})})
-        .on('mouseleave',function(){$(this).animate({opacity:0.5})})
-        .on('click',function(){tip.hide(0)})
-        .appendTo(tip.ele);
-    }
     this.mouse = {x: null, y: null};
-    this.ele.css(this.css);
+    this.triangle = new Icon({type:'triangle', size:1, color: this.color || 'gray'});
+    this.message_ele = $('<div/>',{class:'message_ele'});
+    this.ele.append(this.triangle.img, this.message_ele);
+    if (!this.with_arrow) this.triangle.img.hide();
+
     if (this.class) this.ele.addClass(this.class);
     if (this.message) this.message_append(this.message);
-    this.target.on(`mouseleave ${this.hide_on}`, this.hide.bind(this));
-    if (this.target.is('input, textarea')) {
-      this.target.on('focus click',this.show.bind(this));
-      this.target.on('blur',this.input_blur.bind(this));
-    } else {
-      this.target.on('mousemove touchmove', function(ev){
-        this.show(ev); this.track(ev);
-      }.bind(this));
+    if (this.match_target_color) {
+      this.ele.css({borderColor:this.target.css('background-color')});
+      this.triangle.ele.setAttribute('fill',this.target.css('background-color'));
+      this.triangle.ele.setAttribute('stroke',this.target.css('border-color'));
+      this.triangle.ele.setAttribute('stroke-width',6);
+    } else if (this.color) {
+      this.ele.addClass(this.color);
+      this.triangle.img.addClass(this.color);
     }
-    let drag = this.drag.bind(this)
-    this.ele.on('mouseleave',function(ev){
-      let target = $(ev.relatedTarget), next_tip = ToolTip.find_closest_tooltip(target);
-      if (!target.is(tip.target)) tip.hide(ev);
-      if (target.is('input, textarea')) return;
-      if (next_tip) next_tip.show(ev);
-    }).on('mouseenter', this.mousein.bind(this)).
-    on('mousedown touchstart',function(ev){
-      let target = $(ev.target);
-      this.drag_start_mouse = {x: ev.pageX, y: ev.pageY};
-      this.drag_start_ele = this.pos;
-      $(document).on('mousemove touchmove', drag);
-    }.bind(this)).on('mouseup touchend',function(){
-      $(document).off('mousemove touchmove', drag);
-    }.bind(this))
+
+    let drag = this.drag.bind(this),
+        drag_start = ev => {
+          let target = $(ev.target);
+          this.drag_start_mouse = {x: ev.pageX, y: ev.pageY};
+          this.drag_start_ele = this.pos;
+          $(document).on('mousemove touchmove', drag);
+        }, drag_stop = _ => { $(document).off('mousemove touchmove', drag) },
+        show = ToolTip.show.bind(this),
+        hide = ToolTip.hide.bind(this);
+
+      this.ele_pair = this.ele.add(this.target);
+      if (this.target.is('input, textarea')) {
+        this.target.on('focus click', show).on('blur', hide);
+        this.ele.addClass('input_tip');
+      } else this.target.on('mousemove touchmove', show);
+      this.ele_pair.on('mouseenter', show).on('mouseleave', hide);
+      this.ele.on('mousedown touchstart', drag_start).on('mouseup touchend', drag_stop);
+
+      this.remove = () => {
+        if (this.target.is('input, textarea')) this.target.off('focus click', show).off('blur', hide);
+        else this.target.off('mousemove touchmove', show);
+        this.ele_pair.off('mouseenter', show).off('mouseleave', hide);
+        this.ele.off('mousedown touchstart', drag_start).off('mouseup touchend', drag_stop);
+        this.ele.remove();
+        let i = ToolTip.list.findIndex(t => t == this);
+        ToolTip.list.splice(i,1);
+      }
+    
+    if (!this.no_clear_x) {
+      this.clear_x = new Icon({type:'styled_x',size:0.75});
+      this.clear_x.img.addClass('tooltip_clear').on('click', hide).appendTo(this.ele);
+    }
+    ToolTip.list.push(this);
   }
-  get is_visible() { return this.ele.is(':visible') }
+
+
+  get is_visible() { return this.ele.hasClass('visible') }
   prevent_next_hide() { this.prevent_hide = true; return this; }
   message_append (msg) {
     if (typeof msg == 'object') {
       let is_jquery = msg instanceof jQuery;
       if (!is_jquery) msg = msg.to_key_value_html();
     }
-    this.ele.append(msg);
+    this.message_ele.append(msg);
+  }
+  message_reset (msg) { this.message_ele.html(''); this.message_append(msg) }
+  disable () { this.disabled = true }
+  enable () { this.disabled = false }
+  move (animate = false) {
+    if (this.dragged_to) return;
+    let pos = this.position_fixed;
+    if (animate) this.ele.animate(pos, 250, _ => {this.reposition_triangle()});
+    else {
+      this.ele.css(pos);
+      this.reposition_triangle();
+    }
   }
   show (ev) {
-    clearTimeout(this.hide_timeout);
+    this.ele.removeClass('hidden').addClass('visible');
+    this.move();
+  }
+  hide () {
+    this.ele.removeClass('visible').addClass('hidden');
+    if (this.on_hide && typeof this.on_hide == 'function') this.on_hide();
+  }
+  static show (ev) {
+    if (this.disabled) return;
+    clearTimeout(this.hide_timer);
+    if ($('.tooltip.visible').exists()) return;
     if (this.is_visible) return;
-    this.hide_all_others();
-    if (this.match_border) this.ele.css({borderColor:this.target.css('background-color')});
-    this.ele.show().animate({opacity:1});
-    this.mouse_pos = ev;
-    this.move(ev, false);
+    log({this:this,ev},'SHOW');
+    this.show();
   }
-  move (ev, animate = true) {
-    if (this.dragged_to) return;
-    let target = ev ? $(ev.toElement) : null;
-    if (target && target.isInside('.tooltip')) return;
-    let pos = this.tracking ? this.position_track : this.position_fixed;
-    if (animate) this.ele.animate(pos, 250);
-    else this.ele.css(pos);
-    // log({this:this.pos,target:this.target_pos},`${this.pos.top} < ${this.target_pos.top}`);
-    // this.is_above_target = this.pos.top < this.target_pos.top;
+  static hide (ev, time) {
+    log({this:this,ev,time},'HIDE');
+    ToolTip.hide_me.push(this);
+    this.hide_timer = setTimeout( _ => {
+      this.hide();
+    },250)
   }
+  static get hide_me () { return ToolTip.hide_me_array == undefined ? ToolTip.hide_me_array = [] : ToolTip.hide_me_array; }
 
   drag (ev) {
     let mouse_start = this.drag_start_mouse, ele_start = this.drag_start_ele, mouse_now = {x: ev.pageX, y: ev.pageY},
       diff = {x: mouse_now.x - mouse_start.x, y: mouse_now.y - mouse_start.y};
-    let next = {x: ele_start.x + diff.x, y: ele_start.y + diff.y};
-    if (diff.x > 10 || diff.y > 10) {
+    let box_ele = this.ele[0].getBoundingClientRect();
+    let next = {x: ele_start.x + ele_start.width*0.5 - box_ele.width*0.5 + diff.x, y: ele_start.y + diff.y};
+    if (Math.abs(diff.x) > 10 || Math.abs(diff.y) > 10) {
       this.dragged_to = next;
       this.ele.css({left:next.x, top:next.y, right:'unset'});
+      this.reposition_triangle();
     }
     return;
-  }
-  track (ev) {
-    if (!this.tracking) return;
-    let move = this.move.bind(this,ev), tooltip = this;
-    this.mouse_pos = ev;
-    if (!tooltip.track_timeout) {
-      tooltip.track_timeout = setTimeout(function(){
-        move();
-        tooltip.track_timeout = null;
-      },250);
-    }
   }
   mousein (ev) { 
     clearTimeout(this.hide_timeout); clearTimeout(this.track_timeout); this.track_timeout = null;
     this.prevent_hide = false;
   }
-  hide (ev, time = 500) {
-    if (this.prevent_hide) return;
-    if (typeof ev == 'number') {time = ev; ev = undefined;}
-    let tt = this;
-        if (ev && ev.relatedTarget && $(ev.relatedTarget).isInside('.tooltip')) return;      
-    this.hide_timeout = setTimeout(function(){
-      tt.ele.slideFadeOut();
-      tt.track_timeout = null;
-      if (tt.on_hide && typeof tt.on_hide == 'function') tt.on_hide();
-    }, time);
-  }
-  input_blur (ev) {
-    if (ev.relatedTarget && !$(ev.relatedTarget).isInside('.tooltip')) this.hide(ev);
-  }  
-  check_right () {
-    let box = this.ele[0].getBoundingClientRect(), v = view(),
-      border = {right: this.mouse.x + box.width + system.ui.scroll.bar_width()};
-    if (border.right > v.width) this.ele.css({right: 10, left:'unset'});
-  }
+  input_blur (ev) { if (ev.relatedTarget && !$(ev.relatedTarget).isInside('.tooltip')) this.hide(ev) }  
   get pos () { return this.ele[0].getBoundingClientRect() }
   get target_pos () { return this.target[0].getBoundingClientRect() }
   get is_above_target () { return this.pos.top < this.target_pos.top }
+  get is_below_target () { return this.pos.bottom > this.target_pos.bottom }
+  get is_fully_above_target () { return this.pos.bottom <= this.target_pos.top }
+  get is_fully_below_target () { return this.pos.top >= this.target_pos.bottom }
+  get diff_centers () {
+    let ele = this.pos, ele_center = {x: ele.x + ele.width*0.5, y: ele.y + ele.height*0.5},
+      target = this.target_pos, target_center = {x: target.x + target.width*0.5, y: target.y + target.height*0.5},
+      x = target_center.x - ele_center.x, y = target_center.y - ele_center.y,
+      top_to_center = target_center.y - ele.top;
+    return {x, y, top_to_center};
+  }
+  get diff_edges () {
+    let ele = this.pos, target = this.target_pos, pad = get_rem_px(), half_target_w = target.width*0.5,
+      to_right = ele.left + pad > target.right - half_target_w, to_left = ele.right - pad < target.left + half_target_w,
+      far_right = ele.left > target.right, far_left = ele.right < target.left;
+    let x = {right: ele.left - target.right, left: ele.right - target.left},
+      y = {top: ele.bottom - target.top, bottom: ele.top - target.bottom};
+    let cis = {};
+    ['left','right','top','bottom'].forEach(s => cis[s] = ele[s] - target[s]);
+    let within = {
+      left: cis.left >= 0, top: cis.top >= 0, right: cis.right <= 0, bottom: cis.bottom <= 0
+    };
+
+    return {to_right, to_left, far_right, far_left, x, y, cis, within};
+  }
+  reposition_triangle (animate = false) {
+    let fully_above = this.is_fully_above_target, fully_below = this.is_fully_below_target, center = this.diff_centers, edges = this.diff_edges;
+    let rotation_deg = 0, translateX = '-50%', translateY = '0', left, right, top, bottom, angle = {y: null, x:null, deg: null};
+    left = right = top = bottom = 'unset';
+
+    if (fully_above) { rotation_deg = 180; bottom = 0; angle.y = edges.y.top; } 
+    else if (fully_below) { translateY = '-100%'; top = 0; angle.y = edges.y.bottom; } 
+    else { if (center.y < 0) { rotation_deg = 180; top = 0; } else { bottom = 0; } }
+
+    if (edges.far_right) {
+      left = 0; angle.x = edges.x.right;
+      if (angle.y === null) {
+        rotation_deg -= center.y > 0 ? 90 : 270; top = `clamp(min(${Math.abs(edges.y.bottom)}px , calc(0.5em + 3px)), ${center.top_to_center}px, max(calc(100% - ${Math.abs(edges.y.top)}px), calc(100% - 0.5em - 3px)))`;
+        translateY = '-100%'; 
+      } else if (angle.y === 0) rotation_deg += 180;
+    } else if (edges.to_right) { left = `min(${Math.abs(edges.x.right)}px , calc(0.5em + 3px))`; } 
+    else if (edges.far_left) {
+      right = 0; angle.x = edges.x.left; translateX = '50%';
+      if (angle.y === null) {
+        rotation_deg += center.y > 0 ? 90 : 270; top = `clamp(min(${Math.abs(edges.y.bottom)}px , calc(0.5em + 3px)), ${center.top_to_center}px, max(calc(100% - ${Math.abs(edges.y.top)}px), calc(100% - 0.5em - 3px)))`;
+        translateX = '50%'; translateY = '-100%';
+      }
+    } else if (edges.to_left) { right = `min(${Math.abs(edges.x.left)}px , calc(0.5em + 3px))`; translateX = '50%'; } 
+    else { this.triangle.img.css({left:`calc(50% + ${center.x}px)`}); left = `calc(50% + ${center.x}px)`; }
+
+    if (angle.x !== null && angle.y != null) {
+      angle.deg = Math.atan(Math.abs(angle.x)/Math.abs(angle.y)) / Math.DEG_PER_RAD;
+      let add_me = angle.x > 0 ? angle.y < 0 : angle.y > 0;
+      rotation_deg = (add_me ? rotation_deg + angle.deg : rotation_deg - angle.deg).toFixed(2);
+    }
+    if (!fully_above && !fully_below && !edges.far_right && !edges.far_left) {
+      let e = edges.cis, pos = 'NONE', abs = (a,b) => Math.abs(a) > Math.abs(b), w = edges.within, max = 1000;
+      if (w.left) {
+        if (w.top) pos = abs(e.left, e.top) ? 'left' : 'top';
+        else if (w.bottom) pos = abs(e.left, e.bottom) ? 'left' : 'bottom';
+        else pos = 'left';
+      } else if (w.right) {
+        if (w.top) pos = abs(e.right, e.top) ? 'right' : 'top';
+        else if (w.bottom) pos = abs(e.right, e.bottom) ? 'right' : 'bottom';
+        else pos = 'right';
+      } else if (w.top) pos = 'top';
+      else if (w.bottom) pos = 'bottom';
+      else { ['left','right','top','bottom'].forEach(p => {if (abs(max, e[p])) {pos = p; max = e[p]}}); }
+
+      if (pos == 'left') {
+        left = 0; right = 'unset'; top = `clamp(min(${Math.abs(edges.y.bottom)}px , calc(0.5em + 3px)), ${center.top_to_center}px, max(calc(100% - ${Math.abs(edges.y.top)}px), calc(100% - 0.5em - 3px)))`; translateY = '-100%'; rotation_deg = 90;
+      } else if (pos == 'right') {
+        right = 0; left = 'unset'; top = `clamp(min(${Math.abs(edges.y.bottom)}px , calc(0.5em + 3px)), ${center.top_to_center}px, max(calc(100% - ${Math.abs(edges.y.top)}px), calc(100% - 0.5em - 3px)))`; translateX = '50%'; translateY = '-100%'; rotation_deg = -90;
+      } else if (pos == 'top') {
+        translateY = '-100%';
+      }
+    }
+
+    if (animate) this.triangle.img.css({transform: `translate(${translateX},${translateY}) rotate(${rotation_deg}deg)`}).aniamte({left,right,top,bottom});
+    else this.triangle.img.css({left,right,top,bottom,transform: `translate(${translateX},${translateY}) rotate(${rotation_deg}deg)`});
+  }
   get position_track () {
     let box = this.ele[0].getBoundingClientRect(), v = view(),
       border = {right: this.mouse.x + box.width + system.ui.scroll.bar_width(), bottom: this.mouse.y + box.height},
@@ -835,120 +1104,162 @@ class ToolTip {
     return pos_adjusted;
   }
   get position_fixed () {
-    let box_ele = this.ele[0].getBoundingClientRect(), box_target = this.target[0].getBoundingClientRect(), v = view(),
+    let pad_size = get_rem_px() + 2, box_ele = this.ele[0].getBoundingClientRect(), box_target = this.target[0].getBoundingClientRect(), v = view(),
       border = {
-        right: box_target.x + box_ele.width + system.ui.scroll.bar_width() + this.translate.x, 
-        bottom: box_target.bottom + box_ele.height + 10 + this.translate.y, 
-        top: box_target.top - box_ele.height - 10 + this.translate.y,
+        right: (box_target.x + box_target.width*0.5) + box_ele.width*0.5 + system.ui.scroll.bar_width() + this.translate.x, 
+        left: (box_target.x + box_target.width*0.5) - box_ele.width*0.5 + system.ui.scroll.bar_width() + this.translate.x, 
+        bottom: box_target.bottom + box_ele.height + pad_size + this.translate.y, 
+        top: box_target.top - box_ele.height - pad_size + this.translate.y,
       }, pos_adjusted = {
-        top: (border.top > 10) ? border.top : (border.bottom > v.height - 10) ? 10 : box_target.bottom + 10 + this.translate.y
+        top: (border.top > pad_size) ? border.top : (border.bottom > v.height - pad_size) ? pad_size : box_target.bottom + pad_size + this.translate.y
       };
-    // this.is_above_target = (border.top >= 10);
-    if (border.right > v.width) {
-      pos_adjusted.right = 10; this.ele.css({left: 'unset'});
-    } else {
-      this.ele.css({right: 'unset'}); pos_adjusted.left = box_target.x + this.translate.x;
-    }
+    let ideal = box_target.x + box_target.width*0.5 - box_ele.width*0.5 + this.translate.x;
+    if (this.ele.hasClass('input_tip')) ideal = box_target.left;
+    let max = v.width - pad_size - box_ele.width;
+    let left = ideal < pad_size ? pad_size : max < ideal ? max : ideal;
+    pos_adjusted.left = left;
     return pos_adjusted;
   }
-  set mouse_pos (ev) {
-    this.mouse = {x: ev.pageX + 5, y: ev.pageY + 10};
-  }
+
+  set mouse_pos (ev) { this.mouse = {x: ev.pageX + 5, y: ev.pageY + 10}; }
   hide_all_others () {$('.tooltip').filter(':visible').not(this.ele).hide() }
-  static hide_all (time = 0) {
-    let tip = $('.tooltip').filter(':visible');
-    if (tip.exists()) tip.each((t,tip) => $(tip).data('class_obj').hide(undefined,time));
+  static get list () { return ToolTip.list_array == undefined ? ToolTip.list_array = [] : ToolTip.list_array }
+  static hide_all () {
+    let this_tt = this != undefined && this instanceof ToolTip ? this : null;
+    ToolTip.list.filter(tt => tt.is_visible && tt != this_tt).forEach(tt => tt.hide());
   }
-  static find_containing_tooltip (ele) {
-    let tt = ele.closest('.tooltip');
-    return tt.exists() ? tt.getObj() : null;
-  }
-  static find_closest_tooltip (ele) {
-    let tooltip = ele.data('tooltip'), parents = ele.parents();
-    if (!tooltip) {
-      parents.each((p,parent) => {
-        tooltip = $(parent).data('tooltip');
-        if (tooltip != undefined) return false;
-      })
-    }
-    return tooltip != undefined ? tooltip : null;
-  }
+  // static find_containing_tooltip (ele) {
+  //   let tt = ele.closest('.tooltip');
+  //   return tt.exists() ? tt.getObj() : null;
+  // }
+  // static find_closest_tooltip (ele) {
+  //   let tooltip = ele.data('tooltip'), parents = ele.parents();
+  //   if (!tooltip) {
+  //     parents.each((p,parent) => {
+  //       tooltip = $(parent).data('tooltip');
+  //       if (tooltip != undefined) return false;
+  //     })
+  //   }
+  //   return tooltip != undefined ? tooltip : null;
+  // }
+  // static visible () { return $('.tool') }
 };
 class Warning {
   constructor (options = {}) {
+    this.defaults = {};
     this.define_by(options);
+    this.defaults.define_by(options);
   }
-  show () {
-    let message = this.message || 'no message given', 
-      ele = this.ele || null;
-    if (ele) ele.warn(message);
+  show (options = {}) {
+    let now = this.defaults.merge(options);
+    system.warn(now);
   }
 };
 class Banner {
   constructor (options = {}) {
+    if (!Banner.Container || Banner.Container.dne()) {
+      Banner.Container = $('<div/>',{css:{position:'fixed',top:'5em',right:'3.5em',zIndex:'9999'}}).appendTo('body');
+    }
     this.define_by(options);
-    if (!this.ele) this.ele = $('<div/>',{class:'Banner'}).appendTo('body');
-    if (!this.message) this.message = 'HELLO';
-    this.ele.append(this.message);
-    this.ele.css((this.css || {}).merge((this.pos || {})));
-    if (this.color) this.ele.css(Banner[this.color]);
-    // if (this.color) log({c:this.color,color:Banner[this.color]},`${this.color}`);
+
+    if (!this.ele) this.ele = $('<div/>',{class:'Banner'}).appendTo('body').hide();
+    if (!this.message) this.message = this.text || 'HELLO';
+    if (this.id) this.ele.attr({id:this.id});
+    this.ele.append(this.message).data('class_obj',this).appendTo(Banner.Container);
+    this.ele.css(this.css || {});
+    this.hide_onclick = ifu(this.hide_onclick, true);
+    this.position = this.position || null;
+    if (this.position) this.ele.css(this.position);
+    if (this.color) this.ele.addClass(this.color);
+    if (this.class_list) this.ele.addClass(this.class_list);
     if (this.onclick) this.ele.on('click',this.onclick).css({cursor:'pointer'});
-    this.ele.on('click',this.hide.bind(this));
+    if (this.hide_onclick) this.ele.on('click',this.hide.bind(this));
+    // if (this.message == 'HELLO') this.initial_state = 'hide';
+    if (this.initial_state) {
+      if (this.initial_state == 'hide') this.hide(0);
+      else if (this.initial_state == 'fadein') this.show();
+      else if (this.initial_state == 'show') this.show(0);
+    }
   }
-  static get pink () { return {backgroundColor: 'var(--pink10o)',borderColor:'var(--pink70)',color:'var(--pink)'} }
-  static get green () { return {backgroundColor: 'var(--green10o)',borderColor:'var(--green70)',color:'var(--green)'} }
+  // static get pink () { return {backgroundColor: 'var(--pink10o)',borderColor:'var(--pink70)',color:'var(--pink)'} }
+  // static get green () { return {backgroundColor: 'var(--green10o)',borderColor:'var(--green70)',color:'var(--green)'} }
+  color_change (color) { 
+    this.ele.removeClass('pink green yellow purple');
+    this.ele.addClass(color);
+  }
+  color_reset () { if (this.color) this.color_change(this.color) }
+  
   flash (options = {}) {
     let b = this, time = options.time_stay || this.time_stay || 5000,
       time_in = options.time_in || this.time_in || 400,
       time_out = options.time_out || this.time_out || 400,
       callback_show = options.callback_show || this.callback_show || null,
       callback_hide = options.callback_hide || this.callback_hide || null;
-    this.show({time:time_in, callback:callback_show});
+    this.show({time:time_in, callback:callback_show, position: options.position || null});
     setTimeout(function(){
       b.hide({time:time_out, callback:callback_hide});
     }, time_in + time);
   }
-  show (options = {}) {
-    let time = options.time || this.time_in || 400,
-      callback = options.callback || this.callback_show || null;
+  async show (options = {}, callback = null) {
+    if (typeof options == 'number') options = {time: options};
+    else if (typeof options == 'function') options = {callback: options};
+
+    if (options.position) {
+      this.position = options.position;
+      this.ele.css(this.position);
+    }
+    if (options.message) this.message_update(options.message);
+    let time = options.time || this.time_in || 400, fx = callback || options.callback || this.callback_show || null;
+    if (!this.position) this.ele.appendTo(Banner.ContainerRepo());
     this.ele.fadeIn(time, callback);
+    return new Promise(resolve => setTimeout( _ => {resolve(true);},time));
   }
-  hide (options = {}) {
-    let time = options.time || this.time_out || 400,
-      callback = options.callback || this.callback_hide || null;
-    this.ele.fadeOut(time, callback);
+  hide (options = {}, callback = null) {
+    if (typeof options == 'number') options = {time: options};
+    else if (typeof options == 'function') options = {callback: options};
+    let time = options.time || this.time_out || 400;
+    callback = callback || options.callback || this.callback_hide || null;
+    if (this.ele.is(':visible')) this.ele.slideFadeOut(time, callback);
+    else if (callback) callback();
   }
-  message_update (message) { this.ele.html(''); this.ele.append(message); return this; }
+  message_update (message) { this.ele.html(''); this.ele.append(...arguments); return this; }
+  message_append (message) { this.ele.append(...arguments); return this; }
   onclick_update (fx = null) { 
     if (this.onclick) this.ele.off('click',this.onclick).css({cursor:'default'});
     if (fx) { this.onclick = fx; this.ele.on('click',this.onclick).css({cursor:'pointer'}); }
     return this;
   }
+  static ContainerRepo () {
+    if (!Banner.Container) return;
+    // let top = blurTopGet(true), parent = top ? top.children().first() : 'body';
+    try {
+      let parent = Blur.top;
+      log({parent,container:Banner.Container});
+      if (parent.is('body')) Banner.Container.css({top:'4.3em',right:'3.5em'});
+      else {
+        let box = parent[0].getBoundingClientRect();
+        let pos = {top: `calc(${box.top}px + 2em)`, right: `calc(${view().width - box.right}px + 2.5em)`};
+        Banner.Container.css(pos);
+      }
+    } catch (error) {
+      log({error})
+    }
+
+  }
 }
 class Notification {
   constructor(json, position = null) {
-    for (let key in json) { this[key] = json[key] }
+    if (Notification.list) {
+      if (!Notification.list.json.find(n => n.id === json.id)) Notification.list.json.push(json);
+      if (Notification.list.find_by_value(json.id).exists()) return;      
+    }
+    this.define_by(json);
     this.lux = {
       created: LUX.From.db(this.created_at),
       read: this.read_at ? LUX.From.db(this.read_at) : null,
     };
-    this.title = $('<span/>',{text:this.data.type,css:{flexGrow:'1',marginLeft:'15px',textAlign:'left'}});
-    this.datetime = $('<span/>',{text:this.lux.created.date_or_time});
-    let options = Notification.options, box = $('<div/>',{class:'flexbox notification_options'});
-    $(options.open).on('click', this.open.bind(this)).appendTo(box);
-    $(options.check).on('click', this.mark_as_read.bind(this)).appendTo(box);
-    $(options.del).on('click', this.delete.bind(this)).appendTo(box);
-    if (this.lux.read) options.indicator.removeClass('unread');
-    Notification.list.obj.add_item({
-      append: [this.title,this.datetime,box,options.indicator],
-      value: this.id, position,
-    })
-    Notification.last = this;
-    Notification.trigger_update();
   }
   open () { 
-    log({open:this});
     let options = Notification.modal, modal = Notification.modal.ele;
     options.reset_header(`${this.data.type}<br>${this.data.description}`).reset_info();
     if (this.data.buttons) {
@@ -958,31 +1269,93 @@ class Notification {
     let info = this.data.details || {};
     if (info.location) options.header.append(`<br>${info.location}`);
     if (info.details) options.add_info(info.details);
+    this.mark_as_read();
+    this.ele.addClass('active');
     blurTop(modal);
   }
   mark_as_read () { Notification.mark_as_read([this.id]) }
   mark_as_unread () { Notification.mark_as_unread([this.id]) }
   delete () { Notification.delete([this.id]) }
-  static get all () { return Notification.list.obj.items.not('.no_items') }
-  static get selected_eles () { return Notification.list.obj.active }
-  static get selected_ids () { return Notification.list.obj.active_values }  
-  static get options () {
+  get list_transform () {
+    // log({this:this});
+    this.title = $('<span/>',{text:this.data.type,css:{flexGrow:'1',margin:'0 1em 0 1.5em',textAlign:'left'}});
+    this.datetime = $('<span/>',{text:this.lux.created.date_or_time});
+    let icons = Notification.icons, icon_box = $('<div/>',{class:'flexbox notification_options'});
+    icons.open.on('click', this.open.bind(this)).appendTo(icon_box);
+    icons.check.on('click', this.mark_as_read.bind(this)).appendTo(icon_box);
+    icons.del.on('click', this.delete.bind(this)).appendTo(icon_box);
+    if (this.lux.read) icons.indicator.removeClass('unread');
+    Notification.last = this;
+    let list_options = {
+      value: this.id,
+      append: [this.title,this.datetime,icon_box,icons.indicator],
+    };
+    if (this.position == 'top') list_options.position = 'top';
+    return list_options;
+  }
+  static list_transform (json) {
+    let notification = new Notification(json);
+    return notification.list_transform;
+  }
+  static post_add_fx (item) {
+    if (!item) return;
+    Notification.last.ele = item;
+    Notification.trigger_update();    
+  }
+  static format (key,value) {
+    let json = system.validation.json(value);
+    if (['string','number'].includes(typeof value) || json instanceof jQuery) return value;
+    else {
+      return (new KeyValueBox({
+        json, include_null:true,
+        empty_array_placeholder:'empty array',
+        transform_fx:Notification.format_nest, 
+        value_css: {wordBreak:'break-word',minWidth:'clamp(50%, 40em, 85%)'},
+        pair_css: {padding:'0.1em'}
+      })).ele; 
+    }
+  }
+  static format_nest (key,value) {
+    let json = system.validation.json(value);
+    if (['string','number'].includes(typeof value) || json instanceof jQuery) return value;
+    else {
+      return (new KeyValueBox({
+        json, include_null:true, inline_values:true,
+        empty_array_placeholder:'empty array',
+        transform_fx:Notification.format_nest, 
+        box_css: {justifyContent:'flex-start'},
+        key_css: {alignSelf:'center'},
+        value_css: {wordBreak:'break-word',borderRadius:'5px',border:'1px solid var(--gray50',margin:'2px',padding:'2px 4px'},
+        pair_css: {width:'unset',padding:'0.1em',border:'unset'}
+      })).ele; 
+    }
+  }
+
+  static get all () { return Notification.list.items.not('.no_items') }
+  static get selected_eles () { return Notification.list.active }
+  static get selected_ids () { return Notification.list.active_values }  
+  static get icons () {
     let indicator = $('<div/>',{class:'indicator unread'}),
-      open = new Image(), del = new Image(), check = new Image();
-    open.src = '/images/icons/open_arrow_yellow.png';
-    check.src = '/images/icons/checkmark_green.png'; 
-    del.src = '/images/icons/red_x.png';
-    return {indicator,open,check,del};
+      open = new Icon({type:'open',size:1.5}), 
+      del = new Icon({type:'styled_x',size:1.5}), 
+      check = new Icon({type:'checkmark',size:1.5});
+    return {indicator, open:open.img.addOpacityHover(), check:check.img.addOpacityHover(), del:del.img.addOpacityHover()};
   }
   static alert (count) { 
     Notification.sound.play().catch(error => {});
   }
-  static ele_by_ids (id_array) { return Notification.list.obj.find_by_value(id_array) }
+  static ele_by_ids (id_array) { return Notification.list.find_by_value(id_array) }
   static async mark_as_read (id_array = null) {
     let not_given = id_array === null || id_array instanceof jQuery.Event, n = Notification;
     let ids = not_given ? n.selected_ids : id_array, eles = not_given ? n.selected_eles : n.ele_by_ids(id_array);
+    log({ids});
     if (!ids) return;
+    if (ids.is_array() && ids.isEmpty()) {
+      Notification.none_selected.show({ele:$(this)});
+      return;
+    }
     eles.find('.unread').removeClass('unread');
+    // log({eles,id_array});
     let result = await $.ajax({
       method: 'POST',
       url: '/notification-update',
@@ -1004,6 +1377,10 @@ class Notification {
     let not_given = id_array === null || id_array instanceof jQuery.Event, n = Notification;
     let ids = not_given ? n.selected_ids : id_array, eles = not_given ? n.selected_eles : n.ele_by_ids(id_array);
     if (!ids) return;
+    if (ids.is_array() && ids.isEmpty()) {
+      Notification.none_selected.show({ele:$(this)});
+      return;
+    }
     eles.find('.indicator').addClass('unread');
     let result = await $.ajax({
       method: 'POST',
@@ -1020,12 +1397,16 @@ class Notification {
         feedback('Error','There was an error updating the selected notifications');
       }
     })
-    n.indicator_update();
+    n.indicator_update(false);
   }
   static async delete (id_array = null) {
     let not_given = id_array === null || id_array instanceof jQuery.Event, n = Notification;
     let ids = not_given ? n.selected_ids : id_array, eles = not_given ? n.selected_eles : n.ele_by_ids(id_array);
     if (!ids) return;
+    if (ids.is_array() && ids.isEmpty()) {
+      Notification.none_selected.show({ele:$(this)});
+      return;
+    }
     eles.slideFadeOut();
     n.dropdown.data('hold',true);
     setTimeout(function(){n.dropdown.removeData('hold')},500);
@@ -1061,305 +1442,766 @@ class Notification {
       url: '/notification-retrieve',
       data: { ids },
       success: function(response){
-        log({response});
         response.forEach(json => new Notification(json));
       },
       complete: function() {
         clearInterval(Notification.retrieve_interval);
-        Notification.retrieve_interval = setInterval(Notification.retrieve, 15*1000);
+        Notification.retrieve_interval = setInterval(Notification.retrieve, 3*60*1000);
       }
     })
   }
-  static select_all () { Notification.list.obj.items.not('.no_items').addClass('active') }
-  static unselect_all () { Notification.list.obj.items.removeClass('active') }
+  static select_all () { Notification.list.items.not('.no_items').addClass('active') }
+  static unselect_all () { Notification.list.items.removeClass('active') }
   static trigger_update () {
     if (Notification.update_timer) clearTimeout(Notification.update_timer);
     Notification.update_timer = setTimeout(Notification.check_height, 1000);
   }
   static check_height () { 
-    let n = Notification, list = n.list.obj.ul, box = list[0].getBoundingClientRect(), too_tall = list[0].scrollHeight > list.height() + 1, at_top = ( list[0].scrollTop == 0 ), at_bottom = ( list[0].scrollTop == list[0].scrollHeight - list.height()), both = n.list.up.add(n.list.down);
+    let n = Notification, list = n.list.ul, box = list[0].getBoundingClientRect(), too_tall = list[0].scrollHeight > list.height() + 1, at_top = ( list[0].scrollTop == 0 ), at_bottom = ( list[0].scrollTop == list[0].scrollHeight - list.height()), both = n.list.up.add(n.list.down);
     n.indicator_update();
     too_tall ? both.show() : both.hide();
     at_top ? n.list.up.removeClass('active') : n.list.up.addClass('active');
     at_bottom ? n.list.down.removeClass('active') : n.list.down.addClass('active');
   }
   static scroll_up () {
-    let top = Notification.list.obj.ul[0].scrollTop, half = Notification.list.obj.ul.height() / 2;
-    Notification.list.obj.ul.scrollTo(top - half, 400, {onAfter: Notification.check_height});
+    let top = Notification.list.ul[0].scrollTop, half = Notification.list.ul.height() / 2;
+    Notification.list.ul.scrollTo(top - half, 400, {onAfter: Notification.check_height});
   }
   static scroll_down () {
-    let top = Notification.list.obj.ul[0].scrollTop, half = Notification.list.obj.ul.height() / 2;
-    Notification.list.obj.ul.scrollTo(top + half, 400, {onAfter: Notification.check_height});
+    let top = Notification.list.ul[0].scrollTop, half = Notification.list.ul.height() / 2;
+    Notification.list.ul.scrollTo(top + half, 400, {onAfter: Notification.check_height});
   }
-  static indicator_update () { 
+  static indicator_update (flash_banner = true) { 
     let current = Notification.indicator_span.text() || 0,
       count = Notification.dropdown.find('.unread').length,
       diff = count - Number(current);
-    if (diff > 0) {
+    if (diff > 0 && flash_banner) {
       Notification.alert();
       let message = `${diff} new notifications`, onclick = null;
       if (diff == 1) {
         message = Notification.last.data.type;
         onclick = Notification.last.open.bind(Notification.last);
-      }
+        if (['Bug','Error'].some(t => message.includes(t))) Notification.banner.color_change('pink');
+      } else Notification.banner.color_reset();
       Notification.banner.message_update(message).onclick_update(onclick);
       Notification.banner.flash();
     }
     Notification.indicator_span.text(count);
     Notification.header_count.text(`(${count} unread)`);
-    if (Notification.dropdown.is(':visible') || count == 0) Notification.indicator.fadeOut();
-    else Notification.indicator.fadeIn();
+    if (Notification.dropdown.is(':visible') || count == 0) Notification.indicator.removeClass('active');
+    else Notification.indicator.addClass('active');
+  }
+  static update_list (json) {
+    log({json});
   }
   static set menu_ele (ele) { 
-    let n = Notification;
-    n.sound = new Audio('/sounds/notification_1.mp3');
-    n.menu_tab = $(ele);
-    n.dropdown = $(ele).find('.dropDown');
-    n.list = {};
-    n.list.ele = n.dropdown.find('.List');
-    n.list.obj = new List(n.list.ele.data('options').merge({ele:n.list.ele}));
-    n.list.zero_count = n.list.obj.add_item({text:'No notifications',selectable:false,class_list:'no_items'});
-    n.header_count = $('<div/>',{class:'pink',css:{fontSize:'0.6em',transform:'translateY(-0.5em)'}}).appendTo(n.list.obj.header);
-    n.list.json = system.validation.json(n.list.obj.json);
-    n.list.json.forEach(json => new Notification(json));
-    n.trigger_update();
-    n.indicator = $('<div/>',{class:'indicator'}).appendTo(n.menu_tab);
-    n.indicator_span = $('<span/>').appendTo(n.indicator);
-    n.banner = new Banner({color:'pink'});
-    n.modal = new OptionBox({id:'NotificationInfo',header_html_tag:'h1'});
-    n.modal.ele.hide();
-    let up = new Image(), down = new Image();
-    up.src = '/images/icons/arrow_up_purple.png';
-    down.src = '/images/icons/arrow_down_purple.png';
-    n.list.up = $('<div/>',{class:'arrow up'}).append(up).insertBefore(n.list.obj.ul)
-      .on('click', Notification.scroll_up);
-    n.list.down = $('<div/>',{class:'arrow down'}).append(down).insertAfter(n.list.obj.ul)
-      .on('click', Notification.scroll_down);
-    log({Notification});
+    // let n = Notification;
+    Notification.sound = new Audio('/sounds/notification_1.mp3');
+    Notification.menu_tab = $(ele);
+    Notification.dropdown = $(ele).find('.dropDown');
+    ele = Notification.dropdown.find('.List');
+    Notification.list = new List(ele.data('options').merge({
+      ele,
+      transform_fx: Notification.list_transform,
+      post_add_fx: Notification.post_add_fx,
+      no_item_text: 'No notifications',
+    }));
+    Notification.header_count = $('<div/>',{class:'pink',css:{fontSize:'0.6em',transform:'translateY(-0.5em)'}}).appendTo(Notification.list.header);
+    Notification.trigger_update();
+    Notification.retrieve_interval = setInterval(Notification.retrieve, 3*60*1000);
+    Notification.indicator = $('<div/>',{class:'indicator'}).appendTo(Notification.menu_tab);
+    Notification.indicator_span = $('<span/>').appendTo(Notification.indicator);
+    Notification.banner = new Banner({color:'green'});
+    Notification.modal = new OptionBox({
+      id:'NotificationInfo',
+      header_html_tag:'h1',
+      key_value_options: {transform_fx: Notification.format, pair_css:{marginTop:'0.5em'}, value_css: {wordBreak:'break-word',minWidth:'clamp(50%, 40em, 85%)'}},
+    });
+    Notification.modal.ele.hide();
+    Notification.none_selected = new Warning({text:'No notifications selected',justified:'center'});
+    let up = new Icon({type:'arrow',size:1, dir:'up'}), down = new Icon({type:'arrow',size:1, dir:'down'});
+    Notification.list.up = up.img.insertBefore(Notification.list.ul).on('click', Notification.scroll_up)
+    Notification.list.down = down.img.insertAfter(Notification.list.ul).on('click', Notification.scroll_down)
   }
 }
 class Autosave {
   constructor (options = {}) {
     try {
-      for (let option in options) {this[option] = options[option]}
-      if (!this.send) throw new Error(`Autosave must have a 'send' ajax call`);
+      this.define_by(options);
+      if (!this.send) throw new Error(`Autosave must have a 'send' ajax call or a function that returns a promise`);
       if (!this.obj) throw new Error(`Autosave must have an obj associated with it`);
-      if (this.ele) {
-        this.indicator = $(`<div/>`,{class:'autosave_indicator flexbox left'}).css({
-          position: 'sticky', top: this.ele.getTopOffset(), left: 0, zIndex: 49, height: 0,
-        }).slideFadeOut(0);
-        // this.ele.prepend(this.indicator);
-        this.indicator.prependTo(this.ele);
-      }
+      
+      this.show_status = this.show_status || false;
+      this.banner = new Banner({
+        color:'green', 
+        css: {textAlign:'center',lineHeight:'1',padding:'0.5em'},
+        class_list: 'flexbox',
+        initial_state: 'hide'
+      });
       this.delay = this.delay || 10000;
-      this.size = options.size || 2;
-      this.message = options.message || 'changes saved';
-      this.spinner = null;
+      this.size = this.size || 2;
+      this.message = this.message || 'changes saved';
+      log({autosave:this,obj:this.obj}, `new Autosave`);
     } catch (error) {
       log({error});
     }
-    log({autosave:this});
   }
 
   async trigger (options = {}) {
-    let easing_fx = options.easing_fx || 'easeInOutSine', message = options.message || null,
-      xhr = this.xhr;
-    if (message) this.message = message;
-    log({autosave:this},'autosave trigger');
-    let autosave = this, five_seconds_less = (this.delay - 5000 >= 0) ? this.delay - 5000 : this.delay;
-    if (this.timer_outer) clearTimeout(this.timer_outer)
-    if (this.timer_inner) clearTimeout(this.timer_inner)
-    if (this.bg) this.bg.slideFadeOut();
-    if (autosave.fadeout_timer != undefined) clearTimeout(autosave.fadeout_timer);
-    this.timer_outer = setTimeout(async function(){
-      if (autosave.indicator && autosave.spinner == null) autosave.circle_create();
-      autosave.timer_inner = setTimeout(async function(){
-        if (autosave.indicator) autosave.spinner = autosave.circle.spin(easing_fx);
-        autosave.xhr = await autosave.send();
-        let result = autosave.xhr;
-        if (autosave.indicator) {
-          clearInterval(autosave.spinner);
-          autosave.spinner = null;
-          if (!result.error) {
-            let checkmark = new Features.Icon({type:'checkmark',size:autosave.size});
-            autosave.bg.html('').append(checkmark.img,$(`<span/>`,{text: autosave.message}).css({fontSize:`${autosave.size/2}em`,marginLeft: '5px'})).on('click',function(){$(this).slideFadeOut(1000)});
-            autosave.fadeout_timer = setTimeout(function(){autosave.bg.slideFadeOut(1000,function(){$(this).remove()})},5000);            
-          } else {
-            let x = new Features.Icon({type:'red_x',size:autosave.size});
-            autosave.bg.html('').css({backgroundColor:'var(--pink10o)',borderColor:'var(--pink50)',color:'var(--pink)'}).append(x.img,$(`<span/>`,{text: result.error.message}).css({fontSize:`${autosave.size/2}em`,marginLeft: '5px'})).on('click',function(){$(this).slideFadeOut(1000)});
-            autosave.fadeout_timer = setTimeout(function(){autosave.bg.slideFadeOut(1000,function(){$(this).remove()})},5000);            
-          }
-        }
-        if (result.list_update && autosave.obj instanceof Models.Model) Models.Model.update_list(autosave.obj.type, result.list_update);
-        if (result.save_result && autosave.callback) autosave.callback(result.save_result);        
-      },5000)
-    }, five_seconds_less);
+    let pre_countdown_delay = (this.delay - 5000 >= 0) ? this.delay - 5000 : this.delay;
+    let countdown_time = Math.min(5000, this.delay);
+    let start_countdown = async _ => {
+      if (!this.circle) this.circle = this.new_circle();
+      else this.banner.message_update(this.circle.img);
+      this.circle.countdown(countdown_time, false, _ => {
+        this.circle.spin();
+      });
+      this.banner.show(countdown_time);
+    }
+    let send = async _ => {
+      this.result = await this.send();
+      if (!this.result) return;
+      if (this.show_status) {
+        this.circle.clearIntervals();
+        if (this.result.error) this.error_x();
+        else this.checkmark();
+        this.hide_timer = setTimeout(_ => {this.banner.hide()},5000);
+      }
+      this.handle_result();
+    }
+
+    clearTimeout(this.waiting);
+    clearTimeout(this.countdown_timer);
+    clearTimeout(this.send_timer);
+    clearTimeout(this.hide_timer);
+    // clearTimeout(this.spinner);
+    if (this.circle) this.circle.clearIntervals();
+
+    this.banner.color_reset();
+
+    if (this.show_status) {
+      if (pre_countdown_delay > 0) {
+        this.countdown_timer = setTimeout(start_countdown, pre_countdown_delay);
+      } else start_countdown();
+    }
+    
+    this.send_timer = setTimeout(send, this.delay);
+    
+    return;
   }
-  circle_create () {
-    this.bg = Autosave.background();
-    this.circle = new Features.Icon({type:'circle',size:this.size,color:'var(--green)'});
-    this.circle.dot.add(this.circle.dot2).css({opacity:0});
-    this.indicator.html('').append(this.bg.append(this.circle.svg)).slideFadeIn();
-    this.circle_loop();
-    log({circle: this.circle});
-    return this.circle;
+  new_circle () {
+    let circle = new Features.Icon({type:'circle',size:this.size,color:'green'});
+    this.banner.message_update(circle.img);
+    return circle;
   }
-  circle_loop (easing_fx = 'easeInOutCubic') {
-    let time = this.delay < 5000 ? this.delay : 5000, interval = time / 100, count = 0, circle = this.circle, circum = circle.circumference, bg = this.bg;
-    circle.ele.css({strokeDasharray: `${circum}rem ${circum}rem`,strokeDashoffset: `${circum}rem`});
-    let animation = setInterval(function(){
-      let percent = count / 100;
-      circle.ele.css({strokeDashoffset: `${circum - circum * percent}rem`, opacity: percent});
-      circle.dot.css({transform:`rotate(${3.6*count}deg)`, opacity: percent});
-      circle.dot2.css({opacity:percent});
-      if (percent*2 <= 100) bg.css({opacity:percent*2});
-      if (count == 100) clearInterval(animation);
-      count++;
-    },interval);
+  checkmark () {
+    let message = $(`<span/>`,{text: this.message}).css({fontSize:`${this.size/2}em`,marginRight: '5px'});
+    this.checkmark_ele = new Features.Icon({type:'checkmark',size:this.size});
+    this.banner.message_update(message, this.checkmark_ele.img);    
   }
-  static background () {
-    return $(`<div/>`,{class:'autosave_bg flexbox left'}).css({backgroundColor:'var(--green10o)',textAlign:'center',padding:'0.5em',borderRadius:'3px',opacity:0,border:'1px solid var(--green30)',color:'var(--green)',boxSizing:'border-box',lineHeight:'1'});
+  error_x (error_message = null) {
+    let message = $(`<span/>`,{text: error_message || this.result.error.message}).css({fontSize:`${this.size/2}em`,marginRight: '5px'});
+    this.error_x = new Features.Icon({type:'styled_x',size:this.size});
+    this.banner.color_change('pink');
+    this.banner.message_update(message, this.error_x.img);    
+  }
+  handle_result () {
+    if (this.result.list_update && this.obj instanceof Models.Model) {
+      Models.Model.update_list(this.obj.type, this.result.list_update);
+    }
+    if (this.callback) {
+      if (this.result.save_result && this.callback) this.callback(this.result.save_result);
+      else this.callback(this.result);
+    }
   }
 };
 class Icon {
   constructor (options) {
-    if (!options.type) throw new Error('type must be given');
-    if (!Icon[options.type]) throw new Error(`Icon.${options.type} does not exist`);
-    this.type = options.type;
-    this.data = Icon[options.type](options);
-    for (let attr in this.data) {
-      this[attr] = this.data[attr];
-    }
-    // let ele = this.ele || this.
-  }
-
-  spin (easing_fx = 'easeInOutSine') {
-    if (this.type != 'circle') throw new Error(`Trying to spin a ${this.type}!`);
-    let interval = 1000, circle = this, circum = circle.circumference, count = 0;
-    circle.ele.css({strokeDasharray: `${circum}rem ${circum}rem`,strokeDashoffset: 0});
-    circle.dot.css({transform:`rotate(0deg)`}).removeAttr('clip-path');
-    circle.dot2.css({transform:`rotate(0deg)`}).removeAttr('clip-path');
-    circle.g.css({transformOrigin:'50% 50%'});
-    let ease = jQuery.easing[easing_fx], dashOffset_start = -circum*0.15, rotate_start = 360*0.15, group_angle = rotate_start;
-    let spinner = null;
-    
-    circle.ele.animate({strokeDashoffset: `${dashOffset_start}rem`},{
-      duration:interval/4,
-      easing: 'easeInOutSine',
-      step: function (a, b) {
-        let percent = a / b.end;
-        circle.g.css({transform:`rotate(${rotate_start*percent}deg)`});
-        circle.dot.css({transform:`rotate(${rotate_start*percent}deg)`});
-      }, complete: function(){
-        spinner = setInterval(function(){
-          let increase_dash = (count % 200 < 100), up_percent = ease(0,count%100,1,100,100)/100;
-          let percent = increase_dash ? up_percent : ease(0,count%100,100,-99,100)/100, arc_delta = circum*0.7*percent, radian_delta = 360*0.7*percent;
-          circle.ele.css({strokeDashoffset: `${dashOffset_start - arc_delta}rem`});
-          circle.dot.css({transform:`rotate(${rotate_start + radian_delta}deg)`});
-          group_angle += 4;
-          circle.g.css({transform:`rotate(${group_angle}deg)`});
-          count++;
-        },interval/100);
-        circle.svg.addClass('spinner').data('class_obj',circle);
-        circle.spinner = spinner;
-
+    try {
+      if (!options.type) throw new Error('type must be given');
+      if (!Icon[options.type]) throw new Error(`Icon.${options.type} does not exist`);
+      this.define_by(options);
+      this.define_by(Icon[this.type](options));
+      this.img.addClass(`Icon ${options.type}`).data({initialized:true,class_obj:this});
+      if (this.class_list) this.img.addClass(this.class_list);
+      if (this.proxy) this.proxy.replaceWith(this.img);
+      if (this.css) this.img.css(this.css);
+      if (this.action) {
+        // this.img.css({opacity:0.6,cursor:'pointer'}).addOpacityHover();
+        this.img.addClass('clickable');
+        this.img.on('click', _ => { this.action.to_fx(this.action_data) });
       }
-    });
-    return this.spinner;
-  }
-  clear_spinner () {
-    clearInterval(this.spinner);
+    } catch (error) {
+      log({error,options});
+    }
   }
   static circle (options) {
-    let size = options.size || 3, color = options.color || 'var(--gray97)';
-    let stroke = size / 8;
-    if (stroke < 0.3) stroke = 0.3;
-    let radius = (size - stroke * 2) / 2,
-      circumference = radius * 2 * Math.PI;
-
+    let size = options.size || 4;
     let svg = document.createElementNS("http://www.w3.org/2000/svg", "svg"),
       circle = document.createElementNS("http://www.w3.org/2000/svg", "circle"),
-      dot = document.createElementNS("http://www.w3.org/2000/svg", "circle"),
-      dot2 = document.createElementNS("http://www.w3.org/2000/svg", "circle"),
-      rect_right = document.createElementNS("http://www.w3.org/2000/svg", "rect"),
-      clip_left = document.createElementNS("http://www.w3.org/2000/svg", "clipPath"),
-      rect_left = document.createElementNS("http://www.w3.org/2000/svg", "rect"),
-      clip_right = document.createElementNS("http://www.w3.org/2000/svg", "clipPath"),
-      defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+      g = document.createElementNS("http://www.w3.org/2000/svg", "g");
 
-    svg.setAttribute('width',`${size}rem`);
-    svg.setAttribute('height',`${size}rem`);
-    svg.append(defs);
-    $(defs).append(clip_left,clip_right);
-    clip_left.setAttribute('id','cut-off-left');
-      clip_left.append(rect_right);
-    rect_right.setAttribute('x','50%');
-      rect_right.setAttribute('y',0);
-      rect_right.setAttribute('width','50%');
-      rect_right.setAttribute('height','100%');
-    clip_right.setAttribute('id','cut-off-right');
-      clip_right.append(rect_left);
-    rect_left.setAttribute('x',0);
-      rect_left.setAttribute('y',0);
-      rect_left.setAttribute('width','50%');
-      rect_left.setAttribute('height','100%');
-    circle.setAttribute('stroke',color);
-      circle.setAttribute('stroke-width',`${stroke}rem`);
-      circle.setAttribute('fill','transparent');
-      circle.setAttribute('r',`${radius}rem`);
-      circle.setAttribute('cx',`${size / 2}rem`);
-      circle.setAttribute('cy',`${size / 2}rem`);
-    dot.setAttribute('fill',color);
-      dot.setAttribute('r',`${stroke/2}rem`);
-      dot.setAttribute('cx',`${size / 2}rem`);
-      dot.setAttribute('cy',`${size/2 - radius}rem`);
-      dot.setAttribute('clip-path',"url(#cut-off-left)");
-    dot2.setAttribute('fill',color);
-      dot2.setAttribute('r',`${stroke/2}rem`);
-      dot2.setAttribute('cx',`${size / 2}rem`);
-      dot2.setAttribute('cy',`${size/2 - radius}rem`);
-      dot2.setAttribute('clip-path',"url(#cut-off-right)");
-    $(circle).css({transform:'rotate(-90deg)',transformOrigin:'50% 50%'});
-    $(dot).css({transformOrigin:'50% 50%'});
-    $(dot2).css({transformOrigin:'50% 50%'});
+    svg.setAttribute('width',`${size}em`);
+    svg.setAttribute('height',`${size}em`);
+    circle.setAttribute('r',`${size / 2}em`);
+    circle.setAttribute('cx',`${size / 2}em`);
+    circle.setAttribute('cy',`${size / 2}em`);
+    $(svg).addClass(`${options.color || 'purple'}`);
+    $(svg).append($(g).append(circle));
 
-    let g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-      g.setAttribute('class','circle_group');
+    return {img:$(svg),circle};
+    // let size = options.size || 3, color = `var(--${options.color || 'gray'}70o)`;
+    // log({options,color},"CIRCLE OPTIONS");
+    // let stroke = size / 8;
+    // if (stroke < 0.3) stroke = 0.3;
+    // let radius = (size - stroke * 2) / 2,
+    //   circumference = radius * 2 * Math.PI;
+    // circle.setAttribute('r',`${radius}rem`);
+    // circle.setAttribute('cx',`${size / 2}rem`);
+    // circle.setAttribute('cy',`${size / 2}rem`);
 
-    $(g).append(circle,dot2,dot);
-    $(svg).append(g);
-    // .css({display:'inline-block',borderRadius:'50%',boxSizing:'border-box',border:`${stroke}rem dashed var(--green)`,width:`${size}rem`,height:`${size}rem`, transition: 'stroke-dashoffset 200ms, opacity 200ms'});
-    return {svg: $(svg), ele: $(circle), dot: $(dot), dot2: $(dot2), stroke, radius, circumference, g: $(g)};
+    // let svg = document.createElementNS("http://www.w3.org/2000/svg", "svg"),
+    //   circle = document.createElementNS("http://www.w3.org/2000/svg", "circle"),
+    //   dot = document.createElementNS("http://www.w3.org/2000/svg", "circle"),
+    //   dot2 = document.createElementNS("http://www.w3.org/2000/svg", "circle"),
+    //   rect_right = document.createElementNS("http://www.w3.org/2000/svg", "rect"),
+    //   clip_left = document.createElementNS("http://www.w3.org/2000/svg", "clipPath"),
+    //   rect_left = document.createElementNS("http://www.w3.org/2000/svg", "rect"),
+    //   clip_right = document.createElementNS("http://www.w3.org/2000/svg", "clipPath"),
+    //   defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+
+    // svg.setAttribute('width',`${size}rem`);
+    // svg.setAttribute('height',`${size}rem`);
+    // svg.append(defs);
+    // $(defs).append(clip_left,clip_right);
+    // clip_left.setAttribute('id','cut-off-left');
+    //   clip_left.append(rect_right);
+    // rect_right.setAttribute('x','50%');
+    //   rect_right.setAttribute('y',0);
+    //   rect_right.setAttribute('width','50%');
+    //   rect_right.setAttribute('height','100%');
+    // clip_right.setAttribute('id','cut-off-right');
+    //   clip_right.append(rect_left);
+    // rect_left.setAttribute('x',0);
+    //   rect_left.setAttribute('y',0);
+    //   rect_left.setAttribute('width','50%');
+    //   rect_left.setAttribute('height','100%');
+    // circle.setAttribute('stroke',color);
+    //   circle.setAttribute('stroke-width',`${stroke}rem`);
+    //   circle.setAttribute('fill','transparent');
+    //   circle.setAttribute('r',`${radius}rem`);
+    //   circle.setAttribute('cx',`${size / 2}rem`);
+    //   circle.setAttribute('cy',`${size / 2}rem`);
+    // dot.setAttribute('fill',color);
+    //   dot.setAttribute('r',`${stroke/2}rem`);
+    //   dot.setAttribute('cx',`${size / 2}rem`);
+    //   dot.setAttribute('cy',`${size/2 - radius}rem`);
+    //   dot.setAttribute('clip-path',"url(#cut-off-left)");
+    // dot2.setAttribute('fill',color);
+    //   dot2.setAttribute('r',`${stroke/2}rem`);
+    //   dot2.setAttribute('cx',`${size / 2}rem`);
+    //   dot2.setAttribute('cy',`${size/2 - radius}rem`);
+    //   dot2.setAttribute('clip-path',"url(#cut-off-right)");
+    // $(circle).css({transform:'rotate(-90deg)',transformOrigin:'50% 50%'});
+    // $(dot).css({transformOrigin:'50% 50%'});
+    // $(dot2).css({transformOrigin:'50% 50%'});
+
+    // let g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    //   g.setAttribute('class','circle_group');
+
+    // $(g).append(circle,dot2,dot);
+    // $(svg).append(g);
+
+    // return {img: $(svg), svg: $(svg), ele: $(circle), dot: $(dot), dot2: $(dot2), stroke, radius, circumference, g: $(g)};
+  }
+  static triangle (options) {
+    let size = options.size || 3, color = options.color || 'var(--gray97)';
+    let svg = document.createElementNS("http://www.w3.org/2000/svg", "svg"),
+      poly = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+    svg.setAttribute('width',`${size}em`);
+    svg.setAttribute('height',`${size}em`);
+    svg.setAttribute('viewBox','0 0 100 100');
+    poly.setAttribute('points','0,100 50,0 100,100');
+    poly.setAttribute('fill',color);
+    $(svg).append(poly);
+    return {img: $(svg), ele:poly};
   }
   static checkmark (options) {
-    let size = options.size || 5;
+    let size = options.size || 5, color = options.color || 'green';
     let checkmark = new Image();
-    checkmark.src = `/images/icons/checkmark_green.png`;
-    $(checkmark).css({width:`${size}em`,height:`${size}em`}).addClass('checkmark');
+    checkmark.src = `/images/icons/checkmark_${color}.png`;
+    $(checkmark).css({width:`${size}em`,height:`${size}em`}).addClass(color);
     return {img:$(checkmark)};
   }
-  static red_x (options) {
+  static styled_x (options) {
+    let size = options.size || 5, color = options.color || 'red';
+    let x = new Image();
+    x.src = `/images/icons/x_styled_${color}.png`;
+    $(x).css({width:`${size}em`,height:`${size}em`}).addClass(color);
+    return {img:$(x)};    
+  }
+  static plus_sign (options) {
+    let size = options.size || 2, color = options.color || 'yellow';
+    let plus_sign = new Image();
+    plus_sign.src = `/images/icons/plus_sign_${color}.png`;
+    $(plus_sign).css({width:`${size}em`,height:`${size}em`}).addClass(color);
+    return {img:$(plus_sign)};
+  }
+  static gears (options) {
     let size = options.size || 5;
     let x = new Image();
-    x.src = `/images/icons/x_styled_red.png`;
+    x.src = '/images/icons/settings_icon_yellow.png';
     $(x).css({width:`${size}em`,height:`${size}em`});
     return {img:$(x)};    
   }
-  static clear_spinners_all () {
-    $('.spinner').each((s,spinner) => {$(spinner).getObj().clear_spinner()});
+  static question_mark (options) {
+    let size = options.size || 5;
+    let x = new Image();
+    x.src = '/images/icons/question_mark_yellow.png';
+    $(x).css({width:`${size}em`,height:`${size}em`});
+    return {img:$(x)};    
   }
-  static clear_spinners_within (ele) {
-    $(ele).find('.spinner').each((s,spinner) => {$(spinner).getObj().clear_spinner()});
+  static reload (options) {
+    let size = options.size || 5, color = options.color || 'yellow';
+    let reload = new Image();
+    reload.src = `/images/icons/reload_${color}.png`;
+    $(reload).css({width:`${size}em`,height:`${size}em`}).addClass(color);
+    return {img:$(reload)};
+  }
+  static arrow (options) {
+    let size = options.size || 5, color = options.color || 'purple';
+    let arrow = new Image();
+    arrow.src = `/images/icons/arrow_${options.dir || 'up'}_${color}.png`;
+    $(arrow).css({width:`${size}em`,height:`${size}em`}).addClass(color);
+    if (options.dir) $(arrow).addClass(options.dir);
+    return {img:$(arrow)};
+  }
+  static open (options) {
+    let size = options.size || 5, color = options.color || 'yellow';
+    let open = new Image();
+    open.src = `/images/icons/open_arrow_${color}.png`;
+    $(open).css({width:`${size}em`,height:`${size}em`}).addClass(color);
+    if (options.dir) $(open).addClass(options.dir);
+    return {img:$(open)};
+  }
+
+  get box () { return this.img[0].getBoundingClientRect() }
+
+  clearIntervals () {
+    // log({circle:this},`clearing intervals c=${this.count}`);
+    clearInterval(this.spinner);
+    clearInterval(this.countdown_interval);
+  }
+  // static get spin_count () { return Icon.spinner_count == undefined ? Icon.spinner_count = 0 : Icon.spinner_count; }
+  spin () {
+    if (this.type != 'circle') throw new Error(`Trying to spin a ${this.type}!`);
+    log('SPIN');
+    this.img.removeClass('countdown');
+    this.img.addClass('spin');
+    setTimeout( _ => {
+      if (this.img.exists() && this.img.is(':visible')) {
+        if (this.img.parent().is('.blur.loading')) {
+          let msg = $(`<div/>`,{class:`blur_msg ${this.color}`,
+            text:'this seems to be taking a long time, please hold on'});
+          this.img.parent().append(msg);
+        }        
+      }
+    },20*1000)
+    return;
+  }
+  countdown (time = 5000, fadein = true, callback = null) {
+    log({time, fadein, callback},'COUNTDOWN');
+
+    clearTimeout(this.callback_timeout);
+    this.img.removeClass('spin');
+    this.img.addClass('countdown');
+    this.callback_timeout = setTimeout( _ => {
+      if (this.img.exists() && this.img.is(':visible')) callback.to_fx();
+    },5000);
   }
 };
+class Confirm {
+  constructor(options = {}) {
+    this.define_by(options);
+    this.box = new OptionBox({class_list:'confirmation'}.merge(options));
+    this.yes_btn = this.box.add_button({
+      text: this.yes_text || 'yes', class_list: 'pink yes', action: _ => {log({this:this}); this.result = true}
+    });
+    this.no_btn = this.box.add_button({
+      text: this.no_text || 'no', class_list:'no', action: _ => {log({this:this}); this.result = false}
+    });
+    if (this.hide_no_btn || this.force_yes) this.no_btn.ele.hide();
+    this.unblur_after_resolve = ifu(this.unblur_after_resolve, true);
+    this.unblur_after_no_response = ifu(this.unblur_after_no_response, true);
+    this.box.ele.hide();
+    if (this.immediate) this.prompt();
+  }
+  async callbacks (response, options) {
+    try {
+      log({response,options},'CALLBACKS');
 
-export const Features = {Notification, Button, Filter, Editable, OptionBox, List, UpDown, Toggle, ToolTip, Warning, Banner, Autosave, Icon};
+      if (this.unblur_after_resolve && [true,false].includes(response)) unblur();
+      if (this.unblur_after_no_response && response === null) unblur();
+      clearInterval(this.interval);
+      let affirm = options.affirm || this.affirm || null,
+        negate = options.negate || this.negate || null,
+        no_response = options.no_response || this.no_response || null;
+      if (response === true && affirm) affirm.to_fx(options);
+      else if (response === false && negate) negate.to_fx(options);      
+      else if (response === null && no_response) no_response.to_fx(options);
+      return response;
+    } catch (error) {
+      log({error,response,options,confirm:this});
+    }
+  }
+  async prompt (options = {}) {
+    log(options,'PROMPT');
+    if (options.header) this.box.reset_header(options.header);
+    if (options.message) this.box.reset_info(options.message);
+    if (options.button_info) this.box.reset_button_info(options.button_info);
+    if (options.yes_text) this.yes_btn.text_update(options.yes_text);
+    if (options.no_text) this.no_btn.text_update(options.no_text);
+    if (options.hide_no_btn) this.no_btn.ele.hide();
+    else if (options.show_no_btn) this.no_btn.ele.show();
+
+    let target = ifu(options.target, this.target, null);
+    if (target) blur(target, this.box.ele);
+    else blurTop(this.box.ele);
+    this.result = null;
+    this.promise = await new Promise(resolve => {
+      log({this:this},'inside promise');
+      this.waiting = setInterval( _ => { if (this.result != null) resolve(this.result); }, 50);
+      setTimeout( _ => { let r = this.force_yes ? true : null; resolve(r) }, options.timeout || this.timeout || 30000)
+      if (this.interval_fx) this.interval = setInterval( _ => this.interval_fx(), options.interval_time || this.interval_time || 1000);
+    }).then(response => { clearInterval(this.waiting); this.callbacks(response, options); return response; });
+    return this.promise;
+  }
+}
+class Blur {
+  constructor (options = {}) {
+    ToolTip.hide_all();
+    try {
+      this.define_by(options);
+      this.block = $('<div/>',{class:'blur',data:{class_obj:this}})
+      this.blurred_ele.prepend(this.block.append(this.modal_ele));
+      if (!['checkmark','loading'].includes(this.modal)) {
+        this.block.on('click', Blur.undo_by_click);
+        this.add_x();
+      } else if (this.modal == 'loading') {
+        let max = view().height, count = 0, bottom = this.icon.box.bottom;
+        while (this.icon.box.bottom + 5 > max && count < 100) {
+          this.icon.img.moveUp(10); count++;
+        }
+      }
+      // setTimeout( _ => { this.resize() },50)
+      this.resize();
+      Blur.list.push(this);
+    } catch (error) {
+      log({error,options})
+    }
+  }
+  get grandparent () { return this.block.parent().parent(); }
+  get is_chained () { return this.grandparent.is('.blur') }
+  get is_at_top () { return this.block.is('.blur_body') || this.grandparent.is('.blur_body') }
+  get is_fully_chained () {
+    if (this.block.is('.blur_body')) return true;
+    let is_chained = false, blur = this;
+    while (blur.is_chained) { 
+      if (blur.is_at_top) return true;
+      blur = blur.grandparent.getObj();
+    }
+    return false;
+  }
+
+  get blurred_ele () {
+    let ele = this.ele || Blur.top;
+    ele = $(ele);
+    if (ele.dne()) throw new Error('blur ele dne');
+    else if (!ele.is(':visible')) throw new Error('blur ele not visible');
+    else if (ele.is('body')) {
+      this.is_body = true;
+      let top = `${(window.pageYOffset || document.scrollTop) - (document.clientTop || 0)}px`;      
+      this.block.addClass('blur_body').css({top});
+      ele.addClass('blurred');
+    } else {
+      let blur = ele.children('.blur').first().getObj();
+      if (blur) blur.undo();
+      if (Blur.is_scrollable(ele, 2)) {
+        ele.addClass('blurred');
+        let top = `${ele[0].scrollTop}px`;
+        this.block.css({top});
+      }
+    }
+    return ele;
+  }
+  get modal_ele () {
+    if (!this.modal) throw new Error('modal not given');
+    let modal = $(this.modal);
+    if (this.modal == 'loading') {this.blurred_by_icon = true; modal = this.load_ele;}
+    else if (this.modal == 'checkmark') {this.blurred_by_icon = true; modal = $('#CheckmarkBlur');}
+    if (modal.dne()) throw new Error('modal ele dne');
+    modal.find('.blur_clear').remove();
+    return modal;
+  }
+  get load_ele () {
+    let circle = new Icon({type:'circle', size:4, color: this.color || 'purple'});
+    this.block.addClass('loading');
+    this.icon = circle;
+    circle.spin();
+    return circle.img;
+  }
+  get child () { return this.block.children().first() }
+  get parent () { return this.block.parent() }
+  set on_undo (fx) {
+    let undo_fx_array = this.undo_fx_array == undefined ? this.undo_fx_array = [] : this.undo_fx_array;
+    this.undo_fx_array.push(fx);
+  }
+
+  fade_undo (time = null) {
+    if (!time) this.undo();
+    else this.block.fadeOut(time, _ => { this.undo() })
+  }
+  undo () {
+    if (this.is_chained) Blur.reset_dimensions(this.parent);
+    this.block.children().appendTo("#ModalHome");
+    this.block.parent().removeClass('blurred');
+    this.block.remove();
+    this.remove_from_list();
+    if (this.undo_fx_array) this.undo_fx_array.forEach(fx => fx());
+    Banner.ContainerRepo();
+  }
+  remove_from_list () {
+    let i = Blur.list.indexOf(this);
+    Blur.list.splice(i,1);
+  }
+  add_x () {
+    let cancel_x = new Icon({type:'styled_x',size:0.75});
+    cancel_x.img.addClass('blur_clear').on('click', _ => {this.fade_undo(400)});
+    this.block.children().first().prepend(cancel_x.img);
+  }
+  
+  get child_overflows () { return Blur.is_scrollable(this.child) }
+  get child_width () { return this.child.width() }
+  get child_height () { return this.child.height() }
+  get parent_width () { return this.parent.outerWidth() }  
+  get parent_height () { return this.parent.outerHeight() }  
+  // set initial_width () 
+  // get initial_width () { return this.width || this.child}
+  async resize () {
+    if (!this.child_overflows || this.is_body) return;
+    let width_increase = () => { let width = this.parent_width + 10; this.parent.css({width},50) }
+    let height_increase = () => { let height = this.parent_height + 10; this.parent.css({height},50) }
+    let child_width = 0, child_height = 0;
+    // log({blur:this,parent:this.parent,child:this.child},"RESIZE");
+
+    // if (this.child_overflows) {
+    //   await new Promise((resolve,reject) => {
+    //     let interval = setInterval( _ => {
+    //       if (!this.child_overflows || child_width == this.child_width) {
+    //         clearInterval(interval); resolve(true); return;
+    //       }
+    //       log(`w+ child:${child_width} parent:${this.parent_width}`);        
+    //       width_increase();
+    //       child_width = this.child_width;
+    //     },50);
+    //   })      
+    // }
+    // if (this.child_overflows) {
+    //   await new Promise((resolve,reject) => {
+    //     let interval = setInterval( _ => {
+
+    //       if (!this.child_overflows || child_height == this.child_height) {
+    //         clearInterval(interval); resolve(true); return;
+    //       }
+    //       child_height = this.child_height;
+    //       height_increase();
+    //       log(`h+ child:${child_height} parent:${this.parent_height}`);        
+    //     },50);
+    //   })      
+    // }
+
+    // return;
+    while (this.child_overflows && child_width != this.child_width) { 
+      child_width = this.child_width;
+      width_increase();
+      // log(`w+ child:${child_width} parent:${this.parent_width}`);
+    }
+    while (this.child_overflows && child_height != this.child_height) { 
+      child_height = this.child_height;
+      height_increase();
+      // log(`h+ child:${child_height} parent:${this.parent_height}`);
+    }    
+  }
+  resize_old () {
+    if (!this.is_chained) return;
+    log('resize');
+
+    return;
+    let parent = this.block.parent(), child = this.block.children().first();
+    let ease = jQuery.easing.easeInOutSine, last_width = child.data('last_width');
+    let initial = {width: child[0].clientWidth, height: child[0].clientHeight, scroll: child[0].scrollHeight};
+    let initial_p = {width: parent[0].clientWidth, height: parent[0].clientHeight};
+    let width = {
+      is_full: () => last_width === child[0].clientWidth,
+      is_smaller: () => child[0].clientWidth < initial.width,
+      is_larger: () => child[0].clientWidth > initial.width,
+      ratio: {
+        parent_to_parent: () => parent.outerWidth() / parent.parent().outerWidth() * 100,  
+      },
+      max_increase: (proceed = true) => new Promise(resolve => {
+        if (!proceed) {log('width canceled'); resolve(false); return;}
+        let count = 1, minWidth = Math.min(95, width.ratio.parent_to_parent()), diff = 95 - minWidth;
+        let interval = setInterval(function(){
+          if (!height.child_overflow()) {clearInterval(interval);resolve(false)}
+          else if (width.is_full()) {clearInterval(interval);resolve(true)}
+          else {
+            let next = ease(0,count,minWidth,diff,diff*2);
+            last_width = child[0].clientWidth;
+            parent.css({minWidth:`${next}%`});
+            if (next == 95) {clearInterval(interval);resolve(true);}
+            count++;
+          }
+        },10)
+      }),
+      revert: () => {parent.css({minWidth: initial_p.width})},
+      no_change: (delay = 0) => new Promise(resolve => {
+        setTimeout(() => resolve(child[0].clientWidth === initial.width), delay); 
+      }),
+      delta: (delay = 0) => new Promise(resolve => {
+        setTimeout(() => resolve(child[0].clientWidth - initial.width), delay); 
+      }),
+    };
+    let height = {
+      client: {
+        no_change: (delay = 0) => new Promise(resolve => {
+          setTimeout(() => resolve(child[0].clientHeight === initial.height), delay);
+        }),
+        delta: (delay = 0) => new Promise(resolve => {
+          setTimeout(() => resolve(child[0].clientHeight - initial.height), delay); 
+        }),
+        is_smaller: () => child[0].clientHeight < initial.height,
+        is_larger: () => child[0].clientHeight > initial.height,
+      },
+      scroll: {
+        no_change: (delay = 0) => new Promise(resolve => {
+          setTimeout(() => resolve(child[0].scrollHeight === initial.scroll), delay);
+        }),
+        delta: (delay = 0) => new Promise(resolve => {
+          setTimeout(() => resolve(child[0].scrollHeight - initial.scroll), delay); 
+        }),          
+        is_smaller: () => child[0].scrollHeight < initial.scroll,
+        is_larger: () => child[0].scrollHeight > initial.scroll,
+      },
+      child_overflow: () => child[0].scrollHeight > child[0].clientHeight,
+      scroll_decrease: () => child[0].scrollHeight < initial.scroll,
+      client_decrease: () => child[0].clientHeight < initial.height,
+      ratio: {
+        parent_to_parent: () => parent.outerHeight() / parent.parent().outerHeight() * 100,
+        child_to_parent: () => child.outerHeight() / parent.outerHeight() * 100,
+      },
+      max_increase: (proceed = true) => new Promise(resolve => {
+        if (!proceed) {resolve(false); return;}
+        let count = 1, minHeight = Math.min(95, height.ratio.parent_to_parent()), diff = 95 - minHeight;
+        let interval = setInterval(function(){
+          if (!height.child_overflow()) {clearInterval(interval);resolve(false);}
+          else {
+            let next = ease(0,count,minHeight,diff,100);
+            parent.css({minHeight:`${next}%`});
+            if (next == 95) {clearInterval(interval);resolve(true);}
+            count++;
+          }
+        },10)                      
+      }),
+      shrink: () => new Promise(resolve => {
+        let count = 1, minHeight = Math.min(95, height.ratio.parent_to_parent()), diff = -minHeight;
+        let interval = setInterval(function(){
+          // if (height.ratio.child_to_parent() >= 94.9) {log(`shrink ratio ${height.ratio.child_to_parent()}`);clearInterval(interval);resolve(false);}
+          if (height.child_overflow()) {
+            clearInterval(interval);
+            while (height.child_overflow() && count > 1) {
+              count--;
+              let next = ease(0,count,minHeight,diff,100);
+              parent.css({minHeight:`${next}%`});                
+            }
+            resolve(true);
+          }
+          else {
+            let next = ease(0,count,minHeight,diff,100);
+            parent.css({minHeight:`${next}%`});
+            if (next == 0) {clearInterval(interval);resolve(true);}
+            count++;
+          }
+        },10)                      
+      }),
+    };
+    let client_delta = (delay) => Promise.all([width.delta(delay),height.client.delta(delay)]).then(arr => {return {width:arr[0], height:arr[1]}});
+    let no_change_client = (delay) => Promise.all([width.no_change(delay),height.client.no_change(delay)]).then(arr => arr.every(c => c === true));    
+
+    let resizeAll = async function(delay_to_evaluate_changes) {
+      let has_overflow = await width.max_increase(true).then(go => height.max_increase(go));
+      let changes = await client_delta(ifu(delay_to_evaluate_changes, 100));
+      if (changes.width == 0) width.revert();
+      // else if (changes.width < 0) width.shrink();
+      if (changes.height < 0) height.shrink();
+      // log(`width delta: ${changes.width} height delta: ${changes.height}`);
+      // log(`has overflow: ${has_overflow}`);
+      return 'hello';
+    }
+    setTimeout(resizeAll,20);
+
+  }
+
+  static is_scrollable (ele, margin = 0) { return ele[0].scrollHeight > ele[0].clientHeight + margin }
+  static reset_dimensions (ele) {
+    let style = ele.attr('style');
+    if (!style) return;
+    style = style.replace(/width: .*px;/, '').replace(/height: .*px;/, '');
+    ele.attr({style});
+  }
+  static get list () { return Blur.list_array === undefined ? Blur.list_array = [] : Blur.list_array }
+  static get top () {
+    let blur = [...Blur.list].reverse().find(b => b.is_fully_chained);
+    if (blur && blur.blurred_by_icon) { blur.undo(); blur = [...Blur.list].reverse().find(b => b.is_fully_chained); }
+    let ele_to_blur = blur ? blur.child : $('body');
+    log({ele_to_blur},`Blur.top ${ele_to_blur.attr('class')}`);
+    return ele_to_blur;
+
+    let ele = $('.blur').not('.loading, .checkmark').last().children().first();
+    let top = ele.closest('.blur_body').exists() && !ele.is('.loading') && !ele.is('.checkmark') ? ele : $('body');
+    log({top},`Blur.top ${top.attr('class')}`);
+    return top;
+  }
+  static undo (options = {}) {
+    let last = null;
+    if (options.ele) last = $(options.ele).children('.blur').first().getObj();
+    else last = Blur.list.last();
+    if (last.modal == 'loading' && options.exclude_loading) return;
+    if (last && options.time) last.fade_undo(options.time);
+    else if (last) last.undo();
+  }
+  static undo_by_click (ev) {
+    ev.stopPropagation();
+    if ($(ev.target).is('.blur')) Blur.undo({exclude_loading:true});
+    // let blur = $(ev.target).getObj('blur',false);
+    // if (!blur || blur.modal == 'loading') return;
+    // blur.undo();
+  }
+  static undo_all () {
+    log("UNDO all");
+  }
+}
+
+$(document).on('click','.cancel', Blur.undo);
+$(document).on('keyup', ev => { if (ev.keyCode == 27) Blur.undo({exclude_loading:true}) });
+$(document).on('scroll', ev => { ToolTip.hide_all() });
+
+export const Features = {Notification, Button, FilterNew, Editable, OptionBox, List, UpDown, Toggle, ToolTip, Warning, Banner, Autosave, Icon, KeyValueBox, Confirm, Blur};
 window.Notification = Notification;
 
 export class Menu {
   constructor(element,data){
     this.element = element;
-    this.element.data('class_obj', this);
+    this.element.data('class_obj', this).addClass(`menu${this.number}`);
     this.name = element.attr('id');
     this.tabs = element.find('.tab');
     this.target = data.target;
@@ -1375,9 +2217,9 @@ export class Menu {
       $(tab).on('click', {tabId:$(tab).attr('id')}, this.dropdownClick.bind(this));
       $(tab).data('hold',false);
       let after_fx = $(tab).data('afterdropdown');
-      if (after_fx) $(tab).data('afterdropdown', after_fx.to_fx() || null);
+      if (after_fx) $(tab).data('afterdropdown', after_fx.to_fx || null);
       let after_hide = $(tab).data('afterdropdownhide');
-      if (after_hide) $(tab).data('afterdropdownhide', after_hide.to_fx() || null);
+      if (after_hide) $(tab).data('afterdropdownhide', after_hide.to_fx || null);
     });
     this.image_tabs.each((t,tab) => {
       let image = new Image;
@@ -1395,6 +2237,7 @@ export class Menu {
     let active = this.links.filter((t,tab) => $(tab).attr('id') == tabs.get(this.name));
     return active.exists() ? active : null;
   }
+  get number() { return $('.menuBar').index(this.element) }
 
   clickActive(){
     if (this.active && this.target != 'window') this.active.click();
@@ -1414,18 +2257,16 @@ export class Menu {
     return !$(ev.target).parent().is(`#${ev.data.tabId}`);
   }
   linkClick(ev) {
-    $("#loading").remove();
-    let target = this.element.data('target'), uri = ev.data.uri, tabId = ev.data.tabId,
-    modal = $(ev.target).parents('.tab').filter((t,tab) => {return $(tab).data('modal') === true}).exists();
+    // $("#loading").remove();
+    let target = this.element.data('target'), uri = ev.data.uri, tabId = ev.data.tabId;
+      // modal = $(ev.target).parents('.tab').filter((t,tab) => {return $(tab).data('modal') === true}).exists();
     tabs.set(this.name, tabId);
-    if (this.loading && this.loading.readyState != 4) this.loading.abort();
+    if (this.loading && this.loading.readyState != undefined && this.loading.readyState != 4) this.loading.abort();
     this.hightlightActive();
     if (target == 'window') window.location.href = uri;
     else {
-      let circle = system.blur.modal.loading('var(--purple70o)',6).css({marginTop:'3em'})
-      $(target).html("").append(circle);
-      system.modals.reset();
-      this.loading = menu.fetch(uri, target);
+      // target = $(target).html("");
+      this.loading = Menu.fetch({url: uri, target, blur: {loading_color:'var(--purple70o'}});
     }
   }
   dropdownHover(ev){
@@ -1451,41 +2292,27 @@ export class Menu {
     if (showNow) this.dropdownShow(tab);
     else this.dropdownHide(tab);
   }
-}
-export const menu = {
-  list: () => $('.menuBar').get().map(menu => $(menu).getObj()),
-  get: name => menu.list().find(menu => menu.name == name) || null,
-  initialize: {
-    all: function(){
-      init('.menuBar', function() { new Menu($(this), $(this).data()) })
-      let x = 0, menu_list = menu.list(), count = menu_list.length;
-      while (x < menu_list.length){
-        if (x == 0) menu_list[x].element.addClass('siteMenu');
-        else if (x == 1) menu_list[x].element.addClass('topMenu');
-        else menu_list[x].element.addClass(`subMenu${x-1}`);
-        menu_list[x].element.css({marginBottom: x == count - 1 ? '1em':'unset'});
-        x++;
-      }
-    },
-  },
-  fetch: (url, target, replace_target = false) => {
-    let data = {}, method = 'GET';
-    if (typeof url == 'object') {
-      let options = url;
-      url = options.url;
-      target = options.target;
-      method = options.method || 'GET';
-      replace_target = options.replace_target || false;
-      data = options.data || {};
-    }
-    let new_modal = (typeof target == 'string' && target.includes('new_modal'));
+  static reload_tab () {
+    let current = $('.menuBar').last().getObj(), active = current.active, url = Menu.current_uri;
+    blur($(current.target),'loading');
+    Menu.fetch({url, target: current.target});
+  }
+  static async fetch (options = {}) {
+    let data = options.data || {}, method = options.method || 'GET', url = options.url, target = options.target, 
+      replace_target = options.replace_target || false, 
+      in_background = options.in_background || false, 
+      is_html = ifu(options.is_html, true),
+      new_modal = (typeof target == 'string' && target.includes('new_modal'));
+
+    if (!target) throw new Error('target missing');
     if (new_modal) {
-      blurTop('loading');
-      data.mode = 'modal';
-    }
-    if (target === 'same_tab') {
+      return Menu.new_modal(options);
+    } else if (target === 'same_tab') {
       target = $('.loadTarget').last();
-      blur(target, 'loading');
+      blur(target, 'loading', options.blur || {loading_color: 'var(--purple70o'});
+    } else if (options.blur) {
+      if (options.blur === true) options.blur = {};
+      blur(target,'loading', options.blur);
     }
     return $.ajax({
       url: url,
@@ -1493,42 +2320,62 @@ export const menu = {
       data: data,
       method: method,
       success: (response, status, request) => {
-        Icon.clear_spinners_all();
-        if (new_modal) {
-          let split = target.split(':'), id = split[1] || null, 
-            modal = id && $(`#${id}`).exists() ? $(`#${id}`) : $(`<div class='modalForm'${id ? `id='${id}'`:''}></div>`);
-          modal.html(response);
-          blurTop(modal);
-        } else {
+        // Icon.clear_spinners_all();
+        // Blur.undo();
+        // if (new_modal) {
+        //   let split = target.split(':'), id = split[1] || null, 
+        //     modal = id && $(`#${id}`).exists() ? $(`#${id}`) : $(`<div class='modalForm'${id ? `id='${id}'`:''}></div>`);
+        //   modal.html(response);
+        //   if (!in_background) blurTop(modal);
+        //   else modal.hide().appendTo('body');
+        // } else 
+        log({target});
+        Blur.undo({ele:$(target)});
+        if (is_html) {
+          // Blur.undo({ele:$(target)});
           if (replace_target) $(target).replaceWith(response);
           else $(target).html(response);
         }
         initialize.newContent();
+        return true;
       }
     });
-  },
-  reload: () => {
-    let current = $('.menuBar').last().getObj(), active = current.active, url = menu.current_uri;
-    log({current,active,url});
-    blur($(current.target),'loading');
-    menu.fetch(url, current.target);
+  }
+  static async new_modal (options = {}) {
+    log("YES NEW MODAL");
+    let target = options.target, in_background = options.in_background || false;
+    if (!in_background) blurTop('loading');
+    return $.ajax({
+      url: options.url || 'NO URL',
+      headers: system.validation.xhr.headers.list(),
+      data: options.data || {},
+      method: options.method || 'GET',
+      success: (response, status, request) => {
+        let split = target.split(':'), id = split[1] || null, 
+          modal = id && $(`#${id}`).exists() ? $(`#${id}`) : $(`<div class='modalForm'${id ? `id='${id}'`:''}></div>`);
+        modal.html(response);
+        if (!in_background) { unblur(); blurTop(modal); }
+        else modal.hide().appendTo('body');
+        initialize.newContent();
+        return true;
+      }
+    });
+  }
+  static async with_ (options = {}) {
+
+  }
+}
+window.Http = Menu;
+export const menu = {
+  list: () => $('.menuBar').get().map(menu => $(menu).getObj()),
+  get: name => menu.list().find(menu => menu.name == name) || null,
+  initialize: {
+    all: function(){
+      init('.menuBar', function() { new Menu($(this), $(this).data()) })
+    },
   },
   load: async (options) => {
-    let url = options.url || null,
-    target = $(options.target) || null,
-    callback = options.callback || null,
-    modal = options.modal || false,
-    blurred = options.blurred || false;
-    loadingColor = options.loadingColor || 'var(--darkgray97)';
-    if (!url || !target) {
-      log({error:{url:url,target:target}},'missing at least one: url || target');
-      return;
-    }
-    blur(target,'#loading');
-    // if (blurred) blur(target,'#loading');
-    // else target.html().append(system.blur.modal.loading(loadingColor).svg);
-    let result = await menu.fetch(url, target);
-    if (callback && typeof callback == 'function') callback();
+    throw new Error('EWWWWW');
   }
 }
 export const tabs = {
@@ -1543,7 +2390,6 @@ export const tabs = {
   clear: function(){tabs.list = {}},
   log: function(){console.log(tabs.list)}
 };
-
 export const system = {
   user: {
     current: null,
@@ -1552,6 +2398,7 @@ export const system = {
     isAdmin: function(){return (user.current && user.current.is_admin != undefined) ? user.current.is_admin : false;},
     set: function(userData){
       if (Object.isFrozen(user)) return;
+      console.log(userData);
       user.current = new Models.User(userData);
       if (user.current.is_super) {
         window.system = system;
@@ -1566,16 +2413,16 @@ export const system = {
       let form = $('#LoginForm'), data = form.answersAsObj();
       blur(form,'loading');
       $.ajax({
-          url:"/login",
-          method:"POST",
-          data:data,
-          success:function(data){
-              blur(form,"#checkmark");
-              setTimeout(function(){window.location.reload()},1000);
-          },
-          error:function(data){
-              unblur()
-          }
+        url:"/login",
+        method:"POST",
+        data:data,
+        success:function(data){
+          blur(form,"checkmark");
+          setTimeout(function(){window.location.reload()},1000);
+        },
+        error:function(data){
+          unblur()
+        }
       })
       // log({result});
     },
@@ -1602,325 +2449,33 @@ export const system = {
       })
     }
   },
-  notifications: {
-    current: [],
-    ele: null,
-    count_ele: null,
-    unread_count: null,
-    markAsUnreadBtn: null,
-    markAsReadBtn: null,
-    deleteBtn: null,
-    selectBtn: null,
-    allBtn: null,
-    limit: 1,
-    timer: null,
-    scroll: {
-      // list: $("#Notifications").find('.scrollList'),
-      // pos: () => notifications.ele.find('.scrollList')[0].scrollTop,
-      // is_at_top: () => {return notifications.scroll.pos() === 0},
-      // is_at_bottom: () => {
-      //   let scroll = notifications.scroll, list = scroll.list;
-      //   return scroll.pos() + list[0].offsetHeight === list[0].scrollHeight;
-      // },
-    },
-    add: notificationJson => {
-      notificationJson.forEach(notification => {
-        if (!notifications.ele.find('.notification').find('.title').get().find(
-          existing => $(existing).data('id') == notification.id)
-        ) {
-        // log({notification}, `new notification ${moment().format('h:mma')}`);
-          let node = $(`<div class='tab notification'><div class='title'><span class='selector'></span>${notification.type}<span class='indicator unread'></span></div></div>`);
-          node.prependTo(notifications.ele.find('.scrollList')).find('.title').data(system.validation.json(notification.data));
-          node.on('click',notifications.click);
-        }
-      })
-      notifications.update.list();
-    },
-    get: {
-      unread: async () => {
-        let unreadNotifications = await $.ajax('/notification-check');
-        let json = unreadNotifications.json_if_valid();
-        if (!json || $.isEmptyObject(json)) return;
-        notifications.add(json);
-        clearInterval(notifications.timer);
-        notifications.timer = setInterval(notifications.get.unread, 180000);
-      },
-      active: () => $("#Notifications").find(".list").find(".active"),
-      activeIds: () => notifications.get.active().get().map(notification => $(notification).data('id')),
-      count: () => notifications.get.active().length,
-    },
-    delete: async () => {
-      try{
-        let ele = notifications.ele.find('.list').is(':visible') ? notifications.ele.find('.list') : $("#Notification");
-        blur(ele,'#loading');
-        let ids = notifications.get.activeIds();
-        let result = await $.ajax({
-          url: '/notification-delete',
-          method: 'POST',
-          data: {ids: ids}
-        })
-        unblur();
-        log({notifications:notifications.get.active()});
-        if (result == 'checkmark') {
-          notifications.get.active().parent().slideFadeOut(400,function(){
-            $(this).remove();
-            notifications.update.list();
-            notifications.update.arrow_ele();
-          });
-        }else feedback('Error deleting','System admins have been notified.');
-        return result == 'checkmark';
-      }catch(error){
-        log({error});
-        return false;
-      }
-    },
-    // update: {
-    //   ajax: async (status) => {
-    //     let ids = notifications.get.activeIds();
-    //     if (!status) {log({error:'status not defined',status:status}); return;}
-    //     notifications.update.list(status);
-    //     let result = await $.ajax({
-    //       url: '/notification-update',
-    //       method: 'POST',
-    //       data: {ids: ids, status: status}
-    //     })
-    //     let reverse = (status == 'read') ? 'unread' : 'read';
-    //     if (result.trim() != 'checkmark') {
-    //       log({error:result},'notification error');
-    //       notifications.update.list(reverse);
-    //     }
-    //   },
-    //   list: (status = null) => {
-    //     if (status) {
-    //       let active = notifications.get.active();
-    //       if (status == 'unread') active.find('.indicator').removeClass('read').addClass('unread');
-    //       else if (status == 'read') active.find('.indicator').removeClass('unread').addClass('read');
-    //     }
-    //     let unreadCount = notifications.ele.find('.indicator.unread').length;
-    //     notifications.count_ele.find('span').text(unreadCount);
-    //     notifications.unread_count = unreadCount;
-    //     let totalCount = notifications.ele.find('.notification').length;
-    //     if (totalCount == 0 && notifications.ele.find('.noNotifications').dne()) {
-    //       let noNotifications = $(`<div class='tab noNotifications'><div class='title'>No notifications</div></div>`);
-    //       notifications.ele.find('.scrollList').prepend(noNotifications);
-    //     }else if (totalCount != 0) notifications.ele.find('.noNotifications').remove();
-    //   },
-    //   arrow_ele: () => {
-    //     let list = notifications.ele.find('.scrollList'), arrows = notifications.ele.find('.up,.down');
-    //     if (list[0].scrollHeight == list[0].offsetHeight) arrows.slideFadeOut();
-    //     else arrows.slideFadeIn();
-    //   }
-    // },
-    // click: (ev) => {
-    //   let notification = $(ev.target);
-    //   if (notification.parent().hasClass('noNotifications')) return;
-    //   if (notifications.limit == 1) {
-    //     notifications.ele.resetActives();
-    //     notification.addClass('active');
-    //     notifications.update.ajax('read');
-    //     notifications.open(notification);
-    //     notifications.update.list('read');
-    //   }else{
-    //     notification.toggleClass('active');
-    //   }
-    // },
-    // open: notification => {
-    //   let data = notification.data(), message = $("#Notification").find('.message'), options = $("#Notification").find('.options');
-    //   options.find('.button.temp').remove();
-    //   message.html(`<h2 class='purple'>${data.type}</h2><h3>${data.description}</h3><div class='split3366KeyValues'></div>`);
-    //   let list = message.find('.split3366KeyValues'),
-    //   details = system.validation.json(data.details), buttons = system.validation.json(data.buttons);
-    //   try{
-    //     $.each(details, (key,value) => {
-    //       if (value === null) value = 'none';
-    //       log({key,value,list});
-    //       value = notifications.handle[typeof value](value);
-    //       list.append(`<div class='label'>${key}</div>`);
-    //       list.append(value);
-    //     })
-    //   }catch(error){
+  practice: {
+    set: function(practice_data) {
 
-    //   }
-    //   if (data.model && data.uid) {
-    //     uids.set(data.model,data.uid);
-    //   }
-    //   if (buttons) {
-    //     buttons.forEach(button => {
-    //       let btnOptions = {
-    //         class_list: "small yellow temp",
-    //         appendTo: options.find('.tempBtns'),
-    //         text: button.text,
-    //       }
-    //       if (button.type == 'click') btnOptions.action = function(){unblurAll();$(button.target).click();}
-    //       else if (button.type == 'viewModel') btnOptions.action = function(){log({btn:data},'view model')}
-    //         new Features.Button(btnOptions);
-    //     });
-    //   }
-    //   blurTop("#Notification");
-    // },
-    handle: {
-      string: string => $(`<div class='value'>${string}</div>`),
-      number: number => $(`<div class='value'>${number}</div>`),
-      boolean: bool => $(`<div class='value'>${bool ? 'true' : 'false'}</div>`),
-      function: fx => $(`<div class='value'>FXFXFXFX</div>`),
-      array: array => {
-        let ele = $(`<div class='value' style='word-break:break-word;'></div>`);
-        array.forEach((item,i) => {
-          ele.append(`<span class='bold' style='position:absolute;'>${i}</span>`);
-          let vEle = $('<div style="margin-left:1.5em;"></div>').appendTo(ele);
-          vEle.append(notifications.handle[typeof item](item));
-        });
-        return ele;
-      },
-      object: object => {
-        if (Array.isArray(object)) return notifications.handle.array(object);
-        let ele = $(`<div class='value'></div>`), attrStrs = [];
-        var t, v, f;
-        try{
-          for (let attr in object){
-            if (object.hasOwnProperty(attr)){
-              let v = object[attr];
-              if (typeof v === 'object') v = system.display.format.readableJson(v);
-              ele.append(`<div><span class='bold' style='padding-right:0.5em'>${attr}:</span><span>${v}</span></div>`);
-            }
-          }
-        }catch(error){
-          log({error,v,t});
-        }
-        return ele;
-      }
+    }
+  },
+  cookie: {
+    get: name => {
+      if (!document.cookie.includes(name)) return undefined;
+      if (system.cookie.is_expired()) return undefined;
+      return document.cookie.split('; ').find(row => row.startsWith(name)).split('=')[1];   
     },
+    is_expired: _ => {
+      let date = document.cookie.split('; ').find(row => row.startsWith('expires')).split('=')[1];   
+      if (date === undefined) return false;
+      date = LUX.fromHTTP(date);
+      log({now:now(),date});
+      return now() > date;
+    },
+  },
+  notifications: {
     initialize: {
       all: function(){
-        // Notification.menu_ele = $('#Notifications');
-        // return;
         init('#Notifications',function(){
           Notification.menu_ele = $('#Notifications');
           return;
-          // Notification.dropdown = $("#Notifications").on('mouseenter',function(){
-          //   $(this).find('.indicator.count').animate({opacity:1});
-          // }).on('mouseleave',function(){
-          //   $(this).find('.indicator.count').animate({opacity:0.6});          
-          // });
-          // $.each(notifications.initialize, function(name, initFunc){
-          //   if (!['all'].includes(name) && typeof initFunc === 'function') initFunc();
-          // });
-          // notifications.update.list();
-          // if (notifications.timer) clearInterval(notifications.timer);
-          // notifications.timer = setInterval(notifications.get.unread, 180000);        
         })
       },
-      buttons: function(){
-        init([
-          [notifications.ele.find('.list').find(".tab"),function(){
-            $(this).on('click', {notification: $(this)}, notifications.click)
-          }],
-          [notifications.ele.find('.button.markAsUnread'), function(){
-            notifications.markAsUnreadBtn = new Features.Button({
-              ele: $(this),
-              action: notifications.update.ajax.bind(null,'unread'),
-              id: 'MarkSelectedAsUnreadBtn',
-            });
-          }],
-          [notifications.ele.find('.button.markAsRead'), function(){
-            notifications.markAsReadBtn = new Features.Button({
-              ele: $(this),
-              action: notifications.update.ajax.bind(null,'read'),
-              id: 'MarkSelectedAsReadBtn',
-            });
-          }],
-          [notifications.ele.find('.button.delete'), function(){
-            notifications.deleteBtn = new Features.Button({
-              ele: $(this),
-              action: notifications.delete,
-              id: 'DeleteSelectedBtn',
-            });
-          }],
-          [$("#Notification").find('.button.markThisAsUnread'), function(){
-            new Features.Button({
-              ele: $(this),
-              action: function(){
-                notifications.update.ajax('unread');
-                unblur();
-              },
-              id: 'MarkThisAsUnread',
-            });
-          }],
-          [$("#Notification").find('.button.deleteThis'), function(){
-            new Features.Button({
-              ele: $(this),
-              action: async function(){
-                let result = await notifications.delete();  
-                if (result) unblur();
-              },
-              id: 'DeleteThis',
-            });
-          }],
-          [notifications.ele.find('.button.selectMultiple'), function(){
-            notifications.deleteBtn = new Features.Button({
-              ele: $(this),
-              action: function(){
-                notifications.ele.toggleClass('multi');
-                if (notifications.limit == 1) notifications.limit = null;
-                else notifications.limit = 1;
-              },
-              id: 'SelectMultiBtn',
-            });
-          }],
-          ]);     
-      },
-      count: function(){
-        notifications.count_ele = $(`<span/>`,{
-          class:'indicator count flexbox',
-          html: `<span style='margin:1px 0 -1px 0'>${notifications.get.count()}</span>`
-        }).css({opacity:0.6}).appendTo(notifications.ele);
-      },
-      arrows: function(){
-        init(notifications.ele.find('.scrollList'),function(){
-          let list = $(this), scroll = notifications.scroll, up = notifications.ele.find('.up'), down = notifications.ele.find('.down');
-          down.css({backgroundColor:'var(--purple5'});
-          down.on('click',function(ev){
-            ev.preventDefault();
-            if (scroll.is_at_bottom()) return;
-            log({top:scroll.is_at_top},scroll.pos());
-            list.scrollTo(scroll.pos() + 200,{axis:'y',onAfter:function(){
-              if (scroll.is_at_bottom()) {
-                down.css({backgroundColor:'transparent'});
-                down.find('img').css({opacity:0.6});
-              }
-              if (!scroll.is_at_top()) up.css({backgroundColor:'var(--purple5'});
-            }});
-          }).on('mouseenter',function(){
-            if (!scroll.is_at_bottom()) {
-              $(this).find('img').css({opacity:1});
-              $(this).css({backgroundColor:'var(--purple10)'})
-            }
-          }).on('mouseleave',function(){
-            if ($(this).css('background-color') !== 'rgba(0, 0, 0, 0)') $(this).css({backgroundColor:'var(--purple5'});
-            $(this).find('img').css({opacity:0.6})
-          })
-          up.on('click',function(ev){
-            ev.preventDefault();
-            if (scroll.is_at_top()) return;
-            log({top:scroll.is_at_top},scroll.pos());
-            list.scrollTo(scroll.pos() - 200,{axis:'y',onAfter:function(){
-              if (scroll.is_at_top()) {
-                up.css({backgroundColor:'transparent'});
-                up.find('img').css({opacity:0.6});
-              }
-              if (!scroll.is_at_bottom()) down.css({backgroundColor:'var(--purple5'});
-            }});
-          }).on('mouseenter',function(){
-            if (!scroll.is_at_top()) {
-              $(this).find('img').css({opacity:1});
-              $(this).css({backgroundColor:'var(--purple10)'})
-            }
-          }).on('mouseleave',function(){
-            if ($(this).css('background-color') !== 'rgba(0, 0, 0, 0)') $(this).css({backgroundColor:'var(--purple5'});
-            $(this).find('img').css({opacity:0.6})
-          })
-        })
-      }
     },    
   },
   request: {
@@ -1929,7 +2484,8 @@ export const system = {
       let notifications = data.match(regex);
       if (notifications) {
         notifications = system.validation.json(notifications[1]);
-        if (notifications.notEmpty()) notifications.forEach(n => new Notification(n,'top'));
+        // if (notifications.notEmpty()) notifications.forEach(n => new Notification(n,'top'));
+        if (notifications.notEmpty()) notifications.forEach(n => Notification.list.add_item(n.merge({position:'top'})));
       }
       return data.replace(regex,'');
     },
@@ -1938,11 +2494,11 @@ export const system = {
       tabList = system.validation.json(xhr.getResponseHeader('X-Current-Tabs')),
       csrf = xhr.getResponseHeader('X-CSRF-TOKEN'),
       force_logout = xhr.getResponseHeader('X-FORCE-LOGOUT');
-      log({xhr,json:xhr.responseJSON,responsetext:xhr.responseText},settings.url);
+      log({xhr,response:xhr.responseJSON},`${now().time} ${settings.url}`);
       let exclude_from_reload = [
         'notification', '/list', 'save/', 'edit','/options-nav','/delete','modal'
       ];
-      if (!exclude_from_reload.some(e => settings.url.includes(e))) menu.current_uri = settings.url;
+      if (!exclude_from_reload.some(e => settings.url.includes(e))) Menu.current_uri = settings.url;
       if (force_logout != null && force_logout.toBool()) system.request.force_logout();
       if (uidList) {
         if (uidList === 'null') uids.clear();
@@ -1950,10 +2506,6 @@ export const system = {
       }
       if (tabList) tabs.set(tabList);
       if (csrf) $('meta[name="csrf-token"]').attr('content',csrf);
-      // if (unreadNotifications) {
-      //   if (unreadNotifications === 'send ajax') notifications.get.unread();
-      //   else notifications.add(unreadNotifications);
-      // }    
     },
     force_logout: (forced = false) => {
       if (forced) {
@@ -1961,23 +2513,27 @@ export const system = {
         form.append(`<input name='reason' hidden='true' value='due to inactivity'>`)
         form.submit();
       }else{
-        $("#Confirm").find('.confirmN').hide();
+        let count = $(`<div/>`,{text:'30', class:'bold pink xbig'});
         confirm({
           header: 'Session Expiring',
-          message: 'For security reasons you will be logged out shortly<br><span class="count" style="font-size:1.3em;font-weight:bold;color:var(--pink);">30</span>',
-          btntext_yes: 'stay signed in',
-          btntext_no: 'dismiss',
-          interval: function(){
-            let count = $("#Confirm").find('.count'), n = Number($("#Confirm").find('.count').text());
+          count: count,
+          message: $('<div>For security reasons you will be logged out shortly</div>').append(count),
+          yes_text: 'stay signed in',
+          hide_no_btn: true,
+          immediate: true,
+          unblur_after_no_response: false,
+          interval_fx: function(){
+            let n = Number(count.text());
             count.text(n - 1);
           },
-          callback_no_response: function(){
-            $("#Confirm").find('.count').text('LOGGING OUT');
+          timeout: 30000,
+          no_response: function(){
+            count.text('LOGGING OUT');
             let form = $(`<form action='/portal/logout' method='post'></form>`).appendTo('body');
             form.append(`<input name='reason' hidden='true' value='due to inactivity'>`)
             form.submit();
           },
-          callback_affirmative: () => {unblur();$.ajax('/keep-session'); $("#Confirm").find('.confirmN').show();}
+          affirm: function() { $.ajax('/keep-session'); }
         });
       }
     },
@@ -1991,11 +2547,10 @@ export const system = {
         system.user.initialize();
         system.ui.initialize();
         system.display.initialize();
+        model.initialize();
         menu.initialize.all();
         notifications.initialize.all();
-        if (forms !== undefined) forms.initialize.all();
-        // if (notifications !== undefined) notifications.initialize.all();
-        if (table !== undefined) table.initialize.all();          
+        forms.initialize.all();
         resizeElements();
         masterStyle();
       }catch(error){
@@ -2065,230 +2620,6 @@ export const system = {
       return initialize.selection;
     },
   },
-  blur: {
-    element: (options) => {
-      ToolTip.hide_all();
-      let ele = options.ele,
-      modal = options.modal,
-      time = options.time || 400,
-      callback = options.callback || null,
-      loadingColor = options.loadingColor || 'var(--darkgray97)',
-      blurCss = options.blurCss || null,
-      delay = options.delay || 0;
-      if (!ele || !modal) {log({error:{options,ele,modal,time,callback}},'missing ele or modal'); return;}
-      if (!$(ele).isSolo()) {log({error:{ele,modal,time,callback}},'ele not found'); return;}
-      else ele = $(ele);
-      if (ele.find('.blur').exists()) unblur({ele});
-      if (modal == '#loading' || modal == 'loading') modal = system.blur.modal.loading({loadingColor,ele});
-      else if (modal == '#checkmark' || modal == 'checkmark') modal = system.blur.modal.checkmark();
-      else if (!$(modal).isSolo()) {log({error:{ele,modal,time,callback}},'invalid modal'); return;}
-      else modal = $(modal);
-
-      if (Forms.FormEle.waiting_for_list(modal)) {
-        let orig_options = {}.merge(options), interim_options = {}.merge(options).merge({modal:'loading'});
-        system.blur.element(interim_options);
-        let waiting = setInterval(function(){
-          if (!Forms.FormEle.waiting_for_list(modal)) {
-            clearInterval(waiting);
-            system.blur.element(orig_options);
-          }
-        },100)
-        return;
-      }
-
-      if (ele.is(modal)) {log({error:{ele,modal,time,callback}},'ele is modal'); return;}
-      if (ele.is('body')) {
-        unblurAll();
-      }
-
-      ele.css(system.blur.ele.css(ele,modal));
-      modal.css(system.blur.modal.css(ele,modal));
-      system.blur.modal.addX(modal);
-
-      let block = $("<div class='blur'></div>").css(system.blur.block.css(ele, modal));
-      if (blurCss) block.css(blurCss);
-      try{
-        block.prependTo(ele).show();
-        block.append(modal);
-        system.blur.resize(ele, modal);
-        if (callback && typeof callback == 'function') setTimeout(callback, time+delay);
-      }catch(error){
-        log({error,options},'blur error');
-      }
-      system.display.initialize();
-      return modal;
-    },
-    topmost: (modal, options = {}) => {
-      let top = system.blur.block.top();
-      if (top) {
-        let child = top.children().first();
-        if (child.hasClass('loading') || child.hasClass('checkmark')){
-          options.ele = top.parent();
-          options.ele.find('.blur').remove();
-        }else options.ele = child;
-      }
-      else {
-        options.ele = $("body");
-        options.loadingColor = options.loadingColor || 'var(--darkgray97)';
-      }
-      options.modal = modal;
-      return system.blur.element(options);
-    },
-    resize: (ele, modal) => {
-      // log({ele,modal});
-      if (ele.is('body')) return;
-      let count = 0;
-      let maxHeight = ele.parent().height() * 0.96 - 1;
-      if (modal[0].scrollHeight > ele.height()) ele.height(modal[0].scrollHeight);
-      else ele.css('height','auto');
-    },
-    modal: {
-      loading: (options) => {
-        let loadingColor = options.loadingColor || 'var(--darkgray97)', size = options.size || 4;
-        let circle = new Features.Icon({type:'circle', size:size, color:loadingColor});
-        menu.spinner = circle.spin();
-        circle.svg.addClass('loading').data('spinner',circle.spinner);
-        return circle.svg;
-      },
-      checkmark: () => $('#CheckmarkBlur'),
-      addX: (modal) => {
-        if (modal.is('.loading') || modal.is('.checkmark')) return;
-        let options = modal.children('.options'), has_option_box = options.exists(), append_ele = has_option_box ? options : modal, btn_size = has_option_box ? 'xsmall' : 'small';
-        if (modal.find('.cancel').dne()) $(`<div class='cancel button ${btn_size}'>dismiss</div>`).appendTo(append_ele);
-        if (modal.find('.cancelX').dne()) $("<div class='cancel cancelX'>x</div>").appendTo(append_ele);
-        if (has_option_box) modal.find('.cancel.button').appendTo(append_ele);
-      },
-      css: (ele, modal) => {
-        let css = {
-          position: "absolute",
-          left: "50%",
-          top: "50%",
-          transform: "translate(-50%,-50%)",
-          boxShadow: '0 0 40px 10px var(--gray70)',
-          display: 'block',
-          margin: 'auto',
-          borderColor: 'var(--darkgray70)'
-        };
-        if (ele.is('body')) css.merge({boxShadow: "0 0 40px 0 var(--gray)"});
-        if (modal.is('.checkmark')) {
-          css.merge({
-            borderRadius: "50%",
-            padding: "2em 2em",
-            boxShadow: "0 0 20px 10px rgba(230,230,230,0.4)",
-            backgroundColor: "var(--green10o)",
-            border: "2px solid green"        
-          })
-        } else if (modal.is('.loading')) css.boxShadow = 'unset';
-        return css;
-      },
-      top: () => system.blur.block.top().children().first(),
-    },
-    ele: {
-      css: (ele, modal) => {
-        let css = {
-          overflowY: 'hidden',
-        };
-        return css;
-      }
-    },
-    block: {
-      css: (ele, modal) => {
-        let css = {
-          position: 'absolute',
-          width: '100%',
-          height: '100%',
-          top: '0',
-          left: '0',
-          padding: '0 !important',
-          margin: '0 !important',
-          backgroundColor: 'var(--darkgray97)',
-          zIndex: '52',
-        }
-        if (ele.is('body')) {
-          let top = (window.pageYOffset || document.scrollTop) - (document.clientTop || 0);
-          if (isNaN(top)) top = 0;          
-          css.merge({
-            height: '100vh', top,
-            boxShadow: '0 0 20px 10px rgb(110,110,110) inset',
-          });
-          if (modal.is('.loading')) css.merge({backgroundColor:'var(--darkgray10'});
-        } else {
-          css.top = ele[0].scrollTop;
-          if (!ele.isInside('blur')) {
-            css.backgroundColor = 'var(--white80)';
-            // css.boxShadow = 'unset';
-            css.zIndex = 50;
-          }
-        }
-        return css;
-      },
-      top: () => {
-        let top = $('.blur').last().exists() ? $('.blur').last() : null;
-        return top;
-      }
-    },
-    undo: (options) => {
-      let callback = options.callback || null,
-      delay = options.delay || 400,
-      fade = options.fade || null,
-      top = system.blur.block.top(),
-      repeat = options.repeat || null,
-      ele = options.ele || null;
-      ToolTip.hide_all();
-      if (ele) {
-        if ($(ele).dne()) throw new Error(`can't unblur because ele doesn't exist`);
-        else if ($(ele).find('.blur').dne()) return;
-        Icon.clear_spinners_within(ele);
-        ele.find('.blur').remove();
-        return;
-      }
-      if (top.find('.browserContent').exists()) {
-        top.find('.browserContent').find('.closeicon').click();
-        return;
-      }
-
-      if (fade) {
-        top.fadeOut(fade,function(){
-          top.find('.loading').each((c,circle) => clearInterval($(circle).data('spinner')));
-          top.children().appendTo('#ModalHome');
-          top.parent().css({overflowY:'auto',height:'auto'});
-          $(this).remove();
-        });
-      }else {
-        if (!top) return;
-        top.find('.loading').each((c,circle) => clearInterval($(circle).data('spinner')));
-        top.children().appendTo('#ModalHome');
-        top.parent().css({overflowY:'auto',height:'auto'});
-        top.remove();
-      }
-      if (repeat && repeat > 1) {
-        repeat--;
-        let next = system.blur.undo.bind(null,{fade,callback,repeat});
-        log({next});
-        if (fade) setTimeout(next, fade+50);
-        else next();
-      } else if (callback && typeof callback == 'function') setTimeout(callback, delay);
-      Icon.clear_spinners_within('#ModalHome');
-    },
-    undoAll: (options) => {
-      let callback = options.callback || null,
-        delay = options.delay || 400,
-        fade = options.fade || 400,
-        all = $(".blur");
-      if (fade) {
-        all.fadeOut(fade,function(){
-          all.children().appendTo('#ModalHome');
-          all.parent().css({overflowY:'auto',height:'auto'});
-          all.remove();
-        });
-      }else {
-        all.children().appendTo('#ModalHome');
-        all.parent().css({overflowY:'auto',height:'auto'});        
-        all.remove();
-      }
-      if (callback && typeof callback == 'function') setTimeout(callback, delay);
-    }
-  },
   ui: {
     initialize: () => {
       initAlt('.button', 'generic_fx', function(){
@@ -2301,6 +2632,14 @@ export const system = {
           let callback = system.ui.feedback.callback;
           if (callback && typeof callback == 'function') callback();
         })
+      })
+      init('.OptionBox',function(){
+        new OptionBox($(this));
+      });
+      init('.list_update', function(){
+        let data = $(this).data();
+        new Models.ModelList(data);
+        $(this).remove();
       })
     },
     pointer: {
@@ -2318,9 +2657,10 @@ export const system = {
       }
     },
     keyboard: {
+      with_alt_key: ev => ev.altKey || ev.metaKey || ev.ctrlKey,
       allow_these_keys: (input, values) => {
         $(input).on('keydown',function(ev){
-          if (!system.ui.keyboard.key_match(ev.key, values)) {
+          if (!system.ui.keyboard.key_match(ev.key, values) && !system.ui.keyboard.with_alt_key(ev)) {
             input.warn(`<i>${ev.key}</i> not allowed`);
             ev.preventDefault();
           }
@@ -2369,26 +2709,24 @@ export const system = {
     confirm: {
       interval: null,
       prompt: async (settings) => {
-        if (typeof settings != 'object'){
-          feedback('error','confirm requires object parameter');
-          log({error:'using old confirm',settings:settings},'old confirm');
-          return;
-        }
         let header = settings.header || 'Confirm',
-        message = settings.message || 'Confirming something but no message given',
-        btntext_yes = settings.btntext_yes || 'confirm',
-        btntext_no = settings.btntext_no || 'cancel',
-        delay = settings.delay || null,
-        callback_affirmative = settings.callback_affirmative || null,
-        callback_negative = settings.callback_negative || null,
-        callback_no_response = settings.callback_no_response || null,
-        interval = settings.interval || null,
-        modal = $("#Confirm");
+          message = settings.message || 'Confirming something but no message given',
+          yes_text = settings.yes_text || 'confirm',
+          no_text = settings.no_text || 'cancel',
+          delay = settings.delay || null,
+          affirm = settings.affirm || null,
+          negate = settings.negate || null,
+          callback_no_response = settings.callback_no_response || null,
+          interval = settings.interval || null,
+          modal = $("#Confirm");
+        if (callback_no_response == 'negate') callback_no_response = negate;
+        if (callback_no_response == 'affirm') callback_no_response = affirm;
+
         if (typeof header == 'string') header = $(`<h2 class='purple'>${header}</h2>`);
         if (typeof message == 'string') message = $(`<div>${message}</div>`);
         modal.find('.message').html("").append(header).append(message);
-        modal.find('.confirmY').text(btntext_yes);
-        modal.find('.confirmN').text(btntext_no);
+        modal.find('.confirmY').text(yes_text);
+        modal.find('.confirmN').text(no_text);
         blurTop("#Confirm");
         let confirmed = await new Promise((resolve,reject) => {
           modal.on('click','.confirmY, .resolve',function(){resolve(true)});
@@ -2399,21 +2737,24 @@ export const system = {
           },30000)
         }).catch(error => {
           clearInterval(system.ui.confirm.interval);
-          if (callback_no_response && typeof callback_no_response == 'function') callback_no_response();
-          else if ($('#Confirm').is(':visible')) unblur();
         })
         if (delay){
-          setTimeout(system.ui.confirm.handleCallback.bind(null,confirmed,callback_affirmative,callback_negative),delay);
+          setTimeout(function(){
+            system.ui.confirm.handleCallback(confirmed,affirm,negate,callback_no_response);
+          },delay);
         }else{
-          system.ui.confirm.handleCallback(confirmed,callback_affirmative,callback_negative);
+          system.ui.confirm.handleCallback(confirmed,affirm,negate,callback_no_response);
         }
+        log({confirmed});
         return confirmed;
       },
-      handleCallback: (confirmed, affirmative, negative) => {
+      handleCallback: (confirmed, affirmative, negative, no_response) => {
         clearInterval(system.ui.confirm.interval);
-        log({confirmed,affirmative,negative});
-        if (confirmed && affirmative) affirmative();
-        else if (!confirmed && negative) negative();
+        let clear = function(){if ($('#Confirm').is(':visible')) unblur();}
+        
+        if (confirmed && affirmative) { log('affirm'); clear(); affirmative(); }
+        else if (!confirmed && negative) { log('negate'); negative(); clear(); }
+        else if (no_response) { log('no response'); no_response(); clear(); }
       }
     },
     feedback: {
@@ -2439,38 +2780,16 @@ export const system = {
           a = 'client';
           e = document.documentElement || document.body;
       }
-      return { width: e[a+'Width'] - system.ui.scroll.bar_width(), height: e[a+'Height'] }
+      let top = (window.pageYOffset || document.scrollTop) - (document.clientTop || 0);
+      return { 
+        width: e[a+'Width'] - system.ui.scroll.bar_width(), 
+        height: e[a+'Height'],
+        top: Number.isNaN(top) ? 0 : top
+      }
     },
     body_dimensions: () => {return {width: $('body').outerWidth(), height: $('body').outerHeight()}}
   },
   validation: {
-    settings: {
-      decode: (value) => {
-        try {
-          if (value.is_array()) return value;
-          else if (typeof value == 'string') return value.toBool();
-          else {
-            //obj of Bool values to array of key names
-            let array = [];
-            for (let setting_name in value) {
-              let val = value[setting_name].toBool();
-              if (val) array.push(setting_name.addSpacesToKeyString());
-            }
-            return array;            
-          }
-        } catch (error) {
-          log({error});
-        }
-        return value;
-      },
-      get: (settings_obj, string = null, fall_back = null) => {
-        if (typeof settings_obj != 'object') throw new Error(`1st parameter must be object, ${typeof settings_obj} given`);
-        if (typeof string != 'string' && string !== null) throw new Error(`2nd parameter must be string, ${typeof string} given`);
-        if (!string) return settings_obj;
-        let value = string.get_obj_val(settings_obj, true);
-        return value != null ? system.validation.settings.decode(value) : fall_back;
-      }
-    },
     xhr: {
       headers: {
         list: () => {
@@ -2516,6 +2835,11 @@ export const system = {
         }
       }
     },
+    csrf: {
+      get: _ => {
+        return $('meta[name="csrf-token"]').attr('content');
+      }
+    },
     json: data => {
       if (typeof data !== 'string'){return data;}
       try {
@@ -2548,6 +2872,30 @@ export const system = {
           log({error});
         }
       },
+    },
+    address: {
+      parse: (options = {}) => {
+        try {
+          let components = options.components || null,
+            unit = options.unit || null,
+            format = options.format || 'short',
+            as_array = ifu(options.as_array, true),
+            include_unit = ifu(options.include_unit, true);
+          if (!components) return [];
+          let str = '', obj = {}, types = ['street_number','route','locality','administrative_area_level_1','country','postal_code','postal_code_suffix'], type_regex = new RegExp(`(${types.join('|')})`,'g');
+          let get = type => { 
+            let match = components.find(c => c.types.includes(type));
+            return match ? match[`${format}_name`] : '';
+          };
+          let line_array = array => {return array.map(line => line.replaceAll(type_regex, match => get(match)));};
+          let array = line_array(['street_number route','locality, administrative_area_level_1 postal_code']);
+          if (unit && include_unit) array.splice(1, 0, unit);
+          return array;
+        } catch (error) {
+          log({error});
+          return null;
+        }
+      }
     },
     input: {
       date: (input) => {
@@ -2598,6 +2946,13 @@ export const system = {
           let val = input.val();
           if (val.length < 5) input.warn('Must be at least 5 characters');
         });
+        input.on('keydown',function(ev){
+          let v = $(this).val(), l = v.length, k = ev.key;
+          if (l >= 14 && !['Backspace','Tab'].includes(k) && !k.includes('Arrow') && !$(this).hasSelectedText()) {
+            ev.preventDefault();
+            input.warn('Max length is 14');
+          }
+        })        
         return input;
       }
     },
@@ -2617,15 +2972,25 @@ export const system = {
   },
   display: {
     initialize: () => {
-      init($('.KeyValueBox').filter(':visible'),function(){
-        let ele = $(this), options = ele.data('options');
-        new KeyValueBox(options.merge({ele}));
+      init($('.KeyValueBox'),function(){
+        let ele = $(this), options = ele.data('options') || ele.data();
+        let new_box = new KeyValueBox(options.merge({ele}));
       });
-      // init($('.List'),function(){
-      //   let ele = $(this), options = ele.data('options');
-      //   new List(options.merge({ele}));
-      // })
+      init($('.List'),function(){
+        let ele = $(this), options = ele.data('options') || ele.data();
+        new List(options.merge({ele}));
+      });
+      init($('.Icon'),function(){
+        let proxy = $(this), options = proxy.data('options') || proxy.data();
+        new Icon(options.merge({proxy}));
+      });
+      init('.Table', function() {
+        let ele = $(this), options = ele.data('options') || ele.data();
+        new Models.Table(options.merge({ele}));
+      });
+
       system.display.size.footer.adjust_body_padding();
+      system.display.size.footer.adjust_full_splash();
     },
     format: {
       readableJson: json => {
@@ -2651,8 +3016,9 @@ export const system = {
             let w = ele.outerWidth();
             ele.css({width:px_to_rem(w)});
           } catch (error) {
-            log({error});
+            log({error,ele});
           }
+
         }
       },
       px_to_rem: (px = null) => {
@@ -2669,18 +3035,25 @@ export const system = {
         adjust_body_padding: () => {
           let height = $('footer').outerHeight();
           $('body').css({paddingBottom:height});
+        },
+        adjust_full_splash: () => {
+          let height = $('footer').outerHeight();
+          $('.splash.top.full').css({height:`calc(100vh - ${height}px)`});
         }
       }
     }
   },
   warn: (options = {}) => {
     try{
-      let string = ifu(options.string, 'warning'),
+      let string = ifu(options.string, options.message, options.text, 'warning'),
         ele = ifu(options.ele, null),
         position = ifu(options.position, 'above'),
+        justified = ifu(options.justified, 'left'),
         time = ifu(options.time, 2000),
         callback = ifu(options.callback, null),
-        no_message = options.no_message || false;
+        no_message = options.no_message || false,
+        fade = ifu(options.fade, true);
+      if (no_message) return;
 
       ele = $(ele);
       if (!ele || ele.dne()) {log({ele}, 'no elements selected'); alert('no elements selected'); return;}
@@ -2693,39 +3066,46 @@ export const system = {
 
 
       let warning = $(`<div/>`,{
-        css: {
-          position: 'absolute', backgroundColor: 'white', color: 'var(--pink)', boxShadow: '0 0 5px 5px var(--pink70)', fontWeight: '700', padding: '0.2em 0.5em', borderRadius: '4px', border: '1px solid var(--pink)', opacity: '0', zIndex: 99
-        },
+        class: 'Warning',
         html: string,
-      })
+      });
       let css = {}, ele_box = ele[0].getBoundingClientRect(), ele_x = ele_box.x, ele_h = ele_box.height, ele_offset = ele.offset(),warning_box = warning[0].getBoundingClientRect(), warning_x = warning_box.x, warning_h = warning_box.height, warning_offset = warning.offset(), diff_x = ele_x - warning_x, diff_x_abs = Math.abs(ele_x - warning_x);
-      if (position == 'above') css = {position: 'fixed', left: ele_box.x, top: ele_box.y, transform: 'translateY(-120%)'};
+      if (position == 'above') {
+        css = {left: ele_box.x, top: ele_box.y, transform: 'translateY(-120%)'};
+        if (justified == 'center') {
+          css.merge({left: ele_box.x + ele_box.width / 2, transform: 'translate(-50%, -120%)'});
+        }
+      }
       else {
         log({position}, `position not defined: ${position}`);
         alert(`position not defined: ${position}`);
         return;
       }
-      if (!no_message) warning.appendTo('body').css(css).slideFadeIn();
+      warning.appendTo('body').css(css).slideFadeIn();
 
       if (ele.is('input, textarea, select, ul')) ele.addClass('borderFlash');
-      if (time != null) {
+      // time => delay
+      // if (fade && time) {
+
+      // }
+      if (fade && time) {
         setTimeout(function(){
-          warning.slideFadeOut(1000, function(){warning.remove();});
+          warning.slideFadeOut(1000, _ => {warning.remove();});
           ele.removeClass('borderFlash');
           if (callback && typeof callback == 'function') callback();
         }, time + 400);      
       }else {
-        warning.on('click',function(){$(this).slideFadeOut(function(){$(this).remove()})})
+        warning.on('click', _ => {warning.slideFadeOut(_ => {warning.remove()})})
       }
     }catch(error) {
-
+      log({error});
     }
   },
 };
 
 window.user = system.user;
 window.initialize = system.initialize;
-window.modal = system.blur.modal;
+// window.modal = system.blur.modal;
 window.get_rem_px = system.display.size.font.get_root;
 window.get_em_px = (selector) => system.display.size.font.get_ele_font_size(selector);
 window.fix_width = system.display.size.width.fix;
@@ -2733,25 +3113,34 @@ window.body = () => system.ui.body_dimensions();
 window.view = () => system.ui.viewport_dimensions();
 window.px_to_rem = px => system.display.size.px_to_rem(px);
 window.rem_to_px = rem => system.display.size.rem_to_px(rem);
-window.blur = (ele, modal, options = {}) => system.blur.element({ele:ele,modal:modal}.merge(options));
-window.blurInstant = (ele, modal) => system.blur.element({ele:ele,modal:modal,time:0});
-window.blurTop = (modal, options = {}) => system.blur.topmost(modal, options);
-window.blurTopGet = () => system.blur.block.top();
+// window.fit_to_size = (parent,child,delay) => system.blur.resize(parent,child,delay);
+// window.blur = (ele, modal, options = {}) => system.blur.element({ele:ele,modal:modal}.merge(options));
+window.blur = (ele, modal, options = {}) => {new Blur({ele,modal}.merge(options))};
+// window.blurInstant = (ele, modal) => system.blur.element({ele:ele,modal:modal,time:0});
+// window.blurTop = (modal, options = {}) => system.blur.topmost(modal, options);
+window.blurTop = (modal, options = {}) => {new Blur({modal}.merge(options))};
+// window.blurTopGet = (non_icon = false) => system.blur.block.top(non_icon);
+// window.unblur = (options = {}) => {
+//     let repeat = typeof options == 'number' ? options : options.repeat || null;
+//     if (typeof options != 'object') options = {};
+//     let callback = options.callback || null,
+//       delay = options.delay || 400,
+//       fade = options.fade || null,
+//       ele = options.ele || null;
+//     system.blur.undo({callback,delay,fade,repeat,ele});
+//   };
 window.unblur = (options = {}) => {
-    let repeat = typeof options == 'number' ? options : options.repeat || null;
-    if (typeof options != 'object') options = {};
-    let callback = options.callback || null,
-      delay = options.delay || 400,
-      fade = options.fade || null,
-      ele = options.ele || null;
-    system.blur.undo({callback,delay,fade,repeat,ele});
+    Blur.undo(options);
   };
 window.unblurAll = (options = {}) => {
-    let callback = options.callback || null,
-    delay = options.delay || 400,
-    fade = options.fade || null;
-    system.blur.undoAll({callback,delay,fade});
+    Blur.undo_all(options);
   };
+// window.unblurAll = (options = {}) => {
+//     let callback = options.callback || null,
+//     delay = options.delay || 400,
+//     fade = options.fade || null;
+//     system.blur.undoAll({callback,delay,fade});
+//   };
 window.feedback = (header, message, delay = null, callback = null) => {
     if (typeof delay == 'function') {
       callback = delay;
@@ -2759,7 +3148,8 @@ window.feedback = (header, message, delay = null, callback = null) => {
     }
     system.ui.feedback.display(header, message, delay, callback);
   };
-window.confirm = settings => system.ui.confirm.prompt(settings),
+window.confirrm = settings => system.ui.confirm.prompt(settings);
+window.confirm = options => new Confirm(options);
 window.init = function(ele, fx){
   if (debug.level(1)) log({ele}, typeof ele == 'string' ? ele : 'jquery obj');
   if (Array.isArray(ele)) {
@@ -2828,6 +3218,7 @@ export const practice = {
     window.tz = tz;
     LuxonSettings.defaultZoneName = tz;
     window.now = () => LUX.NOW;
+    if (user.isSuper()) window.practice = practice;
     Object.freeze(practice);
   },
   get: function(key){
@@ -2847,7 +3238,6 @@ $(document).ready(function(){
   if (userInfo) user.set(userInfo);
   if (practiceInfo) practice.set(practiceInfo);
   initialize.newContent();
-  // const_map = {user,menu,model};
 })
 
 var systemModalList = ['Confirm','Warn','Error','Feedback','Refresh','Notification','ErrorMessageFromClient','AutoSaveWrap'];
@@ -2862,32 +3252,19 @@ var systemModalList = ['Confirm','Warn','Error','Feedback','Refresh','Notificati
   };
 })(jQuery);
 
-function slideFadeOut(elem, time = 400, callback = null) {
-  let t = "opacity "+time+"ms", fade = {opacity: 0, transition: t};
-  elem.css(fade).delay(100).slideUp(time, function(){ /*$(this).css({opacity:1})*/ } );
 
-  if (callback && typeof callback == 'function') setTimeout(callback,time+101);
-}
-function slideFadeIn(elem, time = 400, callback = null){
-  let t = "opacity "+time+"ms", solid = {opacity: 1, transition: t};
-  elem.css("opacity","0");
-  elem.slideDown(time).delay(100).css(solid);
-
-  if (callback && typeof callback == 'function') setTimeout(callback,time+101);
-}
-
-$.fn.getObj = function(type = null, include_parents = true) {
+$.fn.getObj = function(type = null, include_parents = true, include_self = true) {
   let obj = null;
   try {
     if (type) {
-      let this_obj = $(this).data('class_obj');
+      let this_obj = include_self ? $(this).data('class_obj') : undefined;
       if (this_obj != undefined && $(this).is(`.${type}`)) obj = this_obj;
       else if (include_parents) {
-        let ele = $(this).closest(`.${type}`);
+        let ele = include_self ? $(this).closest(`.${type}`) : $(this).parents(`.${type}`).first();
         while (ele.exists()) {
           let ele_obj = ele.data('class_obj');
           if (ele_obj) {obj = ele_obj; break;}
-          ele = ele.closest(`.${type}`);
+          ele = ele.parent().closest(`.${type}`);
         }
       }
     }else {
@@ -2904,15 +3281,19 @@ $.fn.getObj = function(type = null, include_parents = true) {
     }
     if (!obj) throw new Error('class_obj not found');
   }catch (error) {
-    log ({error,ele:this});
+    // log ({error,ele:this});
+    return null;
   }
   return obj;
 }
 $.fn.parentModal = function() {
   return $(this).closest('.blur').parent();
 }
-$.fn.fixWidth = function() {
-  this.each((e,ele) => fix_width(ele));
+$.fn.replaceText = function(regex, replace) {
+  this.get().forEach(ele => {
+    let text = $(ele).text().replace(regex, replace);
+    $(ele).text(text);
+  });
   return this;
 }
 $.fn.addHoverClassToggle = function () {
@@ -2921,19 +3302,70 @@ $.fn.addHoverClassToggle = function () {
 }
 $.fn.addOpacityHover = function () {
   let initial = $(this).css('opacity');
-  $(this).data('opacity_initial',initial);
-  this.on('mouseenter',function(){$(this).animate({opacity:1})}).on('mouseleave',function(){$(this).animate({opacity:$(this).data('opacity_initial')})});
+  if (initial == 1) { initial = 0.6; $(this).css({opacity:initial}) }
+  this.on('mouseenter',function(){$(this).animate({opacity:1})})
+      .on('mouseleave',function(){$(this).animate({opacity:initial})});
+  return this;
 };
+
+$.fn.cssTransition = function (time) {
+  try {
+    let transition = this.css('transition');
+    transition = `${transition.replace(/opacity ([\d|\.]*)(ms|s)( ease \d*s)?(, |\b)/g, '')}`;
+    if (!transition || transition == 'all 0s ease 0s') transition = `opacity ${time}ms`;
+    else transition += `, opacity ${time}ms`;
+    this.css({transition});
+  }  catch (error) {
+    log({error, ele:this, original_transition_value});
+  }
+  return this;
+};
+// $.fn.saveOpacity = function (value = null) {
+//   let opacity = Number(this.css('opacity'));
+//   this.data({opacity});
+//   if (value !== null) this.changeOpacity(value);
+//   return this;
+// };
+// $.fn.changeOpacity = function (value) {
+//   this.css({opacity:value});
+//   return this;
+// };
+$.fn.resetOpacity = function () {
+  let opacity = this.data('opacity') || 1;
+  this.css({opacity});
+  return this;
+}
 $.fn.slideFadeOut = function (time = 400, callback = null) {
-  if (typeof time === 'function'){ callback = time; time = 400; }
-  if (callback && typeof callback == 'function') slideFadeOut(this, time, callback.bind(this));
-  else slideFadeOut(this, time, null);
+  try {
+    if (this.dne()) return;
+    if (typeof time === 'function'){ callback = time; time = 400; }
+    callback = typeof callback == 'function' ? callback.bind(this) : null;
+
+    this.each((x,ele) => {
+      let e = $(ele);
+      e.cssTransition(time).css({opacity:0}).delay(100).slideUp(time);
+      setTimeout( _ => e.resetOpacity(), time+101);
+    })
+    if (callback) setTimeout(callback, time+101);
+  } catch (error) {
+    log({error, time, callback, ele:this});
+  }
   return this;
 };
 $.fn.slideFadeIn = function (time = 400, callback = null) {
-  if (typeof time == 'function'){ callback = time; time = 400; }
-  if (callback && typeof callback == 'function') slideFadeIn(this, time, callback.bind(this));
-  else slideFadeIn(this, time, null);
+  try {
+    if (this.dne()) return;
+    if (typeof time === 'function'){ callback = time; time = 400; }
+    callback = typeof callback == 'function' ? callback.bind(this) : null;
+
+    this.each((x,ele) => {
+      let e = $(ele);
+      // e.cssTransition(0).css({opacity:0});
+      e.cssTransition(time).slideDown(time).delay(100).resetOpacity();
+    })
+  } catch (error) {
+    log({error, time, callback, ele:this});
+  }
   return this;
 };
 $.fn.slideFadeToggle = function (time = 400, callback = null){
@@ -2944,6 +3376,22 @@ $.fn.slideFadeToggle = function (time = 400, callback = null){
   if (this.is(':visible')) this.slideFadeOut(time, callback);
   else this.slideFadeIn(time, callback);
 }
+
+$.fn.moveUp = function (px = 1) {
+  this.get().forEach(ele => {
+    let top = $(ele).css('top').replace('px','');
+    top = top - px;
+    $(ele).css({top});
+  })
+}
+$.fn.moveLeft = function (px = 1) {
+  this.get().forEach(ele => {
+    let left = $(ele).css('left').replace('px','');
+    left = left - px;
+    $(ele).css({left});
+  })
+}
+
 $.fn.isVisible = function(padding = 15) {
   let parent_blur = this.isInside('.blur') ? this.closest('.blur').children().first() : null;
   let ele_box = this[0].getBoundingClientRect(), bottom = window.innerHeight, right = window.innerWidth - system.ui.scroll.bar_width(), top = 0, left = 0;
@@ -3003,9 +3451,10 @@ $.fn.warn = function (string = 'warning', options = {}){
   system.warn({
     ele: this,
     string: string,
-    position: ifu(options.position, 'above'),
-    time: ifu(options.time, 2000),
-    callback: ifu(options.callback, null),
+    position: options.position || 'above',
+    time: options.time || 2000,
+    callback: options.callback || null,
+    fade: ifu(options.fade, true),
   });
   return this;
 }
@@ -3064,10 +3513,8 @@ $.fn.dne = function(){
 $.fn.isSolo = function(){
   return this.exists() && this.length === 1;
 }
-$.fn.isInside = function(selector){
-  if (typeof selector != 'string') throw new Error(`Selector must be string, ${typeof selector} given`);
-  // log({selector,ele:this.closest(selector)});
-  return this.closest(selector).exists();
+$.fn.isInside = function(selector, include_self = true){
+  return include_self ? this.closest(selector).exists() : this.parent().closest(selector).exists();
 }
 $.fn.appendKeyValuePair = function (key,value) {
   $(this).append($("<div class='label'>"+key+"</div><div class='value'>"+value+"</div>"))
@@ -3358,53 +3805,53 @@ $(document).ajaxError(function(ev,xhr,settings,error){
 //   }
 // }
 
-function alertBox(message, ele, where = 'below', time = 1500, offset = null){
-  var hEle = ele.outerHeight(), wEle = ele.outerWidth(), wrap, wAlert, hAlert, readonly = ele.attr('readonly'), css;
-  if (ele.parent().is('.number')) hEle = ele.parent().outerHeight();
-  // if (ele.is('.radio, .checkboxes')){
-  //   console.log(hEle);
-  // }
-  if (time=="nofade"){
-    wrap = $('<span class="zeroWrap a"><span class="alert">'+message+'</span></span>');
-    time = 2000;
-  }else{
-    wrap = $('<span class="zeroWrap a f"><span class="alert f">'+message+'</span></span>');
-  }
+// function alertBox(message, ele, where = 'below', time = 1500, offset = null){
+//   var hEle = ele.outerHeight(), wEle = ele.outerWidth(), wrap, wAlert, hAlert, readonly = ele.attr('readonly'), css;
+//   if (ele.parent().is('.number')) hEle = ele.parent().outerHeight();
+//   // if (ele.is('.radio, .checkboxes')){
+//   //   console.log(hEle);
+//   // }
+//   if (time=="nofade"){
+//     wrap = $('<span class="zeroWrap a"><span class="alert">'+message+'</span></span>');
+//     time = 2000;
+//   }else{
+//     wrap = $('<span class="zeroWrap a f"><span class="alert f">'+message+'</span></span>');
+//   }
 
-  if ($.inArray(ele.css('position'), ['fixed','absolute','relative']) == -1){
-    ele.css('position','relative');
-  }
-  wrap.appendTo("body");
-  wAlert = wrap.find('.alert').outerWidth();
-  hAlert = wrap.find('.alert').outerHeight();
-  if (where=="after"){
-    wrap.insertBefore(ele);
-    css = {top:0.5*hEle,left:wEle+5};
-  }else if (where=="ontop"){
-    wrap.appendTo(ele);
-    css = {top:0.5*hEle,left:0.5*wEle-0.5*wAlert};
-  }else if (where=="before"){
-    wrap.insertBefore(ele);
-    css = {top:0.5*hEle,left:-wAlert-5};
-  }else if (where=="above"){
-    wrap.insertBefore(ele);
-    css = {left:0.5*wEle,top:-hAlert-5};
-  }else if (where=="below"){
-    wrap.insertBefore(ele);
-    css = {left:0.5*wEle,bottom:-1.05*hAlert};
-  }
+//   if ($.inArray(ele.css('position'), ['fixed','absolute','relative']) == -1){
+//     ele.css('position','relative');
+//   }
+//   wrap.appendTo("body");
+//   wAlert = wrap.find('.alert').outerWidth();
+//   hAlert = wrap.find('.alert').outerHeight();
+//   if (where=="after"){
+//     wrap.insertBefore(ele);
+//     css = {top:0.5*hEle,left:wEle+5};
+//   }else if (where=="ontop"){
+//     wrap.appendTo(ele);
+//     css = {top:0.5*hEle,left:0.5*wEle-0.5*wAlert};
+//   }else if (where=="before"){
+//     wrap.insertBefore(ele);
+//     css = {top:0.5*hEle,left:-wAlert-5};
+//   }else if (where=="above"){
+//     wrap.insertBefore(ele);
+//     css = {left:0.5*wEle,top:-hAlert-5};
+//   }else if (where=="below"){
+//     wrap.insertBefore(ele);
+//     css = {left:0.5*wEle,bottom:-1.05*hAlert};
+//   }
 
-  wrap.css(css);
+//   wrap.css(css);
 
-  if (offset!==null){
-    $(".alert").css("transform","translate("+offset+")");
-  }
+//   if (offset!==null){
+//     $(".alert").css("transform","translate("+offset+")");
+//   }
 
-  setTimeout(function(){
-    $(".zeroWrap.a.f, .alert.f").slideFadeOut(600,function(){$(".zeroWrap.a.f, .alert.f").remove();})
-  },time)
+//   setTimeout(function(){
+//     $(".zeroWrap.a.f, .alert.f").slideFadeOut(600,function(){$(".zeroWrap.a.f, .alert.f").remove();})
+//   },time)
 
-}
+// }
 // function confirmBox(str,What,Where,Fade,Offset){
 //     var h = What.outerHeight(true), w = What.outerWidth(true), ele, w2;
 //     if (Fade=="nofade"){
@@ -3463,10 +3910,11 @@ $(document).keyup(function(e){
    // unblur();
  }
 })
-$(document).on('click','.blur',function(ev){
-  let target = $(ev.target), is_blur = target.is('.blur'), is_clickable = target.children('.checkmark, .loading').dne();
-  if (is_blur && is_clickable) unblur({fade:400});
-})
+// .blur click
+// $(document).on('click','.blur',function(ev){
+//   let target = $(ev.target), is_blur = target.is('.blur'), is_clickable = target.children('.checkmark, .loading').dne();
+//   if (is_blur && is_clickable) unblur();
+// })
 
 // function showOverflow(){
 //   var elem = $(this).closest(".manageOverflow")[0];
@@ -3511,11 +3959,11 @@ $(document).on('click','.blur',function(ev){
 //     var tables = $(document).find(".styledTable").filter(function(){
 //         return $(this).data("styled") == undefined;
 //     });
-//     tables.wrap("<div class='tableWrapper'/>");
+//     tables.wrap("<div class='table_wrapper'/>");
 //     tables.filter(".clickable").find("tr").not(".head").hover(highlightRow,reverseHighlight);
 //     tables.each(function(){
 //         if ($(this).hasClass('hideOverflow')){
-//             var t = $(this).closest(".tableWrapper"), h = $(this).data('maxheight');
+//             var t = $(this).closest(".table_wrapper"), h = $(this).data('maxheight');
 //             t.addClass('manageOverflow').data("maxHeight",h);
 //             $("<div/>",{
 //                 class:"showOverflow",
@@ -3710,7 +4158,7 @@ function checkHorizontalTableFit(table){
       table.find("."+column).hide();
     }
   })
-  table.find(".tdSizeControl").filter(":visible").each(function(){
+  table.find(".td_size_control").filter(":visible").each(function(){
     var h1 = $(this)[0].scrollHeight, h2 = $(this).height();
     if (h1 > h2){
       $(this).find(".indicator").show();
@@ -3770,33 +4218,6 @@ $(".manageOverflow").each(function(i,ele){checkOverflow(ele);})
 // $(".modalLink").on("click",modalLinkClk);
 }
 
-function informational(){
-  var info = $($(this).data('target'));
-  if (info.find(".cancel").length == 0){
-    $("<div/>",{
-      class: "cancel",
-      text: "dismiss"
-    }).appendTo(info);
-  }
-  if (info.closest("#Block").length > 0){
-    blurModal($("#Block").children().first(),)
-  }else{
-    blurElement($("#body"),info);
-  }
-}
-
-var confirmBool=undefined;
-$(document).on('click',".confirmY",function(){
-  confirmBool = true;
-})    
-$(document).on('click',".confirmN",function(){
-  confirmBool = false;
-})   
-// function warn(target,where,offset,customText=""){
-//     customText = (customText != '') ? " "+customText : "";
-//     var str = "<span class='confirmQ'>are you sure"+customText+"? this cannot be undone</span> <span class='confirmY'>yes</span><span class='confirmN'>no</span>";
-//     alertBox(str,target,where,"nofade",offset);
-// }
 
 function SecurityReset(elem,value){
   blurModal(elem,"#loading");
@@ -3810,7 +4231,7 @@ function SecurityReset(elem,value){
     success:function(data){
 //console.log(data);
 if (data){
-  blurModal(elem,"#checkmark");
+  blurModal(elem,"checkmark");
   setTimeout(function(){
     unblurElem($("body"));
   },1000)
@@ -3993,161 +4414,7 @@ function singular(model){
   return model;
 }
 
-// const autosave = {
-//   settings: {
-//     saveBtn: null,
-//     btnText: null,
-//     timer: null,
-//     ajaxCall: null,
-//     callback: null,
-//     delay: 5000,
-//     countdown: null,
-//   },
-//   btnLoading: $("<div class='lds-ring insideBtn dark autosaveCircle'><div></div><div></div><div></div><div></div></div>"),
-//   initialize: function(options = autosave.settings){
-//     throw new Error("STOP USING THIS");
-//     try{
-//       autosave.reset();
-//       if (!options.ajaxCall || typeof options.ajaxCall != 'function'){
-//         throw new Error('autosave ajax call is required');
-//       } else autosave.settings.ajaxCall = options.ajaxCall;
-//       if (options.delay && typeof options.delay == 'number') autosave.settings.delay = options.delay;
-//       if (options.saveBtn && options.saveBtn instanceof jQuery){
-//         autosave.settings.saveBtn = options.saveBtn;
-//         autosave.settings.btnText = options.saveBtn.text();            
-//       }
-//       if (options.callback && typeof options.callback == 'function') autosave.settings.callback = options.callback;
-//     } catch (error) {
-//       log({error,options});
-//     }
-//   },
-//   clearTimer: () => {
-//     clearTimeout(autosave.settings.timer);
-//     clearInterval(autosave.settings.countdown);
-//     if (autosave.settings.saveBtn) {
-//       let text = '', flash = false, show = false;
-//       autosave.statusUpdate({text,flash,show});
-//     }
-//   },
-//   statusUpdate: (options = {}) => {
-//     let btn = autosave.settings.saveBtn, status = $("#AutoStatus");
-//     if (btn.parent(".autosaveSpan").dne()) btn.wrap("<span class='autosaveSpan'/>");
-//     status.addClass('pink');
-//     let span = btn.parent(), 
-//     margin = btn.css('margin'), 
-//     text = options.text || "",
-//     flash = options.flash || false,
-//     show = options.show || true;
-//     if (flash) status.addClass('opacityFlash');
-//     else status.removeClass('opacityFlash');
-//     if (show) status.slideFadeIn();
-//     else status.slideFadeOut();
-//     status.html(text);
-//     status.appendTo(span).css('transform','translate(-50%, calc(100% - '+margin+'))');
-//   },
-//   trigger: function(){
-//     throw new Error("STOP USING THIS");
-//     console.log('trigger');
-//     autosave.clearTimer();
-//     autosave.settings.timer = setTimeout(async function(){
-//       autosave.inProgress();
-//       log(autosave.settings);
-//       try{
-//         let result = await autosave.settings.ajaxCall().then((data,status,request) => {
-//           log({data,status,request});
-//           system.validation.xhr.headers.check(request);
-//           let callback = autosave.settings.callback;
-//           if (autosave.settings.callback) autosave.settings.callback.bind(null,data)();
-//           autosave.success();
-//         }).catch(error => log({error},'autosave error'));        
-//       }catch(error){
-//         log({error,setting:autosave.settings},'autosave error');
-//       }
-//     }, autosave.settings.delay);
-    
-//     if (autosave.settings.saveBtn){
-//       let text = `saving changes in <span class='count' style='display:inline:block;margin-left:4px;'>${autosave.settings.delay/1000}</span>`, flash = true, show = true;
-//       autosave.statusUpdate({text,flash,show});
-//       autosave.settings.countdown = setInterval(function(){
-//         let c = $("#AutoStatus").find('.count'), s = Number(c.text());
-//         c.text(s-1);
-//       },1000);      
-//     }
-//   },
-//   inProgress: function(){
-//     console.log('in progress');
-//     if (autosave.settings.saveBtn){
-//       let text = 'saving changes', flash = true, show = true;
-//       autosave.statusUpdate({text,flash,show});
-//       let disabled = autosave.settings.saveBtn.hasClass('disabled'), span = autosave.settings.saveBtn.parent();
-//       autosave.settings.saveBtn.data('disabled',disabled);
-//       autosave.settings.saveBtn.addClass('disabled');
-//       autosave.btnLoading.clone().appendTo(span);
-//     }
-//   },
-//   success: function(){
-
-// var t = new Date(), timeStr = t.toLocaleTimeString(), wrap = $("#AutoSaveWrap");
-// $("#AutoConfirm").find(".message").text("Autosaved at " + timeStr);
-// // console.log(wrap);
-// wrap.slideFadeIn(1200);
-// setTimeout(wrap.slideFadeOut.bind(wrap,400),3600);
-// if (autosave.settings.saveBtn){
-//   let disabled = autosave.settings.saveBtn.data('disabled'),
-//   text = '<span>changes saved</span><span class="checkmark" style="position:relative">✓</span>', 
-//   flash = false, show = true;
-//   if (!disabled) autosave.settings.saveBtn.removeClass('disabled');
-//   autosave.settings.saveBtn.removeData('disabled').parent().find(".autosaveCircle").remove();
-//   autosave.statusUpdate({text,flash,show});
-//   setTimeout(function(){
-//     $("#AutoStatus").slideFadeOut(400,function(){$("#AutoStatus").appendTo("#AutoSaveWrap")});
-//   },4000)
-// }
-// }
-// };
-
-
-// function initializeNewContent(){
-//   throw new Error(`don't use initializeNewContent`);
-//   if (typeof notify !== 'undefined'){
-//     initializeNewForms();
-//     initializeNewModelForms();
-//     table.initialize.all();
-//     initializeSettingsForm();
-//     appointment.initialize.all();
-//     initializeScheduleForms();
-//     checkNotifications();
-//     chartnote.initialize.all();
-//     invoice.initialize.all();
-//   }
-//   initializeNewMenus();
-//   initializeEditables();
-//   initializeLinks();
-//   resizeElements();
-//   masterStyle();
-// }
-
-// var loadingRing = "<div class='lds-ring dark'><div></div><div></div><div></div><div></div></div>", loadingRingCSS = {top:"50%",transform:"translate(-50%,-50%)"}, vhIndicator, vhIndicatorHeight = undefined, inputHasFocus = false, rapidChangeTimer = null;
-// function checkRapidVhShrink(ev){
-//   inputHasFocus = true;
-//   input = $(ev.target), inputBoundaries = ev.target.getBoundingClientRect();
-// // console.log(inputBoundaries);
-// rapidChangeTimer = setTimeout(function(){
-// // console.log(vhIndicator.height(), vhIndicatorHeight);
-// if (vhIndicator.height() < vhIndicatorHeight * 0.85){
-//   console.log("SHRINK");
-// }
-// },250)
-// }
-// function checkRapidVhGrowth(){
-//   inputHasFocus = false;
-// // rapidChangeTimer = setTimeout(function(){
-// //     console.log(vhIndicator.height(), vhIndicatorHeight);
-// //     if (vhIndicator.height() > vhIndicatorHeight * 0.85){
-// // console.log("GROW");
-// //     }
-// // },250)
-// }
+// $(document).on('click','.cancel', Blur.undo)
 
 $(document).ready(function(){
   // vhIndicator = $(".vhIndicator").first();

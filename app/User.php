@@ -6,12 +6,15 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-
 use Illuminate\Support\Carbon;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Laravel\Cashier\Billable;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+
+use App\Traits\TableAccess;
+use App\Traits\HasSettings;
+
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -19,6 +22,8 @@ class User extends Authenticatable implements MustVerifyEmail
   use TrackChanges;
   use Billable;
   use SoftDeletes;
+  use TableAccess;
+  use HasSettings;
 
 
   // protected $fillable = [
@@ -26,9 +31,13 @@ class User extends Authenticatable implements MustVerifyEmail
   // ];
   protected $guarded = [];
 
-  protected $hidden = [
-    'password', 'remember_token',
+  // protected $hidden = [
+  //   'password', 'remember_token','stripe_id','card_brand','card_last_four','trial_ends_at'
+  // ];
+  protected $visible = [
+    'first_name','middle_name','last_name','preferred_name','name','legal_name','full_name'
   ];
+  protected $appends = ['name'];
 
   protected $casts = [
     'email_verified_at' => 'datetime',
@@ -44,100 +53,53 @@ class User extends Authenticatable implements MustVerifyEmail
   public $connectedModels;
   public $auditOptions;
 
-  public function __construct($attributes = []){
-    parent::__construct($attributes);
-
-    $this->auditOptions = [
-      'audit_table' => 'users_audit',
-      'includeFullJson' => false
-    ];
-    $this->nameAttr = 'preferred_name!!%preferred_name% %last_name%!!%first_name% %last_name%';
-    $this->TableOptions = array(
-      'tableId' => 'UserList',
-      'index' => 'id',
-      'columns' => array(
-        array(
-          "label" => 'Name',
-          "className" => 'name',
-          "attribute" => 'name'
-        ),
-        [
-          'label' => 'User Type',
-          'className' => 'userType',
-          'attribute' => 'user_type'
-        ],
-        array(
-          "label" => 'Email',
-          "className" => 'email',
-          "attribute" => 'email'
-        )
-      ),
-      'hideOrder' => "email",
-      'filtersColumn' => array(),
-      'filtersOther' => array(),
-      'destinations' => array("settings","edit","delete","create"),
-      'btnText' => array("settings","edit","delete","add new patient"),
-      'orderBy' => [
-        ['user_type','asc'],
-        ['last_name',"asc"],
-        ['first_name',"asc"]
-      ]
-    );
-    $this->optionsNavValues = array(
-      'destinations' => array("settings","edit","delete"),
-      'btnText' => array("settings","edit","delete"),
-    );
-    $this->connectedModels = [  
-            // ['Service','many','morphToMany']
-    ];
-  }
   public static function admins(){
     return User::where('email','david@bodywizardmedicine.com')->get();
   }
-  public static function TableOptions(){
-    $usertype = Auth::user()->user_type;
-    if ($usertype == 'practitioner'){
-      return 
-      [
-        'tableId' => 'UserList',
-        'index' => 'id',
-        'columns' => array(
-          array(
-            "label" => 'Name',
-            "className" => 'name',
-            "attribute" => 'name'
-          ),
-          [
-            'label' => 'User Type',
-            'className' => 'userType',
-            'attribute' => 'user_type'
-          ],
-          array(
-            "label" => 'Email',
-            "className" => 'email',
-            "attribute" => 'email'
-          )
-        ),
-        'hideOrder' => "email",
-        'filtersColumn' => array(),
-        'filtersOther' => array(),
-        'destinations' => array("settings","edit","delete","create"),
-        'btnText' => array("settings","edit","delete","add new patient"),
-        'orderBy' => [
-          ['user_type','asc'],
-          ['last_name',"asc"],
-          ['first_name',"asc"]
-        ],
-        'optionsNavValues' => array(
-          'destinations' => array("settings","edit","delete"),
-          'btnText' => array("settings","edit","delete"),
-        )
-      ];
-    }
-  }
-  public function moreOptions(){
-        // Log::info("optionsNav");
-  }
+  // public static function TableOptions(){
+  //   $usertype = Auth::user()->user_type;
+  //   if ($usertype == 'practitioner'){
+  //     return 
+  //     [
+  //       'tableId' => 'UserList',
+  //       'index' => 'id',
+  //       'columns' => array(
+  //         array(
+  //           "label" => 'Name',
+  //           "className" => 'name',
+  //           "attribute" => 'name'
+  //         ),
+  //         [
+  //           'label' => 'User Type',
+  //           'className' => 'userType',
+  //           'attribute' => 'user_type'
+  //         ],
+  //         array(
+  //           "label" => 'Email',
+  //           "className" => 'email',
+  //           "attribute" => 'email'
+  //         )
+  //       ),
+  //       'hideOrder' => "email",
+  //       'filtersColumn' => array(),
+  //       'filtersOther' => array(),
+  //       'destinations' => array("settings","edit","delete","create"),
+  //       'btnText' => array("settings","edit","delete","add new patient"),
+  //       'orderBy' => [
+  //         ['user_type','asc'],
+  //         ['last_name',"asc"],
+  //         ['first_name',"asc"]
+  //       ],
+  //       'optionsNavValues' => array(
+  //         'destinations' => array("settings","edit","delete"),
+  //         'btnText' => array("settings","edit","delete"),
+  //       )
+  //     ];
+  //   }
+  // }
+  // public function moreOptions(){
+  //       // Log::info("optionsNav");
+  // }
   public function navbarInfo(){
     if ($this->is('practitioner')){
       $info = [

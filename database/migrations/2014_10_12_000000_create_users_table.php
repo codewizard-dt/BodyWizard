@@ -20,17 +20,17 @@ class CreateUsersTable extends Migration
             $table->string('last_name');
             $table->string('preferred_name')->nullable()->default(null);
             $table->json('roles')->nullable();
-            // $table->string('user_type')->default('patient');
-            // $table->boolean('is_admin')->default(false);
             $table->string('username')->unique();
             $table->date('date_of_birth');
             $table->string('email');
             $table->string('phone');
-            $table->string('address_mailing')->nullable()->default(null);            
-            $table->string('address_billing')->nullable()->default(null);            
+            $table->json('address_mailing')->nullable()->default(null);            
+            $table->json('address_billing')->nullable()->default(null);            
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->json('security')->nullable();
+            $table->json('settings')->nullable()->default(null);
+
             // $table->boolean('require_new_pw')->default(true);
             // $table->json('security_questions')->nullable()->default(null);
             // $table->string('stripe_id')->nullable()->collation('utf8mb4_bin');

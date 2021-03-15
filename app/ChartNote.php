@@ -27,8 +27,8 @@ class ChartNote extends Model
     'date_time_start' => 'datetime',
     'date_time_end' => 'datetime',
   ];
-  protected $with = ['appointment','patient'];
-  protected $fillable = ['patient_id','practitioner_id','appointment_id','notes','signature','signed_at'];
+  protected $with = ['appointment.services','patient'];
+  protected $fillable = ['patient_id','practitioner_id','appointment_id','notes','signature','signed_at','date_time_start','date_time_end'];
   protected $hidden = ['autosave'];
 
   static public function successResponse(){
@@ -126,7 +126,7 @@ class ChartNote extends Model
   }
 
   public function getNameAttribute(){
-    return $this->patient_name . " (".$this->appointment_date.")";
+    return $this->patient_name . " - ".$this->date_time_start->format(MONTH_DAY_TIME);
   }
   public function getPatientNameAttribute(){
     return $this->patient->name;
@@ -135,21 +135,21 @@ class ChartNote extends Model
     $submissions = $this->submissions()->where('form_user_type','patient')->get();
     return ($submissions->count() != 0) ? $submissions : null;
   }
-  public function getChartFormsAttribute(){
-    $submissions = $this->submissions()->where('form_user_type','practitioner')->get();
-    return ($submissions->count() != 0) ? $submissions : null;
-  }
-  public function getFormsAttribute(){
-    return $this->appointment->forms();
-  }
-  public function getPatientFormsAttribute(){
-    $forms = $this->forms->filter(function($form){return $form->user_type == 'patient';});
-    return ($forms->count() != 0) ? $forms : null;
-  }
-  public function getPractitionerFormsAttribute(){
-    $forms = $this->forms->filter(function($form){return $form->user_type == 'practitioner';});
-    return ($forms->count() != 0) ? $forms : null;
-  }
+  // public function getChartFormsAttribute(){
+  //   $submissions = $this->submissions()->where('form_user_type','practitioner')->get();
+  //   return ($submissions->count() != 0) ? $submissions : null;
+  // }
+  // public function getFormsAttribute(){
+  //   return $this->appointment->forms();
+  // }
+  // public function getPatientFormsAttribute(){
+  //   $forms = $this->forms->filter(function($form){return $form->user_type == 'patient';});
+  //   return ($forms->count() != 0) ? $forms : null;
+  // }
+  // public function getPractitionerFormsAttribute(){
+  //   $forms = $this->forms->filter(function($form){return $form->user_type == 'practitioner';});
+  //   return ($forms->count() != 0) ? $forms : null;
+  // }
   public function getAppointmentDateAttribute(){
     return $this->appointment->date;
   }
@@ -165,20 +165,20 @@ class ChartNote extends Model
     $date = ($signedAt != 'not signed') ? explode(' ', $signedAt)[0] : 'not signed';
     return $date;
   }
-  public function setAutosaveAttribute($value){
-    $this->attributes['autosave'] = $this->encryptKms($value);
-  }
-  public function getAutosaveAttribute($value){
-    $val = $this->decryptKms($value);
-    return $val;
-  }
-  public function setNotesAttribute($value){
-    $this->attributes['notes'] = $this->encryptKms($value);
-  }
-  public function getNotesAttribute($value){
-    $val = $this->decryptKms($value);
-    return $val ?: [];
-  }
+  // public function setAutosaveAttribute($value){
+  //   $this->attributes['autosave'] = $this->encryptKms($value);
+  // }
+  // public function getAutosaveAttribute($value){
+  //   $val = $this->decryptKms($value);
+  //   return $val;
+  // }
+  // public function setNotesAttribute($value){
+  //   $this->attributes['notes'] = $this->encryptKms($value);
+  // }
+  // public function getNotesAttribute($value){
+  //   $val = $this->decryptKms($value);
+  //   return $val ?: [];
+  // }
   public function patient(){
     return $this->belongsTo('App\Patient','patient_id');
   }

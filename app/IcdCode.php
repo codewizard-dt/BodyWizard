@@ -4,8 +4,14 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 
+use App\Traits\TableAccess;
+use App\Traits\HasSettings;
+
 class IcdCode extends Model
 {
+  use TableAccess;
+  use HasSettings;
+
 	protected $guarded = [];
 
 	static public function displayName() { return 'ICD Code'; }

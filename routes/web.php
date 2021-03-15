@@ -18,6 +18,7 @@ Route::any('/push/twilio/sms', 'PushController@incomingTwilioSms');
 Route::any('/push/twilio/error', 'PushController@twilioError');
 Route::get('/pusher/test', 'PushController@pushertest');
 Route::domain('bodywizard.ngrok.io')->group(function(){
+	Route::get('/karaoke', 'KaraokeController@stack');
 	Route::any('/', 'PushController@googlePushVerification');
 });
 
@@ -27,6 +28,7 @@ Route::domain('headspaceacupuncture.com')->group(function(){
 		return redirect('/changes');
 	});
 });
+Route::get('/karaoke', 'KaraokeController@stack');
 
 Route::any('/notification-unread', 'NotificationController@getUnread');
 Route::post('/notification-retrieve', 'NotificationController@retrieve');
@@ -48,61 +50,43 @@ Route::get('/schedule/appointments', 'ScheduleController@appointmentEventFeed');
 Route::get('/schedule/non-ehr', 'ScheduleController@nonEhrEventFeed');
 
 // ROUTES USING DYNAMIC {model} URI
-	Route::get('/optionsNav/{model}/{uid}', 'ScriptController@OptionsNav');
-	Route::get('/options-nav/{model}/{uid}', 'ScriptController@OptionsNavNew');
-	Route::get('/display/table/{model}', 'ScriptController@ResourceTable');
-	Route::post('/{model}/list', 'ScriptController@BasicList');
-	Route::get('/{model}/index', 'ScriptController@ListWithNav');
-	Route::get('/portal/practices', 'ScriptController@ListWithNav');
-	Route::get('/{model}/modal', 'ScriptController@ListAsModal');
-	Route::get('/create/{model}', 'ScriptController@CreateNewModel');
-	Route::delete('/delete/{model}/{uid}', 'ScriptController@delete');
-	Route::get('/addNote/{model}/{uid}', 'ScriptController@AddNotes');
-	Route::post('/save/multi', 'ScriptController@save_multi');
-	Route::post('/save/{model}', 'ScriptController@save_single');
-	Route::post('/retrieve/multi', 'ScriptController@retrieve_multi');
-	Route::post('/retrieve/{model}', 'ScriptController@retrieve_single');
-	Route::post('/create_or_edit/{model}', 'ScriptController@create_or_edit');
-	Route::get('/edit/{model}/{uid}', 'ScriptController@edit');
-	Route::get('/schedule/{model}/{uid}', 'ScriptController@schedule');
-	Route::get('/settings/{model}/{uid}', 'ScriptController@settings');
-	Route::get('/schedule/Practice', 'ScriptController@schedulePractice');
-	Route::get('/retrieve/{model}/{uid}', 'ScriptController@fetchModel');
-	Route::post('/savePinnedNotes/{model}/{uid}', 'ScriptController@savePinnedNotes');
+	// Route::get('/optionsNav/{model}/{uid}', 'BaseModel@OptionsNav');
+	// Route::get('/options-nav/{model}/{uid}', 'BaseModel@OptionsNavNew');
+	// Route::get('/display/table/{model}', 'BaseModel@ResourceTable');
+	Route::post('/retrieve/list', 'BaseModel@list');
+	Route::post('/{model}/list', 'BaseModel@BasicList');
+	Route::get('/{model}/index', 'BaseModel@table_index');
+	Route::match(['get','post'], '/{model}/select', 'BaseModel@selection_modal');
+	Route::match(['get','post'], '/{model}/details/{uid}', 'BaseModel@details');
+	
+	// Route::get('/portal/practices', 'BaseModel@table_index');
+	Route::get('/{model}/modal', 'BaseModel@ListAsModal');
+	Route::get('/create/{model}', 'BaseModel@CreateNewModel');
+	Route::delete('/delete/{model}/{uid}', 'BaseModel@delete');
+	Route::get('/addNote/{model}/{uid}', 'BaseModel@AddNotes');
+	Route::post('/save/multi', 'BaseModel@save_multi');
+	Route::post('/save/{model}', 'BaseModel@save_single');
+	Route::post('/retrieve/multi', 'BaseModel@retrieve_multi');
+	Route::post('/retrieve/{model}', 'BaseModel@retrieve_single');
+	Route::post('/create_or_edit/{model}', 'BaseModel@create_or_edit');
+	Route::get('/edit/{model}/{uid}', 'BaseModel@edit');
+	Route::get('/schedule/{model}/{uid}', 'BaseModel@schedule');
+	Route::get('/settings/{model}/{uid}', 'BaseModel@settings');
+	Route::get('/schedule/Practice', 'BaseModel@schedulePractice');
+	Route::get('/retrieve/{model}/{uid}', 'BaseModel@fetchModel');
+	Route::post('/savePinnedNotes/{model}/{uid}', 'BaseModel@savePinnedNotes');
 
 Route::get('/icd-api/token', 'CodeController@getIcdApiToken');
-// Route::get('/home/appointments', 'AppointmentController@home');
 Route::get('/appointments/calendar', 'AppointmentController@calendar');
-// Route::get('/appointment/{uid}/get-chart-note', 'AppointmentController@getChartNote');
-// Route::get('/appointment/{uid}/edit-chart-note', 'AppointmentController@editChartNote');
-// Route::get('/ChartNote/create','ChartNoteController@create');
-// Route::get('/ChartNote/{id}/view','ChartNoteController@view');
-// Route::get('/ChartNote/{id}/edit','ChartNoteController@edit');
-// Route::post('/ChartNote/{id}/autosave','ChartNoteController@autosave');
-// Route::post('/ChartNote/{id}/sign','ChartNoteController@sign');
-// Route::get('/ChartNote/load-form/{formId}','ChartNoteController@loadForm');
-
-// Route::get('/Invoice/create','InvoiceController@create');
-// Route::get('/appointment/{uid}/get-invoice', 'AppointmentController@getInvoice');
-// Route::get('/appointment/{uid}/edit-invoice', 'AppointmentController@editInvoice');
-// Route::get('/Invoice/{id}/view','InvoiceController@view');
-// Route::get('/Invoice/{id}/edit','InvoiceController@edit');
-// Route::post('/Invoice/{id}/autosave','InvoiceController@autosave');
-// Route::post('/Invoice/{id}/save','InvoiceController@save');
+Route::post('/appointment/feed', 'AppointmentController@feed');
 
 Route::post('user/{userId}/invoice/{invoiceId}/get-payment-intent','StripeController@getPaymentIntent');
-
-// Route::resource('appointments', 'AppointmentController');
-// Route::get('/home/botanicals', 'BotanicalController@home');
-// Route::get('/home/codes', 'CodeController@home');
-// Route::get('/home/complaints', 'ComplaintController@home');
-// Route::get('/home/diagnoses', 'DiagnosisController@home');
 
 Route::match(['get','post'],'/form/display/{form}','FormController@get_html');
 Route::get('/form/preview/{form}','FormController@get_html_preview');
 Route::post('/form/{uid}/submit','FormController@submit');
 Route::get('/home/forms', 'FormController@home');
-Route::get('/forms/{uid}/preview', 'FormController@preview');
+// Route::get('/forms/{uid}/preview', 'FormController@preview');
 Route::get('/forms/{uid}/settings', 'FormController@settings');
 Route::get('/forms/{uid}/setAsActive', 'FormController@setAsActive');
 Route::get('/forms/UID/edit','FormController@edit');

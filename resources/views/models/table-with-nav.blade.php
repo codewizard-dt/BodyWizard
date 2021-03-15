@@ -2,14 +2,14 @@
     // called by GET /{model}/display/list
 $nospaces = removespaces($model);
 $class = "App\\$nospaces";
-// $ctrl = new $class;
+
 $displayName = method_exists($class,'displayName') ? $class::displayName() : title(singularSpaces($model));
 $models = plural($displayName);
 
 try{ $tableOptions = $class::TableOptions(); }
 catch(\Exception $e){ $tableOptions = ['columns'=>['Name'=>'name']]; } 
 
-// $tableOptions['createBtnText'] = isset($tableOptions['createBtnText']) ? $tableOptions['createBtnText'] : "Add New $displayName";
+
 $tableOptions['displayName'] = $displayName;
 $tableOptions['modal'] = false;
 

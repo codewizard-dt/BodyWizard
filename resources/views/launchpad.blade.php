@@ -25,7 +25,7 @@
 					'list'=>Auth::user()->roles['list'],
 					'listLimit'=>1,
 					'preLabel'=>'Log in as:',
-					'eleCss'=>'{"fontSize":"1.3em"}',
+					'ele_css'=>'{"fontSize":"1.3em"}',
 					'eleClass'=>'!left',
 				]
 			])

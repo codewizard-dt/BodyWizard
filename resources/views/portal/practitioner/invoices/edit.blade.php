@@ -28,7 +28,7 @@
 		'patient_id' => $patient->id,
 		'notes' => $invoice ? $invoice->notes : 'null',
 	];
-	$dataAttrStr = dataAttrStr(collect($data));
+	// $dataAttrStr = dataAttrStr(collect($data));
 ?>
 
 <h3 id='ApptInfo' class='pink' {!!$dataAttrStr!!}>{{$patient->name}}<br>{{$appt->name}}</h3>

@@ -4,6 +4,8 @@ namespace App\Listeners;
 
 use App\Events\BugReported;
 use App\Notifications\BugReport;
+use Illuminate\Support\Facades\Log;
+
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Carbon;
@@ -29,6 +31,7 @@ class SendBugReport
      */
     public function handle(BugReported $event)
     {
+        Log::info(gettype($event->details));
         $bug = new \App\Bug;
         $bug->description = title($event->description);
         $bug->details = $event->details;

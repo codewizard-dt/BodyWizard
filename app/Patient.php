@@ -3,83 +3,66 @@
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\IsUser;
 use App\Traits\TrackChanges;
+use App\Traits\TableAccess;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Patient extends Model
 {
+  use IsUser;
   use TrackChanges;
+  use TableAccess;
   use SoftDeletes;
-
-  public $TableOptions;
-  public $optionsNavValues;
-  public $connectedModels;
-  public $nameAttr;
-  public $auditOptions;
 
   protected $casts = [
     'settings' => 'array'
   ];
-  protected $hidden = [
-    'settings_json'
-  ];
   protected $guarded = [];
-  protected $visible = ['user_id','name','email','username','date_of_birth','roles'];
+  protected $visible = ['id','user_id','roles'];
+  protected $with = ['User'];
   // protected $appends = ['name'];
+  static public $instance_actions = [];
+  static public $static_actions = [];
 
-  public static function returnUserIds($array){
-    $userIds = Patient::find($array)->map(function($patient){
-      return $patient->user->id;
-    })->toArray();
-    return $userIds;
+  static public function table() {
+    $columns = [
+      'Name' => 'name',
+      'Phone' => 'phone',
+      'Email' => 'email',      
+    ];
+    $filters = [];
+    $buttons = [];
+    $data = [];
+    return compact('columns','filters','buttons','data');
   }
-  public static function TableOptions(){
-    return array(
-      'index' => 'id',
-      'columns' => [
-        'Name' => 'name',
-        'Phone' => 'phone',
-        'Email' => 'email',
-      ],
-      'hideOrder' => ['Email','Phone','Last Seen'],
-      'filters' => [],
-      'extraBtns' => [
-        // 'manage categories' => '/ComplaintCategory/index'
-      ],
-      'extraData' => [],
-    );
+  public function details() {
+    $instance = [
+      // 'Category' => $this->category_name,
+      // 'Description' => $this->description,
+    ];
+    $buttons = [];
+    return compact('instance','buttons');
   }
-  public function table_nav_options(){
-    return [];
-  }
-  public function modelDetails(){
-    // $upcoming = $this->upcoming_appointments;
-    // $recent = $this->prev_appointments;
-    $complaints = $this->complaints;
+  public function basic_info () {
     return [
-      'Legal Name' => $this->legal_name,
-      'Pronouns' => $this->pronouns != null ? $this->pronouns : 'not given',
-      'Phone' => $this->phone,
-      'Email' => $this->email,
-      'Username' => $this->username,
-      'Chief Complaints' => $complaints->count() > 0 ? $this->complaints->count() : 'none',
+      'name' => $this->name,
+      'first_name' => $this->preferred_name,
+      'last_name' => $this->last_name,
+      'uid' => $this->getKey()
     ];
   }
-  public function detailClick(){
-    $model = getModel($this);
-    $uid = $this->getKey();
-    return "<div class='link patient' data-model='$model' data-uid='$uid'>" . $this->name . "</div>";
-  }
+
 
   public function user(){ return $this->belongsTo('App\User','user_id'); }
 
-  public function __get($key) {
-    if ($this->getAttribute($key)) return $this->getAttribute($key); 
-    else if ($this->user->getAttribute($key)) return $this->user->getAttribute($key);
-    else return null;
-  }
+  // public function __get($key) {
+  //   if ($this->getAttribute($key)) return $this->getAttribute($key); 
+  //   else if ($this->user->getAttribute($key)) return $this->user->getAttribute($key);
+  //   else return null;
+  // }
 
   public function complaints() {
     return $this->morphToMany('App\Complaint','complaintable');

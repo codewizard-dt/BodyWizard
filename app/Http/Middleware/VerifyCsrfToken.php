@@ -22,6 +22,7 @@ class VerifyCsrfToken extends Middleware
         //
         'sendgrid/push',
         'google/calendar/push',
+        'appointment/feed',
         'portal',
         'push/*',
         'portal/logout'

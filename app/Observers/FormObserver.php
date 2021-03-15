@@ -14,10 +14,9 @@ class FormObserver
 		}
 	}
 	public function updating(Form $form){
-		// foreach (request()->columns as $attr => $value){
-		// 	$form->$attr = $value;
-		// }
-		// Log::info(request()->all());		
 		if ($form->has_submissions) reportError("We haven't set up version id with has_submissions yet",'Form observer');
 	}
+	// public function saved(Form $form){
+	// 	if (contains($form->form_name,'Settings')) 
+	// }
 }

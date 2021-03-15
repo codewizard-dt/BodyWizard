@@ -102,8 +102,7 @@ class RefreshTables extends Model
     }
     public static function clearComplaintTables(){
         try{
-            Artisan::call("migrate:refresh --path database/migrations/2020_04_01_202901_create_complaint_categories_table.php");
-            Artisan::call("migrate:refresh --path database/migrations/2019_05_29_154552_create_complaints_table.php");
+            Artisan::call("migrate:refresh --path database/migrations/2020_11_15_112327_create_complaints_table.php");
             return true;
         }catch(\Exception $e){
             reportError($e,'RefreshTables 86');
@@ -149,10 +148,18 @@ class RefreshTables extends Model
         $staffmembers = factory(User::class,2)->states('staff member')->create();
     }
     public static function seedComplaintTables() {
-        $cat_ids = ComplaintCategory::select('id')->get()->map(function($cat){return $cat->id;})->toArray();
-        foreach ($cat_ids as $cat_id) {
-            $complaints = factory(Complaint::class,3)->create(['complaint_category_id'=>$cat_id]);
-        }
+        // $cat_ids = ComplaintCategory::select('id')->get()->map(function($cat){return $cat->id;})->toArray();
+        // foreach ($cat_ids as $cat_id) {
+        //     $complaints = factory(Complaint::class,3)->create(['complaint_category_id'=>$cat_id]);
+        // }
+        try{
+            factory(Complaint::class, 30)->create();
+            return true;
+        }catch(\Exception $e){
+            reportError($e,'RefreshTables 86');
+            return false;
+        }        
+
     }
     public static function seedApptTables($apptCount){
         $apptCount = (int)$apptCount;

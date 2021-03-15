@@ -1,4 +1,4 @@
-import {system, practice, log, Features, menu} from './functions';
+import {system, practice, uids, log, Features, menu} from './functions';
 import {forms, Forms} from './forms';
 
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -9,207 +9,307 @@ import luxonPlugin from '@fullcalendar/luxon'
 import rrulePlugin from '@fullcalendar/rrule';
 import {DateTime as LUX, Duration as LUXDur} from 'luxon';
 
-class ModelTable {
-  constructor(ele, selectionLimit = 1){
-    this.ele = ele;
-    this.ele.data('class_obj',this);
-    this.name = ele.attr('id');
-    this.model = ele.data('model');
-    this.nameColumn = ele.data('namecolumn');
-    this.hideorder = ele.data('hideorder');
-    this.limit = selectionLimit;
-    this.rows = this.ele.find('tr').not('.head, .noMatch');
-    this.nomatch = this.ele.find('tr').filter('.noMatch');
-    ele.wrap("<div class='tableWrapper'/>");
-    this.rows.addHoverClassToggle();
-
-    let filters = [];
-    init($('.filter').filter((f,filter) => $(filter).data('target') == ele.attr('id')),function(){
-      let filter = new Features.Filter($(this));
-      filters.push(filter);
-      fix_width(filter.ele);
-    })
-    this.filters = filters;
-
-    this.significance = this.ele.data('significance');
-    if (this.significance == 'primary') {
-      this.rows.on('click', {model:this.model}, this.loadModelDetails);
-      this.connectedModels = {};
-    }
-    else if (this.significance == 'secondary') {
-      this.modal = ele.closest('.connectedModel');
-      this.rows.on('click', {table:this}, this.selectModel);
-      this.connectedto = this.modal.data('connectedto');
-      this.modal.find('.selectData').on('click', {modelTable:this}, this.assignSelection);
-    }
-
-    this.resizetimer = null;
-
-    this.ele.data('class_obj',this);
-    this.filter();
-    if ($('.optionsNav').exists() && $('.optionsNav').data('model') == this.model){
-      this.nav = $('.optionsNav');
-      this.selectByUid(this.nav.data('uid'));
-    }
-  }
-
-  get width(){
-    return this.ele.parent().width();
-  }
-  get isTooWide(){
-    let wrap = this.ele.parent().parent();
-    return this.width > wrap.width();
-  }
-  showAllColumns(){
-    this.ele.find('td, th').show();
-  }
-
-  get activeFilters(){return this.filters.filter(function(filter){return filter.isActive});}
-  get matches(){
-    let matches = this.activeFilters.map(function(filter){return filter.matches});
-    let truematch = this.rows.map(function(){return $(this).data('uid')}).get();
-    if (!matches.isEmpty()) {
-      truematch = matches[0];
-      if (matches.length > 1){
-        for (let x = 1; x < matches.length; x++){
-          truematch = truematch.filter(uid => matches[x].includes(uid));
-        }
-      }            
-    }
-    return truematch;
-  }
-  filter(){
-    if (this.matches.isEmpty()){
-      this.rows.hide();
-      this.nomatch.show();
-    }else{
-      this.rows.hide();
-      let matches = this.matches;
-      this.rows.filter(function(){
-        return matches.includes($(this).data('uid'));
-      }).show();
-      this.nomatch.hide();
-    }
-  }
-
-  get selected(){return this.rows.filter('.active')}
-  get selectedIds(){
-    let idArr = this.selected.map((r,row) => $(row).data('uid')).get();
-    return this.limit == 1 ? idArr[0] : idArr;
-  }
-  get selectedNames(){
-    return this.selected.map((r,row) => this.getRowName.bind(this,row)()).get().join(', ');
-  }
-  get selectedData(){
-    let dataArr = this.selected.map((r,row) => $.extend({}, $(row).data(), this.getRowContents(row), true)).get();
-    return this.limit == 1 ? dataArr[0] : dataArr;
-  }
-  getRowContents(row){
-    let cells = $(row).find('td'), contents = {};
-    cells.each((c,cell) => {
-      let key = $(cell).attr('class').split(' ')[0],
-      value = trimCellContents($(cell));
-      contents[key] = value;
-    })
-    return contents;
-  }
-  getDataById(uids){
-    if (typeof uids == 'number'){
-      let match = this.rows.get().find(row => $(row).data('uid') == uids);
-      let columns = this.getRowContents(match);
-      return $.extend(columns,$(match).data());
-    }else{
-      let fx = this.getDataById, modelTable = this;
-      return uids.map(uid => fx.bind(modelTable, uid)());
-    }
-  }
-  getNameById(uids){
-    if (!uids) return null;
-    if (typeof uids == 'number'){
-      let match = this.rows.filter((r,row) => $(row).data('uid') == uids);
-      return this.getRowName(match);
-    }else{
-      let fx = this.getNameById, modelTable = this;
-      return uids.map(uid => fx.bind(modelTable, uid)());
-    }
-  }
-  getRowName(row){return this.trimCellContents($(row).find('.'+this.nameColumn))}
-  trimCellContents(cell){return $(cell).text().replace("...","").trim()}
-  async loadModelDetails(ev){
-    $('.optionsNav').smartScroll();
-    if ($(this).hasClass('active')) return;
-    else {
-      let nav = $('.optionsNavWrapper');
-      $(this).closest('table').resetActives();
-      $(this).addClass('active');
-      blur(nav,'loading');
-      await menu.fetch(`/options-nav/${ev.data.model}/${$(this).data('uid')}`, nav, true);
-      table.initialize.table_nav_options();
-    }
-  }
-  selectModel(ev){
-    let table = ev.data.table, limit = table.limit, model = table.model;
-    if (limit == 1) {
-      if ($(this).hasClass('active')) {
-        $(this).removeClass('active');
-      }else{
-        table.ele.resetActives();
-        $(this).addClass('active');                
+class Table {
+  constructor (options = {}) {
+    try {
+      this.define_by(options);
+      this.ele.removeAttr('data-rows');
+      this.ele.data({class_obj:this});
+      if (this.header) this.header_ele = $(`<${this.header_html_tag || 'h1'}/>`,{text:this.header,class:this.header_class || 'purple'}).appendTo(this.ele);
+      this.table = $(`<table/>`,{class:'styledTable'});
+      this.wrap = $(`<div/>`,{class:'table_wrapper'}).appendTo(this.ele).append(this.table);
+      this.head_row_create();
+      this.rows.forEach(r => this.add_row(r));
+      this.selectable = ifu(options.selectable, true);
+      this.show_selection = ifu(options.selectable, true);
+      this.limit = Number.isNaN(Number(this.limit || 1)) ? null : Number(this.limit || 1);
+      this.limit_warning = new Features.Warning({
+        message:`Limited to ${this.limit} ${this.limit == 1 ? this.display_name : this.header}`,
+      });
+      // this.filter_objs = [];
+      this.filter_box = $(`<div/>`,{class:'box purple filter_box',css:{margin:'0.5em -0.5em',maxWidth:'calc(100% + 1em)'}}).insertBefore(this.wrap);
+      this.filter_box.wrap('<div/>');
+      this.filter_flex_box = $(`<div/>`,{class:'flexbox'}).appendTo(this.filter_box);
+      this.filters.forEach(f => this.add_filter(f));
+      if (this.selectable && this.show_selection) {
+        this.selection_list = new Features.List(this.list_options);
+        this.selection_list.ele.appendTo(this.filter_box);
+        this.button_box = $('<div/>',{class:'button_box low_margin'}).appendTo(this.filter_box);
+        if (this.buttons) this.buttons = this.buttons.map(b => {
+          let button = new Features.Button(b.merge({disabled_message:'none selected'}));
+          b.ele = button.ele.appendTo(this.button_box).addClass('disabled smallMargin');
+          return button;
+        });
+        // if (this.is_index) this.button_box.hide();
       }
-    }else if (table.selected.length < limit){
-      $(this).addClass('active');
-    }else{
-      $(this).removeClass('active');
-    }
-    table.updateSelectedDisplay();
-  }
-  selectByUid(uids){
-    let match = null;
-    if (typeof uids == 'number'){
-      match = this.rows.filter((r,row) => $(row).data('uid') == uids);
-    }else{
-      match = this.rows.filter((r,row) => uids.includes($(row).data('uid')));
-    }
-    this.ele.resetActives();
-    $(match).addClass('active');
-  }
-  updateSelectedDisplay(){
-    let fx = this.getRowName, table = this, text = this.selected.map((r,row) => fx.bind(table,row)()).get().join(', '),
-    form = this.ele.closest('.modalForm'), display = form.find('.displaySelection'), btn = form.find('.selectData');
-    if (text == "") {
-      btn.addClass('disabled');
-      display.text('none selected');
-    }
-    else {
-      display.text(text);
-      display.show()
-      btn.removeClass('disabled');
+      if (this.is_index) {
+        let ele = this.ele.find('.Details');
+        this.details = new Details(ele.data().merge({ele,table:this}));
+        this.details.ele.insertBefore(this.wrap);
+        this.button_box.hide();
+      }
+      if (this.list_update) Model.update_list(this.model, this.list_update);
+      log({this:this,options},'new TABLE!!');
+    } catch (error) {
+      log({error,options});
     }
   }
-  assignSelection(ev){
-    if ($(this).hasClass('disabled')) return;
-    let modelTable = ev.data.modelTable, connectedTo = modelTable.connectedto, ids = modelTable.selectedIds, names = modelTable.selectedNames;
-    if (connectedTo == 'Appointment'){
-      let model = modelTable.model.charAt(0).toLowerCase() + modelTable.model.slice(1), obj = {};
-      obj[model] = ids;
-      appointment.set(obj);
-      appointment.update.detail(model, names);
+
+  head_row_create () {
+    this.head = $(`<tr/>`,{class:'head'}).appendTo(this.table);
+    for (let text in this.columns) { $('<th/>',{text}).appendTo(this.head) }
+  }
+  add_row (json) {
+    let row = $(`<tr/>`,{class:'body clickable'}).appendTo(this.table).addHoverClassToggle()
+          .on('click', ev => { this.row_click(ev) }).data({info:json});
+    let is_bool = (col) => this.bool_cols ? this.bool_cols.includes(col) : false;
+    let style = (col, val) => {
+      if (val === 'not set') val = is_bool(col) ? '' : '<i class="smaller">not set</i>';
+      else if (['true','false'].includes(val)) {
+        let icon = (new Features.Icon({
+          type: val === 'true' ? 'checkmark' : 'styled_x', size:1, css: {marginLeft:'0.25em'}
+        })).img;
+        val = $(`<div/>`,{class:'flexbox left'}).append(icon);
+      }
+      return val;
+    };
+    for (let key in this.columns) {
+      let val = style(this.columns[key], json[key]);
+      $('<td/>',{class:`${this.columns[key]} all`,data: json.data})
+        .append($(`<div/>`,{class:'td_size_control'}).append(val, Table.td_indicator()))
+        .appendTo(row);
     }
-    if (modelTable.ele.is(':visible')) unblur();
+  }
+  async row_click (ev) {
+    let row = $(ev.target).closest('tr'), info = row.data('info'), was_active = row.is('.active'), uid = info.data.uid;
+    let meta = ev.metaKey, ctrl = ev.ctrlKey, alt = ev.altKey;
+    uids.set(this.model, uid);
+    if (this.action) this.action.to_fx({ev,row,info});
+    if (this.selectable && !this.is_index) {
+      if (this.limit == 1) {
+        this.table.resetActives();
+        row.addClass('active');
+      } else if (this.at_limit && !was_active) this.limit_warning.show({ele:row});
+      else row.toggleClass('active');
+
+      let active = this.active;
+      if (active.dne()) this.disable_buttons();
+      else this.enable_buttons();
+      this.selection_list.values.forEach(uid => {
+        if (!this.uids.includes(uid)) this.selection_list.remove_by_value(uid, null);
+      });
+      active.get().forEach(r => {
+        let info = $(r).data('info'), list_items = this.selection_list.values, on_list = list_items.includes(uid), is_active = $(r).is('.active');
+        if (is_active && !on_list) this.selection_list.add_item({value:uid,text:info.Name});
+        else if (!is_active && on_list) this.selection_list.remove_by_value(uid, null);
+      });  
+    } else if (this.is_index && meta) {
+      row.toggleClass('active');
+    } else if (this.is_index) {
+      this.table.resetActives();
+      row.addClass('active');
+      if (this.selection_list.find_by_value(uid).dne()) this.selection_list.add_item({value:uid,text:info.Name});
+      this.selection_list.ele.resetActives();
+      await this.details.load(this.model, uid);
+      this.selection_list.find_by_value(uid).addClass('active');
+    }
+  }
+  get_filter_type (filter) {
+    if (filter.options.name == 'text_search') return 'text';
+    let is_column = false, is_data = this.data.includes(filter.options.name);
+    for (let name in this.columns) { if (this.columns[name] == filter.options.name) is_column = true }
+    return is_column ? 'column' : is_data ? 'data' : 'no_match';
+  }
+  add_filter (json) {
+    let filter_type = this.get_filter_type(json), is_search_bar = filter_type === 'text';
+    json.merge({ 
+      target: this, 
+      selector: 'tr.body',
+      filter_type,
+      class_list: is_search_bar ? '' : 'box purple light left',
+    });
+    if (filter_type !== 'text') json.options.merge({eleClass:'column'});
+    let filter = new Features.FilterNew(json);
+    is_search_bar ? filter.ele.prependTo(this.filter_box) : filter.ele.appendTo(this.filter_flex_box);
+    // this.filter_objs.push(filter);
+  }
+
+  disable_buttons () { this.button_box.find('.button').addClass('disabled') }
+  enable_buttons () { this.button_box.find('.button').removeClass('disabled') }
+
+  get active () { return this.table.find('tr.active') }
+  get names () { return this.active.get().map(row => $(row).data('info').Name) }
+  get uids () { return this.active.get().map(row => $(row).data('info').data.uid) }
+  get info () { return this.active.get().map(row => $(row).data('info')) }
+  get at_limit () {
+    if (!this.limit) return false;
+    else return this.limit === this.active.length;
+  }
+  static td_indicator () { return $(`<div/>`,{class:'td_indicator',text:'...'}); }
+  get list_options () {
+    // let table = this;
+    let options = {
+      header: `Selected ${this.header}`,
+      header_html_tag: 'h4',
+      // model: this.model,
+      ul_class: 'transparent',
+      ul_css: {marginTop:'-0.2em'},
+      // li_css: {display:'inline-block',padding:'0.1em 0.2em',margin:'1px 0.2em',backgroundColor:'var(--purple5)',borderRadius:'3px'},
+      // li_selectable: false,
+      action: this.is_index ? (ev) => {
+        let li = $(ev.target).closest('li'), model = this.model, uid = li.data('value');
+        log({li,model,uid});
+        this.details.load(model,uid);
+      } : null,
+      post_add_fx: _ => {
+        if (!this.continue_btn) return;
+        if (this.active.dne()) this.continue_btn.ele.addClass('disabled');
+        else this.continue_btn.ele.removeClass('disabled');
+      }
+    };
+    if (this.is_index) options.merge({
+      header: `Recent ${this.header}`,
+      // li_selectable: false,
+      no_item_text: 'select below',
+      limit: 1,
+    });
+    return options;
+  }
+}
+class Details {
+  constructor (options = {}) {
+    this.define_by(options);
+    this.ele.data({initialized:true, class_obj:this}).css({minHeight:'6em'});
+    this.header = $('<h3/>',{text:'loading',class:'bold'});
+    this.body = $('<div/>');
+    this.button_box = $('<div/>',{class:'button_box low_margin box purple light'}).appendTo(this.body);
+    if (this.buttons) this.buttons = this.buttons.map(b => {
+      let button = new Features.Button(b);
+      b.ele = button.ele.appendTo(this.button_box);
+      return button;
+    });
+    this.key_values = new Features.KeyValueBox({
+      // key_css: {color:'var(--purple)',fontWeight:'normal',marginBottom:'3px'},
+      key_class: 'box padded_side purple light',
+      // value_css: {alignSelf:'unset',marginBottom:'3px'},
+      // pair_css: {fontSize:'1.1em'},
+      header: 'loading',
+      transform_fx: Details.model_details_display,
+      // header_class: ,
+      header_toggle: true,
+      headers_to_hide: ['Settings'],
+    });
+    this.ele.append(this.header, this.body.append(this.key_values.ele)).slideFadeOut(0);
+    this.toggle = new Features.Toggle({
+      toggle_ele: this.header,
+      target_ele: this.body,
+      initial_state: 'hidden',
+      arrow_position: 'below',
+    });
+    if (this.recent.notEmpty()) this.recent.forEach(m => this.table.selection_list.add_item({value:m.uid,text:m.name || m.attr_list.name || 'no name'}));
+    log({this:this},`DETAILS ${this.table.model}`);
+  }
+  async load (model, uid, force_reload = false) {
+    let options = {
+      target: this.ele,
+      blur: true,
+      url: `/${model}/details/${uid}`,
+      is_html: false,
+    };
+    this.ele.slideFadeIn();
+    let instance = Model.find(model, uid), details = null;
+    if (instance && force_reload) details = await Http.fetch(options);
+    else if (instance && instance.details) details = instance.details;
+    else if (instance) details = await Http.fetch(options); 
+    else { 
+      details = await Http.fetch(options); 
+      instance = new Models[model]({uid,name:details.name});
+    }
+
+    Model.current = Models[model].current = instance;
+    instance.details = details;
+    this.toggle.text_ele.text(details.name || 'no name');
+    this.key_values.reset_all();
+    for (let section_name in details) {
+      if (['name','uid'].includes(section_name)) continue;
+      let info = details[section_name];
+      if (info) {
+        this.key_values.add_header(section_name);
+        this.key_values.new_pairs = info;        
+      }
+    }
+    log({options,details,this:this},`loading ${model} ${uid}`);    
+  }
+  static load (model, uid, force_reload = false) {
+    let details = $(`#${model}Details`);
+    if (details.dne()) return;
+    details.getObj().load(model, uid, force_reload);
+  }
+  get recent () { return Model.filter({type:this.table.model}) }
+  static model_details_display (key, value, obj_to_bool_array = false) {
+    if (typeof value == 'string') value = value.toBool();
+    let type = typeof value;
+    if (key == 'system' && !user.isSuper()) return null;
+    else if (key == 'DisplayValues') {
+      this.on_completion = () => {
+        let all = this.ele.find('.setting_name');
+        for (let name in value) {
+          let match = all.filter((e,ele) => $(ele).text().toKeyString() == name);
+          match.next().html(value[name]);
+        }
+      }
+      return null;
+    } else if (key == 'Business Hours') {
+      this.on_completion = () => {
+        let ele = this.ele.find(".value.BusinessHours");
+        ele.find('.DaysOfTheWeek').remove();
+        this.set_order(['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'],ele);
+        ele.find('span').replaceText(', and ',' - ');
+      }
+    }
+    let span = $('<span/>',{css:{display:'inline-block'}});
+
+    if (key == 'Settings') {
+      this.add_header(`Settings`);
+      if (value === null) this.add_header('no settings given');
+      else this.new_pairs = value;
+      return null;
+    } else if (type == 'object' && value.is_array()) {
+      return span.append(value.smartJoin('and'));
+    } else if (type == 'object') {
+      if (obj_to_bool_array) return span.append(SettingsManager.obj_to_bool_array(value).smartJoin('and'));
+      let div = $('<div/>');
+      for (let k in value) {
+        let inner_div = $('<div/>',{class:k}), key_span = $('<span/>',{class:`setting_name`,text:`${k.addSpacesToKeyString()}:`}), value_k = Details.model_details_display(k, value[k], true);
+        if (value_k instanceof jQuery) value_k.addClass('setting_value');
+        div.append(inner_div.append(key_span, value_k));
+      }
+      // if (!div.children().isSolo()) div.css({paddingTop:'0.25em'});
+      return div;
+    } else if (type == 'boolean') {
+      let icon = new Features.Icon({type: value ? 'checkmark' : 'styled_x', size: 1, css: {margin:'0.2em 0.3em',opacity:0.9}});
+      let div = $('<div/>').append(value ? 'true' : 'false', icon.img);
+      return div;
+    } else {
+      return span.append(value);
+    }
   }
 }
 class Model {
   constructor (attr_list, type) {
-    if (!attr_list) throw new Error('attr_list not provided to Model constructor');
-    else this.valid = true;
-    this.attr_list = attr_list;
-    this.type = type.toKeyString();
-    if (this.attr_list.uid) {
-      this.uid = this.attr_list.uid;
+    try {
+      if (!attr_list) throw new Error('attr_list not provided to Model constructor');
+      else this.valid = true;
+      this.attr_list = attr_list;
+      this.type = type.toKeyString();
+      if (this.attr_list.uid) { this.uid = this.attr_list.uid; }
+      let name = this.attr_list.form_name || this.attr_list.name || 'nameless';
+      Model.loaded.push(this);
+      if (this.uid != 'proxy' && this.type != 'Appointment') log({list:Model.loaded,this:this,attr_list}, `new ${type} : ${name}`);
+    } catch (error) {
+      log({error,attr_list,type});
     }
-    log(this, `new ${type}`);
   }
-
   backup_attr_values (array) {
     let model = this;
     array.forEach(value_str => {
@@ -220,6 +320,28 @@ class Model {
       if (model.attr_list[attr] == undefined) delete model.attr_list[attr];
     })
   }
+  static get loaded () { return Model.loaded_array === undefined ? Model.loaded_array = [] : Model.loaded_array }
+  static filter (options = {}) {
+    return Model.loaded.filter(m => {
+      for (let key in options) { if (m.dot_notation_get(key) != options[key]) return false; }
+      return true;
+    });
+  }
+  static find (type, uid, with_attr = []) {
+    try {
+      return Model.loaded.find(m => m.type == type && m.uid == uid && with_attr.every(a => m.a || m.attr_list.a));
+    } catch (error) { log({error,type,uid}) }
+  }
+  static find_or_create (type, uid, attr_list = {}) {
+    try {
+      let instance = Model.find(type, uid);
+      if (instance) instance.attr_list.merge(attr_list);
+      else instance = new Models[type](attr_list.merge({uid}));
+      return instance;
+      // return Model.find(type, uid) || new Models[type](attr_list.merge({uid}));
+    } catch (error) { log({error,type,uid}) }    
+  }
+
   static construct_from_form(selector) {
     let attr_list = {}, all_pass = true;;
     try {
@@ -264,65 +386,111 @@ class Model {
     this.uid = null;
     this.attr_list.uid = null;
   }
-  static settings_icon () {
-    let icon = new Image();
-    icon.src = '/images/icons/settings_icon_yellow.png';
-    $(icon).css({width:'1.2em',height:'1.2em',marginLeft: '0.5em',cursor:'pointer',opacity:0.6}).addOpacityHover();
-    return $(icon);
-  }
-  static settings_obj_to_array_of_true_values (obj) {
-    let array = [];
-    for (let setting_name in obj) {
-      let val = obj[setting_name].toBool();
-      if (val) array.push(setting_name.addSpacesToKeyString());
-    }
-    return array;
-  }
+
+  static async edit () { Model.current.edit() }
   async edit () {
     if (!this.edit_unique) {
-      await menu.fetch(`/edit/${this.type.toKeyString()}/${this.uid}`,'new_modal:EditModel');
+      await Http.fetch({url:`/edit/${this.type.toKeyString()}/${this.uid}`,target:'new_modal:EditModel'});
       Models[this.type.toKeyString()].editing = this;
     } else {
       await this.edit_unique();
     }
-    let top = blurTopGet(), form = top && top.find('.createModel').exists() ? top.find('.createModel') : null;
-    if (form) Model.form_mode('edit',form);
+    let form = Features.Blur.top.find('.createModel');
+    if (form.exists()) Model.form_mode('edit',form);
   }
-  async settings () {
+
+  static async settings () { Model.current.settings() }
+  static settings_icon (icon_css = {margin: '0.2em',cursor:'pointer',opacity:0.6}) {
+    let icon = new Features.Icon({type:'gears', size:'1.4'});
+    icon.img.css(icon_css).addOpacityHover();
+    return icon.img;
+  }
+  async settings (options = {}) {
     if (!this.settings_unique) {
-      let model = this;
-      await menu.fetch(`/settings/${this.type.toKeyString()}/${this.uid}`,'new_modal:SettingsModal');
+      console.groupCollapsed(`loading settings ${this.attr_list.name}`);
+      log({settings:this.attr_list.settings});
+      await Http.fetch({
+        url:`/settings/${this.type.toKeyString()}/${this.uid}`,
+        target:'new_modal:SettingsModal',
+        in_background: options.in_background,
+      });
+      console.groupEnd();
+      let model = this, settings_form = $("#SettingsModal").find('.form');
+      if (settings_form.dne()) {
+        $('<h4/>',{text:`${this.type} settings form not found`}).insertAfter('#Settings');
+        return;
+      }
+      $('#SettingsModal').find('.cancel').on('click', this.on_settings_close.bind(this));
+      this.attr_list.settings = $("#Settings").data('initial');
       this.settings_manager = new SettingsManager({
         obj: this,
         save: this.settings_autosave.bind(this),
+        autosave_delay: 5000,
         callback: this.settings_autosave_callback.bind(this),
+        form: settings_form,
+        autosave_on_form_change: true,
       }, 'edit');
-
-      let answers = Forms.Answer.get_all_within("#SettingsModal"), settings_manager = this.settings_manager;
-      if (this.settings_autosave) answers.forEach(answer => {
-        answer.options.after_change_action = settings_manager.update.bind(settings_manager,answer);
-      });
-    } else await this.settings_unique();
+    } else await this.settings_unique(options);
   }
   async settings_autosave () {
-    this.settings_autosave_unique();
-    // this.settings_manager.autosave.trigger();
-    let db_settings_obj
-    log({model:this},'settings_autosave');
+    if (this.uid == 'proxy') {
+      log(`don't settings_autosave a Proxy`);
+      return;
+    }
+    let type = this.type, db_settings_obj = {
+      uid:this.uid,
+      columns: {
+        settings: this.settings_manager.settings_obj
+      }, wants_checkmark:true
+    };
+    if (this.type == 'Practice') {
+      log({model:this,db_settings_obj},'settings_autosave');
+      // return;
+    }
+    // if (this.uid == 'proxy') return;
+    return $.ajax({
+      url: `/save/${type}`,
+      method: 'POST',
+      data: db_settings_obj,
+      success: response => {
+        if (system.validation.xhr.error.exists(response.save_result)) return;
+        log({response});
+        // return;
+        if (this.clear_on_success) {
+          let blur_callback = function () {
+            if (this.clear_count) unblur({repeat:clear_count,fade:400});
+            else unblurAll({fade:400});
+          }
+          if (this.save_blur) blur(save_blur.ele,'checkmark', { callback: blur_callback, delay: 500 });
+          else blurTop('checkmark', { callback: blur_callback, delay: 500 });
+        }
+      }
+    })
   }
   async settings_autosave_callback () {
     log({model:this},'settings_autosave_callback');
   }
+  async on_settings_close () {
+    // log("settings close");
+    unblur();
+    Details.load(this.type, this.uid, true);    
+  }
+
   async save (options = {}) {
     let type = this.type, model = this, columns = {}, relationships = {}, addl_post_data = {};
     let proceed = true, clear_on_success = ifu(options.clear_on_success, true), clear_count = this.clear_count || options.clear_count || null;
-    if (this.on_save) proceed = await this.on_save();
+    if (this.on_save) {
+      console.groupCollapsed(`${this.type} on_save`);
+      proceed = await this.on_save();
+      console.groupEnd();
+    }
     if (!proceed) return;
     try {
       if (this.valid) {
+        // console.groupCollapsed(`${this.type} save`);
         let save_blur = this.save_blur || false;
         if (save_blur) blur(save_blur.ele,'loading',save_blur.options);
-        else blurTop('loading',{loadingColor:'var(--green)',loadingFade:true});
+        else blurTop('loading',{color:'green'});
         
         let db_obj = this.db_save_obj, callback = this.save_callback ? this.save_callback.bind(this) : null;
         if (type == 'User') db_obj.uid = this.attr_list.user_id;
@@ -333,20 +501,11 @@ class Model {
           data: db_obj,
           success: function(response){
             if (system.validation.xhr.error.exists(response.save_result)) return;
-            if (clear_on_success) {
-              let blur_callback = function () {
-                if (clear_count) unblur({repeat:clear_count,fade:400});
-                else unblurAll({fade:400});
-              }
-              if (save_blur) blur(save_blur.ele,'checkmark', { callback: blur_callback, delay: 500 });
-              else blurTop('checkmark', { callback: blur_callback, delay: 500 });
-            }
-            Model.update_list(type,response.model_list_update);
-            Notification.update_list(response.notification_update);
             if (callback) callback(response.save_result);
             else $('.loadTarget').last().html(response.save_result);
           }
         })
+        // console.groupEnd();
         return result;
       } else throw new Error('cannot save invalid model, !this.valid');
     } catch (error) {
@@ -355,18 +514,19 @@ class Model {
   }
   async delete (name = null) {
     if (!this.delete_unique) {
-      let instance = this, callback = this.delete_callback || menu.reload;
-      name = name || this.attr_list.name || null;
+      let instance = this, callback = this.delete_callback || Http.reload;
+      let name = this.attr_list.name || null;
       return new Promise(resolve => {
         confirm({
           header: `Delete ${this.type}${name ? `: '${name}'` : ''}?`,
           message: '<h3 class="pink">This cannot be undone!<br>Are you sure?</h3>',
-          btntext_yes: 'permanently delete',
-          btntext_no: 'cancel',
-          callback_affirmative: async function(){
-            blur('body','loading',{loadingColor:'var(--green)'});
+          yes_text: 'permanently delete',
+          no_text: 'cancel',
+          immediate: true,
+          affirm: async function(){
+            blur('body','loading',{loading_color:'var(--green)'});
             let result = $.ajax({
-              url: '/delete/'+instance.type+'/'+instance.uid,
+              url: `/delete/${instance.type}/${instance.uid}`,
               method: 'DELETE',
               success: function(response) {
                 if (response == 'checkmark') {
@@ -381,6 +541,8 @@ class Model {
       })
     } else this.delete_unique();
   }
+  static async delete (options = {}) { Model.current.delete() }
+
   get db_save_obj () {
     let model = this, columns = {}, relationships = {}, uid = this.save_uid || this.uid || this.attr_list.uid || null;
     if (!this.db_columns) throw new Error(`db_columns not defined for ${this.type}`);
@@ -406,6 +568,7 @@ class Model {
     else if (attrs.is_array()) list = [...list,...attrs];
     this.attrs_not_to_save = list;
   }
+
   static form_mode (mode, form, options = {}) {
     // let mode = options.mode || 'create';
     let header = form.find('h1'), submit_btn = form.find('.submit.create, .submit.edit'), type = submit_btn.data('model');
@@ -419,18 +582,40 @@ class Model {
       submit_btn.addClass('edit').removeClass('create').text(text);      
     }
   }
+  static form_open (options = {}, type = null) {
+    try {
+      let edit = false;
+      if (options.instance) {edit = true; type = options.instance.type;}
+      let form = `#${type}`;
+      if ($(form).dne()) throw new Error(`form dne for type=${type}`);
+      
+
+
+      Forms.FormEle.model_edit(form, edit);
+
+      let fill = options.fill || {};
+      if (edit) fill.merge(options.instance.form_values);
+      else Features.Toggle.get_all_within(form).forEach(t => t.reset_messages());
+      log({options,form,fill});
+      Forms.FormEle.simple_fill(form, fill);
+      blurTop(form);      
+    } catch (error) {
+      log({error,options,type});
+    }
+  }
+
   static popup_links(model) {
-    // log(Models);
     let unique = Models[model].popup_links_unique;
     return unique ? unique() : [];
   }
+
   static list_has_column (list, column) {return list && list[0] && list[0][column] != undefined;}
   static list_missing_columns (list, columns) {return columns.filter(column => !Model.list_has_column(list,column));}
   static list_is_pending (model) {return linkable_lists_pending[model] && linkable_lists_pending[model] === true;}
   static list (model) {return linkable_lists[model.toKeyString()] || null};
   static async update_list (model, list) {
     linkable_lists[model] = list;
-    log({model,list:linkable_lists.model});
+    log({model,list:linkable_lists.model},`UPDATE LIST`);
   }
   static async get_list (options = {}) {
     let model = options.model.toKeyString(), columns = options.columns || [], force = options.force || false, list = linkable_lists[model];
@@ -438,6 +623,7 @@ class Model {
     if (list && Model.list_missing_columns(list,columns).isEmpty() && !force) return linkable_lists[model];
     if (Model.list_is_pending(model)) {return await Model.await_list(model);}
     linkable_lists_pending[model] = true;
+
     let list_response = await $.ajax({
       url: `/${model}/list`,
       method: 'POST',
@@ -470,6 +656,8 @@ class Model {
       return [];
     }
   }
+
+
   static async save_multi_callback (model_arr, data_arr) {
     model_arr.forEach((model,m) => {
       log({model,data:data_arr[m]});
@@ -479,13 +667,14 @@ class Model {
   static async save_multi (model_array, options = {}) {
     let db_array = model_array.map(model => {
       return model.db_save_obj.merge({type: model.type});
-    }), blur_ele = options.blur_ele || null, loadingColor = options.loadingColor || 'var(--darkgray97)';
-    if (blur_ele) blur(blur_ele,'loading',{loadingColor});
-    else blurTop('loading',{loadingColor});
+    }), blur_ele = options.blur_ele || null, loading_color = options.loading_color || 'var(--darkgray97)';
+    if (blur_ele) blur(blur_ele,'loading',{loading_color});
+    else blurTop('loading',{loading_color});
     let data = {models: db_array};
     log({data, model_array, options},'save MULTI');
     if (options.wants_checkmark) data.merge({wants_checkmark:true});
     try {
+      console.groupCollapsed('MULTI save');
       let result = await $.ajax({
         url: `/save/multi`,
         method: 'POST',
@@ -497,6 +686,8 @@ class Model {
           else unblurAll();
         }
       });
+      log({model_array,result});
+      console.groupEnd();
       return result;
     } catch (error) {
       log({error});
@@ -521,110 +712,301 @@ class Model {
       if (!options.type) throw new Error('create_or_edit requires options.type');
       let data = {where:options.where}.merge(options.ajax_data || {});
       log(data,'create or edit request');
-      return await menu.fetch({
+      await Http.fetch({
         url:`/create_or_edit/${options.type}`, 
         target:`new_modal:CreateOrEdit${options.type}`, 
         method:"POST", 
         data
       });
+      let modal = $(`#${options.type}`), attr_list = modal.exists() ? modal.data('attr_list') || {} : {};
+      Model.current = Models[options.type].current = new Models[options.type]({type:options.type}.merge(attr_list));
     } catch (error) {
       log({error,options});
     }
   }
 }
-
-class Category extends Model {
-  // constructor (attr_list, )
+class ModelList {
+  constructor (options = {}) {
+    this.define_by(options);
+    ModelList.all[this.model] = this;
+  }
+  find (options = {}) {
+    return this.list.find(m => {
+      for (let attr in options) { if (m[attr] != options[attr]) return false; }
+      return true;      
+    });
+  }
+  filter (options = {}) {
+    return this.list.filter(m => {
+      for (let attr in options) { 
+        let search_val = options[attr];
+        search_val.is_array() ? search_val : [search_val];
+        if (!search_val.includes(m[attr])) return false; 
+      }
+      return true;      
+    });
+  }
+  get names () {
+    return this.list.map(m => m.name);
+  }
+  names_by_id (ids = []) { return this.filter({uid:ids.map(id=>Number(id))}).map(m => m.name); }
+  static async get (model, obj_waiting = null) {
+    if (model.is_array()) {
+      log('GET ARRAY');
+      await Promise.all(model.map(m => ModelList.get(m, obj_waiting)));
+      let obj = {};
+      model.forEach(m => obj[m] = ModelList.find(m));
+      return obj;
+      // return model.map(m => Mode);
+    }
+    if (obj_waiting) obj_waiting.waiting_for_list = true;
+    let list_obj = ModelList.find(model);
+    if (!list_obj) ModelList.add_to_pending(model);
+    else return list_obj;
+    if (obj_waiting && obj_waiting.ele) {
+      obj_waiting.ele.initial_opacity = obj_waiting.ele.css('opacity');
+      obj_waiting.ele.css({opacity:0.2});
+    }
+    return new Promise((resolve,reject) => {
+      let waiting = setInterval(_ => {
+        list_obj = ModelList.find(model);
+        if (list_obj) {
+          clearInterval(waiting);
+          if (obj_waiting) obj_waiting.waiting_for_list = false;
+          if (obj_waiting && obj_waiting.ele) obj_waiting.ele.css({opacity:obj_waiting.ele.initial_opacity});
+          if (list_obj.list[0].name == 'enable TableAccess') log({error:new Error(`enable TableAccess for ${model}`)});
+          resolve(list_obj);
+        }
+      },50);
+    }); 
+  }
+  static get all () { return ModelList.master === undefined ? ModelList.master = {} : ModelList.master }
+  static find (model, uid = null) {
+    let attr = null, split = model.split('.');
+    if (split.notSolo()) { model = split[0]; attr = split.slice(1).join('.') }
+    let list = ModelList.all[model], instance = uid ? list.find({uid}) : null;
+    return !instance ? list : !attr ? instance : instance.dot_notation_get(attr);
+  }
+  static get pending () { 
+    return ModelList.pending_array === undefined ? ModelList.pending_array = [] : ModelList.pending_array 
+  }
+  static add_to_pending (model) {
+    ModelList.pending.smartPush(model);
+    ModelList.retrieve_trigger();
+  }
+  static retrieve_trigger () {
+    clearTimeout(this.retrieve_timer);
+    this.retrieve_timer = setTimeout(ModelList.retrieve, 200);
+  }
+  static async retrieve () {
+    let response = await $.ajax({
+      url: `/retrieve/list`,
+      method: 'POST',
+      data: {models:ModelList.pending},
+    });
+    ModelList.pending.forEach(model => { new ModelList({model,list:response[model]}) });
+    ModelList.pending_array = [];
+    log({all:ModelList.all,pending:ModelList.pending},'LISTS');
+  }
 }
 class SettingsManager {
   constructor (options, mode = 'display') {
-    for (let attr in options) {this[attr] = options[attr]}
-    if (!this.obj) throw new Error('must supply an object');
-    if (!this.obj.settings) this.obj.settings = {};
-    SettingsManager.convert_obj_values_to_bool(this.obj.settings);
-    if (!this.autosave && mode == 'edit') {
-      if (!this.save || typeof this.save != 'function') throw new Error('Must supply a save function for Autosave');
-      if (this.callback && typeof this.callback != 'function') throw new Error('Invalid callback function for Autosave');
-      let settings_manager = this;
-      this.autosave = new Features.Autosave({
-        ele: $("#SettingsModal"),
-        delay: 10000,
-        send: function() {
-          settings_manager.has_changes = false;
-          return settings_manager.save();
-        },
-        callback: settings_manager.callback,
-        obj: this.obj,
-      })
+    try {
+      this.define_by(options);
+      if (!this.obj) throw new Error('must supply an object');
+      this.mode = this.mode || mode;
+      
+      if (this.obj instanceof Model) {
+        if (!this.obj.attr_list.settings) this.obj.attr_list.settings = {};
+        this.settings_obj = this.obj.attr_list.settings;
+        log(this,`new SettingsManager ${this.obj.type}`);
+      } else {
+        if (!this.obj.settings) this.obj.settings = {};
+        this.settings_obj = this.obj.settings;
+      }
+      if (this.initial_override) this.settings_obj.merge(this.initial_override);
+      SettingsManager.convert_obj_values_to_bool(this.settings_obj);
+      if (this.mode == 'edit' && this.form) this.form_ele = this.form;
+      if (!this.autosave && this.mode == 'edit') {
+        if (!this.save || typeof this.save != 'function') throw new Error('Must supply a save function for Autosave');
+        if (this.callback && typeof this.callback != 'function') throw new Error('Invalid callback function for Autosave');
+        let settings_manager = this;
+        this.autosave = new Features.Autosave({
+          show_status: true,
+          delay: this.autosave_delay || 5000,
+          send: function() {
+            settings_manager.has_changes = false;
+            return settings_manager.save();
+          },
+          message: 'Settings saved',
+          callback: settings_manager.callback,
+          obj: this.obj,
+        })
+      }
+    } catch (error) {
+      log({error,options,mode});
     }
-    log({settings_manager:this},`new SettingsManager, obj is ${this.obj.constructor.name}`);
   }
-  get_setting (nested_dot) {
-    if (nested_dot.split('.')[0] != 'settings') nested_dot = `settings.${nested_dot}`;
-    let value = this.obj.dot_notation_get(nested_dot);
+  set form_ele (ele) {
+    let settings_manager = this;
+    if (!ele.is('.form')) log({error: new Error('settings form is not .form')})
+    this.form = {ele: ele, obj: ele.getObj() }
+    log({initial:JSON.stringify(this.settings_obj)},`SETTINGS FORM FILL`);
+    this.form_fill();
+    let answers = Forms.Answer.get_all_within(this.form.ele,false);
+    answers.forEach(answer => {
+      answer.options.after_change_action = settings_manager.update.bind(settings_manager,answer,true);
+    });            
+    // log({settings_manager,form:this.form,answers},'SETTING FORM');
+  }
+  get_setting (nested_dot, default_value) {
+    if (nested_dot == 'settings') return this.settings_obj;
+    let value = this.settings_obj.dot_notation_get(nested_dot);
+    if (typeof value == 'undefined' && typeof default_value != 'undefined') return default_value;
     return typeof value == 'string' ? value.toBool() : value;
   }
-  update (answer) {
-    this.has_changes = true;
-    let setting_name = answer.setting_name;
-    if (!setting_name) throw new Error(`answer.setting_name not defined for ${this.obj.constructor.name}`);
-    let split = setting_name.split('.'), master = {}, working = master;
-    let value = answer.get(), as_bool = answer.save_as_bool;
-    console.groupCollapsed(`UPDATE ${this.obj.constructor.name} with ${setting_name} ${as_bool?'as bool':'not as bool'}`);
-    if (value != null && typeof value == 'object') {
-      while (split.notEmpty()) {
-        let next = split.shift();
-        if (next != 'settings') {
-          working[next] = {};
-          working = working[next];
-        }
-      }      
-      working.merge(value);
-    } else {
-      while (split.notSolo()) {
-        let next = split.shift();
-        if (next != 'settings') {
-          working[next] = {};
-          working = working[next];
+  set_setting (nested_dot, value) {
+    return this.settings_obj.dot_notation_set(nested_dot, value);
+  }
+  delete_setting (parent_nested_dot, setting_name, asterisk = true) {
+    let parent = this.get_setting(parent_nested_dot);
+    // log({parent,parent_nested_dot,setting_name});
+    if (!parent) return;
+    delete parent[setting_name];
+    if (asterisk) delete parent[`${setting_name}*`];
+    if (Object.keys(parent).length === 0) {
+      let array = parent_nested_dot.split('.');
+      let name = array.pop();
+      // log({array,name});
+      this.delete_setting(array.join('.'), name);
+    }
+  }
+  update (answer, is_self = true) {
+    let value = undefined;
+    try {
+      // log({answer})
+      // if (answer.type == 'time' && answer.ele.parent().is('.time')) {
+      //   this.update(answer.ele.parent().getObj());
+      //   return;
+      // }
+      let setting_name = answer.setting_name, dot_array = [];
+      if (!setting_name) throw new Error(`answer.setting_name not defined for ${this.obj.constructor.name}`);
+      let nested = answer.ele.parents('.item').length != 1;
+      let section = answer.ele.getObj('section');
+      if (section) dot_array.smartPush(section.name.replace(/\./g,''));
+      this.has_changes = true;
+      value = answer.get();
+      let item = answer.item;
+      let limit_1 = answer.options.listLimit == 1, use_prelabel = answer.options.usePreLabel, is_bool = answer.settings.save_as_bool || (item && item.settings.save_as_bool), in_item = answer.item;
+      if (limit_1 && ( (use_prelabel && !in_item) || (in_item && answer.type == 'list'))) { 
+        // log({value,answer,item:answer.item},`CONVERTING ${setting_name}`);
+        for (let key in value) { value = value[key]; } 
+      };
+      dot_array.push(setting_name);
+      if (dot_array[0] == 'settings') dot_array.shift();
+      log({dot_array:dot_array.join('.'),value,obj:this.settings_obj},`SETTING ${setting_name}`);
+
+      let is_linked = answer.options.linked_to || null, is_number = answer.type == 'number', is_address = answer.type == 'address', adjusted = value;
+      if (is_linked||is_number||is_address) {
+        if (value === null) this.delete_setting('DisplayValues',setting_name);
+        else {
+          if (is_linked) {
+            log({answer,value,is_linked,is_number},`ADJUST ME ${setting_name}`);
+            alert('adjust setting for linked_to');
+          } else if (is_number) { 
+            if (answer.options.preLabel) adjusted = `${answer.options.preLabel} ${value}`;
+            if (answer.options.units) adjusted += ` ${answer.options.units}`;
+          } else if (is_address) {
+            adjusted = answer.parse(value).map(line => `<div>${line}</div>`).join('');
+          }          
+          this.set_setting(`DisplayValues.${setting_name}`,adjusted);
         }
       }
-      working[split.shift()] = value;
+      // if (value === null && (is_linked||is_number||is_address)) {
+      //   this.delete_setting('DisplayValues',setting_name);
+      // } else 
+
+      if (value === null) {
+        let name = dot_array.pop();
+        this.delete_setting(dot_array.join('.'), name);
+      } else {
+        let full_dot = dot_array.join(".");
+        let result = this.set_setting(full_dot,value);
+        if (result instanceof Error) log({error:result,answer});
+        if (in_item && item.is_followup && this.obj.uid === 'proxy') {
+          let cond = item.options.condition, str = item.condition_str;
+          item = item.ele.getObj('item',true,false);
+          let key = `${section.name.toKeyString()}.${item.text_key}`;
+          this.set_setting(`Conditions.${setting_name}`,{key,condition:cond,condition_str:str});
+        }
+      }
+      // log({})
+      if (this.obj.settings_apply) this.obj.settings_apply(400);
+      if (this.autosave_on_form_change) this.autosave.trigger();
+      if (this.update_callback) this.update_callback({answer,key:setting_name,value});
+      return value;
+    } catch (error) {
+      log({error,answer,value});
     }
-    log({working,master});
-    this.obj.settings.merge(master);
-    if (this.obj.settings_apply) this.obj.settings_apply(400);
-    log({settings:this.obj.settings,response:value});
-    console.groupEnd();
   }
-  popup_create (header = '') {
+  popup_create (options = {}) {
+    let header = options.header || '',
+      header_html_tag = options.header_html_tag || 'h4';
     let update = this.update.bind(this), manager = this;
     let icon = Model.settings_icon(), 
       tooltip = new Features.ToolTip({
         target: icon,
         css: {borderColor: 'var(--yellow)', alignItems: 'flex-start'},
         class: 'flexbox column',
-        message: header,
-        match_border: false,
+        message: $(`<${header_html_tag}>${header}</${header_html_tag}>`),
+        match_target_color: false,
         on_hide: function () {if (manager.has_changes) manager.autosave.trigger()},
       }), add = function (input) {
         let name = input.name, as_bool = input.options.save_as_bool || false;
-        if (!name) throw new Error('cannot add setting without input.name');
-        let setting_name = input.options.usePreLabel ? `${name}.${input.options.preLabel.toKeyString()}` : name;
-        input.setting_name = name;
-        let existing = manager.get_setting(setting_name);
-        let initial = as_bool ? SettingsManager.array_of_true_values(existing) : existing;
+
+        if (!input.setting_name) {
+          if (!name) throw new Error('cannot add setting without input.name');
+          let setting_name = input.options.usePreLabel ? `${name}.${input.options.preLabel.toKeyString()}` : name;
+          input.setting_name = setting_name;
+        }
+        let existing = manager.get_setting(input.setting_name);
+        let initial = (as_bool && typeof existing == 'object') ? SettingsManager.obj_to_bool_array(existing) : existing;
+        if (name == 'system') log({existing,initial});
         input.merge({options: {on_change_action: update}, initial});
-        log({input,name,existing,initial},`adding ${setting_name} ${as_bool?'as BOOL':'as NOT BOOL'} to ${manager.obj.constructor.name}`);
         let answer = new Forms.Answer(input);
         tooltip.message_append(answer.ele.addClass('flexbox left').css({width:'auto'}).wrap(`<div class='flexbox'></div>`));
+        return answer;
       };
     return {icon,tooltip,add};
   }
-  static array_of_true_values (obj, addSpacesToKeys = true) {
+  async form_fill () {
+    let m = this, form = this.form.obj;
+    if (!form) return false;
+    await new Promise(resolve => {
+      m.waiting = setInterval(function(){ if (form.waiting == null) { clearInterval(m.waiting); resolve(true); } },200)
+    })
+    let answers = Forms.Answer.get_all_within(this.form.ele,false), find = function(name) {
+      return Forms.Answer.find(answers,{name});
+    }, fill_with = function(obj) {
+      for (let key in obj) {
+        if (['Conditions','ExactMatch','DisplayValues'].includes(key)) continue;
+        let value = obj[key], answer = find(key);
+        if (answer) {
+          if (typeof value == 'object' && !value.is_array() && !['address','signature'].includes(answer.type)) value = SettingsManager.obj_to_bool_array(value);
+          answer.value = value;
+        } else if (typeof value == 'object' && !value.is_array()) fill_with(value);
+      }
+    }
+    fill_with(this.settings_obj);
+    return true;
+  }
+  static obj_to_bool_array (obj, include_keyed_asterisk_false = false) {
     let array = [];
     try {
-      for (let attr in obj) {
-        if (obj[attr] === true) array.push(attr.addSpacesToKeyString());
+      for (let key in obj) {
+        if (obj[key] === null) continue;
+        if (obj[key].toBool() === true) array.push(key.addSpacesToKeyString());
+        else if (include_keyed_asterisk_false && obj[key].toBool() === false && key.includes('*')) array.push(key.addSpacesToKeyString());
       }
     } catch (error) {
       log({error,obj});
@@ -641,22 +1023,79 @@ class SettingsManager {
     } catch (error) {
       log({error,obj});
     }
+    return obj;
+  }
+  static convert_obj_bools_to_array (obj, asterisk) {
+    let dummy = {}.merge(obj);
+    try {
+      for (let attr in dummy) {
+        let type = typeof dummy[attr];
+        if (type == 'string') dummy[attr] = dummy[attr];
+        else if (type == 'object' && !attr.is_array()) dummy[attr] = SettingsManager.obj_to_bool_array(dummy[attr], asterisk);
+      }
+    } catch (error) {
+      log({error,dummy,obj});
+    }
+    return dummy;
+  }
+  static compare_settings (options = {}) {
+    let match_me = options.match_me || {}, match_to = options.match_to || {};
+    let compare = (value, compare_to) => {
+      let type = typeof compare_to, is_object = type == 'object', is_array = is_object ? value.is_array() : false;
+      // log({value,type,is_object,array:is_array},`TYPE ${type}`);
+      if (is_array) return {exact: compare_to.every(v => value.includes(v)), loose: compare_to.some(v => value.includes(v))};
+      else if (is_object) log("HELP ME COMPARE");
+      else if (type == 'boolean') {
+        let match = value.toBool() === compare_to;
+        return {exact: match, loose: match};
+      } else {
+        log({error: new Error('type not found'),value,type,is_object,array:is_array});
+      }
+    };
+
+    let matched = true;
+    for (let section_name in match_to) {
+      if (!['Conditions','ExactMatch','DisplayValues'].includes(section_name)) {
+        let section_to = match_to[section_name], section_me = match_me.dot_notation_get(section_name);
+        // log({section_name,section_to,section_me},`SECTION ${section_name}`);
+        if (typeof section_me == 'undefined') return false;
+        for (let setting_name in section_to) {
+          let setting_to = section_to[setting_name], setting_me = section_me.dot_notation_get(setting_name);
+          let cond_info = match_to.dot_notation_get(`Conditions.${setting_name}`), exact = match_to.dot_notation_get(`ExactMatch.${setting_name}`);
+          if (cond_info) {
+            let value = match_me.dot_notation_get(cond_info.key);
+            let condition_match = Forms.Answer.condition_matches_parent(value,cond_info.condition);
+            // log({cond_info,value,condition_match},`${condition_match?`COMPARE`:`IGNORE`} ${setting_name}`);
+            if (!condition_match) continue;
+          }
+          if (setting_me == undefined) return false;
+          let comparison = compare(setting_me, setting_to);
+          // log({comparison});
+          if (typeof exact != 'undefined') {
+            // log({setting_to,setting_me,exact},`${exact?'EXACT':'LOOSE'} ${setting_name}`);
+            if (exact && !comparison.exact) return false;
+            else if (!comparison.loose) return false;
+          } else {
+            // log({setting_to,setting_me,exact},`single ${setting_name}`);
+            if (!comparison.exact) return false;
+          }
+          // log({setting_to,setting_me},`${setting_name}`);
+        }
+      }
+    }
+    return matched;
   }
 }
+
 class Practice extends Model {
   constructor (attr_list) {
     super(attr_list, 'Practice');
   }
   async schedule_edit () {
-    await menu.fetch(`/schedule/Practice/${this.uid}`,'new_modal:EditSchedule');
-    // let calendar = $('#EditSchedule').find('.calendar').getObj();
-    // let schedule = $('#EditSchedule').find('.schedule').getObj();
+    await Http.fetch({url:`/schedule/Practice/${this.uid}`,target:'new_modal:EditSchedule'});
   }
   async schedule_save () {
     this.schedule.add_response();
-    // if (this.schedule.add_response()) {
-    //   this.schedule.save('Practice', this.uid);
-    // }
   }
 }
 class User extends Model {
@@ -677,9 +1116,9 @@ class User extends Model {
     confirm({
       header: `Delete ${this.attr_list.model}: ${this.attr_list.name}?`,
       message: '<h3 class="pink">This cannot be undone!<br>Are you sure?</h3>',
-      btntext_yes: 'permanently delete',
-      btntext_no: 'cancel',
-      callback_affirmative: async function(){
+      yes_text: 'permanently delete',
+      no_text: 'cancel',
+      affirm: async function(){
         blur('body','loading');
         let result = await $.ajax({
           url: '/delete/'+instance.attr_list.model+'/'+instance.uid,
@@ -687,24 +1126,24 @@ class User extends Model {
         })
         if (result == 'checkmark') {
           blurTop('checkmark',{
-            callback:function(){unblurAll({callback:menu.reload})},
+            callback:function(){unblurAll({callback:Http.reload})},
             delay:500});
         }
       }
     })
   }
   async edit_unique () {
-    return menu.fetch(`/edit/${this.usertype.toKeyString()}/${this.uid}`,'new_modal:EditUser');
+    return Http.fetch({url:`/edit/${this.usertype.toKeyString()}/${this.uid}`,target:'new_modal:EditUser'});
   }
   settings_unique () {
-    menu.fetch(`/settings/${this.usertype.toKeyString()}/${this.uid}`,'new_modal:UserSettings');
+    Http.fetch({url:`/settings/${this.usertype.toKeyString()}/${this.uid}`,target:'new_modal:UserSettings'});
   }
   async roles_edit () {log("EDITING")}
   async roles_save () {}
 
   async schedule_edit () {
     let UserType = this.usertype.toKeyString(), user = this;
-    await menu.fetch(`/schedule/${UserType}/${this.uid}`,'new_modal:EditSchedule');
+    await Http.fetch({url:`/schedule/${UserType}/${this.uid}`,target:'new_modal:EditSchedule'});
     // let calendar = $('#EditSchedule').find('.calendar').getObj();
     // let schedule = $('#EditSchedule').find('.schedule').getObj();
     // init('.calendar.schedule',function(){
@@ -737,6 +1176,7 @@ class StaffMember extends User {
     super(attrs, 'staff member');
   }
 }
+
 class Calendar {
   constructor (ele = null) {
     this.ele = $(ele);
@@ -750,6 +1190,7 @@ class Calendar {
       let obj = new Schedule(schedule, s, this.ele);
       schedules.push(obj);
       obj.calendar = this;
+      // log({schedule,obj,s,cal:this});
     })
     this.schedules = schedules;
     let calendar = this, fullcal_options = {
@@ -782,36 +1223,20 @@ class Calendar {
       eventDidMount: function(info) {calendar.event_mount(info)},
       eventSources: this.event_sources,
       eventOrder: "displayOrder,start,-duration,allDay,title",
+      progressiveEventRendering: true,
     };
     if (this.options.fullcal) fullcal_options.merge(this.options.fullcal);
     this.fullcal = new FullCal(this.ele[0], fullcal_options);
     this.fullcal.render();
-    let view = this.ele.find('.fc-view');
-    blur(view,'loading',{loadingColor:'var(--pink)',blurCss:{backgroundColor:'var(--white50)'}});      
-    let cal = this, wait = setInterval(function(){
-      if (cal.schedules.every(schedule => schedule.loading === false)) {
-        clearInterval(wait);
-        setTimeout(function(){unblur({ele:view})},100);
-      }
-    },100);
-    if (this.schedule_active.modal.id == 'Appointment') {
-      this.schedule_active.autosave = new Features.Autosave({
-        send: this.schedule_active.save.bind(this.schedule_active), 
-        delay:5000, 
-        message: 'All schedule changes saved', 
-        ele: this.ele,
-        obj: this,
-      });
-    }
   }
   get event_list () {return this.events ? this.events : []}
   get event_sources () {
     let schedule_events = this.schedules.map(schedule => schedule.event_source);
     return schedule_events;
   }
-  get schedule_active () {return this.schedules.isSolo() ? this.schedules[0] : this.schedules.find(s => s.options.active)}
+  get schedule_active () {return this.schedules.isSolo() ? this.schedules[0] : this.schedules.find(s => s.active)}
   async event_drop (info) {
-    let group_id = info.event.groupId, event_source_id = info.event.source.id, source = this.fullcal.getEventSourceById(event_source_id), schedule = this.schedule_by_source_id(event_source_id), response = schedule.response_by_group_id(group_id), delta = info.delta;
+    let group_id = info.event.groupId, event_source_id = info.event.source.id, source = this.fullcal.getEventSourceById(event_source_id), schedule = this.find_schedule(event_source_id), response = schedule.response_by_group_id(group_id), delta = info.delta;
     console.groupCollapsed('EVENT DROP');
     log({info,group_id,event_source_id,schedule,response});
     let result = null;
@@ -823,16 +1248,16 @@ class Calendar {
     return result ? !system.validation.xhr.error.exists(result) : false;
   }
   async event_resize (info) {
-    let group_id = info.event.groupId, event_source_id = info.event.source.id, source = this.fullcal.getEventSourceById(event_source_id), schedule = this.schedule_by_source_id(event_source_id), response = schedule.response_by_group_id(group_id), startDelta = info.startDelta, endDelta = info.endDelta;
+    let group_id = info.event.groupId, event_source_id = info.event.source.id, source = this.fullcal.getEventSourceById(event_source_id), schedule = this.find_schedule(event_source_id), response = schedule.response_by_group_id(group_id), startDelta = info.startDelta, endDelta = info.endDelta;
     log({info,group_id,event_source_id,schedule,response}, 'event resize');
     if (schedule) return schedule.update_by_delta(response, {startDelta,endDelta});
     else return false;
   }
 
-  schedule_by_source_id (source_id) {return this.schedules.find(s => s.event_source_id == source_id)}
+  find_schedule (source_id) {return this.schedules.find(s => s.event_source_id == source_id)}
   schedule_by_event (event) {
     let source_id = event.source.id;
-    return this.schedule_by_source_id(source_id);
+    return this.find_schedule(source_id);
   }
   source_by_group_id (group_id) {
     let sources = this.fullcal.getEventSources();
@@ -841,34 +1266,24 @@ class Calendar {
   event_eles_by_group_id (group_id) {
     return this.ele.find('.fc-event').filter(`.${group_id}`);
   }
-  event_classes (info) {
 
-  }
   event_mount (info) {
-    $(info.el).data({fc_event:info.event});
-    if (info.isMirror || info.event.display == 'background') return;
-    let calendar = this;
-    if (info.event.extendedProps.description) {
-      let message = info.event.extendedProps.description.to_key_value_html();
-      // log({message,has_modified:message.find('.modified_indicator').exists()});
-      if (message.find('.modified_indicator').exists()) message.append(`<div class='little pink modified_note'>Modified from original*</div>`);
-      this.apply_event_info_to_tooltip(message,info);
-      new Features.ToolTip({
-        target: $(info.el),
-        message: message,
-        match_border: true,
-        on_hide: function(){
-          if (info.event.groupId) calendar.event_eles_by_group_id(info.event.groupId).removeClass('hover');
-          else $(info.el).removeClass('hover');
-        },
-        hide_on: 'mousedown touchstart',
-      })
+    let ele = $(info.el);
+    ele.data({class_obj:info.event,start:info.event.start}.merge(info.event.extendedProps));
+    info.event.setExtendedProp('ele', ele);
+    if (info.isMirror || ele.is('.fc-bg-event')) return;
+    if (info.event.extendedProps.description) this.add_tooltip(info);
+    if (this.after_next_mount_fx) {
+      clearTimeout(this.post_mount);
+      this.post_mount = setTimeout(_ => {
+        this.after_next_mount_fx();
+        this.after_next_mount_fx = null;
+      },100)
     }
   }
   event_mouseenter (info) {
     if (info.event.display == 'background') return;
     let group_id = info.event.groupId;
-    // log({info},'mouseenter info');
     $(info.el).removeClass('pinkBgFlash');
     if (group_id && group_id != '') this.event_eles_by_group_id(group_id).addClass('hover');
   }
@@ -878,109 +1293,118 @@ class Calendar {
     let target = jsEvent ? $(info.jsEvent.relatedTarget) : null;
     if (target && !target.is('.tooltip') && group_id && group_id != '') this.event_eles_by_group_id(group_id).removeClass('hover');
   }
+
+  event_find (options = {}) {
+    try {
+      let ele = $('.fc-event').get().find(e => {
+        let ev = $(e).data();
+        return ev.recurring_id == options.recurring_id && +ev.start == +options.dt;
+      });
+      return ele ? $(ele) : null;
+    } catch (error) {
+      log({error,options});
+    }
+  }
+  event_flash (options = {}) {
+    try { 
+      let ele = options.ele || this.event_find(options);
+      if (ele) ele.addClass('pinkBgFlash');
+    } catch (error) { 
+      log({error,ele}) 
+    }
+  }
+
+
   event_click (info) {
-    let groupId = info.event.groupId, schedule = this.schedule_by_event(info.event);
+    let uid = info.event.extendedProps.uid, schedule = this.schedule_by_event(info.event);
     if (schedule.is_background) return;
-    let response = schedule.response_by_group_id(groupId), ids = info.event.extendedProps.ids;
-    log({info,response,ids});
-    schedule.edit_event = info.event;
-    schedule.form_open({response});      
+    schedule.current = schedule.model ? Model.find(schedule.model, uid) : schedule.find(uid);
+    schedule.form_open();      
   }
   date_click (info) {
     let schedule = this.schedule_active;
-    // log({date:moment(info.date),schedule}, 'date click');
-    if (schedule) schedule.date_click_to_form(info);
-    else log({error:new Error('schedule not selected')});
+    schedule.current = null;
+    schedule.date_click_to_form(info);
   }
-  apply_event_info_to_tooltip (message, render_info) {
-    this.apply_tooltip_info_generic(message, render_info);
-    this.apply_tooltip_info_by_class(message, render_info);
+
+  add_tooltip (info) {
+    let schedule = this.find_schedule(info.event.source.id);    // let recurring_description = 
+    let description = info.event.extendedProps.description;
+    let rr_description = schedule.recurring_description(info.event);
+    if (rr_description) description.merge({Recurring:rr_description});
+    let message = description.to_key_value_html();
+    message.prepend(this.datetime_info(info));
+    message.append(schedule.recurring_links(info.event));
+    ['Appointment'].filter(m => info.event.classNames.includes(m)).forEach(m => {
+      let btn_box = $('<div/>',{class:'button_box'});
+      btn_box.append(Model.find(m, info.event.extendedProps.uid).event_btns);
+      message.append(btn_box);
+    });
+    new Features.ToolTip({
+      target: $(info.el),
+      message: message,
+      match_target_color: true,
+    })
   }
-  apply_tooltip_info_generic (message, render_info) {
-    let event = render_info.event, start = LUX.fromISO(event.startStr), end = LUX.fromISO(event.endStr);
+  datetime_info (info) {
+    let event = info.event, start = LUX.fromISO(event.startStr), end = LUX.fromISO(event.endStr);
     let description = `${start.date} ${start.time} - ${end.time}`;
-    message.prepend(`<div class='generic'><b>${description}</b></div>`);
-  }
-  apply_tooltip_info_by_class (message, render_info) {
-    let ele = $(render_info.el);
-    if (ele.hasClass('open')) {
-      message.prepend(`<b class="green">${render_info.event.title}</b>`);
-    }
-    if (ele.hasClass('blocked')) {
-      message.prepend('<b class="pink">This fully blocks and overrides all availability</b>');
-    }
-    if (ele.hasClass('Appointment')) {
-      let cal = this, description = render_info.event.extendedProps.description;
-      let groupId = render_info.event.groupId, schedule = cal.schedule_by_event(render_info.event);
-      let appt_details = schedule.response_by_group_id(groupId), appointment_id = appt_details.uid, date_time_start = render_info.event.start;
-      let chartnote_btn = new Features.Button({
-        text:'chart note', class_list: 'xxsmall yellow', action: async function(){
-          log({appt_details,groupId,render_info});
-          let note = await Model.create_or_edit({
-            where: {appointment_id, date_time_start},
-            type: 'ChartNote',
-            ajax_data: {mode:'modal'}
-          });
-          log({note});
-        }, appendTo: message,
-      }), invoice_btn = new Features.Button({
-        text:'invoice', class_list: 'xxsmall yellow', action: function(){
-          log({appt_details,groupId});
-        }, appendTo: message,
-      }), edit_btn = new Features.Button({
-        text:'edit details', class_list: 'xxsmall yellow70', action: function(){
-          schedule.edit_event = render_info.event;
-          schedule.form_open({appt_details});      
-        }, appendTo: message,
-      }), delete_btn = new Features.Button({
-        text:'delete', class_list: 'xxsmall pink70', action: function(){
-          schedule.delete(appt_details);
-        }, appendTo: message,
-      })
-      message.find('.generic, .Patient, .Practitioner, .Services').css({fontSize:'1.2em'});
-    }
+    return `<div class='datetime'><b>${description}</b></div>`;
   }
 }
 class Schedule {
   constructor(schedule_ele, cal_index, cal_ele) {
     this.ele = $(schedule_ele);
-    this.ele.data('class_obj',this);
     this.cal_index = cal_index;
-    this.options = this.ele.data();
-    this.db_attr = this.options.db_attr || 'schedule';
-    this.model = this.options.model || null;
-    this.uid = this.options.uid || null;
-    if (model.current) model.current.schedule = this;
-    this.responses = this.options.responses || null;
-    this.models = this.options.models || null;
-    this.modal = {id: this.options.modal, ele: this.options.modal ? ($(`#${this.options.modal}`).exists() ? $(`#${this.options.modal}`) : null) : null};
+    this.define_by(this.ele.data());
+    this.ele.data('class_obj',this);
+
+    this.db_attr = this.db_attr || this.feed_url ? null : 'schedule';
+
+    this.model = ifu(this.model, null);
+    this.uid = ifu(this.uid, null);
+    // if (model.current) model.current.schedule = this;
+    this.responses = ifu(this.responses, null);
+    // this.models = ifu(this.models, null);
+
+    this.modal = {id: this.modal, ele: this.modal ? ($(`#${this.modal}`).exists() ? $(`#${this.modal}`) : null) : null};
     this.form = this.modal.ele ? this.modal.ele.find('.form').getObj() : null;
     this.is_background = this.form === null;
-    this.display = this.options.display || 'auto';
-    this.refresh_events();
+    this.display = this.display || 'auto';
+    // this.loading = (this.feed_url || this.events) ? false : true;
+    // this.refresh_events();
+    // log({ele:this.ele,schedule:this},`new SCHEDULE`);
   }
   get event_list () {return this.events ? this.events : []}
   get event_source_id () {return `SCH_${this.cal_index}_${this.model}`}
   get event_source () {
-    let source = {
-      id: this.event_source_id, 
-      events: this.event_list,
-    }
+    let id = this.event_source_id;
+    let source = {id};
+    if (this.feed_url) source.merge({
+      url: this.feed_url,
+      method: 'POST',
+      eventDataTransform: event => {
+        event.uid = event.id;
+        return this.model_add(event).merge({schedule:this});
+      },
+    });
+    else source.merge({events: this.event_list});
+    if (this.is_background) source.display = 'background';
     return source;
   }
-  find (uid) {
-    let collection = this.responses || this.models, match = collection.find(x => x.uid == uid) || null;
-    log({collection,match,uid}, 'find model by uid');
-    return match;
+  // get 
+  get models () { return this.model_array == undefined ? this.model_array = [] : this.model_array }
+  model_add (event) {
+    let model = Model.find_or_create(this.model, event.uid, event);
+    let event_obj = model.event_obj;
+    if (this.find(event.uid)) return event_obj;
+    this.models.push(model);
+    this.rrule_check(event_obj);
+    return event_obj;
   }
-  find_by_recurring_id (recurring_id) {
-    let collection = this.responses || this.models, match = collection.filter(x => x.recurring_id == recurring_id) || null;
-    log({collection,match,recurring_id}, 'find model by recurring id');
-    return match;
-  }
+  find (uid) { return (this.responses || this.models).find(x => x.uid == uid) || null }
   date_click_to_form (info) {
     let dt = LUX.From.js(info.date), fill = {};
-    // log({dt,day:dt.day})
     if (this.modal.id == 'ScheduleBlock') {
       fill.merge({
         'hours.from': dt.time,
@@ -997,7 +1421,6 @@ class Schedule {
         SelectWeekDays: dt.weekdayLong,
       })
     }
-    log({fill});
     this.form_open({fill});
   }
   source_remove () {
@@ -1029,26 +1452,7 @@ class Schedule {
     }
     return response !== false;
   }
-  model_add (instance) {
-    try {
-      if (this.models === null) this.models = [];
-      let uid = instance.uid || instance.attr_list.uid, existing = this.find(uid), new_obj = instance.schedule_obj;
-      if (existing) this.replace_model(existing, new_obj);
-      else this.models.push(new_obj);
-      log({sch:this});
-      this.autosave.trigger();
-    } catch (error) {
-      log({error,instance});
-      return false;
-    }
-    this.refresh_events();
-    return instance.schedule_obj;
-  }
-  model_find_related (model, exclude_self = false) {
-    let models = this.models.filter(m => m.recurring_id && m.recurring_id == model.recurring_id);
-    if (exclude_self) models = models.filter(m => m.uid != model.uid);
-    return models;
-  }
+
   async delete (response) {
     log({response});
     if (this.models) {
@@ -1073,6 +1477,7 @@ class Schedule {
   }
   async replace_model (model_old, model_new) {
     let index = this.models.indexOf(model_old);
+    log({index,old: model_old.recurrence,new: model_new.recurrence},"REPLACE!");
     this.models.splice(index,1,model_new);
   }
   async update_by_delta (response, delta_obj) {
@@ -1117,39 +1522,6 @@ class Schedule {
       this.edit = response;
       log({response, delta_obj});
       return new_appointment.save();      
-      // return false;
-      // let time_start = response.time_start, time_end = response.time_end;
-      // if (delta_obj.delta) {
-      //   let delta = delta_obj.delta;
-      //   if (delta.milliseconds) {
-      //     response.time_start = LUX.From.time(time_start).plus({milliseconds: delta.milliseconds}).time;
-      //     response.time_end = LUX.From.time(time_end).plus({milliseconds: delta.milliseconds}).time;
-      //   }
-      //   if (delta.days) {
-      //     response.date = LUX.From.date(response.date).plus({days: delta.days}).date_num;
-      //     if (response.recurrence) {
-      //       let recur_obj = new Forms.FormResponse(response.recurrence), dates = recur_obj.response_for('SelectDates'), days = recur_obj.response_for('SelectWeekDays');
-      //       if (dates) recur_obj.set_response_for('SelectDates', dates.split(', ').map(date => LUX.From.date(date).plus({days: delta.days}).date_num).join(', '));
-      //       if (days) recur_obj.set_response_for('SelectWeekDays', LUX.Weekdays.shift(days,delta.days));
-      //       response.recurrence = recur_obj.json;
-      //     }
-      //   }
-      // }
-      // if (delta_obj.startDelta) {
-      //   let delta = delta_obj.startDelta;
-      //   if (delta.milliseconds) response.time_start = LUX.From.time(time_start).plus({milliseconds: delta.milliseconds}).time;
-      // }
-      // if (delta_obj.endDelta) {
-      //   let delta = delta_obj.endDelta;
-      //   if (delta.milliseconds) response.time_end = LUX.From.time(time_end).plus({milliseconds: delta.milliseconds}).time;
-      // }
-      // let end = LUX.From.time(response.time_end), start = LUX.From.time(response.time_start), duration = end.diff(start, 'minutes').minutes;
-      // response.duration = duration;
-      // let new_appointment = new Appointment(response.merge({time:response.time_start}));
-      // response.rrule = new_appointment.rrule;
-      // new_appointment.save_blur = this.save_blur_model;
-      // this.edit = response;
-      // return new_appointment.save();
     }
   }
   response_by_group_id (group_id) {
@@ -1163,145 +1535,73 @@ class Schedule {
     }
   }
   form_open (options = {}) {
-    let sched = this, header = this.modal.ele.find('h1').first().css({lineHeight:1.2});
-    this.modal.ele.find('.toggle_ele').each((t,toggle) => {
-      $(toggle).getObj().to_initial_state(0);
-    })
-    this.modal.ele.find('.section').slideFadeIn(0);
     if (this.modal.id === 'ScheduleBlock') {
-      if (this.modal.ele) blurTop(this.modal.ele);
+      blurTop(this.modal.ele);
+      let json = options.response || options.fill || this.current || null;
       this.edit = options.response ? options.response : null;
       if (this.edit) this.form.fill_by_response(this.edit);
       else if (options.fill) this.form.fill_by_key_value_object(options.fill);
-    } else if (this.modal.id === 'Appointment') {
-      Appointment.form_open(sched, options);
+    } else if (this.model) {
+      if (this.current) this.current.edit();
+      else Models[this.model].form_open(options, this.model);
     }
-  }
-  static string_to_luxon (string, format = 'MM/DD/YYYY h:mma') {
-    let m = moment(string, format, true); if (!m._isValid) throw new Error(`Invalid moment creation with str = ${string} and format = ${format}`);
-    return m;
-  }
-  static string_to_db_datetime (string) {
-    return Schedule.datetime_to_luxon(string).toISO();
-  }
-  static moment_to_db_datetime(date) {
-    return date.format('YYYY-MM-DD HH:mm:ss');
   }
   
   exclusion_click (ev, model, date) {
     log({ev});
   }
-  upcoming (model, options = {}) {
-    let schedule = this;
-    let limit = options.limit || 3, wiggle_limit = limit + 1,
-      sort = options.sort || null,
-      include_related = ifu(options.include_related, true),
-      related = [], related_dates = [],
-      recurring_id = model.recurring_id,
-      force_refresh = options.force_refresh || false;
-    this.rrule_cache = this.rrule_cache || {};
-    this.upcoming_cache = this.upcoming_cache || {};
-    let same_recurring_id = this.model_find_related(model)
-    if (!this.rrule_cache[recurring_id]) {
-      let related_rrulesets = same_recurring_id.map(m => m.rrule), merged_rrulesets = LUX.RRule.Merge(related_rrulesets);
-      this.rrule_cache[recurring_id] = merged_rrulesets;
+  cache_clear (recurring_id) {
+    try {
+      if (this.upcoming_cache) delete this.upcoming_cache[recurring_id];
+      if (this.recent_cache) delete this.recent_cache[recurring_id];
+      if (this.rrule_cache) delete this.rrule_cache[recurring_id];
+    } catch (error) {
+      log({error});
     }
-    if (!this.upcoming_cache[recurring_id] || force_refresh) {
-      let dates = LUX.RRule.Upcoming({rrule: this.rrule_cache[recurring_id], limit:wiggle_limit})
-      same_recurring_id.forEach(m => { if (!m.rrule) dates.push(LUX.fromISO(m.start)) })
-      this.upcoming_cache[model.recurring_id] = dates;
-      // log({rrule_cache: this.rrule_cache,upcoming_cache:this.upcoming_cache});
+  }
+  get rrule_cache () { return this.rrule_cache_obj == undefined ? this.rrule_cache_obj = {} : this.rrule_cache_obj }
+  rrule_check (event) {
+    try {
+      if (!event.recurring_id) return;
+      let rrule = event.rrule, recurring_id = event.recurring_id;
+      let master = this.rrule_cache[recurring_id];
+      if (!master) this.rrule_cache[recurring_id] = {rrule: rrule, event_uids: [event.uid]};
+      else if (master && !master.event_uids.includes(event.uid)) {
+        master.rrule = LUX.RRule.Merge([master.rrule, rrule]);
+        master.event_uids.push(event.uid);
+        this.rrule_cache[recurring_id] = master;
+      }
+      
+    } catch (error) {
+      log({error,event});
     }
-    let rrule_set = this.rrule_cache[recurring_id], dates = this.upcoming_cache[recurring_id];
-    let result = {model, rrule_set, limit, dates, max: dates.length > limit};
-    return result;
-  }
-  upcoming_ele (result) {
-    let sched = this;
-    let update = function(ev, more = 3) {
-      let ele = $(this).closest('.upcoming'), prev_result = ele.data(), limit = prev_result.limit, rrule_set = prev_result.rrule_set, new_result = sched.upcoming(prev_result.model, {force_refresh:true, limit: limit + more, sort: {order:'asc'}}), new_ele = sched.upcoming_ele(new_result);
-      ele.replaceWith(new_ele);
-      Features.ToolTip.find_containing_tooltip(new_ele).check_right();    
-    }
-    let see_more = $('<span/>',{css:{cursor:'pointer',color:'var(--pink)',textDecoration:'underline',fontSize:'0.9em'},text:'see more'}).on('click',update),
-      list = $(`<span/>`,{class:'upcoming'}).data(result);
-    list.append(sched.date_links(result));
-    if (result.max) list.append(see_more);
-    return list;
-  }
-  recent (model, options = {}) {
-    let schedule = this;
-    let limit = options.limit || 3, wiggle_limit = limit + 1,
-      sort = options.sort || null,
-      include_related = ifu(options.include_related, true),
-      related = [], related_dates = [],
-      recurring_id = model.recurring_id,
-      force_refresh = options.force_refresh || false;      
-    this.rrule_cache = this.rrule_cache || {};
-    this.recent_cache = this.recent_cache || {};
-    let same_recurring_id = this.model_find_related(model)
-    if (!this.rrule_cache[recurring_id]) {
-      let related_rrulesets = same_recurring_id.map(m => m.rrule), merged_rrulesets = LUX.RRule.Merge(related_rrulesets);
-      this.rrule_cache[recurring_id] = merged_rrulesets;
-    }
-    if (!this.recent_cache[recurring_id] || force_refresh) {
-      let dates = LUX.RRule.Recent({rrule: this.rrule_cache[recurring_id], limit:wiggle_limit})
-      same_recurring_id.forEach(m => { if (!m.rrule) dates.push(LUX.fromISO(m.start)) })
-      this.recent_cache[model.recurring_id] = dates;
-      // log({rrule_cache: this.rrule_cache,recent_cache:this.recent_cache});
-    }
-    let rrule_set = this.rrule_cache[recurring_id], dates = this.recent_cache[recurring_id];
-    let result = {model, rrule_set, limit, dates, max: dates.length > limit};
-    return result;
-  }
-  recent_ele (result) {
-    let sched = this;
-    let update = function(ev, more = 3) {
-      let ele = $(this).closest('.recent'), prev_result = ele.data(), limit = prev_result.limit, rrule_set = prev_result.rrule_set, new_result = sched.recent(prev_result.model, {force_refresh:true, limit: limit + more, sort: {order:'desc'}}), new_ele = sched.recent_ele(new_result);
-      ele.replaceWith(new_ele);
-      Features.ToolTip.find_containing_tooltip(new_ele).check_right();    
-    }
-    let see_more = $('<span/>',{css:{cursor:'pointer',color:'var(--pink)',textDecoration:'underline',fontSize:'0.9em'},text:'see more'}).on('click',update),
-      list = $(`<span/>`,{class:'recent'}).data(result);
-    list.append(sched.date_links(result));
-    if (result.max) list.append(see_more);
-    return list;
-  }
-  date_links (result) {
-    let append_arr = [], dates = result.dates, max = result.max, sched = this;
-    
-    dates = dates.slice(0,result.limit);
-    let count = dates.length;
-    dates.forEach((date,d) => {
-      append_arr.push(sched.date_link(date));
-      if (d < count - 1 && count > 2) append_arr.push(', ');
-      if (d == count - 2 && !max && count > 1) append_arr.push(`${count == 2 ? ' and ' : 'and '}`);
-      if (d == count - 1 && max) append_arr.push('... ');
-    })
-    return append_arr;
-  }
-  date_link (date) {
-    return $(`<span class='date_link'>${date.date_num}</span>`).data({date}).on('click', this.date_link_click.bind(this));
-  }
-  date_link_click (ev) {
-    let target = $(ev.target), tt = Features.ToolTip.find_containing_tooltip(target);
-    let data = target.data(), date = data.date, uid = data.uid, fc = this.calendar.fullcal;
-    log({date},date.toISO());
-    tt.hide(100);
-    fc.gotoDate(date.toISO());
-    let event_ele = $('.fc-event').filter(':visible').filter((e,ele) => {
-      let fc_event = $(ele).data('fc_event'), this_uid = fc_event.extendedProps.ids ? fc_event.extendedProps.ids.uid : null;
-      // log({evstart:fc_event.start,date:date.toJSDate()})
-      return date.equals(LUX.From.js(fc_event.start));
-    });
-    event_ele.addClass('pinkBgFlash');
   }
 
-  get save_blur_model () {
-    return {ele: this.calendar.ele.find('.fc-view'),options:{loadingColor:'var(--pink)',blurCss:{backgroundColor:'var(--white50)'}}};    
+  get upcoming_cache () { return this.upcoming_cache_obj == undefined ? this.upcoming_cache_obj = {} : this.upcoming_cache_obj }
+  get recent_cache () { return this.recent_cache_obj == undefined ? this.recent_cache_obj = {} : this.recent_cache_obj }
+
+  date_link (dt, options) {
+    let span = $('<span/>',{class:'date_link link',html:`${dt.date_narrow}`});
+    span.on('click', {dt}.merge(options), this.date_link_click.bind(this));
+    return span[0];
   }
+  date_link_click (ev) {
+    let tt = $(ev.target).getObj('tooltip');
+    tt.hide();
+    let data = ev.data, recurring_id = data.recurring_id, dt = data.dt;
+    let cal = this.calendar, ele = cal.event_find(data);
+    if (ele) cal.event_flash({ele});
+    else {
+      cal.fullcal.gotoDate(dt.toISO());
+      cal.after_next_mount_fx = cal.event_flash.bind(cal,data);      
+    }
+    log({data,ele});
+    return;
+  }
+
+
   response_to_obj (json) {
-    let responses = new Forms.FormResponse(json), get_response = responses.response_for.bind(responses), obj = {};
+    let responses = new Forms.SubmissionJson(json), get_response = responses.find.bind(responses), obj = {};
     if (this.modal.id == 'ScheduleBlock') {
       let dates_or_days = get_response('days.apply to'), available = get_response('add availability or block') == 'add availability', services = '';
       obj.merge({time_start: get_response('hours.from'), time_end: get_response('hours.to')});
@@ -1379,66 +1679,78 @@ class Schedule {
     this.loading = false;
     return events;
   }
-  async models_to_events (models) {
-    let events = [], source_id = this.event_source_id, schedule = this, display = this.display;
-    let services = await Model.get_list({model:'service'}), patients = Model.get_list({model:'patient'}), practitioners = Model.get_list({model:'practitioner'});
-    models.forEach((model,m) => {
-      let groupId = `${source_id}_models${m}`, description = {};
-      let event = {groupId,display,description};
-      
-      if (model.type == 'Appointment') {
-        let service_names = Model.names('service',model.services), title = service_names.smartJoin(), classNames = `${service_names.map(name => name.toKeyString()).join(' ')} ${groupId} ${model.type}`, Patient = Model.names('patient',model.patient_id)[0], Practitioner = Model.names('practitioner',model.practitioner_id)[0], description ={Patient,Practitioner,Services:title};
-        description.merge(model.description || {});
-        event.merge({title,classNames,description,ids:{uid:model.uid,recurring_id:model.recurring_id}});
-      }
-      
-      try {
-        event.merge({start: model.start,end: model.end});
-        if (model.rrule) {
-          let upcoming = schedule.upcoming(model, {limit:3,format:'M/D/YYYY',sort:{order:'asc'} }), 
-            recent = schedule.recent(model, {limit:3,format:'M/D/YYYY',sort:{order:'desc'} }),
-            upcoming_ele = schedule.upcoming_ele(upcoming),
-            recent_ele = schedule.recent_ele(recent),
-            duration = LUX.fromISO(model.end).diff(LUX.fromISO(model.start));
-          event.merge({rrule: model.rrule, duration});
-          event.description.merge(Appointment.recurring_description(model.recurrence, LUX.fromISO(model.start)));
-          event.description.merge({
-            'Upcoming': upcoming_ele,
-            'Most Recent': recent_ele,
-          });
-          events.push(event);
-        } else {
-          if (model.recurring_id) {
-            let original_model = schedule.find(model.recurring_id);
-            if (original_model) {
-              let upcoming = schedule.upcoming(original_model,{limit:3,format:'M/D/YYYY',sort:{order:'asc'}}), 
-                recent = schedule.recent(original_model,{limit:3,format:'M/D/YYYY',sort:{order:'desc'}}),
-                upcoming_ele = schedule.upcoming_ele(upcoming),
-                recent_ele = schedule.recent_ele(recent);
-              event.description.merge(Appointment.recurring_description(original_model.recurrence,LUX.fromISO(original_model.start)));
-              event.description.merge({
-                'Upcoming': upcoming_ele,
-                'Most Recent': recent_ele,
-              });
-            }
-          }
-          events.push(event);
-        }
-      } catch (error) {
-        log({error,model});
-      }
-    })
-    // log({models,events},'models to events');
-    this.loading = false;
-    return events;
+  upcoming_links (options = {}) {
+    let upcoming_dts = LUX.RRule.Upcoming({rrule: options.rrule, limit: options.limit + 1});
+    return upcoming_dts.map(dt => this.date_link(dt, options));
   }
+  upcoming_ele (options = {}) {
+    let div = $('<div/>',{class:'upcoming smaller flexbox left'}).append(`<b style='width:5em'>Upcoming:</b>`);
+    let limit = options.limit || 3, rrule = options.rrule;
+    let links = this.upcoming_links(options);
+    options.limit += 3;
+    let limit_ele = $('<span/>',{class:'date_link link pink smaller',text:'...see more'}).on('click', options, ev => { 
+      let tt = $(ev.target).getObj('tooltip');
+      div.replaceWith(this.upcoming_ele(ev.data));
+      tt.move();
+    })[0];
+    div.append(links.smartJoin({joiner:'',as_array:true,limit,limit_ele}));
+    return div;
+  }
+  recent_links (options = {}) {
+    let recent_dts = LUX.RRule.Recent({rrule: options.rrule, limit: options.limit + 1});
+    return recent_dts.map(dt => this.date_link(dt, options));
+  }
+  recent_ele (options = {}) {
+    let div = $('<div/>',{class:'recent smaller flexbox left'}).append(`<b style='width:5em'>Recent:</b>`);
+    let limit = options.limit || 3, rrule = options.rrule;
+    let links = this.recent_links(options);
+    options.limit += 3;
+    let limit_ele = $('<span/>',{class:'date_link link pink smaller',text:'...see more'}).on('click', options, ev => { 
+      let tt = $(ev.target).getObj('tooltip');
+      div.replaceWith(this.recent_ele(ev.data)); 
+      log({tt});
+      tt.move();
+    })[0];
+    div.append(links.smartJoin({joiner:'',as_array:true,limit,limit_ele}));
+    return div;
+  }
+  recurring_links (event, limit = 3) {
+    try {
+      let recurring_id = event.recurring_id || event.extendedProps.recurring_id;
+      if (!recurring_id) return null;
+      let rrule = this.rrule_cache[recurring_id].rrule;
+      if (!rrule) return null;
+      let upcoming = this.upcoming_ele({rrule, limit, recurring_id}), 
+          recent = this.recent_ele({rrule, limit, recurring_id});
+      return [upcoming,recent];
+    } catch (error) {
+      log({error,event});
+      return null;
+    }
+  }
+  recurring_description (event) {
+    try {
+      let recurring_id = event.recurring_id || event.extendedProps.recurring_id;
+      if (!recurring_id) return null;
+      let rrule = this.rrule_cache[recurring_id].rrule;
+      if (!rrule) return null;
+      return LUX.RRule.toText(rrule);
+    } catch (error) {
+      log({error,event});
+      return null;
+    }
+  }
+
+
   async save() {
     if (!this.model) {feedback('No Model','Cannot save schedule, no instance attached'); return;}
     if (!this.uid) {feedback('No ID','Cannot save schedule, no instance attached'); return;}
+    if (!this.db_attr) log({error:new Error('saving with db_attr')});
+    console.groupCollapsed('SCHEDULE SAVE');
     let columns = {}, model = this.model, uid = this.uid, view = this.calendar.ele.find('.fc-view');
     columns[this.db_attr] = this.responses || this.models;
     if (columns[this.db_attr].is_array() && columns[this.db_attr].isEmpty()) columns[this.db_attr] = null;
-    if (!this.autosave) blur(view,'loading',{loadingColor:'var(--pink)'});
+    if (!this.autosave) blur(view,'loading',{loading_color:'var(--pink)'});
     let result = $.ajax({
       url: `/save/${model}`,
       method: 'POST',
@@ -1448,14 +1760,18 @@ class Schedule {
         if (!this.autosave) unblur({ele:view});
       }
     })
+    log({result,columns,edit:this.edit});
+    console.groupEnd();
     return result;
   }
   async refresh_events () {
-    this.loading = true; this.events = [];
-    if (this.responses) this.events = this.form_responses_to_events(this.responses); 
-    else if (this.models) this.events = await this.models_to_events(this.models);
-    else this.loading = false;
-    // log({events:this.events})
+    // this.loading = true; this.events = [];
+    return;
+    if (this.feed_url) return;
+    // log({models:this.models,responses:this.responses,loading:this.loading});
+    this.events = this.form_responses_to_events(this.responses); 
+    // // else if (this.models) this.events = await this.models_to_events(this.models);
+    // else this.loading = false;
     if (this.calendar && this.calendar.fullcal) this.source_add();
   }
 }
@@ -1470,11 +1786,11 @@ class Appointment extends Model{
   get rrule () { return this.rrule_obj.toString(); }
   get rrule_obj () {
     if (!this.attr_list.recurrence) return null;
-    let recur_obj = new Forms.FormResponse(this.attr_list.recurrence), 
-      dates = recur_obj.response_for('SelectDates'), days = recur_obj.response_for('SelectWeekDays'), 
-      until_date = recur_obj.response_for('EndDateOptional'), rrule_set = new RRuleSet(), 
+    let recur_obj = new Forms.SubmissionJson(this.attr_list.recurrence), 
+      dates = recur_obj.find('SelectDates'), days = recur_obj.find('SelectWeekDays'), 
+      until_date = recur_obj.find('EndDateOptional'), rrule_set = new RRuleSet(), 
       start = this.start_lux, end = this.end_lux,
-      interval = recur_obj.response_for('HowOften');
+      interval = recur_obj.find('HowOften');
     if (!start || !end) {
       log({start,end,recur_obj,appt:this});
       throw new Error('Insufficient info for dtstart');
@@ -1488,7 +1804,6 @@ class Appointment extends Model{
         dates.forEach(date => {rrule_set.rdate(LUX.From.datetime(date, time_start).rrule)});
       } else {
         let jsdate = start.toJSDate(), rrdate = start.rrule;
-        log({start,jsdate,rrdate},'DIFFERENT DATES RRULE');
         let rrule = {
           freq: RRule.WEEKLY,
           interval: interval,
@@ -1506,7 +1821,6 @@ class Appointment extends Model{
         });
       }
       rrule_set.tzid(tz);
-      log({rrule_set,str:rrule_set.toString()});
       return rrule_set;
     } catch (error) {
       log({error,start,attr_list:this.attr_list});
@@ -1514,26 +1828,26 @@ class Appointment extends Model{
     }
   }
   rrule_exclude (date_str) {
-    let recur_obj = new Forms.FormResponse(this.attr_list.recurrence), dates = recur_obj.response_for('SelectDates');
+    let recur_obj = new Forms.SubmissionJson(this.attr_list.recurrence), dates = recur_obj.find('SelectDates');
     let exclusions = this.attr_list.exclusions || [];
     exclusions.smartPush(date_str);
     if (dates) {
       dates = dates.split(', ');
       let d = dates.indexOf(date_str);
       dates.splice(d,1);
-      recur_obj.set_response_for('SelectDates', dates.join(', '))
+      recur_obj.set('SelectDates', dates.join(', '))
     }
     this.attr_list.exclusions = exclusions;
   }
   update_dtstart (delta) {
     this.attr_list.date_time_start = this.start_lux.plus(delta);
     if (this.attr_list.recurrence) {
-      let recurrence = new Forms.FormResponse(this.attr_list.recurrence), dates = recurrence.response_for('SelectDates'), days = recurrence.response_for('SelectWeekDays');
+      let recurrence = new Forms.SubmissionJson(this.attr_list.recurrence), dates = recurrence.find('SelectDates'), days = recurrence.find('SelectWeekDays');
       log({dates,days});
       if (dates) {
-        recurrence.set_response_for('SelectDates', LUX.DateShift(dates.split(', '), delta.days).join(', '));
+        recurrence.set('SelectDates', LUX.DateShift(dates.split(', '), delta.days).join(', '));
       } else if (days) {
-        recurrence.set_response_for('SelectWeekDays', LUX.Weekdays.shift(days, delta.days));
+        recurrence.set('SelectWeekDays', LUX.Weekdays.shift(days, delta.days));
       }
       this.attr_list.recurrence = recurrence.json;
     }
@@ -1544,192 +1858,156 @@ class Appointment extends Model{
   }
   get start_lux () {
     let start = this.attr_list.date_time_start || this.attr_list.start;
-    return start ? LUX.fromISO(start) : null;
+    if (!start) return null;
+    let iso = LUX.fromISO(start), db = LUX.From.db(start);
+    return !iso.invalid ? iso : !db.invalid ? db : null;
   }
   get end_lux () {
     let end = this.attr_list.date_time_end || this.attr_list.end;
-    return end ? LUX.fromISO(end) : null;
+    if (!end) return null;
+    let iso = LUX.fromISO(end), db = LUX.From.db(end);
+    return !iso.invalid ? iso : !db.invalid ? db : null;
   }
-  static form_open (schedule, options = {}) {
-    let header = schedule.modal.ele.find('h1').first();
-    schedule.edit = options.response ? options.response : null;
-    let recur_toggle = schedule.modal.ele.find('.toggle_ele').getObj();
-    if (schedule.edit) {
-      Appointment.editing = new Appointment(options.response);
-      Appointment.original = new Appointment(options.response.duplicate());
 
-      Model.form_mode('edit', schedule.modal.ele);
-      let ev = schedule.edit_event, description = ev.extendedProps.description, answers = Forms.Answer.get_all_within(schedule.modal.ele,false), start = LUX.From.js(ev.start), end = LUX.From.js(ev.end), named = function(name) {return Forms.Answer.find(answers, {name})}, recur_form = schedule.form, header_text = `${description.Patient}<br>${start.date} ${start.time} - ${start.date != end.date ? `${end.date} ` : ''}${end.time}`;
-      header.html(header_text);
-      answers.forEach(answer => answer.to_initial_value());
-      named('date').value = start.date_num;
-      named('time').value = start.time;
-      named('duration').value = end.diff(start,'minutes').minutes;
-      named('services').value = schedule.edit.services;
-      named('patient_id').value = schedule.edit.patient_id;
-      named('practitioner_id').value = schedule.edit.practitioner_id;
-      let recurrence = schedule.edit.recurrence;
-      if (recurrence) {
-        recur_toggle.show(0); recur_form.fill_by_response(recurrence);
-        let header_str = `<b>${header_text}<br></b>Recurring Appointment`, 
-          recur_str = Appointment.recurring_description(recurrence,start)['Recurring'],
-          recur_str_middle = Appointment.recurring_description(recurrence,start,'middle')['Recurring'],
-          recur_str_long = Appointment.recurring_description(recurrence,start,'long')['Recurring'],
-          attr_ele = schedule.modal.ele.find('.section').first(),
-          modal = schedule.modal.ele;
-        recur_toggle.message = recur_str_long;
-        recur_toggle.exclusions = Appointment.original.attr_list.exclusions;
-        let recur_only = function() {
-            recur_toggle.reset_messages();
-            recur_toggle.enable({message:'<b>Currently Occurs</b> '+recur_toggle.message, message_class_list: 'boxPurple', message_tag:'h4'});
-            // if (recur_toggle.exclusions && recur_toggle.exclusions.notEmpty()) {
-            //   log({exclusions:recur_toggle.exclusions});
-            //   let exclusions_box = recur_toggle.add_message({message:'<b>Exceptions:</b> <span></span><div style="font-size:0.7em" class="bold">THIS LIST OVERRIDES ALL OTHER RECURRING SETTINGS</div>', message_class_list: 'boxPink', message_tag:'h4'}), exclusions_list = exclusions_box.children('span');
-            //   recur_toggle.exclusions.forEach(excl => {
-            //     let exclusion_click = $('<span/>',{text:excl}).css({cursor:'pointer'}).on('click', sched.exclusion_click);
-            //     exclusions_list.append(exclusion_click);
-            //   })
-            // }
-            recur_toggle.toggle_ele.parent().slideFadeIn(0);
-            attr_ele.slideFadeOut(0);
-            schedule.edit_recur = 'all';
-          }, attrs_only = function() {
-            recur_toggle.toggle_ele.parent().slideFadeOut(0);
-            attr_ele.slideFadeIn(0);
-          }, show_modal = function () { unblur(); blurTop(modal) };
-        if ($('#RecurEditOptions').dne()) {
-          schedule.recurrence_only_btn = new Features.Button({text: 'edit recurring options', class_list: 'purple70 xsmall', css: {margin:'0.1em'}, 
-            action: function(){ recur_only(); show_modal(); }
-          });
-          schedule.recur_options = new Features.OptionBox({id:'RecurEditOptions',header:header_str,header_html_tag:'h2'});
-          schedule.recur_options.add_info(`<h3>${recur_str_middle}</h3>`).add_info(schedule.recurrence_only_btn.ele);
-          schedule.recur_options.add_button_info(`<h2 class="pink bold">Edit Time, Services, or Practictioner</h2>`);
-          schedule.recur_options.add_button({text:'this event only',
-            action:function(){
-              schedule.edit_recur = 'this';
-              named('date').value = LUX.From.js(schedule.edit_event.start).date_num;
-              attrs_only(); show_modal();
-            }});
-          schedule.recur_options.add_button({text:'this and future events', class_list:'pink70 xsmall',
-            action:function(){
-              let event = schedule.edit_event;
-              schedule.edit_recur = 'future';
-              named('date').value = LUX.From.js(event.start).date_num;
-              named('date').disable({tooltip:{message:'Editing multiple dates, date change disabled'}});
-              attrs_only(); show_modal();
-            }});
-          schedule.recur_options.add_button({text:'all events', class_list:'pink70 xsmall',
-            action:function(){
-              schedule.edit_recur = 'all';
-              named('date').disable({tooltip:{message:`'Date' disabled since you are editing all occurences of this event`}});
-              attrs_only(); show_modal();
-            }});
-          schedule.recur_options.add_button({text:'cancel',class_list:'cancel xsmall',action:unblurAll});
-        } else {
-          schedule.recur_options.reset_header(header_str);
-          schedule.recur_options.reset_info(`<h3>${recur_str_middle}</h3>`).add_info(schedule.recurrence_only_btn);
-        }
-        blurTop($('#RecurEditOptions'));
-      } else {
-        recur_toggle.reset(0);
-        if (Appointment.editing.attr_list.recurring_id) {
-          let related = schedule.model_find_related(schedule.edit, true), str = '';
-          recur_toggle.enable({message:'<b>This will create another recurring rule.</b><br>',message_tag:'h4'});
-          recur_toggle.message_enable.append('Existing rules:<ul></ul>');
-          let list = recur_toggle.message_enable.find('ul').css({listStyle:'inside'});
-          log({related});
-          related.forEach(m => list.append($(`<li>${m.description.Recurring}</li>`).css({marginLeft:'5px'})) );
-        }
-        schedule.edit_recur = null;
-        blurTop(schedule.modal.ele);
-      }
+  get form_values () {
+    let start = this.start_lux;
+    let values = {
+      patient_id: this.attr_list.patient_id,
+      practitioner_id: this.attr_list.practitioner_id,
+      date: start.date_num,
+      time: start.time,
+      services: this.attr_list.service_ids,
+    };
+    let sub_forms = Appointment.sub_forms || {};
+    for (let attr in sub_forms) {
+      let form_name = sub_forms[attr];
+      if (this.attr_list[attr]) values[form_name] = this.attr_list[attr];
+    }
+    return values;
+  }
+  static get sub_forms () {
+    return {recurrence: 'RecurringAppointment'};
+  }
+
+  async edit () {
+    Appointment.current = this;
+    if (this.attr_list.recurrence) {
+      blurTop('#RecurringOptions');
     } else {
-      Appointment.editing = null;
-      Model.form_mode('create',schedule.modal.ele);
-      blurTop(schedule.modal.ele);
-      header.text('New Appointment');
-      recur_toggle.reset(0);
-      if (options.fill) {
-        let answers = Forms.Answer.get_all_within(schedule.modal.ele,false), named = function(name) {return Forms.Answer.find(answers, {name})};
-        answers.forEach(answer => answer.value = null);
-        for (let attr in options.fill) {named(attr).value = options.fill[attr]}        
-      }
+      Appointment.EditNonRecurring();
+      Model.form_open({instance:this});
     }
   }
-  static recurring_description (recurrence, start_lux, form = 'short') {
-    let recur_obj = new Forms.FormResponse(recurrence), dates = recur_obj.response_for('SelectDates'), days = recur_obj.response_for('SelectWeekDays'), interval = recur_obj.response_for('HowOften'), until = recur_obj.response_for('EndDate'), desc = {};
-    if (dates) {
-      if (form == 'long') {
-        dates = dates.split(', ');
-        desc.Recurring = `On these dates: ${dates.smartJoin()}`;
-      } else if (form == 'middle') {
-        dates = dates.split(', ');
-        desc.Recurring = `Only on selected dates (${dates.length} total)`;
-      } else desc.Recurring = `Only on selected dates`;
-    }
-    else if (days) desc.Recurring = `${interval == 1 ? 'Weekly' : `Every ${interval} weeks`} on ${days.smartJoin()} ${until ? `until ${until}` : 'indefinitely'}`;
-    return desc;
+  static get RecurToggle () { return $('#Appointment').find('#RecurToggle').getObj() }
+  static RecurringForm (enable = true, message = null) {
+    let toggle = Appointment.RecurToggle;
+    if (enable) toggle.enable({message});
+    else toggle.disable({message})
   }
-  static update_duration (services, ev) {
-    let services_list = Model.list('service'), duration = 0, duration_obj = $('#Appointment').find('.duration').getObj();
+  static EditNonRecurring () {
+    Appointment.RecurringForm();
+    Model.form_open({instance:this});
+  }
+  static EditThisOnly () {
+    unblur();
+    Appointment.RecurringForm(false, `Disabled While Editing A Single Instance of a Recurring Appointment`);
+    Model.form_open({instance:Appointment.current});
+    Appointment.EditMode = {recurring:true,edit:'single'};
+  }
+  static EditAllFuture () {
+    unblur();
+    let instance = Appointment.current;
+    Model.form_open({instance});
+    Appointment.RecurringForm(true, `This will only affect appointments from ${instance.start_lux.date_num} onward`);
+    Appointment.EditMode = {recurring:true,edit:'future'};
+  }
+
+  static async update_duration (services, ev) {
+    let service_list = await ModelList.get('Service'), duration = 0, duration_obj = $('#Appointment').find('.duration').getObj();
     if (services instanceof Forms.Answer) services = services.get();
     if (services) {
-      services.forEach(uid => {duration += services_list.find(service => service.uid == uid).duration;});
-      if (duration_obj) duration_obj.value = duration;      
+      log({services,service_list});
+      services.forEach(uid => {duration += service_list.find({uid}).duration;});
     }
+    if (duration_obj) duration_obj.value = duration;      
     return duration;
   }
   async retrieve_chart_note (appt_id, date_time_start, date_time_end) {
 
   }
-  get schedule_obj () {
+  get event_obj () {
     try {
-      let obj = {type:'Appointment',uid:this.uid};
-      let services = this.attr_list.services, group_id = `${this.event_source_id}_${this.uid}`, 
-        start = this.start_lux, end = this.end_lux, 
-        patient_id = this.attr_list.patient_id, 
-        practitioner_id = this.attr_list.practitioner_id;
-        // date = this.attr_list.date;
+      // let obj = {type:'Appointment',uid:this.uid};
+      let id = `Appt${this.uid}`;
+      let obj = {id};
+      let services = this.attr_list.services || this.attr_list.service_ids, group_id = `${this.event_source_id}_${this.uid}`, patient_id = this.attr_list.patient_id, practitioner_id = this.attr_list.practitioner_id;
+      let start = this.start_lux, end = this.end_lux;
+      let service_names = ModelList.find('Service').names_by_id(services);
       obj.merge({
-        services, patient_id, practitioner_id, 
         start: start.toISO(),
         end: end.toISO(),
+        groupId: id,
+        classNames: `${service_names.join(' ')} ${obj.id} Appointment`,
+        title: service_names.join(', '),
+        description: {
+          Patient: ModelList.find('Patient.name',patient_id),
+          Practitioner: ModelList.find('Practitioner.name',practitioner_id),
+          Services: service_names.smartJoin()
+        },
+        uid: this.uid,
         recurring_id: this.attr_list.recurring_id,
       })
       if (this.attr_list.recurrence) {
-        let recur_obj = new Forms.FormResponse(this.attr_list.recurrence), dates = recur_obj.response_for('SelectDates'), days = recur_obj.response_for('SelectWeekDays');
+        // let Recurring = Schedule.recurring_description({recurrence:this.attr_list.recurrence}); 
+        // log({rrule:this.rrule});
         obj.merge({
-          recurrence: this.attr_list.recurrence, 
+          duration: end.diff(start),
           rrule: this.rrule,
-          exclusions: this.attr_list.exclusions || [],
-          description: Appointment.recurring_description(this.attr_list.recurrence),
+          // description: {Recurring}
         });
-        // let rrule_set = this.rrule_obj;
-        // if (dates) {
-        //   if (!dates.is_array()) dates = dates.split(', ');
-        //   dates.smartPush(start.date_num);
-        //   let time_start = start.format('hh:mma');
-        //   obj.merge({
-        //     dates,
-        //     description: Appointment.recurring_description(this.attr_list.recurrence),
-        //   });
-        // } else {
-        //   // let interval = recur_obj.response_for('HowOften');
-        //   obj.merge({
-        //     // days, 
-        //     date_start: start.date_num,
-        //     date_end: recur_obj.response_for('EndDate'),
-        //     description: Appointment.recurring_description(this.attr_list.recurrence),
-        //   });
-        // }
       }
-      log(obj, 'GETTING SCHEDULE OBJ');
+      // log({obj},`${id}`);
       return obj;
     } catch (error) {
       log({error});
       return {};
     }
   }
+  get event_btns () {
+    let where = {appointment_id: this.uid, date_time_start: this.attr_list.date_time_start};
+    let chartnote_btn = new Features.Button({
+      text:'chart note', 
+      class_list: 'xsmall yellow', 
+      action: async function(){
+        await Model.create_or_edit({where, type: 'ChartNote'});
+      }
+    });
+    let invoice_btn = new Features.Button({
+      text:'invoice', 
+      class_list: 'xsmall yellow', 
+      action: async function(){
+        await Model.create_or_edit({where, type: 'Invoice'});
+      }
+    });
+    let edit_btn = new Features.Button({
+      text:'edit', 
+      class_list: 'xsmall pink70', 
+      action: _ => {
+        log({this:this});
+        this.edit();
+      }
+    });
+    let delete_btn = new Features.Button({
+      text:'delete', 
+      class_list: 'xsmall pink70', 
+      action: _ => {
+        log({this:this});
+        this.delete();
+      }
+    });
+    return [chartnote_btn,invoice_btn,edit_btn,delete_btn].map(btn => btn.ele);
+  }
+
   get db_columns () {
     return ['patient_id','practitioner_id','date_time_start','date_time_end','recurrence','exclusions','recurring_id'];
   }
@@ -1742,6 +2020,7 @@ class Appointment extends Model{
   get patient_name () {
     return Model.names('patient',this.attr_list.patient_id)[0];
   }
+
   async on_save () {
     let sched = this.schedule, edit = sched.edit, edit_recur = sched.edit_recur;
 
@@ -1761,7 +2040,6 @@ class Appointment extends Model{
     }
     this.event_in_schedule = this.uid ? this.schedule.find(this.uid) : null;
 
-    log({edit,edit_recur});
     if (edit && edit_recur) {
       if (edit_recur == 'all') return true;
       
@@ -1772,15 +2050,15 @@ class Appointment extends Model{
       } else if (edit_recur == 'future') {
         let recurrence_old = existing.attr_list.recurrence, recurrence_new = this.attr_list.recurrence;
         // this.attr_list.recurrence = recurrence_new;
-        let recur_old = new Forms.FormResponse(recurrence_old), recur_new = new Forms.FormResponse(recurrence_new);
-        let dates = recur_old.response_for('SelectDates'), days = recur_old.response_for('SelectWeekDays');
+        let recur_old = new Forms.SubmissionJson(recurrence_old), recur_new = new Forms.SubmissionJson(recurrence_new);
+        let dates = recur_old.find('SelectDates'), days = recur_old.find('SelectWeekDays');
         if (dates) {
           let time = now(), break_at = LUX.From.date(date, undefined, time);
           dates = dates.split(', ');
           let before_dates = dates.filter(d => LUX.From.date(d,undefined,time) < break_at),
             after_dates = dates.filter(d => LUX.From.date(d,undefined,time) >= break_at);
-          recur_old.set_response_for('SelectDates', before_dates.join(', '));
-          recur_new.set_response_for('SelectDates', after_dates.join(', '));
+          recur_old.set('SelectDates', before_dates.join(', '));
+          recur_new.set('SelectDates', after_dates.join(', '));
           // existing.attr_list.recurrence = recur_old.json;
           // this.attr_list.recurrence = recur_new.json;
           // log({recur_old,recur_new,recurrence_new,recurrence_old});
@@ -1798,16 +2076,18 @@ class Appointment extends Model{
   }
   async save_callback (data) {
     this.uid = data.uid;
-    this.attr_list.uid = data.uid;
-    this.attr_list.google_id = data.google_id;
-    this.attr_list.recurring_id = data.recurring_id;
-    log({model:this},`UID: ${this.uid}`);    
-    this.event_in_schedule = await this.schedule.model_add(this);
+    blurTop('checkmark');
+    if (this.schedule && this.schedule.calendar) {
+      let top = $('.blur_body').getObj();
+      if (top) top.on_undo = () => { this.schedule.calendar.fullcal.updateSize() }
+      this.schedule.calendar.fullcal.refetchEvents();
+    }
   }
   async delete_callback () {
     // defined to prevent default  
   }
 }
+
 class Service extends Model {
   constructor (attr_list = null) {
     if (!attr_list) attr_list = Model.construct_from_form('#CreateService');
@@ -1818,9 +2098,9 @@ class Service extends Model {
   get db_relationships () {
     return {forms:'sync'};
   }  
-  async settings_autosave_unique () {
-    let form = $('#SettingsModal'), answers = Answers.get_all_within(form);
-  }
+  // async settings_autosave_unique () {
+  //   let form = $('#SettingsModal'), answers = Answers.get_all_within(form);
+  // }
 }
 class ServiceCategory extends Model {
   constructor (attr_list = null) {
@@ -1844,6 +2124,24 @@ class Complaint extends Model {
   get db_relationships () {
     return {icd_codes:'sync'};
   }
+  static async selection_modal_open (options = {}) {
+    options.merge({
+      url: `/Complaint/select`,
+      target: 'new_modal:SelectComplaint',
+      method: 'POST',
+      data: {table_selection_limit: 'none'}
+    });
+    await Http.fetch(options);
+    let table = Complaint.table = $('#SelectComplaintTable').getObj(),
+      continue_btn = Complaint.table.continue_btn = new Features.Button({
+        text:'use selected',
+        class_list:'xsmall pink70 disabled',
+        action: options.action || function(){alert('no action given')},
+        css: {margin: '0 0 1em 0'},
+        disabled_message: `No ${table.header} selected`,
+      });
+    continue_btn.ele.appendTo(table.button_box);
+  }
 }
 class ComplaintCategory extends Model {
   constructor (attr_list = null) {
@@ -1864,7 +2162,7 @@ class IcdCode extends Model {
   static popup_links_unique() {
     let find_btn = new Features.Button({
       text:'find new code',
-      class_list: 'xxsmall pink70',
+      class_list: 'xsmall pink70',
       url: '/create/IcdCode',
       mode: 'load',
       target: 'new_modal:CreateNewIcdCode',
@@ -1894,7 +2192,7 @@ class IcdCode extends Model {
     return {
       code: IcdCode.entity.code,
       title: IcdCode.entity.title,
-      text: IcdCode.entity.bestMatchText.firstToUpper(),
+      text: IcdCode.entity.bestMatchText.ucFirst(),
       url: IcdCode.entity.uri,
     };
   }
@@ -1904,67 +2202,127 @@ class Form extends Model {
     super(attr_list, 'Form');
   }
   async preview () {
-    menu.fetch(`/form/preview/${this.uid}`,'new_modal:FormPreview');
+    log("PREVIEW?!");
+    Http.fetch({url:`/form/preview/${this.uid}`,target:'new_modal:FormPreview'});
+  }
+  async get_form_ele (options = {}) {
+    options.merge({url:`/form/display/${this.uid}`});
+    return Http.fetch(options);
   }
   async edit_unique () {
     $('#forms-edit').click();
   }
-  async settings_unique () {
-    let model = this;
-    await menu.fetch(`/settings/Form/${this.uid}`,'new_modal:SettingsModal');    
+  async settings_unique (options = {}) {
+    Form.settings_uid = this.uid;
+    await Http.fetch({
+      url:`/settings/Form/${this.uid}`,
+      target:'new_modal:SettingsModal',
+      in_background: options.in_background,
+    });
+    if (this.uid == 'proxy') return;
+    let model = this, settings_form = $("#FormSettings");
+    settings_form = settings_form.exists() ? settings_form : null;
+    let form_obj = $('#SettingsModal').find('.form').first().getObj();
+    if (form_obj) log({form:this,settings:form_obj.settings},`INITIAL SETTINGS for ${form_obj.form_name}`);
+    if (form_obj.form_name == 'Form Settings') return;
+
+    this.settings_manager = new SettingsManager({
+      obj: this,
+      initial_override: form_obj ? form_obj.settings : null,
+      save: this.settings_autosave.bind(this),
+      autosave_delay: 5000,
+      callback: this.settings_autosave_callback.bind(this),
+      autosave_on_form_change: true,
+      form: settings_form,
+    }, 'edit');
   }
-  static async preview_by_uid (uid) {menu.fetch(`/form/preview/${uid}`,'new_modal:FormPreview');}
+  static async preview_by_uid (uid) {Http.fetch({url:`/form/preview/${uid}`,target:'new_modal:FormPreview'});}
 }
 class ChartNote extends Model {
   constructor (attr_list = null) {
     attr_list = attr_list || Model.construct_from_form('#ChartNote');
     super(attr_list, 'ChartNote');
   }
-  static get_existing (appt_uid, datetime) {
+  static autosave () {
+    log("find current CHARTNOTE and AUTOSAVE ");
+  }
+  static async toggle_form (info) {
+    let was_active = info.was_active, uid = info.value, item = info.item, 
+      list = {
+        obj: item.getObj('List'),
+        find: uid => { return list.obj.items.filter((i,item) => $(item).data('value') == uid) }
+      }, index = list.obj.items.index(item), is_last = list.obj.items.last().is(item);
+    let forms = {
+      eles: $('#ChartNote').find('.form'),
+      find: uid => { return forms.eles.filter((f,form) => $(form).data('uid') == uid) }
+    };
+    
+    let form = forms.find(uid);
+    log({forms,form,info});
+    if (form.exists()) {
+      if (was_active) form.slideFadeOut();
+      else form.slideFadeIn();
+    } else {
+      let placeholder = $('<div/>',{class:'toggle_ele',css:{position:'relative',height:'1px',paddingTop:'1.5em'}});
+      if (forms.eles.dne()) placeholder.insertAfter(list.obj.ele);
+      else if (is_last) placeholder.insertAfter(forms.eles.last());
+      else if (index == 0) placeholder.insertBefore(forms.eles.first()); 
+      else {
+        let next = {list: item.next(), form: forms.find(item.next().data('value'))};
+        while (next.list.exists() && !next.form) {
+          next.list = next.list.next();
+          next.form = forms.find(next.list.data('value'));
+        }
+        placeholder.insertBefore(next.form);
+      }
+      placeholder.animate({height:'6em'});
+      blur(placeholder,'loading',{color:'pink'});
 
+      let form_obj = Model.find_or_create('Form',uid);
+      form_obj.get_form_ele({target:placeholder, replace_target:true, method:'POST', data:{mode: 'chart'}});
+    }
+  }
+  static add_complaints () {
+    let complaints = Complaint.table.info, answer = $('#ChartNote').find('.complaint_selection'), existing_ids = answer.find('li').get().map(li => $(li).data('value'));
+    let eles = complaints.filter(c => !existing_ids.includes(c.data.uid)).map(c => `<li data-value="${c.data.uid}">${c.Name}</li>`);
+    answer.append(eles);
+    unblur();
   }
 }
 
-export const Models = {ModelTable, Model, SettingsManager, Practice, User, Patient, Practitioner, StaffMember, Calendar, Schedule, Appointment, Service, ServiceCategory, Complaint, ComplaintCategory, IcdCode, Form, ChartNote};
+export const Models = {Table, Model, ModelList, SettingsManager, Practice, User, Patient, Practitioner, StaffMember, Calendar, Schedule, Appointment, Service, ServiceCategory, Complaint, ComplaintCategory, IcdCode, Form, ChartNote};
 
-export const class_map_linkable = {Patient,Practitioner,StaffMember,Service,Form};
+export const class_map_linkable = {Patient,Practitioner,StaffMember,Service,Form,Complaint,ComplaintCategory};
 export const linkable_lists = {};
 export const linkable_lists_pending = {};
+window.linkable_lists = linkable_lists;
 
 export const table = {
-  list: () => $('.modelTable').get(),
+  list: () => $('.Table').get(),
   get: () => table.list().find(table => table.name == name) || null,
   initialize: {
-    all: function(){
-      if (!initialize.find('.modelTable')) return;
-      $.each(table.initialize, function(name, initFunc){
-        if (name != 'all' && typeof initFunc === 'function') initFunc();
-      });
-      if (!table.initialize.tableResize){
-        $(window).on('resize', table.width.check);
-        table.initialize.tableResize = true;
-      }
-      table.width.adjust();
-    },
-    tableResize: false,
-    newTables: function(){
-      init('.modelTable', function(){
-        let newTable = new ModelTable($(this),1);
-      })
-    },
-    table_nav_options: function(){
-      init('.optionsNav',function(){
-        if ($(this).data('uid') !== undefined) {
-          let type = $(this).data('model'), options = $(this).data('options');
-          model.current = type.to_class_obj(options);
-        }else model.current = null;
-        $(this).find('.navOption').each(function(){
-          fix_width($(this));
-          let action = $(this).data('action');
-          $(this).on('click', model.current[action].bind(model.current))
-        })
-      })
-    }
+    // all: function(){
+    //   $.each(table.initialize, function(name, initFunc){
+    //     if (name != 'all' && typeof initFunc === 'function') initFunc();
+    //   });
+    // },
+    // Tables: function(){
+    //   init('.Table', function(){
+    //     let newTable = new Table({ele: $(this)});
+    //   })
+    // },
+    // NewTables: function() {
+    //   log('HIIIIII');
+    //   init('.Table', function() {
+    //     new Table($(this).data().merge({ele: $(this)}));
+    //   })
+    // },
+    // Details: function() {
+    //   log("HI");
+    //   init('.Details', function() {
+    //     new Details($(this).data().merge({ele: $(this)}));
+    //   })
+    // },
   },
   width: {
     timer: null,
@@ -1973,23 +2331,29 @@ export const table = {
       table.width.timer = setTimeout(table.width.adjust, 300);
     },
     adjust: function(){
-      $.each(table.list, function(t,modelTable){
-        modelTable.showAllColumns();
-        let hideMe = [...modelTable.hideorder];
-        while (modelTable.isTooWide) {
+      $.each(table.list, function(t,Table){
+        Table.showAllColumns();
+        let hideMe = [...Table.hideorder];
+        while (Table.isTooWide) {
           let hideNow = hideMe.shift();
-          modelTable.element.find('.'+hideNow).hide();
+          Table.element.find('.'+hideNow).hide();
         }
       })
     }
   },
 };
 export const model = {
+  initialize: _ => {
+    init('.ModelDetails',function() {
+      let info = $(this).data(), uid = info.uid
+      Model.find_or_create(info.type, uid, info.attr_list);
+    })
+  },
   current: null,
   actions: (action) => {
     try {
-      if (model.current[action] && typeof model.current[action] == 'function') model.current[action]();
-      else throw new Error(`${model.current.type}.${action} is not a function`);
+      if (Models.Model.current[action] && typeof Models.Model.current[action] == 'function') Models.Model.current[action]();
+      else throw new Error(`${Models.Model.current.type}.${action} is not a function`);
     }catch (error) {
       log({error});
     }

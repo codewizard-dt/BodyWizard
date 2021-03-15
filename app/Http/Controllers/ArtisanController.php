@@ -29,6 +29,7 @@ class ArtisanController extends Controller
             $message = ($result === true) ? 'Users refreshed.' : $result;
         }elseif($command == 'refresh-complaints'){
             $result = RefreshTables::clearComplaintTables();
+            if ($result === true) RefreshTables::seedComplaintTables();
             $message = ($result === true) ? 'Complaints + categories refreshed.' : $result;
         }elseif($command == 'refresh-bugs'){
             $result = RefreshTables::clearBugTables();

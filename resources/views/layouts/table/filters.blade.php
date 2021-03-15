@@ -9,7 +9,7 @@ $text_search_box = array_merge($general,
 		'name'=>$model."_search",
 		'type'=>'text', 
 		'input'=>new_input('text',
-			['placeholder','eleCss'],
+			['placeholder','ele_css'],
 			['Type to search',['width'=>'calc(100% - 1em)']])
 	]);
 set($text_search_box,'input.settings',['placeholder_shift'=>'false']);

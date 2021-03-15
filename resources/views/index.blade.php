@@ -9,7 +9,7 @@
 @endpush
 
 @section('content')
-        <div id='acu-chin-1' class='splash btnPopDown'>
+        <div id='acu_chin_1' class='splash btnPopDown'>
             <?php 
             if (isset(getallheaders()["Referer"])){
                 $referer = getallheaders()["Referer"];
@@ -50,7 +50,7 @@
             </div>
         </div>
         <div id='ServiceDesc' class='split50'>
-            <div id='bp-1' class='splash'></div>
+            <div id='bp_1' class='splash'></div>
             <div class='left paddedBig paddedSides'>
                 <h3 class='yellow'>Services Provided</h3>
                 <h4>Acupuncture</h4>

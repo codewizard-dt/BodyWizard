@@ -4,74 +4,66 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 use App\ServiceCategory;
+use App\Form;
+use App\Traits\TableAccess;
 use App\Traits\HasSettings;
+use App\Traits\HasCategory;
 
 class Service extends Model
 {
+  use TableAccess;
   use HasSettings;
+  use HasCategory;
 
   protected $casts = [
-    'is_addon' => 'boolean',
-    'addon_only' => 'boolean',
-    'addon_services' => 'array',
-    'new_patients_ok' => 'boolean',
-    'new_patients_only' => 'boolean'
+    'settings' => 'array',
   ];
-  protected $visible = ['name','description_calendar','description_admin','service_category_id','duration','price'];
-  // protected $visible = ['name','settings','category_id'];
+  protected $visible = ['name','description_calendar','description_admin','settings','service_category_id','duration','price'];
   protected $guarded = [];
+  protected $with = ['Category'];
 
-  public static function TableOptions(){
-    return [
-      'tableId' => 'ServiceList',
-      'index' => 'id',
-      'nameColumn' => 'Service Name',
-      'model' => "Service",
-      'columns' => [
-        'Service Name' => 'name',
-        'Category' => 'category',
-        'Duration' => 'duration',
-        'Price' => 'display_price',
-      ],
-      'hideOrder' => ['Price','Category','Duration'],
-      'filters' => [],
-      'extraBtns' => [
-        'manage categories' => '/ServiceCategory/index'
-      ],
+  static public $instance_actions = [];
+  static public $static_actions = [];
+  static public $list_cols = ['duration','price'];
+  static public function table() {
+    $columns = [
+      'Description' => 'description_admin',
     ];
+    $filters = [];
+    $buttons = [];
+    $data = [];
+    return compact('columns', 'filters', 'buttons', 'data');
   }
-  public static function DefaultCollection() {
-    $services = Service::addSelect(['category_order' => ServiceCategory::select('settings->display->order')->whereColumn('id','services.service_category_id')->limit(1)])
-      ->orderBy('category_order')->orderBy('settings->display->order');
-    return $services;
-  }
-  public static function BasicListAdditions() { return ['duration','price','settings']; }
-  public function modelDetails(){
-    return [
-      'Service Name' => $this->name,
-      'Category' => $this->category,
-      'Description' => $this->description_calendar,
-      'Duration' => $this->duration . ' minutes',
-      'Price' => Practice::getFromSession()->currency['symbol'].$this->price,
+  public function details() {
+    $instance = [
+      'Category' => $this->category_name,
+      'Description - Calendar' => $this->description_calendar,
+      'Description - Admin' => $this->description_admin,
+      'Duration' => $this->display_duration,
+      'Price' => $this->display_price,
     ];
+    $buttons = [];
+    return compact('instance','buttons');
   }
-  public function detailClick(){
-    return 'nothing';
-  }
-  public function getCategoryAttribute(){
-    return $this->servicecategory? $this->servicecategory->name : 'none';
-  }
+
   public function getDisplayPriceAttribute(){
     $practice = Practice::getFromSession();
     return $practice->currency['symbol'].$this->price;
+  }
+  public function getDisplayDurationAttribute(){
+    return $this->duration . ' minutes';
+  }
+  public function getChartFormsAttribute(){
+    $ids = $this->get_setting('Default Forms.AutoloadedChartForms');
+    return Form::find($ids);
   }
 
   public function codes(){
     return $this->morphToMany('App\Code', 'codeable');
   }
-  public function servicecategory(){
-    return $this->belongsTo('App\ServiceCategory','service_category_id');
-  }
+  // public function category(){
+  //   return $this->belongsTo('App\ServiceCategory','service_category_id');
+  // }
   public function forms(){
     return $this->morphToMany('App\Form','formable','formables',null,'form_id');
   }

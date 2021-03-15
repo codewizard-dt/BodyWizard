@@ -3,6 +3,7 @@
   --purple:rgb(105,12,104);
   --purple5:rgba(105,12,104,0.05);
   --purple10:rgba(105,12,104,0.1);
+  --purple10o:rgb(239,231,239);
   --purple15:rgba(105,12,104,0.15);
   --purple20:rgba(105,12,104,0.2);
   --purple30:rgba(105,12,104,0.3);
@@ -312,9 +313,11 @@ h5 span {font-size: 0.9em;}
 .left{text-align: left;}
 .right{text-align:right;}
 .center{text-align:center;}
-.smallFont {font-size: 0.9em;vertical-align: baseline;}
+.smaller {font-size: 0.9em;vertical-align: baseline;}
 .letterStretch {letter-spacing: 1;}
 .bold {font-weight: bold;}
+.strikethrough { text-decoration-line: line-through; }
+
 h1.bold, h2.bold, h3.bold, h4.bold {font-weight: 400}
 h1 .bold, h2 .bold, h3 .bold, h4 .bold {font-weight: 400}
 h1 b, h2 b, h3 b, h4 b {font-weight: 400}
@@ -322,26 +325,42 @@ h1 b, h2 b, h3 b, h4 b {font-weight: 400}
   min-height: 7em;
   position: relative;
 }
+.box {
+  display: inline-block;
+  border-radius: 3px;
+  border: 1px solid var(--gray50);
+  background-color: var(--gray10);
+  padding: 0.2em 0.5em;  
+  max-width: 100%;
+  box-sizing: border-box;
+  /*width: min-content;*/
+}
+.flexbox > .box { width:min-content; }
+.box.padded_side {
+  padding: 0 0.2em;
+}
+.box .answer label {color: black;}
+.boxYellow .answer input {border-color: var(--yellow30);}
+.purple .answer input {border-color: var(--purple30);}
+.boxBlock { display: block; }
+.boxPadReverse { padding: 0.4em 0.2em; }
 .boxPink {
   color: var(--pink);
-  border-radius: 3px;
-  border: 1px solid var(--pink50);
+  border-color: var(--pink50);
   background-color: var(--pink5);
-  padding: 0.2em 0.5em;
 }
-.boxPurple {
+.purple {
   color: var(--purple);
-  border-radius: 3px;
-  border: 1px solid var(--purple50);
+  border-color: var(--purple50);
   background-color: var(--purple5);
-  padding: 0.2em 0.5em;
+}
+.purple.light {
+  border-color: var(--purple15);
 }
 .boxYellow {
   color: var(--yellow);
-  border-radius: 3px;
-  border: 1px solid var(--yellow50);
+  border-color: var(--yellow50);
   background-color: var(--yellow5);
-  padding: 0.2em 0.5em;
 }
 
 .purpleBorder{
@@ -391,6 +410,7 @@ a {
   text-decoration: none;
   transition:color 0.5s;
   font-family: inherit;
+  cursor: pointer;
 }
 
 a:hover {color:var(--pink);}
@@ -552,6 +572,9 @@ a:hover {color:var(--pink);}
   touch-action:manipulate;
   user-select: none;
 }
+
+.filter_box .button_box { margin: 0.1em 0 0.5em; }
+.Details .button_box { margin: 0; }
 .button:focus {
   outline: 5px auto -webkit-focus-ring-color;
 }
@@ -578,8 +601,8 @@ a:hover {color:var(--pink);}
 .button.medium {font-size: 1rem;}
 .button.small {font-size: 0.9rem;}
 .button.xsmall {font-size: 0.8rem;}
-.button.xxsmall {font-size: 0.7rem;}
-.button.xxxsmall {font-size: 0.7rem; padding:0.5em; margin: 0.5em;}
+.button.xsmall {font-size: 0.7rem;}
+.button.xxsmall {font-size: 0.7rem; padding:0.5em; margin: 0.5em;}
 .button.purple {
   background-color: var(--purple);
   border-color: var(--purple);
@@ -668,6 +691,7 @@ a:hover {color:var(--pink);}
   background-size: cover;
 }
 .splash.top {padding-top:4em;}
+.splash.top.full {height:75vh;}
 .btnPopDown {
   margin-bottom: 2em;
   position: relative;
@@ -769,18 +793,18 @@ a:hover {color:var(--pink);}
 }
 
 
-#acu-chin-1 {
+#acu_chin_1 {
   padding-top: 4em;
   height:26em;
   background-image: url(/images/acupuncture/chin-amanda-seirin.jpg);
   background-position: 70%;
 }
-#acu-chin-1 .button{
+#acu_chin_1 .button{
   position: absolute;
   bottom: 0;
   transform: translate(-50%,50%);
 }
-#bp-1 {
+#bp_1 {
   min-height:30em;
   background-image: url(/images/vitals/bp-miguel-1.jpg);
   background-position: 60%;
@@ -805,35 +829,35 @@ a:hover {color:var(--pink);}
   background-image: url(/images/headshot/david-6.jpg);
   background-position: 50% 10%;
 }
-#head-1{
+#head_1{
   height:45vh;
   padding-top:4em;    
   background-image: url(/images/acupuncture/head-benji.jpg);
   background-position: 40% 50%;
 }
-#acu-arm-1{
+#acu_arm_1{
   height: 15em;
   background-image: url(/images/acupuncture/shoulder-maria-2.jpg);
   background-position: 50% 70%;
 }
-#pulse-1{
+#pulse_1{
   height: 45vh;
   background-image: url(/images/vitals/wrist-jason-1.jpg);
   background-position: 50% 55%;
 }
-#shelf-1{
+#shelf_1{
   height: 25em;
-  background-image: url(/images/other/shelf-1.jpg);
+  background-image: url(/images/other/shelf_1.jpg);
   background-position: 50% 45%;
 }
-#shelf-2{
-  height: 65vh;
-  background-image: url(/images/other/shelf-2.jpg);
+#shelf_2{
+  height: 67vh;
+  background-image: url(/images/other/shelf_2.jpg);
   background-position: 50% 45%;
 }
-#needle-tray-1{
+#needle_tray_1{
   height: 25vh;
-  background-image: url(/images/other/needle-tray-1.jpg);
+  background-image: url(/images/other/needle_tray_1.jpg);
   background-position: 50% 50%;
 }
 
@@ -1136,6 +1160,7 @@ a:hover {color:var(--pink);}
 }
 
 .big {font-size: 1.15em;}
+.xbig {font-size: 1.3em;}
 
 
 .quoteText .big {
@@ -1466,14 +1491,14 @@ a:hover {color:var(--pink);}
 }
 
 .Banner {
-  position: fixed;
-  top: 5em;
-  right: 3.5em;
-  z-index: 9999;
+  /*position: fixed;*/
+  /*z-index: 9999;*/
   display: none;
   border-width: 1px;
   border-style: solid;
   border-radius: 5px;
+  box-sizing: border-box;
+  margin: 3px 0;
   padding: 0.5em 1em;
   background-color: var(--white97);
 }
@@ -1726,11 +1751,6 @@ a:hover {color:var(--pink);}
   box-shadow: 0 0 20px 10px rgb(120,120,120) inset;
   z-index: 99;
 }
-.optionsNav #Block{
-  z-index: 40;
-  padding:0;
-  margin:0;
-}
 .blur {
   display: none;
   position: absolute;
@@ -1741,6 +1761,9 @@ a:hover {color:var(--pink);}
   background-color: rgba(230,230,230,0.7);
   /*box-shadow: 0 0 20px 10px rgb(230,230,230) inset;*/
   z-index:52; 
+}
+.blur > * {
+  max-width: 96%;
 }
 .blur .cancelX{
   position: absolute;
@@ -1830,13 +1853,13 @@ a:hover {color:var(--pink);}
   max-height: 80%;
   overflow-y: scroll;
 }
+.loading {
 
+}
 .lds-ring {
   display: block;
   text-align: center;
   padding:1em 2em;
-  /*width: 64px;*/
-  /*height: 64px;*/
   width: 3em;
   height: 3em;  
   margin: auto;
@@ -1845,10 +1868,6 @@ a:hover {color:var(--pink);}
   box-sizing: border-box;
   display: block;
   position: absolute;
-  /*width: 51px;*/
-  /*height: 51px;*/
-  /*margin: 6px;*/
-  /*border: 6px solid #fff;*/
   width: 3em;
   height: 3em;
   border: 0.4em solid #fff;
@@ -1894,6 +1913,9 @@ a:hover {color:var(--pink);}
 .borderFlash {
   border: 2px solid var(--pink);
   animation: pinkBorderFlash 0.8s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+}
+#karaoke_load {
+  animation: opacity60Flash 0.8s cubic-bezier(0.5, 0, 0.5, 1) infinite;
 }
 @keyframes lds-ring {
   0% {

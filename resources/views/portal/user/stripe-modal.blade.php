@@ -17,6 +17,6 @@ $default = $options[0];
 			<h3 class='pink paddedSides xsmall'>{{$name}}</h3>
 			{{Form::radioBlade($options,$name,$default)}}		
 		</div>
-		<div id="submit-stripe" class='button xxsmall pink'>charge card</div>
+		<div id="submit-stripe" class='button xsmall pink'>charge card</div>
 	</form>
 </div>

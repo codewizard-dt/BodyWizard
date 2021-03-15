@@ -50,7 +50,7 @@
   },
   "MobileMenu": {
     "MobilePlaceholder": {
-      "text": "mobile menu",
+      "text": "",
       "image_url":"/images/icons/mobile_menu.png",
       "dropdown": {}
     }
@@ -224,6 +224,7 @@
       "dropdown":false,
       "uri":"/create/Diagnosis"
     },
+
     "settings-patient": {
       "text":"Settings",
       "dropdown":false,
@@ -368,6 +369,11 @@
               "uri":"/StaffMember/index",
               "text":"Staff",
               "dropdown":false
+            },
+            "practice-index": {
+              "uri":"/Practice/index",
+              "text":"Practices",
+              "dropdown":false
             }
           }
         },
@@ -408,6 +414,26 @@
           "text":"Services",
           "dropdown":false,
           "uri":"/Service/index"
+        },
+        "acupuncture": {
+          "text": "Acupuncture",
+          "dropdown": {
+            "acu_style_index": {
+              "uri":"/AcuStyle/index",
+              "text":"Styles",
+              "dropdown":false              
+            },
+            "acu_meridian_index": {
+              "uri":"/AcuMeridian/index",
+              "text":"Meridians",
+              "dropdown":false              
+            },
+            "acu_points_index": {
+              "uri":"/AcuPoint/index",
+              "text":"Points",
+              "dropdown":false              
+            }
+          }
         },
         "invoice-index": {
           "text":"Invoices",
@@ -545,6 +571,8 @@
       "dropdown":false,
       "uri":"/create/ServiceCategory"
     },
+
+
 
     "users-home": {
       "text":"Users",

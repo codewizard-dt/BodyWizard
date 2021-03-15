@@ -34,40 +34,13 @@ function notificationData($notification, $format = 'string'){
 function notificationType($notification){
   return title(unreplacespaces(snake(explode('\\',$notification->type)[2])));
 }
-function dataAttrStr($collection){
-  return implode(" ", array_values($collection->map(function($value,$attr){
+function dataAttrStr($pairs){
+  if (is_array($pairs)) $pairs = collect($pairs);
+  return $pairs->map(function($value,$key){
     if (is_array($value)) $value = json_encode($value);
-    return "data-$attr='".e($value)."'";
-  })->toArray()));
+    return "data-$key='$value'";
+  })->implode(' ');
 }
-function handleModelDetail($value){
-  // return "value";
-  $result = "";
-  if (is_string($value)) $result = "<span>$value</span>";
-  elseif (is_array($value)) {
-    $result .= "<div style='margin-left: 1em;'>";
-    unset($key);
-    foreach ($value as $key => $val){
-      $result .= "<div>";
-      if (!is_numeric($key)){
-        $result .= "<span class='bold'>";
-        $result .= $key;
-        $result .= ": </span>";
-      }
-      $result .= "<span>";
-      if ($key === 'autosave' && !is_null($val)){
-        $result .= 'non-null autosave data';
-      }else $result .= handleModelDetail($val);
-      $result .= "</span>";
-      $result .= "</div>";
-    }
-    $result .= "</div>";
-    // $result = var_dump($value);
-  }elseif (is_null($value)) $result = "<span>null</span>";
-  elseif (is_object($value)) $result = "<span>".json_encode($value)."</span>";
-  return $result;
-}
-
 function getPractice($practiceId){
   $practice = Practice::where('practice_id',$practiceId)->get();
   return $practice;
@@ -85,10 +58,18 @@ function reportError($exception,$location=null){
     if (is_a($exception, 'Exception')){
       $desc = explode("Stack", $exception)[0];
       $details = $exception->getTrace();
+      if (count($details) > 15) {
+        $details = array_slice($details, 0, 15);
+        $details[] = 'Info truncated.  See logs for complete trace info.';
+      }
     }elseif (is_string($exception)){
       $e = new \Exception($exception);
       $desc = $exception;
       $details = $e->getTrace();
+      if (count($details) > 15) {
+        $details = array_slice($details, 0, 15);
+        $details[] = 'Info truncated.  See logs for complete trace info.';
+      }
     }else{
       $desc = 'Error';
       $details = $exception;
@@ -146,6 +127,13 @@ function handleError($exception,$location=null) {
       return Str::snake($str);
     }
   }
+  function studly($str){
+    if (is_array($str)){
+      return collect($str)->map(function($ele){return studly($ele);})->toArray();
+    }else{
+      return Str::studly($str);
+    }
+  }
   function camel($str){
     if (is_array($str)){
       return collect($str)->map(function($ele){return camel($ele);})->toArray();
@@ -165,7 +153,10 @@ function handleError($exception,$location=null) {
     return $str;
   }
   function toKeyString($str) {
-    return lettersOnly(removespaces(title($str)));
+    $collection = collect(explode(' ',$str));
+    $collection->transform(function($word){return Str::ucfirst($word);});
+    return implode('', $collection->all());
+    // return lettersOnly(removespaces(title($str)));
   }
   function proper($str){
     if (is_array($str)){
@@ -283,8 +274,9 @@ function handleError($exception,$location=null) {
 
 // Array related functions
 
-  function random($array){
-    return Arr::random($array);
+  function random($array, $n = 1){
+    if ($n == 1) return Arr::random($array);
+    else return Arr::random($array, $n);
   }
   function addTo(&$addToArray,$keyValueArray){
     foreach ($keyValueArray as $key => $value){
@@ -294,9 +286,31 @@ function handleError($exception,$location=null) {
   function get($array, $key, $default = null) {
     return Arr::get($array,$key,$default);
   }
-  function smart_merge(&$array1, $array2) {
-    $array1 = array_unique(array_merge($array1, $array2));
-    if (is_numeric(array_keys($array1)[0])) $array1 = array_values($array1);
+  function only($array, $keys = []) {
+    return Arr::only($array, $keys);
+  }
+  function smart_merge(&$array1, ...$arrays) {
+    foreach($arrays as $array) { 
+      $array1 = array_merge($array1, $array);
+    }
+    return $array1;
+  }
+  function merge(&$array1, ...$arrays) {
+    foreach ($arrays as $array) {
+      foreach ($array as $key => $value2) {
+        if (is_numeric($key)) {$array1[] = $value2; continue;}
+        if (!isset($array1[$key])) {$array1[$key] = $value2; continue;}
+        $value1 = $array1[$key];
+        if (!is_array($value1) && !is_array($value2)) {$array[$key] = $value2;} 
+        else if (is_array($value1) && !is_array($value2)) {$array1[$key][] = $value2;}
+        else if (!is_array($value1) && is_array($value2)) {
+          $array1[$key] = $value2;  $array1[$key][] = $value1;
+        } else if (is_array($value1) && is_array($value2)) {
+          $array1[$key] = merge($value1, $value2);
+        }
+      }
+    }
+    return $array1;
   }
   function set(&$array, $key, $value) {
     try{
@@ -318,12 +332,15 @@ function handleError($exception,$location=null) {
     }
     return $array;
   }
-  function new_input($type, $options, $values){
+  function new_input($type, $options, $values_o, $settings = [], $values_s = []){
     $input = [];
     set($input, 'type', $type);
     try{
       for ($x = 0; $x < count($options); $x++){
-        set($input, "options.".$options[$x], $values[$x]);
+        set($input, "options.".$options[$x], $values_o[$x]);
+      }
+      for ($x = 0; $x < count($settings); $x++){
+        set($input, "settings.".$settings[$x], $values_s[$x]);
       }
     }catch(\Exception $e){
       reportError($e,'new_input failure');
@@ -333,7 +350,7 @@ function handleError($exception,$location=null) {
   function implodeOr($array){
     for ($x = 0; $x < count($array); $x++){
       if ($x == 0) $str = $array[$x];
-      elseif ($x == count($array) - 1) $str .= ', or '.$array[$x];
+      elseif ($x == count($array) - 1) $str .= (count($array) == 2 ? '':',').' or '.$array[$x];
       else $str .= ', '.$array[$x];
     }
     return $str;
@@ -341,24 +358,29 @@ function handleError($exception,$location=null) {
   function implodeAnd($array){
     for ($x = 0; $x < count($array); $x++){
       if ($x == 0) $str = $array[$x];
-      elseif ($x == count($array) - 1) $str .= ', and '.$array[$x];
+      elseif ($x == count($array) - 1) $str .= (count($array) == 2 ? '':',').' and '.$array[$x];
       else $str .= ', '.$array[$x];
     }
     return $str;
   }
 
 // Date / Schedule related functions
+  define('DATE_NUMERIC', "n/j/Y");
+  define('TIME_FORMAT', "g:ia");
+  define('MONTH_DAY', 'M jS');
+  define('MONTH_DAY_TIME', 'M jS\, g:ia');
   function dateOrTimeIfToday($timestamp){
     if (!$timestamp){return "never";}
     if ($timestamp == 'never'){return "never";}
     $timestamp = Carbon::createFromTimestamp($timestamp);
     if ($timestamp->isToday()){
-      $timestamp = $timestamp->format("g:i A");
+      $timestamp = $timestamp->format(TIME_FORMAT);
     }else{
-      $timestamp = $timestamp->format("n/j/Y");
+      $timestamp = $timestamp->format(DATE_NUMERIC);
     }
     return $timestamp;
   }
+
   function displayDays($days){
     $str = "";
     if ($days["Sunday"]){
@@ -401,227 +423,8 @@ function handleError($exception,$location=null) {
     elseif ($day->isSaturday()){$dayNumerical = 6;}
     return $dayNumerical;
   }
-  function scheduleToEvents($schedule, $exceptions = []){
-    // Log::info($schedule);
-    $today = Carbon::now();
-    if ($today->isSunday()){$todayNumerical = 0;}
-    elseif ($today->isMonday()){$todayNumerical = 1;}
-    elseif ($today->isTuesday()){$todayNumerical = 2;}
-    elseif ($today->isWednesday()){$todayNumerical = 3;}
-    elseif ($today->isThursday()){$todayNumerical = 4;}
-    elseif ($today->isFriday()){$todayNumerical = 5;}
-    elseif ($today->isSaturday()){$todayNumerical = 6;}
-    $map = ['Sunday'=>0,'Monday'=>1,'Tuesday'=>2,'Wednesday'=>3,'Thursday'=>4,'Friday'=>5,'Saturday'=>6];
-    $eventBlocks = [];
-    $earliest = Carbon::create('11:59pm');
-    $latest = Carbon::create('12:01am');
-
-    foreach ($schedule as $x => $timeBlock){
-      $isBreak = isset($timeBlock['break']) ? $timeBlock['break'] : false;
-      $newEvent = [
-        "title" => '',
-        "start" => $timeBlock["start_time"],
-        "end" => $timeBlock["end_time"],
-        "classNames" => ["timeBlock"],
-        "extendedProps" => [
-          'block' => $x,
-          'break' => $isBreak,
-          'services' => isset($timeBlock['services']) ? $timeBlock['services'] : "all"
-        ],
-        'rendering' => 'background'
-      ];
-
-      $startTime = Carbon::parse($timeBlock['start_time']);
-      $endTime = Carbon::parse($timeBlock['end_time']);
-      $earliest = ($earliest->isBefore($startTime)) ? $earliest : $startTime;
-      $latest = ($latest->isAfter($endTime)) ? $latest : $endTime;
-      foreach ($timeBlock['days'] as $day => $include){
-        if ($include){
-          $scheduledDayNumerical = $map[$day];
-          $scheduledDay = $today->copy()->subDays($todayNumerical - $scheduledDayNumerical);
-          $newEvent['start'] = $scheduledDay->toDateString() . "T" . $startTime->toTimeString();
-          $newEvent['end'] = $scheduledDay->toDateString() . "T" . $endTime->toTimeString();
-          array_push($eventBlocks,$newEvent);
-        }
-      }
-    }
-    $eventBlocks = sortEventsByStart($eventBlocks);
-    $eventBlocks = collapseSchedule($eventBlocks);
-    return 
-    [
-      "eventBlocks" => $eventBlocks,
-      'earliest' => $earliest,
-      'latest' => $latest
-    ];
-  }
-  function scheduleToFullCalBizHours($schedule){
-      $bizHourArr = [];
-      foreach ($schedule as $timeBlock){
-          $daysOfWeek = [];
-          if ($timeBlock['days']['Sunday']){$daysOfWeek[] = 0;}
-          if ($timeBlock['days']['Monday']){$daysOfWeek[] = 1;}
-          if ($timeBlock['days']['Tuesday']){$daysOfWeek[] = 2;}
-          if ($timeBlock['days']['Wednesday']){$daysOfWeek[] = 3;}
-          if ($timeBlock['days']['Thursday']){$daysOfWeek[] = 4;}
-          if ($timeBlock['days']['Friday']){$daysOfWeek[] = 5;}
-          if ($timeBlock['days']['Saturday']){$daysOfWeek[] = 6;}
-          $startTime = to24HrTime($timeBlock['start_time']);
-          $endTime = to24HrTime($timeBlock['end_time']);
-          $bizHrObj = [
-              'daysOfWeek' => $daysOfWeek,
-              'startTime' => $startTime,
-              'endTime' => $endTime,
-              'rendering' => 'background'
-          ];
-          $bizHourArr[] = $bizHrObj;
-      }
-      return $bizHourArr;
-  }
   function to24HrTime($str){
     return Carbon::createFromFormat("h:ia",$str)->toTimeString();
-  }
-  function sortEventsByStart($eventBlocks){
-    usort($eventBlocks, 'compareStarts');
-    return $eventBlocks;
-  }
-  function compareStarts($event1, $event2){
-    $s1 = new Carbon($event1['start']);
-    $s2 = new Carbon($event2['start']);
-    if ($s1->equalTo($s2)){return 0;}
-    elseif ($s1->lessThan($s2)){return -1;}
-    elseif ($s1->greaterThan($s2)){return 1;}
-  }
-  function collapseSchedule($eventBlocks){
-    $x = 0;
-    while ($x < count($eventBlocks) - 1){
-      $newBlocks = collapseBlocks($eventBlocks[$x], $eventBlocks[$x+1]);
-      if (!$newBlocks){
-        $x++;
-      }else{
-        array_splice($eventBlocks, $x, 2, $newBlocks);
-      }
-    }
-    return $eventBlocks;
-  }
-  function collapseBlocks($block1,$block2){
-    $conflictedServices = serviceConflict($block1, $block2);
-    if (!timeOverlap($block1, $block2)){
-      return false;
-    }else{
-      if (!$block1['extendedProps']['break'] && !$block2['extendedProps']['break'] && !$conflictedServices){
-        return combineBlocks($block1, $block2);
-      }elseif (!$block1['extendedProps']['break'] && !$block2['extendedProps']['break'] && $conflictedServices){
-        return breakUpBlocks($block1, $block2);
-      }elseif ($block1['extendedProps']['break'] || $block2['extendedProps']['break']){
-        return breakUpBlocks($block1, $block2);
-      }
-    }
-  }
-  function combineBlocks($block1, $block2){
-    $e1 = new Carbon($block1['end']);
-    $e2 = new Carbon($block2['end']);
-    $newArr = [];
-    array_push($newArr,$block1);
-    if ($e2->greaterThan($e1)){
-      $newBlock = $block2;
-      $newBlock['start'] = $block1['end'];
-      array_push($newArr,$newBlock);      
-    }
-    return $newArr;
-  }
-  function breakUpBlocks($block1, $block2){
-    $s1 = new Carbon($block1['start']);
-    $s2 = new Carbon($block2['start']);
-    $e1 = new Carbon($block1['end']);
-    $e2 = new Carbon($block2['end']);
-    $newArr = [];
-    if ($s1->notEqualTo($s2)){
-      $newBlock = $block1;
-      $newBlock['end'] = $block2['start'];
-      // echo "1";
-      // var_dump($newBlock);
-      array_push($newArr,$newBlock);
-    }
-
-    $newBlock = $block2;
-    // var_dump($block2);
-    if ($e1->lessThanOrEqualTo($e2)){$end = $block1['end'];}
-    else {$end = $block2['end'];}
-    $newBlock['end'] = $end;
-    $services = serviceConflict($block1, $block2);
-    if ($services == $block1['extendedProps']['services']){$blockNum = $block1['extendedProps']['block'];}
-    elseif ($services == $block2['extendedProps']['services']){$blockNum = $block2['extendedProps']['block'];}
-    if ($block2['extendedProps']['break']){$blockNum = $block2['extendedProps']['block'];}
-    $newBlock['extendedProps']['services'] = $services;
-    $newBlock['extendedProps']['block'] = $blockNum;
-
-    // echo "2";
-    // var_dump($newBlock);
-    array_push($newArr,$newBlock);
-    if ($e1->lessThan($e2)){
-      $newBlock = $block2;
-      $newBlock['start'] = $block1['end'];
-      // echo "3";
-      // var_dump($newBlock);
-      array_push($newArr,$newBlock);
-    }elseif ($e1->greaterThan($e2)){
-      $newBlock = $block1;
-      $newBlock['start'] = $block2['end'];
-      // echo "4";
-      // var_dump($newBlock);
-      array_push($newArr,$newBlock);
-    }
-    return $newArr;
-  }
-  function subtractBlocks($block1, $block2){
-    $s1 = new Carbon($block1['start']);
-    $s2 = new Carbon($block2['start']);
-    $e1 = new Carbon($block1['end']);
-    $e2 = new Carbon($block2['end']);
-    $newArr = [];
-    if ($block1['extendedProps']['break'] && $e2->lessThanOrEqualTo($e1)){
-      // FULL OVERLAP, NO TIMEBLOCKS RETURNED
-    }elseif ($block1['extendedProps']['break'] && $e2->greaterThan($e1)){
-      $newBlock = $block2;
-      $newBlock['start'] = $block1['end'];
-      array_push($newArr,$newBlock);
-    }elseif ($block2['extendedProps']['break']){
-      if ($s1->notEqualTo($s2)){
-        $newBlock = $block1;
-        $newBlock['end'] = $block2['start'];
-        array_push($newArr,$newBlock);
-      }
-      if ($e2->lessThan($e1)){
-        $newBlock = $block1;
-        $newBlock['start'] = $block2['end'];
-        array_push($newArr,$newBlock); 
-      }
-    }
-    return $newArr;
-  }
-  function timeOverlap($block1, $block2){
-    $s1 = new Carbon($block1['start']);
-    $s2 = new Carbon($block2['start']);
-    $e1 = new Carbon($block1['end']);
-    $e2 = new Carbon($block2['end']);
-    if ($e1->lessThanOrEqualTo($s2)){return false;}
-    else {return true;}
-  }
-  function serviceConflict($block1, $block2){
-    $services1 = $block1['extendedProps']['services'];
-    $services2 = $block2['extendedProps']['services'];
-    if ($services1 == $services2){
-      return false;
-    }elseif ($services1 == "all"){
-      return $services2;
-    }elseif ($services2 == "all"){
-      return $services1;
-    }else{
-      return "SUPER CONFLICT";
-    }
-  }
-  function eventConflict($momentObj, $duration, $practitionerId){
-
   }
 
 // Model related functions
@@ -635,7 +438,8 @@ function handleError($exception,$location=null) {
     } else $value = $instance->$attr;
     return $value;
   }
-  function basicList($model, $columns = ['name','uid']){
+  function basicList($model, $columns = []){
+    smart_merge($columns, ['name','uid','settings']);
     $model = removespaces(title(unreplacespaces($model)));
     $class = "App\\$model";
     if (method_exists($class, 'BasicListAdditions')) smart_merge($columns,$class::BasicListAdditions());
@@ -650,16 +454,19 @@ function handleError($exception,$location=null) {
     });
     return $list->toArray();     
   }
+  function mapForList($collection) {
+    return $collection->map(function($model){return $model->getKey().'%%'.$model->name;})->toArray();
+  }
   function successResponse($model) {
     $instance = getInstanceFromUid($model); $name = $instance->name;
     if (session('model_action') == 'create') $str = "\"$name\" successfully added!";
     else $str = "\"$name\" information updated";
     $response = "<h1 class='paddedBig'>$str</h1>";
-    $response .= "<div class='button pink' data-action='menu.reload'>continue</div>";
+    $response .= "<div class='button pink' data-action='Menu.reload'>continue</div>";
     return $response;
   }
   function usertype() {return session('usertype') !== null ? session('usertype') : Auth::user()->default_role;}
-  function usesTrait($instance,$trait){
+  function uses_trait($instance,$trait){
     $allTraits = class_uses($instance);
     $trait = 'App\Traits\\'.$trait;
     return ($allTraits!=false && isset($allTraits[$trait]));
@@ -679,13 +486,14 @@ function handleError($exception,$location=null) {
       $uidList[$model] = $uid;
       if ($model == 'Practice') {
         $practice = App\Practice::find($uid);
+        $tz = $practice->get_setting('timezone','America/Chicago');
         session([
           'domain' => $practice->host,
           'practiceId' => $practice->practice_id,
           'calendarId' => $practice->calendar_id,
-          'timezone' => $practice->contact_info['timezone']
+          'timezone' => $tz
         ]);
-        date_default_timezone_set($practice->contact_info['timezone']);
+        date_default_timezone_set($tz);
       }
     }else{
       if (getUid($model)) unset($uidList[$model]);

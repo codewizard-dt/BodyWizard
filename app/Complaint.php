@@ -3,42 +3,49 @@
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\TableAccess;
+use App\Traits\HasCategory;
+use App\Traits\HasSettings;
+
 
 class Complaint extends Model
 {
-    //
+  use TableAccess;
+  use HasCategory;
+  use HasSettings;
+
 	protected $guarded = [];
   protected $with = ['Category'];
 
-	static public function displayName() { return 'Chief Complaint'; }
-	static public function TableOptions() {
-    $filters = [];
-    set($filters, 'category.input', new_input(
-      'checkboxes',
-      ['preLabel','linked_to'], 
-      ['Category Filter:','ComplaintCategory']
-    ), 'category.attribute', 'complaint_category_id');
-    
-    return [
-      'columns' => [
-        'Name' => 'name',
-        'Category' => 'category_name',
-        'Description' => 'description',
-      ],
-      'hideOrder' => ['Email','Phone','Last Seen'],
-      'filters' => $filters,
-      'extraBtns' => [
-          'manage categories' => '/ComplaintCategory/index'
-      ],
-      'extraData' => [],
+  static public $display_name = 'Chief Complaint';
+  // static public $list_columns = ['complaint_category_id'];
+  static public $instance_actions = [];
+  static public $static_actions = [];
+
+  static public function table() {
+    $columns = [
+      'Description' => 'description',
     ];
-	}
-  static public function DefaultCollection() {
-    $complaints = Complaint::addSelect(['category_order' => ComplaintCategory::select('settings->display->order')->whereColumn('id','complaints.complaint_category_id')->limit(1)])
-      ->addSelect(['category_name' => ComplaintCategory::select('name')->whereColumn('id','complaints.complaint_category_id')->limit(1)])
-      ->orderBy('category_order')->orderBy('category_name')->orderBy('settings->display->order')->orderBy('name');
-    return $complaints;
+    $filters = [];
+    $buttons = [];
+    $data = [];
+    return compact('columns', 'filters', 'buttons', 'data');
   }
+  public function details() {
+    $instance = [
+      'Category' => $this->category_name,
+      'Description' => $this->description,
+    ];
+    $buttons = [];
+    return compact('instance','buttons');
+  }
+
+  // static public function DefaultCollection() {
+  //   $complaints = Complaint::addSelect(['category_order' => ComplaintCategory::select('settings->display->order')->whereColumn('id','complaints.complaint_category_id')->limit(1)])
+  //     ->addSelect(['category_name' => ComplaintCategory::select('name')->whereColumn('id','complaints.complaint_category_id')->limit(1)])
+  //     ->orderBy('category_order')->orderBy('category_name')->orderBy('settings->display->order')->orderBy('name');
+  //   return $complaints;
+  // }
 
   public function table_nav_options(){
     return [];
@@ -51,21 +58,15 @@ class Complaint extends Model
       'Applicable ICD Codes' => $this->icd_code_names,
     ];
   }
-  public function detailClick(){
-    $model = getModel($this);
-    $uid = $this->getKey();
-    return "<div class='link $model' data-model='$model' data-uid='$uid'>" . $this->name . "</div>";
-  }
+
   public function getIcdCodeNamesAttribute () {
     $icd_codes = $this->icd_codes;
     return $icd_codes->count() ? $icd_codes->map(function($code){ return $code->name; })->join("<br>") : 'none listed';    
   }
-  public function getCategoryNameAttribute () {
-    return $this->category->name;
-  }
- 	public function category() {
- 		return $this->belongsTo('App\ComplaintCategory','complaint_category_id');
- 	}
+
+ 	// public function category() {
+ 	// 	return $this->belongsTo('App\ComplaintCategory','complaint_category_id');
+ 	// }
   public function icd_codes() {
     return $this->morphToMany('\App\IcdCode','icd_codeable');
   }

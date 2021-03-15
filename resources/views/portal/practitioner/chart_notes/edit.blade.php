@@ -61,7 +61,7 @@
 		'autosave' => $appt->chartNote ? json_encode($autosavedForms) : 'null',
 		'notes' => $appt->chartNote ? json_encode($notes) : 'null',
 	];
-	$dataStr = dataAttrStr(collect($data));
+	// $dataStr = dataAttrStr(collect($data));
 ?>
 
 <h3 id='ApptInfo' class='pink' {!!$dataStr!!}>{{$patient->name}}<br>{{$appt->name}}</h3>

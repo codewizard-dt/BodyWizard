@@ -1,4 +1,6 @@
 <?php 
+
+dd("OLD TABLE");
 use Illuminate\Support\Facades\Auth;
 
 // if (!isset($destinations)){
@@ -77,9 +79,9 @@ $displayName = isset($displayName) ? $displayName : "";
 
 	<div class="Table">
 		@if ($modal)
-		    <table id='{{$tableId}}' class='styledTable clickable modelTable' data-index="{{$index}}" data-display='{{$displayName}}' data-model='{{$nospaces}}' data-hideOrder='{{$hideOrder}}'>
+		    <table id='{{$tableId}}' class='styledTable clickable Table' data-index="{{$index}}" data-display='{{$displayName}}' data-model='{{$nospaces}}' data-hideOrder='{{$hideOrder}}'>
 		@else
-		    <table id='{{$tableId}}' class='styledTable clickable modelTable' data-index="{{$index}}" data-display='{{$displayName}}' data-target="#Current{{$nospaces}}" data-model='{{$nospaces}}' data-hideOrder='{{$hideOrder}}' >
+		    <table id='{{$tableId}}' class='styledTable clickable Table' data-index="{{$index}}" data-display='{{$displayName}}' data-target="#Current{{$nospaces}}" data-model='{{$nospaces}}' data-hideOrder='{{$hideOrder}}' >
 		@endif
 
 	        <tr class='head'>
@@ -146,7 +148,7 @@ $displayName = isset($displayName) ? $displayName : "";
 						$val = ($attr !== 'duration') ? $val : $val." min";
 						$val = ($attr !== 'price') ? $val : '$'.$val;
 					?>
-		            <td class='{{$column["className"]}} all'><div class='tdSizeControl'>{{$val}}<div class='indicator'>...</div></div>
+		            <td class='{{$column["className"]}} all'><div class='td_size_control'>{{$val}}<div class='indicator'>...</div></div>
 		            	@if ($column["className"] != 'name' && !$hiddenFiltersAdded)
 			            	@forelse ($filtersOther as $filter)
 			            		<?php 

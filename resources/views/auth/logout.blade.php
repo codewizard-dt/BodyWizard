@@ -1,7 +1,7 @@
 @extends('layouts.portal')
 
 @section('content')
-<div class='splash top' id='shelf-2' style='min-height: 83vh;position: relative;'>
+<!-- <div class='splash top' id='shelf_2' style='min-height: 83vh;position: relative;'>
 	<div id="Centered">
 		<div id="LoginForm" style='margin-top:7em;'>
 			<h3>Logging Out</h3>
@@ -14,8 +14,8 @@
 		</div>
 	</div>
 </div>
-@endsection
+ -->@endsection
 
 @section('scripts')
-<script type="text/javascript" src="{{ asset('/js/logout.js') }}"></script>
+<!-- <script type="text/javascript" src="{{ asset('/js/logout.js') }}"></script> -->
 @endsection

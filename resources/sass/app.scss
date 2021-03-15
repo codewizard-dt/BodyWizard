@@ -1,16 +1,20 @@
 // Fonts
 // @import url('https://fonts.googleapis.com/css?family=Nunito');
 
-// Variables
-@import 'variables';
+// @import 'colors';
+@use 'clear';
+@use 'nav';
+@use 'layout';
+@use 'images';
+// @use 'features';
+@use 'models';
+@use 'forms';
 
-// Bootstrap
-//@import '~bootstrap/scss/bootstrap';
-
-@import 'clear';
+//@import 'clear';
 @import 'jquery.datepick';
 @import 'jquery.timepicker';
 @import 'ui.datepick';
 @import '@whoicd/icd11ect/style';
-@import 'style';
-@import 'forms';
+// @import 'style';
+// @import 'forms';
+

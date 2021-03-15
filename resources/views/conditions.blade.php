@@ -9,7 +9,7 @@
 @endpush
 
 @section('content')
-        <div class='splash btnPopDown top' id='pulse-1'>
+        <div class='splash btnPopDown top' id='pulse_1'>
             <h1 class='paddedXSmall shaded30 purple'>Commonly Treated Conditions</h1>
             <div class='button booknow small pink'>book an appointment</div>
         </div>

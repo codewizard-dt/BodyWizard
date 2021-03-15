@@ -1,7 +1,6 @@
 import {log, system, menu, Features} from '../functions';
 import {forms, Forms} from '../forms';
 import {model, table, Models} from '../models';
-// import {model} from '../models';
 import {DateTime as LUX} from 'luxon';
 
 Object.defineProperties(Array, {
@@ -19,26 +18,52 @@ Object.defineProperties(Array.prototype, {
   isEmpty: {value: function(){return this.length === 0}},
   notEmpty: {value: function(){return this.length > 0}},
   notSolo: {value: function(){return this.length > 1}},
-  smartJoin: {value: function(str, options = {}){
-    if (typeof str == 'object') options = str;
-    else options.merge({str});
-    str = ifu(options.str, 'and');
-    let oxford = options.oxford || true, map = options.map || null, array = this;
-    if (map) array = this.map(map);
-    return system.validation.array.join(array,str,oxford)}
-  },
+  smartJoin: {value: function(conj, options = {}){
+    if (this.isEmpty()) return options.none_ele || 'none';
+    if (typeof conj == 'object') options = conj;
+    else options.merge({conj});
+    conj = options.conj || 'and';
+    let joiner = ifu(options.joiner, ', ');
+    let limit_ele = options.limit_ele || '...';
+
+    let array = options.map ? this.map(options.map) : [...this], limit = options.limit || null;
+
+    if (options.map) log({options,array});
+    let oxford = ifu(options.oxford, true);
+    let new_array = [];
+    let at_limit = _ => limit && limit < (new_array.length + 2) / 2;
+    while (array.notEmpty()) {
+      let next = options.null ? array.shift() : array.shiftNotNull();
+      new_array.push(next === null ? options.null : next);
+      if (at_limit()) { new_array.push(joiner, limit_ele); break; }
+      if (array.isSolo()) new_array.push(`${oxford ? `${joiner}${conj} ` : ` ${conj} `}`);
+      else if (array.notSolo()) new_array.push(joiner);
+    }
+    return options.as_array ? new_array : new_array.join('');
+  }},
   smartPush: {value: function(){
-    let count = this.length, values = [...arguments];
+    let values = [...arguments];
     while (values.notEmpty()) {
       let value = values.shift();
       if (!this.includes(value)) this.push(value);
     }
-    return this.length != count;
+    return this;
+  }},
+  smartPushFront: {value: function(){
+    let count = this.length, values = [...arguments];
+    while (values.notEmpty()) {
+      let value = values.shift();
+      if (!this.includes(value)) this.splice(0,0,value);
+    }
+    return this;
   }},
   shiftNotNull: {value: function() {
     let value = undefined;
     do { value = this.shift() } while (value === null);
     return value;
+  }},
+  last: {value: function() {
+    return this[this.length - 1];
   }}
 });
 Object.defineProperties(Object.prototype, {
@@ -46,14 +71,6 @@ Object.defineProperties(Object.prototype, {
   json_if_valid: {value: function(){return this}},
   slideFadeOut: {value: function(time,callback){
     if (this.ele) return this.ele.slideFadeOut(time,callback);
-    else log({obj:this, error: new Error('no ele found in object')});
-  },writable:true},
-  slideFadeIn: {value: function(time,callback){
-    if (this.ele) return this.ele.slideFadeIn(time,callback);
-    else log({obj:this, error: new Error('no ele found in object')});
-  },writable:true},
-  slideFadeToggle: {value: function(time,callback){
-    if (this.ele) return this.ele.slideFadeToggle(time,callback);
     else log({obj:this, error: new Error('no ele found in object')});
   },writable:true},
   define_attrs_by_form: {value: function(selector){
@@ -74,19 +91,47 @@ Object.defineProperties(Object.prototype, {
     }
   }},
   dot_notation_get: {value: function(nested_dot){
+    if (nested_dot === '') return this;
     let split = nested_dot.split('.'), next = split.shift(), value = this[next];
     try {
       while (split.notEmpty()) {
         if (value == undefined) return undefined;
-        if (typeof value != 'object') throw new Error('Cannot traverse fully into dot notation, ran into non-object');
+        if (typeof value != 'object') throw new Error(`dot notation GET ${nested_dot} unresolvable, ran into non-object (${typeof value})`);
         next = split.shift();
         value = value[next];
       }
     } catch (error) {
       value = undefined;
-      log({error});
     }
     return value;
+  }},
+  dot_notation_set: {value: function(nested_dot, new_value, options = {}){
+    let merge = ifu(options.merge, true);
+    let force = ifu(options.force, true);
+    let parents = nested_dot.split('.'), next = null, parent = this;
+    let value_is_object = typeof new_value == 'object' && new_value !== null && !new_value.is_array();
+    if (nested_dot == '') {
+      if (typeof new_value == 'object' && !new_value.is_array()) this.merge(new_value);
+      else throw new Error(`ERROR this operation would overwrite all settings`);
+      return new_value;
+    }
+
+    try {
+      while (parents.notEmpty()) {
+        if (typeof parent != 'object') throw new Error(`dot notation SET ${nested_dot} unresolvable, ran into non-object (${typeof value}). Set options.force to true to override`);
+        else if (parent.is_array()) throw new Error(`dot notation SET ${nested_dot} unresolvable, ran into array. Set options.force to true to override`);
+        next = parents.shift();
+        if (parent[next] === undefined || parent[next] === null) parent[next] = {};
+        if (force && (typeof parent[next] != 'object' || parent[next].is_array()) ) {
+          parent[next] = {};
+        }
+        if (parents.isEmpty()) {
+          if (value_is_object && merge) parent[next].merge(new_value);
+          else parent[next] = new_value;
+        } else parent = parent[next];
+      }
+    } catch (error) { log({error,nested_dot,new_value,options}); return error }
+    return new_value;
   }},
   to_key_value_html: {value: function(){
     let wrapper = $('<div/>');
@@ -101,6 +146,7 @@ Object.defineProperties(Object.prototype, {
     }
     return wrapper;
   }},
+  toBool: {value: function(){return this}},
   is_array: {value: function(){
     return Array.isArray(this);
   }},
@@ -111,10 +157,19 @@ Object.defineProperties(Object.prototype, {
     return true;
   }},
   merge: {value: function(obj){
+    if (typeof obj == 'undefined' || obj === null) return this;
     if (typeof obj != 'object') throw new Error(`merge argument must be an object, ${typeof obj} given`);
+
+    if (obj.is_array()) {
+      // log({error:new Error(`merge argument should be an plain object, array given`)});
+      if (this.is_array()) this.smartPush(...obj);
+      else if ($.isEmptyObject(this)) throw new Error(`cannot merge array with plain object`);
+      else throw new Error(`cannot merge array with plain object`);
+      return this;
+    }
     $.extend(true,this,obj);
     return this;
-  }},
+  }, writable:true},
   duplicate: {value: function(){ 
     let str = JSON.stringify(this), json = JSON.parse(str);
     return json;
@@ -129,7 +184,7 @@ Object.defineProperties(String.prototype, {
       return match.toUpperCase();
     });
   }},
-  firstToUpper: {value: function(){
+  ucFirst: {value: function(){
     return this.charAt(0).toUpperCase() + this.slice(1);
   }},
   camel: {value: function(){
@@ -152,12 +207,20 @@ Object.defineProperties(String.prototype, {
     return add_spaces ? str.addSpacesToKeyString() : str;
   }},
   addSpacesToKeyString: {value: function(){
-    let str = this.trim().replace(/[A-Z]/g, (letter,index) => (index == 0 || this.charAt(index - 1).match(/[A-Z]/)) ? letter : ` ${letter}`);
+    let str = this.trim().replace(/[A-Z]/g, (letter,index) => ` ${letter}`);
+    str = str.replace('I C D','ICD').replace('C P T','CPT');
     return str;
   }},
   toBool: {value: function(truthy = undefined, falsey = undefined){
     return system.validation.boolean(this.valueOf(), truthy, falsey);
   }},
+  bool_match: {value: function(boolean, truthy_vals = ['true','yes'], falsey_vals = ['false','no ', 'no,']) {
+    if (boolean === true) {
+      return truthy_vals.includes(this) || truthy_vals.some(v => this.includes(v));
+    } else if (boolean === false) {
+      return falsey_vals.includes(this) || falsey_vals.some(v => this.includes(v));
+    } else return false;
+  }},  
   json_if_valid: {value: function(){return system.validation.json(this.toString())}},  
   to_class_obj: {value: function(attr_list){
     let FoundClass = Models[this] || Features[this] || null;
@@ -171,7 +234,7 @@ Object.defineProperties(String.prototype, {
       if (first == 'system') obj_val = system;
       else if (first == 'forms') obj_val = forms;
       else if (first == 'model') obj_val = model;
-      else if (first == 'menu') obj_val = menu;
+      else if (first == 'Menu' || first == 'Http') obj_val = Http;
       else if (obj) obj_val = obj[first];
       while (check_me.notEmpty() && !obj_val) {
         let check = check_me.shift();
@@ -192,10 +255,16 @@ Object.defineProperties(String.prototype, {
     }
     return obj_val;
   }},
-  to_fx: {value: function(obj = null){
-    let fx = this.get_obj_val(obj);
-    if (fx && typeof fx != 'function') log({obj,string:this},`${this.valueOf()} not a function`);
-    return fx;
+  // to_fx: {value: function(obj = null){
+  //   let fx = this.get_obj_val(obj);
+  //   if (fx && typeof fx != 'function') log({obj,string:this},`${this.valueOf()} not a function`);
+  //   return fx;
+  // }},
+  to_fx: {get () {
+    let base_str = this, split = base_str.split(':'), fx_str = split[0], bind_me = split.notSolo() ? split[1] : null;
+    let fx = fx_str.get_obj_val();
+    if (fx && typeof fx != 'function') log({string:this},`${fx_str.valueOf()} not a function`);
+    return bind_me ? fx.bind(bind_me) : fx;
   }},
   moment_hmma: {value: function(){
     return moment(this,'h:mma');
@@ -213,12 +282,15 @@ Object.defineProperties(Number.prototype, {
   }},
   toKeyString: {value: function() {
     return this.toString().toKeyString();
+  }},
+  countDecimals: {value: function(){
+    if(Math.floor(this.valueOf()) === this.valueOf()) return 0;
+    return this.toString().split(".")[1].length || 0; 
   }}
 })
 Object.defineProperties(Boolean.prototype, {
   toBool: {value: function(){return this.valueOf();}}
 })
-Number.prototype.countDecimals = function () {
-  if(Math.floor(this.valueOf()) === this.valueOf()) return 0;
-  return this.toString().split(".")[1].length || 0; 
-}
+Object.defineProperties(Function.prototype, {
+  to_fx: {get (){ return this }}
+});

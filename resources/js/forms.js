@@ -37,24 +37,28 @@ const EMBEDDED_ICD_CALLBACKS = {
 
   }
 }
+const map_api_key = 'AIzaSyBTwPirwcUTFAZEvsmV401YeSY-1ub-5pg';
 window.EMBEDDED_ICD_SETTINGS = EMBEDDED_ICD_SETTINGS;
 window.EMBEDDED_ICD_CALLBACKS = EMBEDDED_ICD_CALLBACKS;
 
 class FormEle {
   constructor(proxy) {
-    console.groupCollapsed('creating FormEle');
     let options = $(proxy).data(), json = options.json;
+    this.is_proxy = $('#Settings').exists() && $('#Settings').data('is_proxy');
     this.mode = ifu(options.mode, 'display');
+    if (this.mode == 'chart') { this.mode = 'display'; this.charting = true; }
     this.json = ifu(options.json, {});
     this.action = ifu(options.action, null);
     for (let attr in this.json){
       this[attr] = this.json[attr];
     }
     if (this.settings === null) this.settings = {};
-    this.ele = $(`<div/>`,{class:'form central full',id: (this.form_name || '').toKeyString()});
+    this.ele = $(`<div/>`,{class:'form',id: (this.form_name || '').toKeyString()});
+    this.ele.data({uid:this.form_uid});
     $(proxy).replaceWith(this.ele);
     this.ele.data('class_obj',this);
     this.section_list = new Features.List({
+      id: 'SectionList',
       header:'Sections',
       entire_li_clickable: false,
       li_class: 'flexbox spread',
@@ -64,30 +68,43 @@ class FormEle {
     let form = this;
     this.add_header();
     this.section_ele = $(`<div/>`,{class:'sections'}).appendTo(this.ele);
+    if (this.charting) this.section_ele.hide();
     this.add_buttons();
-    blur(this.ele,'loading');
+    if (!this.charting && this.ele.is(':visible')) {
+      blur(this.ele,'loading');
+      this.waiting = setInterval(this.linked_answer_check.bind(this),200);
+    }
+    log({form:this,spinners:this.ele.find('.spinner')},`new FormEle ${this.form_name}`);
     if (this.json.sections && this.json.sections.notEmpty()) this.json.sections.forEach(section => this.section_add(section));
     forms.initialize.signatures();
-    this.waiting = setInterval(this.linked_answer_check.bind(this),200);
 
-    if (this.mode == 'settings') {
+
+
+    if (this.mode == 'settings' && !this.is_proxy) {
       this.settings_manager = new Models.SettingsManager({
         obj: this,
         save: this.autosave_send.bind(this),
         callback: this.autosave_callback.bind(this),
       }, 'edit');
+      log({settings:this.settings},`FormEle SETTINGS`);
+      FormEle.current_settings_manager = this.settings_manager;
       this.settings_icons_create();
       this.section_array.forEach(section => section.settings_icons_create());
     }
     this.settings_apply();
     if (this.mode == 'build') this.autosave = new Features.Autosave({
-      ele: $("#FormBuilder"),
+      show_status: true,
       delay: 10000,
       send: this.autosave_send.bind(this),
       callback: this.autosave_callback.bind(this),
       obj: this,
+      message: `form changes saved`,
     });
-    console.groupEnd();
+
+    if (this.is_proxy) log('proxy');
+    else if (this.form_name == 'Form Settings' && this.mode == 'display') FormEle.current_settings_manager.form_ele = this.ele;
+    if (Item.clipboard_history && Item.clipboard_history.notEmpty()) Item.ClipboardBanner.show();
+    if (this.charting) this.add_charting_features();
   }
 
   add_header () {
@@ -101,24 +118,41 @@ class FormEle {
       });
       this.ele.removeClass('central full');
       this.header = this.header_editable.ele.appendTo(this.ele);
-      this.section_options = new Features.OptionBox();
+      this.section_options = new Features.OptionBox({body_css:{padding:'0.5em 1.5em'}});
       this.section_options.ele.appendTo(this.ele);
       this.section_options.add_button({text: 'add section',action: blurTop.bind(null, '#AddSection'),class_list: 'pink xsmall'});
-      this.section_options.add_button({text: 'preview form', class_list: 'pink70 xsmall', 
-          action: function(){FormEle.preview_by_uid(form.form_uid)}});
+      this.Model = new Models.Form({uid:form.form_uid});
+      this.preview_btn = new Features.Button({text: 'preview', class_list: 'yellow70 xsmall', 
+          action: () => this.Model.preview() });
+      this.preview_btn.ele.prependTo(this.section_options.option_list).wrap('<div/>');
+      this.settings_btn = new Features.Button({text: 'settings', class_list: 'yellow70 xsmall', 
+          action: () => this.Model.settings() });
+      this.settings_btn.ele.insertAfter(this.preview_btn.ele);
+      this.section_options.option_list.find('.button').css({margin:'0.3em'});
       this.section_list.ele.appendTo(this.section_options.body);
     }else if (this.mode == 'preview') {
-      this.label = $(`<h1>Preview</h1>`).insertBefore(this.ele);
+      this.label = $(`<div/>`,{class:'box boxPink central'}).insertBefore(this.ele);
+      $(`<h1>Preview</h1>`).appendTo(this.label);
+      $(`<div>"${form.form_name}" will be displayed as you see below (minus this box).</div>`).appendTo(this.label);
+      $(`<div><b>Tip:</b> To change header or item display options go to form settings</div>`).appendTo(this.label);
       this.header = $(`<h1 class='center'><span>${form.form_name}</span></h1>`).appendTo(this.ele);
-      this.blurb = $(`<div class='blurb flexbox inline purple marginBig bottomOnly'><div>The form will be displayed to those filling it out as currently displayed within the yellow border.</div></div>`).insertAfter(this.label);
-      this.ele.css({border:'2px solid var(--yellow70)',marginTop:'1em',padding:'1em',borderRadius:'3px'});      
+      this.followup_toggle = $(`<div/>`).appendTo(this.label);
+      this.followup_show_all = $(`<span/>`,{text: 'show all followups',css:{textDecoration:'underline',cursor:'pointer',padding:'0 5px'}});
+      this.followup_hide_all = $(`<span/>`,{text: 'hide all followups',css:{textDecoration:'underline',cursor:'pointer',padding:'0 5px'}});
+      this.followup_toggle.append(this.followup_show_all, '|', this.followup_hide_all);
     }else if (this.mode == 'settings'){
+      this.label = $(`<div/>`,{class:'box boxPink central'}).prependTo(this.ele);
       this.header = $(`<h1 class='center'><span>${form.form_name}</span></h1>`).appendTo(this.ele);
-      this.blurb = $(`<div class='blurb flexbox inline purple marginBig bottomOnly'><div>The form is displayed within the yellow border with its current settings.<br>Changes are saved automatically</div></div>`).insertBefore(this.header);
-      this.ele.css({border:'2px solid var(--yellow70)',marginTop:'1em',padding:'1em',borderRadius:'3px'});
+      $(`<div>"${form.form_name}" is displayed below with current settings.</div>`).appendTo(this.label);
+      this.followup_toggle = $(`<div/>`).appendTo(this.label);
+      this.followup_show_all = $(`<span/>`,{text: 'show all followups',css:{textDecoration:'underline',cursor:'pointer',padding:'0 5px'}});
+      this.followup_hide_all = $(`<span/>`,{text: 'hide all followups',css:{textDecoration:'underline',cursor:'pointer',padding:'0 5px'}});
+      this.followup_toggle.append(this.followup_show_all, '|', this.followup_hide_all);
     }else {
       this.header = $(`<h1 class='center'><span>${form.form_name}</span></h1>`).appendTo(this.ele);
     }
+    if (this.followup_show_all) this.followup_show_all.on('click',() => {this.ele.find('.item').find('.item').slideFadeIn()})
+    if (this.followup_hide_all) this.followup_hide_all.on('click',() => {this.ele.find('.item').find('.item').slideFadeOut()})
   }
   add_buttons () {
     if (this.mode == 'modal') {
@@ -133,10 +167,21 @@ class FormEle {
     } else if (this.mode == 'settings') {
       this.submit_btn = new Features.Button({text:'save',action:null,class_list:'pink',tooltip:{message:'Submit not available in preview mode'}});
       this.ele.append(this.submit_btn.ele);
-    } else if (this.mode != 'build') {
+    } else if (this.mode != 'build' && !this.charting) {
       this.submit_btn = new Features.Button({text:'save', action:this.action, class_list:'pink'});
       this.ele.append(this.submit_btn.ele);
-    } 
+    }
+  }
+  add_charting_features() {
+    // this.header.css({borderTop:'2px solid var(--pink30)'});
+    // this.ele.css({margin:'0.2em auto 2em'});
+    this.form_toggle = new Features.Toggle({
+      toggle_ele: this.header,
+      toggle_ele_class_list: 'lined filled',
+      target_ele: this.section_ele,
+      color: 'pink',
+      initial_state: 'hidden'
+    })
   }
 
   settings_apply (time = 0) {
@@ -145,14 +190,18 @@ class FormEle {
     let get = function (name) {return manager.get_setting(name)};
     if (get('display.HideFormTitle')) this.header.slideFadeOut(time);
     else this.header.slideFadeIn(time);
-    if (get('display.SubmitButton') == 'hide') this.submit_btn.ele.slideFadeOut(time);
-    else this.submit_btn.ele.slideFadeIn(time);
+    if (this.submit_btn) {
+      if (get('display.SubmitButton') == 'hide') this.submit_btn.ele.slideFadeOut(time);
+      else this.submit_btn.ele.slideFadeIn(time);    
+    }
   }
   settings_icons_create () {
+    if (this.is_proxy) return;
+
     let manager = this.settings_manager,
       general = manager.popup_create(),
       submit_btn_hide = manager.popup_create();
-    general.icon.css({width:'3em',height:'3em'}).appendTo(this.blurb);
+    general.icon.css({width:'3em',height:'3em'}).appendTo(this.label);
     general.add({name: 'display', type: 'checkboxes',
       options: {
         list: ['Hide Form Title','Minify','Show Question Numbers'],
@@ -167,7 +216,7 @@ class FormEle {
           preLabel: 'System Form:',
           labelHtmlTag: 'h4',
           save_as_bool: true,
-        }, initial: 'false'
+        }, initial: false
       });      
     }
     this.submit_btn.ele.wrap(`<div class='flexbox'></div>`);    
@@ -183,10 +232,11 @@ class FormEle {
   }
 
   linked_answer_check () {
-    let form = this;
     if (this.answer_objs.every(answer => !answer.waiting_for_list)) {
-      clearInterval(form.waiting);
-      unblur({ele:form.ele});
+      clearInterval(this.waiting);
+      this.waiting = null;
+      log({ele:this.ele},`ALL LINKED ANSWERS READY`);
+      unblur({ele:this.ele});
     }
   }
   section_add (options) {
@@ -231,6 +281,7 @@ class FormEle {
       let search_array = text.split("."), sections = [], section_name = search_array.notSolo() ? search_array.shift() : null;
       if (section_name) sections = this.section_search(section_name,true);
       else sections = this.section_array;
+      // log({sections});
       if (search_array.length > 1) throw new Error(`too many search keys ${search_array}`);
       sections.forEach(section => {
           let section_match = section.item_search(search_array[0], {allow_multiple:true, form_search:true});
@@ -239,10 +290,16 @@ class FormEle {
       if (matches.isEmpty()) throw new Error(`no item matching '${search_array[0]}'`);
       else if (!matches.isSolo() && !allow_multiple) throw new Error(`search returned ${matches.length} items, limited to one`);
     } catch (error) {
-      log({error});
+      log({error,texts:text,allow_multiple});
       matches = [];
     }
     return matches.isEmpty() ? null : allow_multiple ? matches : matches[0];
+  }
+  copy_item_callback () {
+    let eles = this.ele.find('.insert_item_options');
+    eles.addClass('opacity100Flash');
+    setTimeout(function(){eles.removeClass('opacity100Flash')},5000);
+    this.ele.find('.button.paste').removeClass('disabled');
   }
   section_search (name = null, allow_multiple = false) {
     let matches = [];
@@ -268,6 +325,7 @@ class FormEle {
     }
     return obj;
   }
+
   get response () {
     let sections = {}, all_pass = true;
     this.section_array.forEach(section => {
@@ -287,9 +345,11 @@ class FormEle {
     })
     return answers;
   }
-  reset_answers () { Answer.reset_all(); }
+  reset_answers () { Answer.reset_all(this.ele); }
   fill_by_response (json) {
     this.followup_time = 0;
+    console.groupCollapsed(`FORM FILL ${this.form_name}`);
+    log({form:this,response:json});
     try {
       this.section_array.forEach(section => {
         let response = json[section.name.toKeyString()];
@@ -298,6 +358,7 @@ class FormEle {
     } catch (error) {
       log({error});
     }
+    console.groupEnd();
     this.followup_time = undefined;
   }
   fill_by_key_value_object (json) {
@@ -329,8 +390,7 @@ class FormEle {
       this.settings_manager.has_changes = false;
       this.section_array.forEach(section => section.has_changes_reset());      
     }
-    log(data,'form autosave send data from FormEle');
-
+    log({data,form:this},'form autosave send data from FormEle');
     return $.ajax({
       url:'/save/Form',
       method: 'POST',
@@ -345,8 +405,57 @@ class FormEle {
       this.version_id = data.version_id;
     }
   }
+
+  static model_edit (ele, edit = true) {
+    try {
+      // log({ele});
+      ele = $(ele);
+      let form = ele.is('.createModel') ? ele : ele.find('.createModel'), model = form.data('model');
+      if (form.dne()) throw new Error('cannot find .createModel');
+      let header = form.find('h1').first(), submit_btn = form.find('.button.submit'), text = header.text();
+      if (!edit) {
+        header.text(text.replace('Edit','Create'));
+        let btn_text = `create ${model}`;
+        submit_btn.text(btn_text);
+      } else {
+        header.text(text.replace(/(Create|New)/,'Edit'));
+        let btn_text = `save changes to ${model}`;
+        submit_btn.text(btn_text);
+      }    
+    } catch (error) {
+      log({error,ele,edit});
+    }
+  }
+  static simple_fill (ele, json = {}) {
+    try {
+      let form = $(ele),
+          answers = Forms.Answer.get_all_within(form, false),
+          find = name => Forms.Answer.find(answers,{name});
+      answers.forEach(a => a.reset());
+      let toggles = form.find('.Toggle').get().map(t => $(t).getObj())
+      toggles.forEach(t => t.to_initial_state(0));
+      log({answers,json});
+      for (let name in json) {
+        let answer = find(name);
+        if (answer) answer.value_change = json[name];
+        else if ($(`#${name}`).exists()) {
+          let sub_form = $(`#${name}`).getObj('form',false);
+          if (sub_form) {
+            log({sub_form});
+            sub_form.fill_by_response(json[name]);
+            let toggle = toggles.find(t => t.target_ele.is(`#${name}`));
+            log({toggle});
+            if (toggle) toggle.show(0);
+          }
+        }
+      }
+
+    } catch (error) {
+      log({error,ele,json});
+    }
+  }
 }
-class FormResponse {
+class SubmissionJson {
   constructor (json = null) {
     try {
       if (!json || typeof json != 'object') throw new Error('json not valid');
@@ -413,16 +522,14 @@ class FormResponse {
       log({error});
     }
     return matches;
-
   }
-  response_for (text = null) {
+  find (text = null) {
     let item = this.item_search(text), answer = item ? item.answer : null;
     return answer;
   }
-  set_response_for (text, value) {
+  set (text, value) {
     let item = this.item_search(text);
     item.answer = value;
-    // log({item,value,fulljson:this.json});
   }
   get all_sections () {
     let sections = [];
@@ -443,10 +550,7 @@ class Section {
     this.item_list = $(`<div/>`,{class:'Items flexbox'}).appendTo(this.ele);
 
     this.items = [];
-    if (this.mode == 'build') this.item_list.append(`<div class='no_items item'>No items</div>`);
-    // if (this.mode == 'settings') {
-    //   this.settings_icons_create();
-    // }
+    if (this.mode == 'build') this.add_build_options();
     this.add_buttons();
     if (options.items) options.items.forEach(item_obj => this.add_item(item_obj));
   }
@@ -463,6 +567,7 @@ class Section {
     }
   }
   get item_count () {return this.items.length}
+  get followup_count () {return this.items.map(i => i.followup_count).reduce((accumulator, currentValue) => accumulator + currentValue)}
   get item_eles () {return this.item_list.children('.item').not('.no_items')}
   item_ele (index) {return $(this.item_eles.get(index))}
   get no_items_ele () {return this.item_list.children('.no_items')}
@@ -479,6 +584,7 @@ class Section {
   get form() {return this.ele.getObj('form')}
   
   settings_icons_create () {
+    if (this.form.is_proxy) return;
     this.settings_manager = new Models.SettingsManager({
       obj: this,
       autosave: this.form.settings_manager.autosave,
@@ -488,7 +594,7 @@ class Section {
     header.icon.css({width:'3em',height:'3em',marginRight:'0.5em'}).insertBefore(this.header);    
     header.add({name: 'display', type: 'checkboxes',
       options: {
-        list: ['Hide Section Title'],
+        list: ['Hide Section Title','Minify'],
         save_as_bool: true,
       },
     });
@@ -508,7 +614,9 @@ class Section {
         list: ['auto','stretch'],
         listLimit: 1,
       }, initial: 'stretch'});
-    this.ele.find('.item').not('.no_items').get().forEach(item => $(item).getObj().settings_icons_create());
+    let items = this.ele.find('.item').not('.no_items');
+    // log({items});
+    items.get().forEach(item => $(item).getObj().settings_icons_create());
   }
   settings_apply (time = 0) {
     if (this.mode == 'build') return;
@@ -547,6 +655,44 @@ class Section {
         appendTo: this.buttons
       });
     }
+  }
+  add_build_options () {
+    this.item_list.append(`<div class='no_items item no_sort'><span>No items</span></div>`);
+    let parent = this, class_list = !Item.clipboard ? 'paste disabled' : 'paste';
+    let insert_btns = [
+      {text:'new item', class_list:'addQuestion', action: function(){
+        let modal = $("#AddItem"), item = null, form = parent.form, action = 'append';
+        Item.reset_modal();
+        if (parent instanceof Item) parent.show_followup_options();
+        else $('#FollowUpOptions').slideFadeOut()
+        Item.current = {item,parent,form,action};
+        blurTop(modal)
+      }},
+      {text:'copied item', class_list, action: function(){
+        if (this.hasClass('disabled')) {
+          feedback('Nothing to paste','Copy an item first in order to use this button.');
+          return;
+        }
+        let item = null, form = parent.form, action = 'append';
+        Item.paste(parent, action);
+        // Item.clipboard.text = Item.clipboard.text + ' COPY';
+        // parent.add_item(Item.clipboard, action);
+        form.autosave.trigger();
+      }},
+    ];
+    let insert_options = new InsertOptions({buttons:insert_btns});
+    insert_options.ele.prependTo(this.item_list.find('.no_items'));
+    // creating Confirmation prompts
+    if (!Section.Delete) Section.Delete = confirm({
+      header: 'Delete Section',
+      affirm: data => {
+        let section = data.section, form = data.form, index = data.index;
+        form.section_list.remove_by_index(index);
+        form.section_array.splice(index,1);
+        section.ele.slideFadeOut(function(){$(this).remove()});
+        form.autosave.trigger();
+      }
+    });    
   }
 
   item_index (indices = null) {
@@ -603,18 +749,16 @@ class Section {
     try {
       if (action == 'append') {
         this.items.push(new_item);
-        this.item_list.append(new_item.ele);
+        this.no_items_ele.exists() ? new_item.ele.insertBefore(this.no_items_ele) : this.item_list.append(new_item.ele);
       } else if (action == 'insert') {
-        log({new_item,action});
         this.items.splice(index, 0, new_item);
-        new_item.ele.insertAfter(this.item_list.children('.item').get(index));
+        new_item.ele.insertBefore(this.item_list.children('.item').get(index));
       } else if (action == 'edit') {
         this.items[index].ele.replaceWith(new_item.ele);
         this.items.splice(index, 1, new_item);
       }
 
-      if (this.item_list.children('.item').not('.no_items').length > 0) this.item_list.children('.no_items').hide();
-      else this.item_list.children('.no_items').show();
+      this.update_summary();
 
       forms.initialize.signatures();
     } catch (error) {
@@ -622,6 +766,10 @@ class Section {
       return false;
     }
     return new_item;
+  }
+  update_summary () {
+    let text = this.items.length === 0 ? 'No items' : `Summary: ${this.items.length} items and ${this.followup_count} follow up items in the "${this.name}" section`;
+    this.item_list.children('.no_items').find('span').text(text);
   }
   item_count_check () {
     let none = this.item_list.children('.no_items');
@@ -641,26 +789,18 @@ class Section {
   }
   delete () {
     let section = this, form = this.ele.getObj('form'), index = form.section_array.indexOf(this);
-    confirm({
+    Section.Delete.prompt({
       header: `Delete "${this.name}"?`,
       message: `This cannot be undone and will include all ${this.item_count} items.`,
-      callback_affirmative: function(){
-        unblur();
-        form.section_list.remove_by_index(index);
-        form.section_array.splice(index,1);
-        section.ele.slideFadeOut(function(){$(this).remove()});
-        form.autosave.trigger()
-      }
-    })
+      section, index, form
+    });
   }
   item_create () {
     let modal = $('#AddItem');
     $('#FollowUpOptions').hide();
-    log({this:this});
-    blurTop(modal).data({'item':null,'parent':this,'form':this.form});
-  }
-  item_delete (item) {
-    log(`section delete item`);
+    Item.reset_modal();
+    Item.current = {item:null, parent:this, form:this.form, action:'append'};
+    blurTop(modal);
   }
 
   has_changes_reset () {
@@ -680,45 +820,68 @@ class Item {
     this.options = options;
     this.mode = mode;
     this.parent = parent;
-    this.question = $(`<div/>`,{class:'question',text:options.text});
+    this.question_wrap = $(`<div/>`,{class:'question_wrap'});
+    this.question = $(`<div/>`,{class:'question',text:options.text}).appendTo(this.question_wrap);
     this.text_key = options.text.toKeyString();
-    // if (this.text_key == "EndDateOptional") log({item:this,settings:options.settings})
-    this.answer = new Answer(options, mode);
+    // log({options: options.options},`${this.text_key}`);
+    if (options.options.linked_to) this.new_proxy();
+    // this.linked_proxy = 
     this.type = options.type;
     this.settings = options.settings || {};
-    this.ele = $('<div/>',{class:`item ${this.type}`});
-    this.ele.append(this.question,this.answer.ele).data(options);
-    this.question.wrap(`<div/>`);
+    this.ele = $('<div/>',{class:`item flexbox left ${this.type}`});
+    this.answer = new Answer(options, mode);
+    if (this.answer.time2) this.ele.addClass('range');    
+    this.ele.append(this.question_wrap,this.answer.ele).data(options);
     this.ele.data('class_obj',this);
     this.items = [];
     let existing_items = options.followups || options.items || [], editor = forms.create.editor;
     delete this.options.followups;
     if (['number','list','checkboxes','dropdown','scale','time'].includes(options.type)) {
       this.item_list = $(`<div/>`,{class:'Items flexbox'}).appendTo(this.ele);
-      if (this.mode == 'build') this.item_list.append(`<div class='no_items item'>No items</div>`);
-      // else this.item_list.hide();
+
       if (existing_items.notEmpty()) existing_items.forEach(item_obj => this.add_item(item_obj, 'append'));
       if (mode != 'build') this.item_list.find('.item').hide();
+      else this.item_list.find('.no_items').show();
     }
     if (mode == 'build') this.add_build_options();
     this.settings_apply();
+    if (this.item_list) this.update_summary();
   }
+
   add_build_options () {
+
     let edit_options = $(`<span/>`).appendTo(this.question);
     $(`<div/>`,{class:'toggle edit',text:'(edit)'}).on('click',this.edit.bind(this)).appendTo(this.question);
     $(`<div/>`,{class:'toggle copy',text:'(copy)'}).on('click',this.copy.bind(this)).appendTo(this.question);
     $(`<div/>`,{class:'toggle delete',text:'(delete)'}).on('click',this.delete.bind(this)).appendTo(this.question);
     if (this.options.condition) {
-      $('<div/>',{class:'condition',text: `Condition: ${this.condition_str}`}).insertAfter(this.question);
+      this.condition_ele = $('<div/>',{class:'condition',text: `Condition: ${this.condition_str}`}).insertAfter(this.question);
     }
+    let paste_class_list = Item.clipboard ? 'paste' : 'paste disabled';
     let insert_btns = [
       {text:'new item', class_list:'addQuestion', action: function(){
         let modal = $("#AddItem"), item = $(this).getObj('item'), parent = item.parent, form = item.form, action = 'insert';
+        Item.current = {item,parent,form,action};
         if (parent instanceof Item) parent.show_followup_options();
-        blurTop(modal).data({item,parent,form,action});
+        else $('#FollowUpOptions').slideFadeOut();
+        Item.reset_modal();        
+        Item.LinkedTo = null;
+        Item.linked_to_fill();
+        blurTop(modal)
       }},
-      {text:'copied item', class_list:'paste disabled', action: function(){
-        alert("paste");
+      {text:'copied item', class_list:paste_class_list, action: function(){
+        if (this.hasClass('disabled')) {
+          feedback('Nothing to paste','Copy an item first in order to use this button.');
+          return;
+        }
+        let item = $(this).getObj('item'), parent = item.parent, form = item.form, action = 'insert';
+        let index = parent.items.indexOf(item);
+        let new_item = Item.paste(parent, action, index);
+
+        // log({item,new_item});
+        if (parent instanceof Item && new_item.parent != Item.current.parent) {
+          Item.Paste.prompt({new_item});
+        } else form.autosave.trigger();
       }},
     ];
     let insert_options = new InsertOptions({buttons:insert_btns});
@@ -731,18 +894,21 @@ class Item {
       preLabel:'change item order'
     });
     this.ele.append(this.arrows.ele);
+    this.ele.on('click', this.select.bind(this))
     let current_item = this, item_list = this.item_list;
     if (item_list) {
-      this.item_list_wrapper = $(`<div/>`,{class:'toggleWrap'}).css({margin:'0.75em 0',padding:'1em',borderRadius:'5px',border:'1px solid var(--purple30)'}).insertBefore(item_list);
+      this.item_list_wrapper = $(`<div/>`,{class:'toggleWrap'}).insertBefore(item_list);
       this.item_list_wrapper_header = $(`<h4>Follow Up Items <span class='count'>(${this.item_count})</span></h4>`);
       let wrapper = this.item_list_wrapper, btn_wrap = $('<div class="buttonWrapper"></div>');
       let callback_hide = function(){wrapper.children('.buttonWrapper').slideFadeOut();}, 
         callback_show = function(){wrapper.children('.buttonWrapper').slideFadeIn();}, 
         btn_item = new Features.Button ({text: 'add question', class_list: 'pink70 xsmall addQuestion', action: function(){
             let modal = $("#AddItem"), item = null, parent = current_item, action = 'append', index = null,form = parent.form;
-            log({item,parent,action,index,form});
-            current_item.show_followup_options();
-            blurTop(modal).data({item,parent,action,index,form});
+              current_item.show_followup_options();
+              Item.current = {item,parent,action,index,form};
+              Item.LinkedTo = null;
+              Item.linked_to_fill();
+              blurTop(modal);
           }, css: {marginBottom:'0'}
         });
       wrapper.append(this.item_list_wrapper_header,item_list, btn_wrap.append(btn_item.ele));
@@ -755,8 +921,40 @@ class Item {
       });
       item_list.css({marginTop:'0.75em'});
 
+      // NO ITEMS ELEMENT
+      this.item_list.append(`<div class='no_items item no_sort'><span>No items</span></div>`);
+      let parent = this, class_list = !Item.clipboard ? 'paste disabled' : 'paste';
+      let insert_btns = [
+        {text:'new item', class_list:'addQuestion', action: function(){
+          let modal = $("#AddItem"), item = null, form = parent.form, action = 'append';
+          log({item,parent,form,action});
+          Item.current = {item,parent,form,action};
+          if (parent instanceof Item) parent.show_followup_options();
+          blurTop(modal);
+        }},
+        {text:'copied item', class_list, action: function(){
+          if (this.hasClass('disabled')) {
+            feedback('Nothing to paste','Copy an item first in order to use this button.');
+            return;
+          }
+          let item = null, form = parent.form, action = 'append';
+          let new_item = Item.paste(parent, action);
+          if (parent instanceof Item && new_item.parent != Item.current.parent) {
+            Item.Paste.prompt({new_item});
+          } else form.autosave.trigger();
+        }},
+      ];
+      let insert_options = new InsertOptions({buttons:insert_btns});
+      insert_options.ele.prependTo(this.item_list.find('.no_items'));
     }
-    // })
+  }
+  select (ev) {
+    ev.stopPropagation();
+    let item = $(ev.target).getObj('item');
+    if (!ev.metaKey) {
+      if (!item.ele.hasClass('active')) $('.item').removeClass('active');
+    } else item.ele.toggleClass('active');
+    // log({item});
   }
   show_followup_options (condition = null) {
     let type = this.type, all = $('#FollowUpOptions').slideFadeIn().find('.condition'), match = all.filter((c,cond) => $(cond).data('parent') == type || $(cond).data('parent').includes(type)), info = $('#FollowUpOptions').find('.parentInfo');
@@ -773,15 +971,17 @@ class Item {
     } else if (type == 'number') {
       Answer.find(answers, {name:'conditionNumberVal'}).update_obj(this.answer);
     } else log(`${type} not found for followups`);
-    log({match,condition});
+    // log({match,condition});
     if (condition) {
       answers.forEach(answer => {
-        log({answer})
+        // log({answer})
         answer.value = condition[answer.name];
       })      
     }
   }
   settings_icons_create () {
+    if (this.form.is_proxy) return;
+
     this.settings_manager = new Models.SettingsManager({
       obj: this,
       autosave: this.form.settings_manager.autosave,
@@ -791,12 +991,14 @@ class Item {
     popup.icon.css({width:'1.5em',height:'1.5em',marginRight:'0.5em'}).insertAfter(this.question);    
     popup.add({name: 'display', type: 'checkboxes',
       options: {
-        list: ['Condensed','Start New Line'],
+        // usePreLabel: true,
+        list: ['Condensed','Start New Line','Minify'],
         save_as_bool: true,
       },
     });
     popup.add({name: 'display', type: 'list', 
       options:{
+        usePreLabel: true,
         list: ['auto', 'full', 'half', 'third'],
         preLabel: 'Width',
         usePreLabel: true,
@@ -807,32 +1009,49 @@ class Item {
     if (user.isSuper()) {
       popup.add({name: 'settings', type: 'checkboxes', 
         options:{
+          usePreLabel: false,
           list: ['save_as_bool'],
           preLabel: 'Super User Settings',
           save_as_bool: true,
+          // listLimit: 1,
           keys_as_is: true,
           labelHtmlTag: 'h4',
           // listLimit: 1,
         }
       });      
     }
+    // let items = this.ele.find('.item').not('.no_items');
+    // log({items});
+    // items.get().forEach(item => $(item).getObj().settings_icons_create());
   }
   settings_apply() {
     // log(`form is in ${this.mode} mode`);
     if (this.mode == 'build') return;
+    // console.groupCollapsed('apply');
     let manager = this.settings_manager || new Models.SettingsManager({obj:this});
-    let get = function (name) {return manager.get_setting(name)};
-    if (get('display.Condensed')) this.ele.addClass('condensed');
+    let get = name => manager.get_setting(name);
+    let condense = get('display.Condensed'), 
+      new_line = get('display.StartNewLine'), 
+      width = get('display.Width'),
+      minify = get('display.Minify');
+    // log({condense,new_line,width});
+    if (condense) this.ele.addClass('condensed');
     else this.ele.removeClass('condensed');
-    if (get('display.StartNewLine') && !this.ele.prev().hasClass('newLine')) $(`<div class='newLine'></div>`).insertBefore(this.ele);
+    
+    if (new_line && !this.ele.prev().hasClass('newLine')) $(`<div class='newLine'></div>`).insertBefore(this.ele);
     else if (this.ele.prev().hasClass('newLine')) this.ele.prev().remove();
-    if (get('display.Width')) {
+    
+    if (minify) this.ele.addClass('minify');
+    else this.ele.removeClass('minify');
+
+    if (width) {
       this.ele.removeClass('auto full half third');
       this.ele.addClass(get('display.Width'));
     }
+    // console.groupEnd();
   }
 
-  bg_flash (time = 2000) {
+  bg_flash (time = 2000) {  
     let i = this;
     i.ele.addClass('pink10BgFlash');
     setTimeout(function(){i.ele.removeClass('pink10BgFlash')},time);
@@ -860,6 +1079,9 @@ class Item {
   }
   get condition_str () {
     let str = 'null', c = this.options.condition;
+    if (!c) {
+      log({error:new Error(`trying to get condition for non-followup ${this.text_key}`)});
+    }
     if (['number','scale'].includes(c.type)) {
       str = `${c.conditionNumberComparator.smartJoin({str:'or'})} ${c.conditionNumberVal}`;
     }
@@ -890,9 +1112,36 @@ class Item {
     this.items.forEach(item => {count+=item.followup_count});
     return count;
   }
+  followup_update_check (warning = true) {
+    if (this.mode != 'build') return;
+    let parent = this, options = parent.options.options, update_required = function(item) {
+      let condition = item.options.condition;
+      if (options.list) {
+        // log({parent,list:options.list,condition});
+        return condition.conditionList.some(l => !options.list.includes(l));
+      } else if (['number','scale'].includes(parent.type)) {
+        log({min:options.min,max:options.max,condition});
+      } else throw new Error('followup update check not performed');
+    };
+    let needs_update = this.items.filter(i => update_required(i));
+    if (needs_update.notEmpty()) {
+      let update_count = needs_update.length;
+      this.item_list_toggle.add_message({message:`Warning: ${update_count} follow up item(s) in this list no longer have valid conditions`,position:'before_toggle',class_list:'box boxPink followup_update'});
+      let message = $('<div/>',{text:`There are ${update_count} follow up item(s) that now require updating because their conditions are no longer valid:`});
+
+      needs_update.forEach(i => {
+        message.append(`<div><span class='bold'>${i.options.text}</span> => <span class='bold strikethrough'>${i.condition_str}</span></div>`);
+        i.condition_ele.addClass('box boxPink strikethrough');
+      });
+      if (warning) feedback('Follow Up Warning',message);
+    } else this.ele.find('.followup_update').remove();
+    return needs_update.notEmpty() ? needs_update : null;
+  }
   followup_count_update () {
     this.ele.children('.toggleWrap').children('.toggle_ele').children('.toggleText').text(`Follow Up Items (${this.followup_count})`);
   }
+
+  get is_followup () { return this.ele.isInside('.item',false) }
   get followup_json () {
     let array = [];
     for (let followup of this.items) {
@@ -927,6 +1176,7 @@ class Item {
   get index () {return this.parent.items.indexOf(this)}
   fill_by_response (json) {
     try {
+      log({answer:json.answer},`FILL ${this.text_key}`);
       this.value = json.answer;
       this.items.forEach(item => {
         let response = json.items ? json.items[item.text_key] : null;
@@ -940,79 +1190,109 @@ class Item {
   to_initial_value () {
     this.answer.to_initial_value();
   }
+  next_is_null () {
+    let i = this.index, next = this.parent.items[this.index + 1];
+    return next ? next.answer.get() === null : false;
+  }
+  get next_item_ele () {
+    let i = this.index, next = this.parent.items[this.index + 1];
+    return next ? next.ele : null;
+  }
   set value (value) {
     this.answer.value = value;
   }
   edit () {
-    let modal = $('#AddItem'), item = this, parent = this.parent, form = this.form, action = 'edit', options = item.options;
-    blurTop(modal).data({item, parent,form, action});
-    let text = options.text, required = options.settings.required, type = options.type;
-    $('#AddItemType').find('select').val(type).change();
+    let modal = $('#AddItem'), item = this, parent = this.parent, form = this.form, action = 'edit', data = item.options;
+    Item.current = {item, parent,form, action};
+    if (!Item.proxy) {}
+    blurTop(modal);
+    let text = data.text, required = data.settings.required, type = data.type;
+    $('#AddItemType').find('select').val(type);
+    Item.option_list_show(0, type);
+
     $("#AddItemText").find('input').val(text);
-    log({required});
     $('#AddItemRequired').getObj().value = required;
-    log({options});
-    if (parent instanceof Item) {
-      parent.show_followup_options(options.condition);
-      // log({condition:options.condition});
-    } else $('#FollowUpOptions').hide();
-    let answers = Answer.get_all_within(modal.find('.itemOptionList'));
+    if (parent instanceof Item) parent.show_followup_options(data.condition);
+    else $('#FollowUpOptions').hide();
+
+    Item.LinkedTo = data.options.linked_to || null;
+    Item.LinkedToSettings = data.options.linked_to_settings || null;
+    Item.linked_to_fill(data.options.list);
+    Item.option_list_reset();
+    let answers = Answer.get_all_within(modal);
+    log({data,options:data.options,answers,linked:Item.LinkedTo},`editing ${data.text}`);
     function named () {let name = [...arguments]; return Answer.find(answers, {name})};
-    for (name in options.options) {
+    for (name in data.options) {
       if (name == 'list') {
-        let list = options.options.list;
-        forms.create.editor.options.list.reset();
-        forms.create.editor.options.list.fill(list);
+        this.option_list_fill();
       } else {
         let match = named(name);
-        if (match) match.value = options.options[name];        
+        if (match && !match.is_array()) match.value = data.options[name];
+        else if (match && match.is_array()) match.forEach(m => m.value = data.options[name]);
       }
     }
-    let linked_to = options.options.linked_to || null;
-    modal.data({linked_to});
-    if (linked_to) {
-      forms.create.editor.options.linked_text_update_editor(linked_to);
-      log(`linked to ${linked_to}`);
-      alert('update linked-to');
-    }
   }
-  copy () {
-    log('copy item');
-  }
-  delete () {
-    log('delete item');
-    let index = this.index, parent = this.parent;
-    parent.items.splice(index, 1);
-    parent.item_ele(index).slideFadeOut(function(){$(this).remove()});
-    if (parent instanceof Item && this.mode == 'build') {
-      parent.followup_count_update();
-      if (parent.item_count == 0) parent.no_items_ele.slideFadeIn();
-      else parent.no_items_ele.slideFadeOut();
+  async copy () {
+    log({item:this.options},'copy item');
+    let item = this, clipboard_add = () => {
+      let fu_length = this.followup_count;
+      Item.ClipboardList.add_item({
+        text: `<b>${Item.clipboard.text}</b> (w /${Item.clipboard.items ? `${Item.clipboard.items.length > 0 ? fu_length : 0} followups` : '0 followups'})`,
+        value: {}.merge(Item.clipboard),
+        action: function() {Item.clipboard = $(this).data('value')},
+      })
+    };
+    Item.clipboard = {}.merge(this.options);
+    Item.current = {item,parent:this.parent};
+    if (this.items && this.items.notEmpty()) {
+      await Item.Copy.prompt({item});
     }
-    // this.item_list_wrapper_header.find('.toggleText').text(`Follow Up Items (${this.item_count})`);
-
-    this.form.autosave.trigger();
-    log({index,parent});
-
-    // autosave.trigger();
+    if (Item.clipboard_history) {
+      let found = Item.clipboard_history.find(i => (
+        i.options.name === Item.clipboard.options.name &&
+        ( (!i.items && !Item.clipboard.items) || (i.items.length === Item.clipboard.items.length) )
+      ));
+      if (found){
+        let index = Item.clipboard_history.indexOf(found);
+        Item.clipboard_history.splice(index, 1);
+        Item.ClipboardList.remove_by_index(index);
+      } 
+      Item.clipboard_history.smartPush(Item.clipboard);
+      clipboard_add();
+    } else {
+      Item.clipboard_history = [Item.clipboard];
+      clipboard_add();
+    }
+    log({q:this.question,box:this.question[0].getBoundingClientRect()});
+    let box = this.question[0].getBoundingClientRect(), top = [box.top, box.bottom].reduce((a, b) => a + b) / 2;
+    Item.JustCopied.flash({position: {position: 'fixed', top:top, left: box.right + 5, transform: 'translateY(-50%)'}});
+    Item.ClipboardBanner.show();
+    this.form.copy_item_callback();
+  }
+  async delete () {
+    Item.Delete.prompt({
+      header: `Delete "${this.options.text}"?`,
+      message: `This cannot be undone and will include all ${this.followup_count} followup questions.`,
+      yes_text: 'DELETE',
+      no_text: 'CANCEL',
+      item: this
+    })
   }
   add_item (item_obj, action = null, index = null){
     let new_item = new Item(item_obj, this, this.mode);
     try {
       if (action == 'append') {
         this.items.push(new_item);
-        this.item_list.append(new_item.ele);
+        this.no_items_ele.exists() ? new_item.ele.insertBefore(this.no_items_ele) : new_item.ele.appendTo(this.item_list);
       } else if (action == 'insert') {
         this.items.splice(index, 0, new_item);
-        new_item.ele.insertAfter(this.item_list.children('.item').get(index));
+        new_item.ele.insertBefore(this.item_list.children('.item').get(index));
       } else if (action == 'edit') {
         this.items[index].ele.replaceWith(new_item.ele);
         this.items.splice(index, 1, new_item);
       }
 
-      if (this.item_list.children('.item').not('.no_items').length > 0) this.item_list.children('.no_items').hide();
-      else this.item_list.children('.no_items').show();
-      this.followup_count_update();
+      this.update_summary();
 
       forms.initialize.signatures();
     } catch (error) {
@@ -1021,23 +1301,22 @@ class Item {
     }
     return new_item;
   }
-
-  item_create () {
-    log('item create item');
-  }
-  item_delete (item) {
-    log('item delete item');
+  update_summary () {
+    let text = this.items.length === 0 ? 'No items' : `Summary: ${this.item_count} direct follow up(s) and ${this.followup_count} total follow up(s) related to "${this.options.text}"`;
+    this.item_list.children('.no_items').find('span').text(text);
+    this.followup_count_update();
+    if (this.parent & this.parent.update_summary) this.parent.update_summary();
   }
   has_changes_reset () {
+    // log({item:this,manager:this.settings_manager},`reset ${this.options.text}`);
     this.settings_manager.has_changes = false;
     this.items.forEach(item => item.has_changes_reset());
   }  
   static create () {
-    let modal = $("#AddItem"), working = modal.data(), 
+    let modal = $("#AddItem"), working = Item.current, 
       item = working.item, parent = working.parent, form = working.form,
-      index = item ? parent.items.indexOf(item) : null, action = working.action;
-    log({working});
-    log({item,parent,form,index,action});
+      index = item ? parent.items.indexOf(item) : working.index || null, action = working.action;
+    log({working,item,parent,form,index,action});
 
     try{
       let required = $("#AddItemRequired").verify(), obj = {
@@ -1048,24 +1327,36 @@ class Item {
         };
       if (!obj.text || !obj.type || !obj.settings.required) return;
       if (parent instanceof Item) obj.condition = {type: parent.type};
-      let all_pass = true, list = [], answers = Answer.get_all_within($('.optionsList')), linked_to = $('#OptionsList').data('linked_to');
+      let all_pass = true, list = [], answers = Answer.get_all_within($('.itemOptionList'));
       answers.forEach(answer => {
         let name = answer.options.name, response = answer.verify('required');
         if (response == null && answer.settings.required) all_pass = false;
-        if (name == 'listOption' && response != null) list.push(`${$(answer).data('value')?`${$(answer).data('value')}%%`:''}${response}`);
+        if (name == 'listOption') {
+          if (response != null)list.push(`${$(answer).data('value')?`${$(answer).data('value')}%%`:''}${response}`);
+        }
         else if (name.includes('condition')) obj.condition[name] = response;
         else obj.options[name] = response;
       })
 
       if (list.notEmpty()) obj.options.list = list;
-      if (linked_to) obj.options.linked_to = linked_to;
+      if (Item.LinkedInfo && Item.LinkedInfo.is(':visible')) {
+        obj.options.linked_to = Item.LinkedTo;
+        obj.options.linked_to_settings = Item.LinkedToSettings;
+        let limit_obj = answers.find(a => a.name == 'listLimit');
+        log({limit_obj,answers});
+        let limit = limit_obj.verify('required');
+        if (!limit) return;
+        obj.options.listLimit = limit;
+      }
       let check = Item.check_obj(obj);
-      log({all_pass,check,obj});
       if (!all_pass || !check) return;
 
       if (action == 'edit') {
         obj.followups = item.followup_json;
         obj.settings = item.settings.merge({required});
+        // if (obj.followups.notEmpty()) {
+        //   log({toggle:item.item_list_toggle});
+        // }
       }
       obj.options.name = obj.text.toKeyString();
 
@@ -1073,14 +1364,24 @@ class Item {
       if (added) {
         form.autosave.trigger();
         unblur();
+        if (added.item_count > 0) added.followup_update_check();
+        if (parent instanceof Item) parent.followup_update_check(false);
       }
     }catch(error){
       log({error},'item add error');
     }
   }
+  static paste (parent, action, index = null) {
+    Item.clipboard.text = Item.clipboard.text + ' COPY';
+    let paste_me = {}.merge(Item.clipboard);
+    if (parent instanceof Section) delete paste_me.condition;
+    // log({parent,action,index,paste_me},'pasting!');
+    let new_item = parent.add_item(paste_me, action, index);
+    return new_item;
+  }
   static check_obj (obj) {
     // log({obj});
-    let options = obj.options, type = obj.type, answers = Answer.get_all_within($('.optionsList')); 
+    let options = obj.options, type = obj.type, answers = Answer.get_all_within($('.itemOptionList')); 
     function named () {let name = [...arguments]; return Answer.find_inputs(answers, {name})};
     
     try {
@@ -1095,6 +1396,562 @@ class Item {
     }
     return true;
   }
+  static reset_modal () {
+    let modal = $('#AddItem');
+    Answer.reset_all(modal);
+    // modal.resetActives().find('.text, .textbox').find('input,textarea').val('');
+    // modal.find('.checkbox_list').find('input').filter()
+    $("#AddItemText").focus();
+    Item.LinkedTo = null;
+    Item.linked_to_fill();
+    Item.option_list_reset();
+  }
+  static option_list_reset () {
+    let list = $("#OptionsList"), options = list.find('.answer.text');
+    if (options.length < 2) Item.option_list_add();
+    options.each((o,option) => {
+      $(option).removeData('value').find('input').val('');
+      $(option).find('input').removeAttr('readonly');
+      if (options.index(option) > 1) option.remove()
+    });    
+  }
+  static option_list_add () {
+    let last = $("#OptionsList").find('.answer').last(), o = last.getObj(), options = o.options, settings = o.settings;
+    let option = new Answer({options,settings,type:'text'});
+    let arrows = new Features.UpDown({
+      css: {fontSize: '1em',marginLeft:'0.5em'},
+      action: 'change_order',
+      postLabel: 'change option order'
+    });
+    option.ele.find('span').replaceWith(arrows.ele);
+    option.ele.addClass('flexbox inline').insertAfter(last);
+    return option;
+  }
+  static option_list_fill (list = []) {
+    let inputs = $("#OptionsList").find('.answer.text');
+    list.forEach((item,i) => {
+      let answer = inputs.get(i);
+      if (answer) answer = $(answer).getObj();
+      else answer = Item.option_list_add();
+      answer.value = item;
+    })    
+  }
+  static option_list_show (time = 400, type = null) {
+    if (!type) return;
+    let option_lists = $('.itemOptionList').not('#FollowUpOptions, #LinkedOptions'),
+        match = option_lists.get().find(list => ($(list).data('type') == type || $(list).data('type').includes(type)));
+    // log({option_lists,match});
+    if (type){
+      $(match).slideFadeIn(time);
+      option_lists.not(match).slideFadeOut(time);
+      if (['list','checkboxes','dropdown'].includes(type)) {
+        let listLimit = $(match).findAnswer({name:'listLimit'}).ele;
+        if (type == 'dropdown') listLimit.hide();
+        else listLimit.show();
+      }
+    }    
+  }
+  new_proxy (options = {}) {
+    let info = this.options.options, model = options.model || info.linked_to, settings = info.linked_to_settings || {};
+    this.linked_model = new Models[model]({uid:'proxy'});
+    if (this.mode == 'build') {
+      this.linked_model.settings_manager = new Models.SettingsManager({
+        obj: this.linked_model,
+        initial_override: settings,
+        autosave_on_form_change: true,
+        autosave: new Features.Autosave({
+          send: _ => {
+            return new Promise(resolve => {
+              let settings = Item.LinkedProxy.settings_manager.settings_obj;
+              resolve(this.linked_model.attr_list.settings);
+              Item.LinkedProxySettings = Item.LinkedProxy.settings_manager.settings_obj;
+            })
+          },
+          obj: this.linked_model,
+          delay: 50,
+        }),
+        update_callback: (options = {}) => {
+          let answer = options.answer, key = options.key, value = options.value;
+          let is_linked = answer.options.linked_to || null, is_number = answer.type == 'number';
+          Item.LinkedSettingsAdjustMe = Item.LinkedSettingsAdjustMe || {};
+          if (is_linked) {
+            log({answer,key,value,is_linked,is_number,adjusted},`ADJUST ME ${key}`);
+          } else if (is_number) { 
+            let adjusted = value;
+            if (answer.options.preLabel) adjusted = `${answer.options.preLabel} ${value}`;
+            if (answer.options.units) adjusted += ` ${answer.options.units}`;
+            Item.LinkedSettingsAdjustMe[key] = adjusted;
+          }
+        },
+        mode: 'edit'
+      });
+      Item.LinkedToSettings = $.isEmptyObject(settings) ? null : settings;
+    } else {
+      this.linked_model.settings_manager = new Models.SettingsManager({
+        obj: this.linked_model,
+        initial_override: settings,
+      });   
+    }
+    log({proxy:this.linked_model,item:this},this.text_key);
+  }
+  async open_proxy_settings () {
+    // let model = Item.LinkedTo, settings = Item.LinkedProxySettings = Item.LinkedToSettings;
+    
+    blurTop('loading');
+    // let settings = this.linked_model.settings_manager.settings_obj;
+    // if ($.isEmptyObject(settings)) settings = null;
+    let settings = Item.LinkedToSettings;
+    log({linkedto:Item.LinkedToSettings,thisproxy:settings});
+    Item.LinkedProxy = this.linked_model;
+    Item.LinkedProxySettings = settings;
+    await this.linked_model.settings({in_background:true});
+    this.proxy_form = $('#SettingsModal');
+    let modal = $("#SettingsModal");
+    modal.save_btn = new Features.Button({
+      text:'use these settings for autofill',
+      class_list: 'pink small',
+      action: function(){
+        Item.linked_to_settings_update();
+        Item.LinkedSettingsOptionBox.toggle(false);
+        blurTop(Item.LinkedSettingsOptionBox.ele);
+      }
+    });
+    modal.save_btn.ele.insertBefore(modal.find('.button.cancel').on('click', _ => {
+      let settings = Item.LinkedToSettings == null ? {} : Item.LinkedToSettings;
+      this.linked_model.settings_manager.settings_obj = settings;
+    }));    
+    await Item.linked_to_settings_update();
+    Item.LinkedSettingsOptionBox.toggle(true);
+    blur($('#AddItem'), Item.LinkedSettingsOptionBox.ele);
+  }
+  set proxy_form (form) {
+    if (!form.is('.form')) form = form.find('.form').first();
+    this.linked_model.settings_manager.form_ele = form;
+  }
+
+  static linked_to_fill (item_has_list = false) {
+    if (Item.LinkedTo) {
+      Item.LinkedEle.show();
+      Item.LinkedLabel.text(`Autofill By ${Item.LinkedTo}`);
+      Item.LinkedInfo.html('').append(`<b>Linked to '${Item.LinkedTo.addSpacesToKeyString()}' category.</b>`,
+        $(`<span class='little'>unlink</span>`).css({cursor:'pointer',padding:'0.5em',textDecoration:'underline'}).on('click', function(){Item.LinkedTo = null; Item.LinkedToSettings = null; Item.linked_to_fill(); Item.option_list_reset()}), `<div>This question will always be populated with an up-to-date list.</div>`);
+      if (Item.LinkedToSettings){
+        // let view = $(`<span class='little'>view</span>`).css({cursor:'pointer',padding:'0.5em',textDecoration:'underline'}).on('click', Item.LinkedSettingsOpen), clear = $(`<span class='little'>clear</span>`).css({cursor:'pointer',padding:'0.5em',textDecoration:'underline'}).on('click', function(){Item.LinkedToSettings = null; Item.linked_to_fill(); Item.option_list_reset()});
+        let view = $(`<span class='little'>view</span>`).css({cursor:'pointer',padding:'0.5em',textDecoration:'underline'}).on('click', _ => { Item.current.item.open_proxy_settings() }), clear = $(`<span class='little'>clear</span>`).css({cursor:'pointer',padding:'0.5em',textDecoration:'underline'}).on('click', function(){Item.LinkedToSettings = null; Item.linked_to_fill(); Item.option_list_reset()});
+        Item.LinkedInfo.append('<b>Has autofill restrictions.</b>', view, clear);
+      } else {
+        Item.LinkedSettingsOptionBox.reset();
+      }
+      $("#OptionsList").find('.answer.text').find('input').attr('readonly',true);    
+      item_has_list ? Item.LinkedLimit.ele.hide() : Item.LinkedLimit.ele.show();
+    } else {
+      Item.LinkedEle.hide();
+    }
+  }
+  static linked_to_reset () { Item.LinkedEle.hide(); Item.LinkedTo = null; Item.LinkedToSettings = null;}
+  static linked_to_show_linkable () {
+    if (!Item.LinkedModal || Item.LinkedModal.dne()) {
+      Item.LinkedModal = $(`<div/>`,{class:'modalForm center'});
+      let list = new Features.List({header:'Available for Linking',li_selectable:false});
+      Item.LinkedModal.append(`<h3>Select a Category</h3><div class='central medium'>Linking a question to a category will allow the user to select from an up-to-date list of that category. There will be no need to update the question if you add to the category</div>`,list.ele);
+      for (let model in class_map_linkable) {
+        if (model != 'list') list.add_item({
+          text:model.addSpacesToKeyString(),
+          action: async function(){
+            try{
+              blurTop('loading');
+              let list = linkable_lists[model] || await Models.Model.get_list({model}), list_ele = $("#OptionsList");
+              // Item.linked_to_fill();
+              Item.option_list_reset();
+              log({list});
+              Item.option_list_fill(list.map(l => l.name));
+              Item.LinkedTo = model;
+              Item.current.item.new_proxy({model});
+              Item.linked_to_fill();
+              unblur(2);
+            }catch (error) {
+              log({error});
+            }
+          }
+        });
+      }
+    }
+    blurTop(Item.LinkedModal);
+  }
+  static async linked_to_settings_update () {
+    let proxy = Item.LinkedProxy;
+    let icon_options = {size: 1, css: {margin: '0 0.2em'}};
+    let manager = Item.LinkedProxy.settings_manager;
+    let settings = Item.LinkedProxySettings, skip_me = [], skip_condition_icon = [];;
+    
+    if (settings == null) {
+      Item.LinkedSettingsOptionBox.reset();
+      // alert('hi');
+      return;
+    }
+    if (settings.Conditions) {
+      for (let name in settings.Conditions) {
+        let info = settings.Conditions[name], parent_value = manager.get_setting(info.key), condition = info.condition;
+        if (typeof parent_value == 'object' && !parent_value.is_array()) parent_value = Models.SettingsManager.obj_to_bool_array(parent_value);
+        let matched = Answer.condition_matches_parent(parent_value, condition);
+        if (!matched) skip_me.push(name);
+        if (parent_value && ['list','checkboxes'].includes(condition.type) && parent_value.isSolo()) skip_condition_icon.smartPush(info.key);
+      }      
+    }
+
+    let format_value = (key, value) => {
+      if (value === null) return null;
+      if (skip_me.includes(key)) return null;
+      let ele = $('<div/>',{class: 'flexbox column left'});
+      let condition_label = null;
+      let get_icons = (key, value) => {
+        let icons = [];
+        let is_false = (value === false || (typeof value == 'string' && value.includes('*'))), exact_match = manager.get_setting(`ExactMatch.${key}`), condition = manager.get_setting(`Conditions.${key}`), is_exact = (exact_match === true || exact_match === undefined);
+        if (is_false && is_exact) icons.push(new Features.Icon({type:'styled_x'}.merge(icon_options)));
+        else if (!is_false && is_exact) icons.push(new Features.Icon({type:'checkmark'}.merge(icon_options)));
+        else if (is_false && !is_exact) icons.push(new Features.Icon({type:'styled_x',color:'yellow'}.merge(icon_options)));
+        else if (!is_false && !is_exact) icons.push(new Features.Icon({type:'checkmark',color:'yellow'}.merge(icon_options)));
+        if (condition !== undefined) ele.data({condition});
+        return icons.map(i => i.img);
+      }
+
+      let type = typeof value, icons = get_icons(key, value);
+      if (Item.LinkedSettingsAdjustMe && Item.LinkedSettingsAdjustMe[key]) {
+        ele.append(Item.LinkedSettingsAdjustMe[key], ...icons).addClass('value_option');
+      } else if (value.is_array()) {
+        value.forEach(v => ele.append(format_value(key, v).removeClass('column').addClass('value_option')));
+        ele.removeClass('value_option');
+      } else if (typeof value == 'object') {
+        let array = Models.SettingsManager.obj_to_bool_array(value);
+        array.forEach(v => ele.append(format_value(key, v).removeClass('column').addClass('value_option')));
+        ele.removeClass('value_option');
+      } else if (typeof value == 'string') {
+        ele.append(value.replace('*',''), ...icons).addClass('value_option');
+      } else if (type == 'boolean') {
+        ele.append(value ? 'true' : 'false', ...icons).removeClass('column').addClass('value_option');
+      } else {
+        log({value},`not transformed ${key} (${type})`);
+      }
+      if (ele.find('.flexbox').dne()) ele.removeClass('column');
+      return ele;
+    };
+
+    Item.LinkedKeyValues = new Features.KeyValueBox({
+      transform_fx: format_value,
+    });
+
+    let header = $('<div/>',{text:`Any ${Item.LinkedTo} matching these settings will autofill the question`});
+    let c_g = new Features.Icon({type:'checkmark',color:'green',size:1.3}), 
+        c_y = new Features.Icon({type:'checkmark',color:'yellow',size:1.3}), 
+        x_r = new Features.Icon({type:'styled_x',color:'red',size:1.3,css:{marginRight:'3px'}}), 
+        x_y = new Features.Icon({type:'styled_x',color:'yellow',size:1.3,css:{marginRight:'3px'}}), 
+        q = new Features.Icon({type:'question_mark',size:1.3,css:{marginRight:'3px',opacity:0.7}});
+    let css = {margin:'0 3px',border:'1px solid var(--gray70)',padding:'2px 5px',borderRadius:'3px'},
+      separator = $('<span/>',{text:'/',css:{color:'var(--gray)',fontSize:'1.4em',margin:'-0.5em -0.05em -0.5em -0.2em'}});
+    let exact_legend = $(`<div/>`,{css,class:'flexbox'}).append(c_g.img,separator.clone(),x_r.img,'exact match'), 
+        partial_legend = $(`<div/>`,{css,class:'flexbox'}).append(c_y.img,separator.clone(),x_y.img,'loose match'), 
+        conditional_legend = $(`<div/>`,{css,class:'flexbox'}).append(q.img,'conditional match');
+    let legend_toggle = $(`<span>icon legend</span>`).appendTo(header), legend = $('<div/>',{class: 'flexbox spacey box  boxPadReverse'}).append(exact_legend,partial_legend,conditional_legend);
+    new Features.ToolTip({message:legend,target:legend_toggle});
+    Item.LinkedSettingsOptionBox.reset_info(header);
+    Item.LinkedSettingsOptionBox.add_info(Item.LinkedKeyValues.ele);
+    for (let section_name in settings) {
+      if (!['ExactMatch','Conditions','DisplayValues'].includes(section_name)) {
+        // let display_name = $('h2').get().find(h => h.textContent.toKeyString() == section_name).textContent;
+        let section_data = settings[section_name];
+        log({section_data},`${section_name}`);
+        Item.LinkedKeyValues.add_header(section_name, {html_tag: 'h4',css: {marginTop:'0.5em'}});
+        Item.LinkedKeyValues.new_pairs = section_data || {};
+      }
+    }
+    Item.LinkedKeyValues.unused_header_clear();
+
+    let multi_eles = Item.LinkedKeyValues.items.filter(e => $(e).find('.value').find('.value_option').length > 1),
+      single_eles = Item.LinkedKeyValues.items.filter(e => !multi_eles.includes(e));
+    let to_optional = (ele) => {
+      let green_checkmarks = $(ele).find('.checkmark.green'), yellow_checkmarks = $(ele).find('.checkmark.yellow'),
+        red_xs = $(ele).find('.styled_x.red'), yellow_xs = $(ele).find('.styled_x.yellow');
+      if (yellow_checkmarks.dne()) green_checkmarks.each((c,checkmark) => {
+        let yellow = new Features.Icon({type:'checkmark',color:'yellow'}.merge(icon_options));
+        yellow.img.insertAfter($(checkmark).hide());
+      }); else {green_checkmarks.hide(); yellow_checkmarks.show();}
+      if (yellow_xs.dne()) red_xs.each((x,red_x) => {
+        let yellow = new Features.Icon({type:'styled_x',color:'yellow'}.merge(icon_options));
+        yellow.img.insertAfter($(red_x).slideFadeOut());
+      }); else {red_xs.hide(); yellow_xs.show();}
+    }, to_exact = (ele) => { 
+      let green_checkmarks = $(ele).find('.checkmark.green'), yellow_checkmarks = $(ele).find('.checkmark.yellow'),
+        red_xs = $(ele).find('.styled_x.red'), yellow_xs = $(ele).find('.styled_x.yellow');
+      if (green_checkmarks.dne()) yellow_checkmarks.each((c,checkmark) => {
+        let green = new Features.Icon({type:'checkmark',color:'green'}.merge(icon_options));
+        green.img.insertAfter($(checkmark).hide());
+      }); else {yellow_checkmarks.hide(); green_checkmarks.show();}
+      if (red_xs.dne()) yellow_xs.each((x,red_x) => {
+        let red = new Features.Icon({type:'styled_x',color:'red'}.merge(icon_options));
+        red.img.insertAfter($(red_x).slideFadeOut());
+      }); else {yellow_xs.hide(); red_xs.show();}
+    };
+    if (multi_eles.notEmpty()) {
+      multi_eles.forEach(e => {
+        let key = $(e).find('.key');
+        let name = key.text();
+        let key_str = name.toKeyString();
+        let setting_name = `ExactMatch.${key_str}`;
+        let value_and_str = $(e).find('.value_option').get().map(v => $(v).text()).smartJoin('<b>AND</b>'),
+            value_or_str = $(e).find('.value_option').get().map(v => $(v).text()).smartJoin('<b>OR</b>');
+
+        let exact_match = {
+          type: 'list',
+          options: {
+            list: ['yes, exact match', 'no, loose match'],
+            listLimit:1,
+            after_change_action: function() {
+              let args = [...arguments];
+              let answer = args[0], value = answer.get();
+              log({tt:answer.ele.getObj('tooltip')});
+              if (value === true) {
+                to_exact(e);
+                answer.str_display.html(`<u>Only matches when</u><br><b>"${name}"</b><br>is exactly<br><b>"${value_and_str}"</b>`);
+              }
+              else if (value === false) {
+                to_optional(e);
+                answer.str_display.html(`<u>Matches any time</u><br><b>"${name}"</b><br>includes<br><b>"${value_or_str}"</b>`);
+              }
+              else if (value === null && answer.ele.is(':visible')) {
+                null_warning.show({ele:answer.ele,message:'response required, default selected'});
+                answer.value = true;
+              };
+            },
+          },
+          settings: {save_as_bool:true},
+          ele_css: {minWidth: '20em'},
+          initial: true,
+          setting_name
+        };
+        let popup = manager.popup_create({header:`Require Exact Match for <u>${name}</u>?`});
+        let answer = popup.add(exact_match);
+        answer.str_display = $(`<div/>`).insertAfter(answer.ele);
+        answer.options.on_change_action(answer);
+        answer.options.after_change_action(answer);
+        key.append(popup.icon);
+      })
+      Item.LinkedKeyValues.realign();      
+    }
+    single_eles.forEach(e => {
+      let key = $(e).find('.key');
+      let name = key.text();
+      let key_str = name.toKeyString();
+      // let setting_name = `ExactMatch.${key_str}`;
+      manager.delete_setting('ExactMatch',key_str);
+      to_exact(e);
+    })
+    let conditional_eles = Item.LinkedKeyValues.items.filter(
+      e => $(e).find('.value_option').get().some(v_ele => $(v_ele).data('condition') !== undefined )
+    );
+    if (conditional_eles.notEmpty()) {
+      conditional_eles.forEach(e => {
+
+        let info = $(e).find('.value_option').first().data('condition'), condition_str = info.condition_str;
+        let icon = new Features.Icon({type:'question_mark',size:1.2,css:{opacity:0.7}});
+        if (!skip_condition_icon.includes(info.key)) {
+          let setting_name = info.key.split('.').pop();
+          let str = `<u>Only matters when</u><br><b>"${setting_name.addSpacesToKeyString()}"</b><br>includes<br><b>"${condition_str}"</b>`;
+          let key = $(e).children('.key').first();
+          new Features.ToolTip({
+            target: icon.img.appendTo(key),
+            message: str,
+            css: {maxWidth: 'min(15em, 90vh'}
+          })
+        }
+      })
+    }
+  }
+  static editor_setup () {
+    Item.Delete = confirm({
+      header: 'Delete Item',
+      affirm: data => {
+        let item = data.item;
+        let index = item.index, parent = item.parent;
+        parent.items.splice(index, 1);
+        parent.item_ele(index).slideFadeOut(function(){$(item).remove()});
+        parent.update_summary();
+        item.form.autosave.trigger();
+      }
+    });
+    Item.Paste = confirm({
+      header: 'Confirm Follow Up Options',
+      message: `Since you pasted this as a follow up, you'll need to update the conditions for "When To Ask This Question".<br>Click continue and scroll to the bottom.`,
+      yes_text: 'continue',
+      force_yes: true,
+      affirm: data => { data.new_item.edit(data.new_item) },
+      negate: () => { form.autosave.trigger() },
+    });
+    Item.Copy = confirm({
+      header: 'Copy Item with Followups?',
+      message: 'Would you like to copy this question with all of it accompanying followup questions?',
+      yes_text: 'with all followups',
+      no_text: 'without followups',
+      affirm: function(data) { Item.clipboard.items = data.item.followup_json; },
+      negate: function(){ Item.clipboard.items = []; },
+      callback_no_response: function(data) { Item.clipboard.items = data.item.followup_json; },
+    });
+    Item.JustCopied = new Features.Banner({text:'copied!', color:'green', time_stay:1000});
+    
+    if ($('#ItemClipboard').dne()) {
+      let list_icon = new Image();
+      list_icon.src = '/images/icons/copy_icon_green.png';
+      $(list_icon).css({width:'2em',height:'2em',opacity:0.7,cursor:'pointer'}).addOpacityHover();
+      Item.ClipboardBanner = new Features.Banner({
+        id: 'ItemClipboard',
+        message: list_icon,
+        color: 'green',
+        hide_onclick: false,
+        css: {padding: '0.5em'},
+        position: {position: 'fixed', left:'0.5em', top:'50%',transform:'translateY(-50%)'},
+      });
+      Item.ClipboardList = new Features.List({
+        header: 'Recently Copied',
+        header_html_tag: 'h4',
+        color: 'green',
+        limit: 1,
+        li_css: {textAlign:'left'},
+      })
+      Item.ClipboardBanner.ele.on('mouseleave',function(){ Item.ClipboardList.ele.slideFadeOut(); });
+      Item.ClipboardList.ele.appendTo(Item.ClipboardBanner.ele).hide();
+      $(list_icon).on('click',function(){Item.ClipboardList.ele.slideFadeIn()});
+      $(`<div/>`,{text:'hide this until I copy something again',css:{cursor:'pointer',textDecoration:'underline',fontSize:'0.8em'}}).insertAfter(Item.ClipboardList.header).on('click',function(){Item.ClipboardBanner.hide()});
+    }
+
+    Item.LinkedEle = $(`<div id='LinkedOptions' class='wrapper itemOptionList'/>`).insertBefore('#FollowUpOptions');
+    Item.LinkedInfo = $(`<div/>`,{class: 'box boxPink',css: {margin:'0.5em auto', display:'inline-block'}});
+    Item.LinkedLabel = $('<div/>',{class:'settingsLabel pink',text:'Dynamic Linking'});
+    Item.LinkedLimit = new Answer({
+      type:'list', listLimit: 1, list: ['1','2','3','4','5','10','no limit'], name: 'listLimit', preLabel:'Selection Limit:', ele_css: {margin: '5px auto'}, eleClass: '!left'
+    });
+    Item.LinkedSettingsConfirm = confirm({
+      affirm: data => { 
+        let item = Item.LinkedProxy, settings = Item.LinkedProxySettings;
+        alert('yeah');
+        log({item,settings});
+      }
+    });      
+    Item.LinkedSettingsOpen = async () => {
+      // let item = 
+      // let model = Item.LinkedTo, settings = Item.LinkedProxySettings = Item.LinkedToSettings;
+      log({'current item':Item.current.item,proxy:Item.current.linked_proxy});
+      // blurTop('loading');
+      // let proxy = await Item.new_proxy({model,settings});
+      // await Item.linked_to_settings_update();
+      // Item.LinkedSettingsOptionBox.toggle(true);
+      // blur($('#AddItem'), Item.LinkedSettingsOptionBox.ele);      
+    }
+    Item.LinkedSettingsOpenBtn = new Features.Button({
+      text: 'autofill restrictions',
+      class_list: 'pink70 xsmall',
+      css: {marginTop:0},
+      action: _ => { Item.current.item.open_proxy_settings() },
+    })
+    Item.LinkedSettingsOptionBox = new Features.OptionBox({
+      header: 'Confirm Settings',
+      message: 'Confirm meeee',
+      css: {width: 'max-content'},
+      toggle: function (no_changes = false) {
+        if (no_changes) {
+          this.save_btn.ele.hide();
+          this.change_btn.ele.show();
+          this.reset_header('Current Autofill Settings');
+        } else {
+          this.save_btn.ele.show();
+          this.change_btn.ele.hide();
+          this.reset_header('Confirm Settings');            
+        }
+      },
+      reset: function () {
+        log({this:this});
+        this.reset_header(`${Item.LinkedTo} Autofill Settings`);
+        this.reset_info(`No restrictions. All available items will be loaded.`);
+
+      }
+    });
+    Item.LinkedSettingsOptionBox.hide();
+    Item.LinkedSettingsOptionBox.save_btn = Item.LinkedSettingsOptionBox.add_button({text:'Confirm',class_list:'pink',action: () => {
+      Item.LinkedToSettings = Item.LinkedProxySettings;
+      Item.linked_to_fill();
+      unblur({repeat:2});
+    }});
+    Item.LinkedSettingsOptionBox.change_btn = Item.LinkedSettingsOptionBox.add_button({text:'Make Changes',class_list:'pink',action: () => {
+      let modal = '#SettingsModal';
+      log({linkedto:Item.LinkedToSettings,currentproxysettings:Item.current.item.linked_model.attr_list.settings})
+      // Item.LinkedToSettings = Item.LinkedProxySettings;
+      // Item.linked_to_fill();
+      Item.current.item.linked_model.settings_manager.form_fill(Item.LinkedToSettings == null ? {} : Item.LinkedToSettings);
+      blur($('#AddItem'), modal);
+    }});
+    Item.LinkedSettingsOptionBox.add_button({text:'go back',class_list:'cancel'});
+    log({ele:Item.LinkedEle});
+    Item.LinkedEle.append(Item.LinkedLabel, Item.LinkedInfo, Item.LinkedLimit.ele, Item.LinkedSettingsOpenBtn.ele);
+    Item.LinkedSettingsOpenBtn.ele.wrap(`<div class='wrapper'/>`);
+  }
+  static async linked_to_settings_modal () {
+    let model = Item.LinkedTo, settings = Item.LinkedToSettings;
+    log({settings},`LINKED SETTINGS MODAL: ${model}`);
+    Item.LinkedProxy = new Models[model]({uid:'proxy'});
+    await Item.LinkedProxy.settings();
+    let proxy = Item.LinkedProxy, modal = $('#SettingsModal'), form = modal.find('.form');
+    $("#Settings").html(`"${Item.current.item.options.text}"<br>${$('#Settings').text()} (for autofill)`);
+    proxy.settings_manager = new Models.SettingsManager({
+      obj: proxy,
+      form: form,
+      initial_override: Item.LinkedToSettings,
+      autosave_on_form_change: true,
+      autosave: new Features.Autosave({
+        send: function() {
+          return new Promise(resolve => {
+            resolve(proxy.attr_list.settings);
+            Item.LinkedProxySettings = proxy.attr_list.settings;
+          })
+        },
+        // callback: Item.linked_to_settings_update,
+        obj: proxy,
+        delay: 50,
+      }),
+      update_callback: (options = {}) => {
+        let answer = options.answer, key = options.key, value = options.value;
+        let is_linked = answer.options.linked_to || null, is_number = answer.type == 'number';
+        Item.LinkedSettingsAdjustMe = Item.LinkedSettingsAdjustMe || {};
+        if (is_linked) {
+
+          log({answer,key,value,is_linked,is_number,adjusted},`ADJUST ME ${key}`);
+        } else if (is_number) { 
+          let adjusted = value;
+          if (answer.options.preLabel) adjusted = `${answer.options.preLabel} ${value}`;
+          if (answer.options.units) adjusted += ` ${answer.options.units}`;
+          Item.LinkedSettingsAdjustMe[key] = adjusted;
+          // log({answer,key,value,is_linked,is_number,adjusted},`ADJUST ME ${key}`);
+        }
+      },
+      mode: 'edit'
+    });
+    proxy.save_btn = new Features.Button({
+      text:'use these settings for autofill',
+      class_list: 'pink small',
+      action: function(){
+        Item.linked_to_settings_update();
+        blurTop(Item.LinkedSettingsOptionBox.ele);
+        // Item.LinkedSettingsOptionBox.realign();
+      }
+    });
+    proxy.save_btn.ele.insertBefore(modal.find('.button.cancel'));
+    // proxy.settings_manager.autosave();
+    Item.LinkedProxySettings = proxy.attr_list.settings
+  }
+  option_list_fill () {
+    Item.option_list_fill(this.options.options.list);
+    if (this.options.linkedTo) {
+      Item.LinkedTo = this.options.linkedTo;
+      Item.linked_to_fill();
+    }
+  }
 }
 class Answer {
   constructor(data, mode = 'display'){
@@ -1104,9 +1961,9 @@ class Answer {
     this.options = data.options || data;
     this.name = this.options.name || '';
     this.setting_name = data.setting_name || this.name;
-    this.settings = {required: true, warning: true, autocomplete: false}.merge(data.settings || {});
+    this.settings = {required: true, warning: true, autocomplete: false}.merge(data.settings);
     this.save_as_bool = this.options.save_as_bool || this.settings.save_as_bool || false;
-    this.initial = data.initial || null;
+    this.initial = ifu(data.initial, null);
     for (let s in this.settings){
       if (typeof this.settings[s] == 'string') this.settings[s] = this.settings[s].toBool();
     }
@@ -1116,31 +1973,29 @@ class Answer {
     this.ele.data('class_obj',this);
     if (['date','number','time'].includes(this.type)) this.ele.addClass('flexbox left');
     this[this.type]();
-    if (this.options.name && this.input) {
-      // this.input.attr('name',this.options.name);
-      this.input.addClass(this.options.name);
-    }
+    if (this.options.name && this.input) { this.input.addClass(this.options.name); }
 
     let label_css = system.validation.json(this.options.labelCss);
     if (this.options.preLabel) {
       this.preLabel = $(`<${this.options.labelHtmlTag || 'span'}/>`,{
-        class:this.options.labelClass || '',
-        text:this.options.preLabel
-      }).css({padding:'0 0.5em'}).prependTo(this.nowrap || this.ele);
+        class:`${this.options.labelClass || ''} preLabel`,
+        html:this.options.preLabel
+      }).prependTo(this.nowrap || this.ele);
       this.ele.addClass('flexbox left');
       if (label_css) this.preLabel.css(label_css);
     }
     if (this.options.postLabel) {
       this.postLabel = $(`<${this.options.labelHtmlTag || 'span'}/>`,{
-        class:this.options.labelClass || '',
-        text:this.options.postLabel
-      }).css({padding:'0 0.5em'}).appendTo(this.nowrap || this.ele);
+        class:`${this.options.labelClass || ''} postLabel`,
+        html:this.options.postLabel
+      }).appendTo(this.nowrap || this.ele);
       this.ele.addClass('flexbox left');
       if (label_css) this.postLabel.css(label_css);
     }
 
-    this.input.css(system.validation.json(this.options.inputCss) || {});
-    this.ele.css(system.validation.json(this.options.eleCss) || {});
+    this.input.css(system.validation.json(data.input_css || this.options.input_css) || {});
+    // this.ele.css(system.validation.json(data.ele_css || this.options.ele_css) || {});
+    if (this.options.linked_to_settings) Models.SettingsManager.convert_obj_values_to_bool(this.options.linked_to_settings);
     if (!this.settings.autocomplete) this.input.attr('autocomplete','off');
     if (this.options.eleClass) {
       let classes = this.options.eleClass.split(' ');
@@ -1156,24 +2011,32 @@ class Answer {
         else this.input.addClass(c);
       })
     }
-    if (this.options.on_change_action && typeof this.options.on_change_action == 'string') this.options.on_change_action = this.options.on_change_action.to_fx();
+    if (this.options.on_change_action && typeof this.options.on_change_action == 'string') this.options.on_change_action = this.options.on_change_action.to_fx;
     if (this.options.after_change_action && typeof this.options.after_change_action == 'string') {
-      this.options.after_change_action = this.options.after_change_action.to_fx();
+      this.options.after_change_action = this.options.after_change_action.to_fx;
     }
     this.to_initial_value();
+    
+    if (data.proxy) {
+      $(data.proxy).replaceWith(this.ele);
+      if (!this.ele.isInside('.item') && !this.ele.isInside('#AddItem') && !this.has_label && this.settings.placeholder_shift !== false && !this.options.ele_css) {
+        this.ele.css({marginTop:'1.5em'});
+      }
+    }
+    
+    if (this.options.after_load_action) this.options.after_load_action.to_fx();
   }
 
   verify (string = null) {
-    let str = string || this.if_null_str || 'this question is required', i = this.input;
-    if (this.get() == null && this.settings.required) {
+    let str = string || this.if_null_str || 'this question is required', i = this.input, value = this.get();
+    if (value == null && this.settings.required) {
       i.smartScroll({
         offset: get_rem_px() * 4,
         callback: function(){i.warn(str);}
       });
       return false;
     }
-    // if (this.linked_selection && this.linked_selection.notEmpty()) return this.linked_uids;
-    return this.get();
+    return value;
   }
   to_initial_value () {
     this.value = this.initial;
@@ -1193,7 +2056,12 @@ class Answer {
     }
     if (value === 'true') value = true;
     if (value === 'false') value = false; 
-    if (['text', 'textbox', 'number', 'dropdown', 'time', 'date'].includes(this.type)) {
+    if (this.time2 && value && value.is_array()) {
+      this.time2.value = value[1];
+      value = value[0];
+    }
+
+    if (['text', 'email','phone','textbox', 'number', 'dropdown', 'time', 'date'].includes(this.type)) {
       if (typeof value == 'string') {
         let split = Answer.split_values_and_text(value);
         this.input.val(split.text).data('value',split.value);        
@@ -1201,31 +2069,36 @@ class Answer {
     }
     else if (this.type == 'list'){
       this.input.resetActives();
+      if (value === null) return;
       this.input.find('li').filter((l,li) => {
-        if (Array.isArray(value)) {
-          return value.some(v => {
-            if (typeof v == 'string') return $(li).data('value') == v || $(li).data('value').toKeyString() == v;
-            else if (typeof v == 'number') return l == v;
-          });
-        } else {
-          if (typeof value == 'string') return $(li).data('value') == value || $(li).data('value').toKeyString() == value;
-          else if (typeof value == 'number') return l == value;
-        }
+        if (!value.is_array()) value = [value];
+        return value.some(v => {
+          let li_v = $(li).data('value');
+          if (typeof v == 'string') return li_v == v || li_v.toKeyString() == v.toKeyString();
+          else if (typeof v == 'number') return l == v;
+        });
       }).addClass('active');
     } else if (this.type == 'checkboxes') {
       let boxes = this.input.find('input');
       boxes.attr('checked',false);
+      if (value === null) return;
       boxes.filter((b,box) => {
-        if (Array.isArray(value)) {
-          return value.some(v => {
-            if (typeof v == 'string') return $(box).attr('value') == v;
-            else if (typeof v == 'number') return b == v;
-          });
-        } else {
-          if (typeof value == 'string') return $(box).attr('value') == value;
-          else if (typeof value == 'number') return b == value;
-        }
+        if (!value.is_array()) value = [value];
+        return value.some(v => {
+          if (typeof v == 'string') return $(box).attr('value').toKeyString() == v.toKeyString();
+          else if (typeof v == 'number') return b == v;
+        });
       }).attr('checked',true);
+    } else if (this.type == 'address') {
+      if (!value) this.ele.find('input').val('');
+      else {
+        let str = this.parse(value.duplicate().merge({include_unit:false})).join(', ');
+        this.components = value.components;
+        this.unit = value.unit;
+        this.input.val(str);
+        this.unit_ele.val(value.unit);
+        this.display.html(this.display_html());
+      }
     }
     if (value === true || value === false) {
       let values_true = ['yes','true'], values_false = ['no','false'], values = value ? values_true : values_false;
@@ -1235,8 +2108,13 @@ class Answer {
       if (match.is('li')) match.addClass('active');
       else this.input.val(match.text());
     }
+
     this.placeholder_shift();
-    this.followup_show();
+    this.followup_show(0);
+  }
+  set value_change (value) {
+    this.value = value;
+    this.on_change();
   }
   get has_filter () {return this.ele.isInside('.filter')}
   get has_label () {return this.options.preLabel || this.options.postLabel || false;}
@@ -1244,7 +2122,6 @@ class Answer {
   get linked_uids () {
     let selection = this.linked_selection;
     if (!selection) return null;
-    // log({selection});
     let uids = selection.get().map(s => $(s).data('value'));
 
     return this.linked_limit == 1 ? uids[0] : uids;
@@ -1256,45 +2133,75 @@ class Answer {
     }
     return selected;
   }
+  get item () { return this.ele.getObj('item'); }
 
   on_change (ev) {
+    // log({answer:this, value:this.get({literal:true})},`${this.name || 'no name'}`);
+    this.placeholder_shift();
     this.followup_show();
     if (this.has_filter) this.filter.update();
-    if (this.options.on_change_action) this.options.on_change_action(this, ev);
-    if (this.options.after_change_action) this.options.after_change_action(this, ev);
+    if (this.options.on_enter_action && ev.keyCode && ev.keyCode === 13) this.options.on_enter_action.to_fx(this, ev);
+    if (this.type == 'time' && this.ele.parent().is('.answer.time')) {
+      this.ele.parent().getObj().on_change(ev);
+      return;
+    }
+    if (this.options.on_change_action) this.options.on_change_action.to_fx(this, ev);
+    if (this.options.after_change_action) this.options.after_change_action.to_fx(this, ev);
+  }
+  static condition_matches_parent (value, condition) {
+    let c = condition, matched = false;
+    try {
+      if (['number','scale'].includes(c.type)){
+        if (c.conditionNumberComparator.includes('less than') && value < c.conditionNumberVal) matched = true;
+        if (c.conditionNumberComparator.includes('greater than') && value > c.conditionNumberVal) matched = true;
+        if (c.conditionNumberComparator.includes('equal to') && value == c.conditionNumberVal) matched = true;
+      }else if (c.type == 'time'){
+        let time_to_check = moment(value,'h:mma'), time = moment(c.conditionTime, 'h:mma');
+        if (c.conditionTimeComparator.includes('before') && time_to_check.isBefore(time)) matched = true;
+        if (c.conditionTimeComparator.includes('exactly') && time_to_check.isSame(time)) matched = true;
+        if (c.conditionTimeComparator.includes('after') && time_to_check.isAfter(time)) matched = true;
+      }else if (['list','checkboxes'].includes(c.type)){
+        if (value) {
+          if (typeof value == 'string') value = [value];
+          if (value.some(v => c.conditionList.map(l => l.toLowerCase()).includes(v.toLowerCase()))) matched = true;
+        }
+      }else if (c.type == 'dropdown'){
+        if (c.conditionList.includes(value)) matched = true;
+      }else log(`condition type not found: ${c.type} `);
+    } catch (error) {
+      log({error, value, condition},`Condition match error`);
+    }
+    return matched;
   }
   followup_show (time = 400) {
     let item_ele = this.ele.closest('.item');
     if (item_ele.dne() || this.mode == 'build') return;
     let followup_time = this.ele.getObj('form').followup_time, item = item_ele.getObj();
-    time = followup_time != undefined ? followup_time : time;
-    let items = item.items, value = this.get(false, true), show_me_eles = $();
+    time = ifu(followup_time, time);
+    let items = item.items, value = this.get({literal:true});
+    let toggle_me = [], hide_me = [], show_me = items;
     if (items && items.notEmpty()) {
-      items.forEach(followup => {
-        let c = followup.options.condition, show_me = false;
-        if (['number','scale'].includes(c.type)){
-          if (c.conditionNumberComparator.includes('less than') && value < c.conditionNumberVal) show_me = true;
-          if (c.conditionNumberComparator.includes('greater than') && value > c.conditionNumberVal) show_me = true;
-          if (c.conditionNumberComparator.includes('equal to') && value == c.conditionNumberVal) show_me = true;
-        }else if (c.type == 'time'){
-          let time_to_check = moment(value,'h:mma'), time = moment(c.conditionTime, 'h:mma');
-          if (c.conditionTimeComparator.includes('before') && time_to_check.isBefore(time)) show_me = true;
-          if (c.conditionTimeComparator.includes('exactly') && time_to_check.isSame(time)) show_me = true;
-          if (c.conditionTimeComparator.includes('after') && time_to_check.isAfter(time)) show_me = true;
-        }else if (['list','checkboxes'].includes(c.type)){
-          if (value) {
-            if (typeof value == 'string') value = [value];
-            if (value.some(v => c.conditionList.includes(v))) show_me = true;
-          }
-        }else if (c.type == 'dropdown'){
-          if (c.conditionList.includes(value)) show_me = true;
-        }else log(`c.type not found ${c.type} `);
-        if (show_me) followup.ele.slideFadeIn(time);
-        else followup.ele.slideFadeOut(time);
-      })
-      // if (show_me_eles.exists()) item.item_list.add(show_me_eles).slideFadeIn(time);
-      // else item.item_list.slideFadeOut(time);
+      if (value === null) {
+        let hide_all = show_me.map(i => i.ele[0]);
+        $(hide_all).slideFadeOut();
+      } else {
+        show_me = items.filter(followup => {
+          let show_me = Answer.condition_matches_parent(value, followup.options.condition), already_showing = ifu(followup.showing,false);
+          if (!show_me) hide_me.push(followup.ele[0]);
+          if (show_me !== already_showing) toggle_me.push(followup.ele[0]);
+          followup.showing = show_me;
+          return show_me;
+        }).map(i => i.ele[0]);
+        $(show_me).slideFadeIn(time);
+        $(hide_me).slideFadeOut(time);        
+      }
+      let blur = item.ele.closest('.blur');
+      if (blur.exists() && toggle_me.notEmpty()) {
+        let parent = blur.parent(), child = blur.children().first();
+        // fit_to_size(parent,child,500);
+      }
     }
+    // if (value && items && items.notEmpty()) log({items,value,show_me,hide_me,toggle_me,time},`${show_me.length} FOLLOWUPS for ${this.options.name || this.name || 'nameless'}`)
   }
   update_obj (new_obj) {
     // this.options = new_obj.options;
@@ -1318,9 +2225,26 @@ class Answer {
       this.placeholder_visible = false;
     }
   }
-  async linked_list_get(model, columns = []) {
+  async linked_list_get(model) {
     this.waiting_for_list = true;
-    let list = await Models.Model.get_list({model,obj:this,columns});
+    let list = (await Models.ModelList.get(model, this)).list;
+
+    if (this.options.linked_to_settings) {
+      // console.groupCollapsed(`Linked SETTINGS ${this.setting_name}`);
+      // log({options:this.options,settings:this.options.linked_to_settings});
+      list = list.filter(l => {
+        // console.groupCollapsed(`${l.name}`);
+        let match = Models.SettingsManager.compare_settings({
+          match_to: this.options.linked_to_settings, 
+          match_me: l.settings
+        });
+        // if (match) log({settings:l.settings},`MATCH ${l.name} settings`);
+        // console.groupEnd();
+        return match;
+      })
+      log({list});
+      console.groupEnd();
+    }
     this.waiting_for_list = false;
     return list;
   }
@@ -1331,16 +2255,21 @@ class Answer {
     this.linked_limit = this.options.listLimit || 1;
     this.linked_list = new Features.List({
       header: `${disp_model} List`,
-      header_html_tag: 'h4',
+      header_html_tag: 'h3',
       header_class: 'bold',
       with_search: true,
       cssLiOnly: {width:'max-content',maxWidth:'20em'},
       filter: this,
       limit: this.linked_limit,
+      post_select_fx: _ => {
+        if (this.linked_list.limit == 1 && this.linked_list.active.length == 1) this.linked_list.tt.hide();
+      }
     });
     this.linked_tt = new Features.ToolTip({
       message: this.linked_list.ele,
       target: this.input,
+      with_arrow: false,
+      // class_list: 'linked_popup'
     });
     if (this.options.list_separator == 'line break') this.options.list_separator = '\n';
     let list = this.linked_list, columns = this.options.linked_columns || [], data_list = await this.linked_list_get(this.options.linked_to, columns);
@@ -1381,14 +2310,16 @@ class Answer {
     return {uid:item.uid,text:item.name};
   }
   linked_select_uid (uids) {
-    if (uids == null) return;
     try {
       if (this.type == 'list') {
         this.ele.resetActives();
+        if (!uids) return;
         this.ele.find('li').filter((l,li) => uids.some(uid => $(li).data('value') == uid)).addClass('active');
       } else if (this.type == 'checkboxes') {
-        // log({error: new Error('')})
-        log({uids});
+        let checkboxes = this.input.find('input');
+        checkboxes.removeAttr('checked');
+        if (!uids) return;
+        checkboxes.filter((c,checkbox) => uids.some(id => $(checkbox).attr('value') == id)).attr('checked',true);
       } else {
         this.linked_text_update(uids);
       }
@@ -1397,21 +2328,20 @@ class Answer {
     }
   }
   linked_text_update (uids = null) {
-    let a = this;
     if (uids) {
       if (!uids.is_array()) uids = [uids];
       this.linked_list.ele.resetActives();
       this.linked_list.items.filter((i,item) => uids.some(u => $(item).data('value') == u)).addClass('active');
     }
-    setTimeout(function(){
-      let selection = a.linked_selection, value = '';
+    setTimeout(_ => {
+      let selection = this.linked_selection, value = '';
       if (selection) {
         value = selection.get().map(item => $(item).text());
-        if (a.options.list_separator) value = value.join(a.options.list_separator);
+        if (this.options.list_separator) value = value.join(this.options.list_separator);
         else value = value.smartJoin();
       }
-      a.input.val(value);
-      a.placeholder_shift();
+      this.input.val(value);
+      this.placeholder_shift();
     },50);
   }
 
@@ -1434,17 +2364,27 @@ class Answer {
     if (this.options.placeholder) this.input.attr('placeholder', this.options.placeholder);
     this.get = () => {
       if (this.linked_list) return this.linked_uids;
-      let v = $.sanitize(this.input.val());
+      let v = $.sanitize(this.input.val().trim());
       return (v != '') ? v : null;
     }
     this.disable_unique = () => { this.input.attr('disabled',true)};
     this.enable_unique = () => { this.input.removeAttr('disabled')}
     this.placeholder_visible = false;
-    if (this.options.name == 'phone') system.validation.input.phone(this.input);
-    if (this.options.name == 'email') system.validation.input.email(this.input);
     if (this.options.name == 'username') system.validation.input.username(this.input);
     if (this.options.placeholder) this.input.on('keyup blur',this.placeholder_shift.bind(this));
     if (this.options.linked_to) await this.linked_popup_create();
+  }
+  async phone () {
+    this.text();
+    this.ele.addClass('text');
+    this.input.on('focusout',this.on_change.bind(this));
+    system.validation.input.phone(this.input.attr({placeholder:'(       )       -'}));
+  }
+  async email () {
+    this.text();
+    this.ele.addClass('text');
+    this.input.on('focusout',this.on_change.bind(this));
+    system.validation.input.email(this.input);
   }
   async textbox () {
     this.input = $(`<textarea/>`).appendTo(this.ele).on('keyup',this.on_change.bind(this));
@@ -1459,6 +2399,81 @@ class Answer {
     if (this.options.placeholder) this.input.on('keyup blur',this.placeholder_shift.bind(this));    
     if (this.options.linked_to) await this.linked_popup_create();
   }
+  address_format (components, unit = null) {
+  }
+  async address () {
+    let answer = this;
+    let display = this.display = $('<div/>',{class:'address_display'}).appendTo(this.ele);
+    let parse = this.parse = system.validation.address.parse;
+
+    this.reset = (warn = true) => { 
+      this.components = this.init('components'); 
+      this.unit = this.init('unit'); 
+      this.tz = this.init('tz');
+      display.html(this.display_html()); 
+      this.on_change();
+    }
+    this.display_html = () => parse({components:this.components, unit:this.unit}).map(line => `<div>${line}</div>`);
+    this.init = attr => { return this.initial ? this.initial[attr] : null }
+    // this.init_components = () => { return this.initial ? this.initial.components : null}
+    // this.init_unit = () => { return this.initial ? this.initial.unit : null}
+    this.db = () => {return this.components ? {components:this.components, unit:this.unit, tz:this.tz} : null};
+    this.components = this.init('components');
+    this.unit = this.init('unit');
+    this.tz = this.init('tz');
+    // log({c:this.components,u:this.unit,this:this});
+
+    let search = this.input = $(`<input/>`,{class:'search'}).appendTo(this.ele).on('focusout', _ => { if (this.input.val() != '') this.autocomplete.place_changed(); else this.reset(false); });
+    let unit = this.unit_ele = $(`<input/>`,{class:'unit',attr:{placeholder:'Unit'}}).appendTo(this.ele).on('focusout', _ => { if (this.input.val() != '') this.autocomplete.place_changed(); else this.reset(false); });
+    let options = {
+      fields: ['formatted_address','address_components','geometry'],
+      place_changed: async function() { 
+        let place = this.getPlace(), n = $.sanitize(unit.val());
+        n = n != '' ? n : null;
+        answer.unit = n;
+
+        // if (!place || !place.geometry) { return db; }
+        if (place && place.address_components) {
+          let addy = place.formatted_address;
+          search.val(place.formatted_address);
+          answer.components = place.address_components;
+        }
+        if (place && place.geometry) {
+          let lat = place.geometry.location.lat(), lng = place.geometry.location.lng();
+          
+          let location = `${lat},${lng}`,
+            timestamp = now().toSeconds(),
+            key = map_api_key,
+            rest = `https://maps.googleapis.com/maps/api/timezone/json?location=${location}&timestamp=${timestamp}&key=${key}`;
+          let tz = await new Promise((resolve,reject) => {
+            var request = new XMLHttpRequest();
+            request.responseType = 'json';
+            request.addEventListener("load", _ => {resolve(request.response.timeZoneId)});
+            request.open("GET", rest);
+            request.send();
+          })
+          log({rest,location,timestamp,key,tz});
+          answer.tz = tz; 
+        }
+        let db = answer.db();
+        log({place,db,n});
+        answer.on_change();
+        if (db) display.html(answer.display_html());
+        // let db = {components:answer.components,unit:answer.unit};
+        return db;
+      },
+    };
+    this.autocomplete = new google.maps.places.Autocomplete(this.input[0],options);
+    this.autocomplete.setComponentRestrictions({
+      country: ["us"],
+    });
+    unit.on('keyup', _ => { this.autocomplete.place_changed() });
+    this.input.attr('placeholder', this.options.placeholder || 'Type to begin');
+    // this.input.removeClass('Address');
+    this.get = () => {
+      return this.db();
+    }    
+  }
   async number () {
     this.input = $(`<input>`);
     if (this.options.units) this.units_ele = $(`<span/>`,{text:this.options.units,css:{padding: '0 0.5em'}});
@@ -1468,7 +2483,7 @@ class Answer {
       if (!Number.isNaN(Number(this[attr]))) this[attr] = Number(this[attr]);
     }
     let num = this;
-    ['min','max','initial','step'].forEach(attr => {if (num[attr]==undefined) throw new Error(`${attr} is required`)})
+    ['min','max','start','step'].forEach(attr => {if (num[attr]==undefined) throw new Error(`${attr} is required`)})
     this.change = {
       start: (ev) => {
         let arrow = $(ev.target);
@@ -1477,8 +2492,10 @@ class Answer {
         this.change.error = null;
         this.change.direction = arrow.hasClass('up') ? 'up' : 'down';
         this.change.interval = 300;
-        this.change.current = Number(this.get());
-        if (this.change.current === null) this.change.decimals = this.step.countDecimals();
+        this.change.current = this.get();
+        if (this.change.current === null) {
+          this.change.decimals = this.step.countDecimals();
+        }
         else {
           let step = this.step.countDecimals(), current = this.change.current.countDecimals();
           this.change.decimals = step >= current ? step : current;
@@ -1493,10 +2510,17 @@ class Answer {
           clearInterval(this.change.timer);
           this.change.timer = null;          
         }
+        // let i = this.input.getObj('item');
+        // if (i && this.two_part && i.next_is_null()) {
+        //   let ele = i.next_item_ele.children('.answer');
+        //   new Warning({ele,message:'How often?'})
+        //   this.border_flash = setTimeout( _ => ele.removeClass('borderFlash'), 4000);
+        //   // this.animate_arrow();
+        // }
       },
       adjust: () => {
         this.change.next = this.change.current;
-        if (this.change.next == null) this.change.next = Number(this.input.attr('placeholder'));
+        if (this.change.next === null) this.change.next = Number(this.options.start);
         else this.change.next = (this.change.direction == 'up') ? this.change.next + this.step : this.change.next - this.step;
         if (this.change.check()) {
           this.change.current = this.change.next;
@@ -1511,6 +2535,7 @@ class Answer {
         this.change.timer = setInterval(this.change.adjust, this.change.interval);
       },
       check: () => {
+        if (this.change.current === null) return true;
         if (this.change.next > this.max){
           this.change.current = this.max;
           this.input.val(this.max);
@@ -1521,6 +2546,8 @@ class Answer {
           this.input.val(this.min);
           this.change.error = `min value is ${this.min}`;
           clearInterval(this.change.timer);
+        }else if (Number.isNaN(Number(this.change.next))){
+          this.change.error = `numbers only`;
         }else this.change.error = null;
         if (this.change.error) {
           this.input.warn(this.change.error);
@@ -1540,26 +2567,28 @@ class Answer {
       css: {fontSize:'1.2em',margin:'2px 0 2px 0.5em'}
     });
     this.nowrap = $(`<div/>`,{class:'flexbox left nowrap', css:{whiteSpace:'nowrap'}}).append(this.input,this.units_ele,this.arrows.ele).appendTo(this.ele);
-    this.input.data(this.options).attr('placeholder',this.options.initial);
+    this.input.data(this.options).attr('placeholder',this.options.start);
     this.input.allowKeys('0123456789/.-');
     this.input.on('keydown',function(){clearTimeout(num.followup_timeout)})
     this.input.on('keyup',function(ev){
-      num.change.next = num.get();
+      num.change.current = num.get();
+      num.change.next = num.change.current;
       num.change.check();
       num.followup_timeout = setTimeout(num.on_change.bind(num),1000);
     });
 
     this.get = () => {
       let v = $.sanitize(this.input.val()), fixed = this.options.fixed_decimals ? Number(this.options.fixed_decimals) : null;
+      if (v === '') return null;
       return (v !== '') ? (fixed ? Number(v).toFixed(fixed) : Number(v)) : null;
     }
     this.update = (new_obj) => {
-      ['min','max','initial','step'].forEach(attr => {
+      ['min','max','start','step'].forEach(attr => {
         if (attr == 'step') this[attr] = new_obj[attr] || 1;
         else this[attr] = new_obj[attr]
       });
-      this.input.attr('placeholder',new_obj.options.initial);
-      this.value = new_obj.options.initial;
+      this.input.attr('placeholder',new_obj.options.start);
+      this.value = new_obj.options.start;
       let t = new_obj.options.units || null;
       this.ele.children('span').text(t);
     }
@@ -1626,46 +2655,43 @@ class Answer {
     this.options.image_url = `/images/body/rsz_body12.png`;
     this.imageclick();
   }
-  async radio () {
-    this.input = $(`<ul/>`,{class:'radio'}).on('click','li',function(){
-      $(this).parent().resetActives();
-      $(this).addClass('active');
-    }).appendTo(this.ele);
-    this.options.list.forEach(option => $(`<li>${option}</li>`).appendTo(this.input));
-    this.get = () => {
-      let active = this.input.find('.active'), values = active.get().map(li => $(li).text());
-      return values.notEmpty() ? values : null;
-    }
-    this.update = this.list_update;    
-  }
   async checkboxes () {
     let i = this;
-    this.input = $(`<div/>`,{class:'checkboxes'})
-      .on('click','input',function(ev){
-        let limit = !Number.isNaN(i.options.listLimit) ? Number(i.options.listLimit) : null, active = i.get(),
-          is_active = $(this).closest('label').find('input').is(':checked');
-        if (limit) {
-          let at_limit = active && active.length == limit + 1;
-          if (at_limit) {
-            let text = limit == 1 ? `Limited to ${limit} response` : `Limited to ${limit} responses`
-            $(this).closest('.answer').warn(text); ev.preventDefault();
-          }
-        }
-        i.on_change.bind(i,ev)();
-      }).on('mouseenter','label',function(){$(this).addClass('yellowBg20')})
-        .on('mouseleave','label',function(){$(this).removeClass('yellowBg20')}).appendTo(this.ele);
+    let handle_click = function(ev) {
+      let limit = !Number.isNaN(i.options.listLimit) ? Number(i.options.listLimit) : null, active = i.get({literal:true}),
+        is_active = $(this).closest('label').find('input').is(':checked');
+      if (limit) {
+        let at_limit = active && active.length == limit + 1;
+        if (at_limit) {
+          let text = limit == 1 ? `Limited to ${limit} response` : `Limited to ${limit} responses`
+          $(this).closest('.answer').warn(text); ev.preventDefault();
+        } else i.on_change.bind(i,ev)();
+      } else i.on_change.bind(i,ev)();
+      i.reset_active();
+    }
+    this.reset_active = _ => {
+      this.input.resetActives();
+      this.input.find('input').filter(':checked').closest('label').addClass('active');
+    }
+    this.input = $(`<div/>`,{class:'checkbox_list'}).on('click','input', handle_click).appendTo(this.ele);
     let list = this.options.list;
     if (this.options.linked_to) {
-      list = await this.linked_list_get(this.options.linked_to, this.options.linked_columns || []);
+      list = await this.linked_list_get(this.options.linked_to);
+      log({model:this.options.linked_to, list});
       list = list.map(model => `${model.uid}%%${model.name}`);
     }
     list.forEach(option => {
       option = Answer.split_values_and_text(option);      
-      $(`<label class='flexbox inline nowrap' style='margin:0 0.5em;transition:background-color 400ms;padding-left:0.5em;border-radius:5px'><input type='checkbox' value='${option.value}'><span style='padding:0 0.5em;width:max-content'>${option.text}</span></label>`).appendTo(this.input)
+      $(`<label class='flexbox inline nowrap'><input type='checkbox' value="${option.value}"><span>${option.text}</span></label>`).appendTo(this.input);
     });
-    this.get = (keys_from_text = false, as_array = false) => {
+    // log({html:this.input.html()},`${this.name || this.options.name}`);
+    this.get = (options = {}) => {
+      let keys_from_text = ifu(options.keys_from_text, false), literal = ifu(options.literal, false), as_text = ifu(options.as_text, false);
       let input = this, values = null, as_is = this.options.keys_as_is || this.settings.keys_as_is || false;
-      if (this.save_as_bool && !as_array) {
+      if (this.save_as_bool && !literal) {
+        let checked = this.input.find('input:checked');
+        if (this.options.listLimit === 1) return checked.dne() ? false : checked.first().val().toBool();
+        if (checked.dne()) return null;
         values = {};
         this.input.find('label').get().forEach(l => {
           let i = $(l).find('input'), s = $(l).find('span');
@@ -1673,7 +2699,7 @@ class Answer {
           values[key] = i.is(':checked');
         });
       } else {
-        values = this.input.find(':checked').get().map(i => $(i).val()); 
+        values = this.input.find(':checked').get().map(i => as_text ? $(i).closest('label').text() : $(i).val()); 
       }
       if (values.is_array() && values.isEmpty()) values = null; 
       return values;
@@ -1700,22 +2726,25 @@ class Answer {
     }).appendTo(this.ele);
     if (this.options.linked_to) {
       this.options.list = await this.linked_list_get(this.options.linked_to, this.options.linked_columns || []);
-      this.options.list = this.options.list.map(option => `${option.uid}%%${option.name}`)};
+      this.options.list = this.options.list.map(option => `${option.uid}%%${option.name}`);
+    };
     this.options.list.forEach(option => {
       option = Answer.split_values_and_text(option);
       $(`<li data-value='${option.value}'>${option.text}</li>`).appendTo(this.input)
     });
     this.active = () => {return this.input.find('.active').get().map(li => $(li).data('value'))};
-    this.get = () => {
+    this.get = (options = {}) => {
+      let keys_from_text = ifu(options.keys_from_text, false), literal = ifu(options.literal, false);      
       let active = this.input.find('.active'), values = active.get().map(li => $(li).data('value'));
-      if (this.save_as_bool) {
-        log({active,input:this.input,values});
-        let attr = `${this.options.usePreLabel ? this.options.preLabel : this.name}`.toKeyString(), obj = {};
+      if (this.save_as_bool && !literal) {
+        // log({active,input:this.input,values});
+        let label = `${this.options.usePreLabel ? this.options.preLabel : this.name}`.toKeyString(), obj = {};
         if (this.options.listLimit == 1) {
-          obj[attr] = values[0].toBool();
+          if (label !== '') values[0] ? obj[label] = values[0].toBool() : obj = null;
+          else obj = values[0] ? values[0].toBool() : null;
         } else {
-          obj[attr] = {};
-          this.input.find('li').each((l,li) => obj[attr][$(li).data('value')] = $(li).data('value').toBool());
+          obj[label] = {};
+          this.input.find('li').each((l,li) => obj[label][$(li).data('value')] = $(li).data('value').toBool());
         }
         return obj;
       } else if (this.options.usePreLabel) {
@@ -1735,9 +2764,10 @@ class Answer {
       $(`<option value='${option.value}'>${option.text}</option>`).appendTo(this.input);
     });
     this.input.on('change', this.on_change.bind(this));
-    this.get = () => {
+    this.get = (options = {}) => {
+      let literal = ifu(options.literal, false);
       let val = this.input.val(), response = val != '----' ? val : null;
-      if (response && this.save_as_bool) response = response.toBool();
+      if (response && this.save_as_bool && !literal) response = response.toBool();
       return  response;
     }
   }
@@ -1745,7 +2775,7 @@ class Answer {
     this.input = $(`<div/>`, {class:'flexbox'}).appendTo(this.ele);
     let left = $(`<span/>`,{class:'left',html:`<span class='value'>${this.options.min}</span><br><span class='label bold'>${this.options.leftLabel}</span>`}),
         right = $(`<span/>`,{class:'right',html:`<span class='value'>${this.options.max}</span><br><span class='label bold'>${this.options.rightLabel}</span>`}),
-        slider = $(`<input type='range' class='slider' min='${this.options.min}' max='${this.options.max}' initial='${this.options.initial}'>`),
+        slider = $(`<input type='range' class='slider' min='${this.options.min}' max='${this.options.max}' start='${this.options.start}'>`),
         value_box = $(`<div/>`,{class:'sliderValue'}).slideFadeOut();
     this.input.append(left,slider,right);
     let i = this.input, a = this;
@@ -1830,12 +2860,11 @@ class Answer {
       let tt = this.ele.data('tooltip');
       if (tt) tt.ele.remove();
     };
-
   }
   async time () {
-    this.input = $(`<input placeholder='H:MM A'>`).css({width:'5.5em'}).appendTo(this.ele);
+    this.input = $(`<input placeholder='H:MM A'>`).appendTo(this.ele);
     let i = this;
-    if (this.options.minTime) this.options.maxTime = this.options.maxTime || '12:00 AM';
+    // if (this.options.minTime) this.options.maxTime = this.options.maxTime || '12:00 AM';
     system.validation.input.time(this.input).on('change', function(){
       setTimeout(i.on_change.bind(i),100);
     }).on('blur',function(){
@@ -1853,11 +2882,31 @@ class Answer {
     this.input.on('blur',function(){$(clock_icon).animate({opacity:0.6})});
     this.options.scrollDefault = 'now';
     this.options.timeFormat = 'g:i A';
+    if (this.options.min !== null) this.options.minTime = this.options.min;
+    else delete this.options.min;
+    if (this.options.max !== null) this.options.maxTime = this.options.max;
+    else delete this.options.max;
+    if (this.options.step == null) this.options.step = 15;
     this.input.timepicker(this.options);
-    // this.input.on()
+
+    if (this.options.range) {
+      this.time2 = new Answer({type:'time',options:{
+        min: this.options.min2,
+        max: this.options.max2,
+        step: this.options.step2,
+      }});
+      this.tween_ele = $('<div/>',{text:'to',css:{fontSize:'1.2em',margin:'0 1em'}});
+      this.ele.append(this.tween_ele, this.time2.ele.addClass('nowrap')).addClass('range');
+    }
+
     this.get = () => {
-      let v = this.input.val();
-      return v != '' ? v : null;
+      let v = $.sanitize(this.input.val());
+      v = v != '' ? v : null;
+      let response = v;
+      if (this.time2) response = [v, this.time2.get()];
+      log({response},'TIME RESPONSE');
+      return response;
+
     }    
   }
   async signature () {
@@ -1875,8 +2924,9 @@ class Answer {
     let split = string.split('%%');
     return (split.length > 1) ? {value:split[0].trim(), text:split[1].trim()} : {value:string, text:string};
   }
-  static reset_all() {
-    $('.answer').each((a,answer) => {let obj = $(answer).getObj('answer',false); if (obj) obj.reset()})
+  static reset_all(ele = null) {
+    let answers = Answer.get_all_within(ele || 'body', false);
+    answers.forEach(a => a.reset());
   }
   static get_all_within (ele, visible_only = true) {
     let eles = $(ele).find('.answer'); 
@@ -1885,20 +2935,28 @@ class Answer {
   }
   static find (array, options) {
     let match = Answer.find_all(array,options);
-    // log({array,options,match});
-    if (match.length > 1) {log({array,options});throw new Error('Multiple objects found, limit one');}
+    if (match.length > 1) {
+      log({error: new Error('WARNING multiple answers found matching options'),array,options,match},); 
+      return match;
+    }
     return match[0] ? match[0] : null;
   }
   static find_all (array, options) {
-    let matches = array.filter(answer => {
-      for (let attr in options) { 
-        if (answer[attr] === undefined) return false;
-        if (options[attr].is_array()) {let some = options[attr].some(o => answer[attr] == o); if (!some) return false;}
-        else if (answer[attr] != options[attr]) return false;
-      }
-      return true;
-    })
-    return matches;
+    try {
+      let matches = array.filter(answer => {
+        if (answer === null) return false;
+        for (let attr in options) { 
+          if (answer[attr] === undefined) return false;
+          if (options[attr].is_array()) {let some = options[attr].some(o => answer[attr] == o); if (!some) return false;}
+          else if (answer[attr] != options[attr]) return false;
+        }
+        return true;
+      })
+      return matches;
+    } catch (error) {
+      log({error, array, options});
+      return [];
+    }
   }
   static find_inputs (array, options) {
     let inputs = $();
@@ -1917,7 +2975,7 @@ class InsertOptions {
     let buttons = ifu(options.buttons, null), button_wrap = this.buttons;
     if (buttons){
       buttons.forEach(button => {
-        button.class_list += ' white xxsmall';
+        button.class_list += ' white xsmall';
         new Features.Button($.extend(button,{appendTo:button_wrap, css: {margin:'0.2em 0.3em',fontWeight:'bold'}}));
       })
     }
@@ -1950,7 +3008,7 @@ class InsertOptions {
   }
 }
 
-export const Forms = {FormEle, FormResponse, Section, Item, Answer};
+export const Forms = {FormEle, SubmissionJson, Section, Item, Answer};
 
 var forms = {
   current: null,
@@ -1959,96 +3017,18 @@ var forms = {
   },
   create: {
     editor: {
-      class_obj: null,
-      working_obj: null,
-      mode: null,
-      index: null,
-      clipboard: {
-        item_json: null,
-        item_obj: null,
-        add_to_clipboard: (item_json, str) => {
-          let editor = forms.create.editor, item = editor.class_obj;
-          item.ele.warn(str);
-          // item_json.text += ' copy';
-          editor.clipboard.item_json = item_json;
-          editor.clipboard.flash();
-          editor.class_obj.bg_flash();
-          $(".no_items").addClass('pink10BgFlash').css({cursor:'pointer'}).text('Click to Paste Item').on('click',editor.open);
-        },
-        copy: () => {
-          let editor = forms.create.editor, item = editor.class_obj, index = editor.index, 
-            parent = item.parent, has_followup = item.followup_count > 0;
-          log({item,parent},`copy ${item.options.text}`);
-          let item_json = item.item_db;
-          if (has_followup){
-            confirm({
-              header: 'Include Followups?',
-              message: `This will add all ${item.followup_count} nested followup items.`,
-              btntext_yes: 'include followups',
-              btntext_no: 'copy only this item',
-              callback_affirmative: function(){
-                unblur();
-                editor.clipboard.add_to_clipboard(item_json,'Item + Follow-Ups added to clipboard');
-              },
-              callback_negative: function(){
-                item_json.items = [];
-                editor.clipboard.add_to_clipboard(item_json,'Item added to clipboard');
-              }
-            })
-          }else {
-            editor.clipboard.add_to_clipboard(item_json,'Item added to clipboard');
-          }
-        },
-        // paste: () => {},
-        flash: () => {
-          $('.insert_item_options').addClass('opacity100Flash')
-            .find('.paste').removeClass('disabled').addClass('opacity80Flash');
-          setTimeout(forms.create.editor.clipboard.reset, 45*1000);
-        },
-        reset: () => {
-          // forms.create.editor.clipboard.item_obj.ele.find('.edit').css({color:'rgb(190,190,190)'});
-          $('.insert_item_options').removeClass('opacity100Flash')
-            .find('.paste').removeClass('opacity80Flash');
-          $(".no_items").removeClass('pink10BgFlash').css({cursor:'unset'}).text('No items').off('click',forms.create.editor.open);            
-        },
-      },
-      followup: {
-        state: false,
-        parent: null,
-        check: () => {
-          let editor = forms.create.editor, obj = editor.class_obj, mode = editor.mode, 
-            in_section = (mode == 'edit') ? obj.parent instanceof Section : obj instanceof Section;
-          editor.followup.state = !in_section;
-          editor.followup.parent = (mode == 'edit') ? obj.parent : obj;
-          return !in_section;
-        },
-      },
       options: {
         reset: () => {
-          // console.groupCollapsed('options reset');
           $("#AddItem, #AddText").resetActives().find('input,textarea').val('');
           $("#AddItemText").focus();
           forms.create.editor.options.list.reset();
           forms.create.editor.options.show();
-          // console.groupEnd();
         },
-        linked_text_update_editor: (model) => {
-          let list_ele = $("#OptionsList");
-          let link = $('#linked_to').exists() ? $('#linked_to') : $(`<div id='linked_to' class='pink'/>`).prependTo('#Options');
-          link.html('');
-          link.append(
-            `<b>Linked to '${model.addSpacesToKeyString()}' category.</b>`,
-            $(`<span class='little'>undo</span>`).css({cursor:'pointer',padding:'0.5em',textDecoration:'underline'}).on('click', forms.create.editor.options.list.reset),
-            `<div>This question will always be populated with an up-to-date list.`);
-          list_ele.find('.answer.text').find('input').attr('readonly',true);
-          // link.html(`<b>Linked to '${model.addSpacesToKeyString()}' category.</b><br>Note: you will never have to update this list to keep it current.`);
-        },
-
         list: {
           reset: () => {
+            throw new Error('dont use this dummy');
             let list = $("#OptionsList"), options = list.find('.answer.text');
-            $('#linked_to').remove();
-            list.removeData('linked_to');
+            $('#linked_to').parent().hide();
             if (options.length < 2) forms.create.editor.options.list.add_option();
             options.each((o,option) => {
               $(option).removeData('value').find('input').val('');
@@ -2057,6 +3037,7 @@ var forms = {
             });
           },
           fill: list => {
+            throw new Error('dont use this dummy');
             let inputs = $("#OptionsList").find('.answer.text');
             list.forEach((item,i) => {
               let answer = null;
@@ -2068,6 +3049,7 @@ var forms = {
           },
           option: null,
           add_option: () => {
+            throw new Error('dont use this dummy');
             let last = $("#OptionsList").find('.answer').last(), o = last.getObj(), options = o.options, settings = o.settings;
             let option = new Answer({options,settings,type:'text'}),
               arrows = new Features.UpDown({
@@ -2082,12 +3064,12 @@ var forms = {
           }
         },
         show: (type = null, time = 400) => {
+          throw new Error(`dont use this dummy`);
           let option_lists = $('.itemOptionList'),
-              match = option_lists.get().find(list => ($(list).data('type') == type || $(list).data('type').includes(type))),
-              followup_list = $("#FollowUpOptions");
+            match = option_lists.not("#FollowUpOptions").get().find(list => $(list).data('type') && ($(list).data('type') == type || $(list).data('type').includes(type)));
           if (type){
             $(match).slideFadeIn(time);
-            option_lists.not(match).not(followup_list).slideFadeOut(time);
+            option_lists.not(match).slideFadeOut(time);
             if (['list','checkboxes','dropdown'].includes(type)) {
               let listLimit = $(match).findAnswer({name:'listLimit'}).ele;
               if (type == 'dropdown') listLimit.hide();
@@ -2148,8 +3130,9 @@ var forms = {
           },
         },
         link_to_model: () => {
+          throw new Error('dummy dont use');
           let link_modal = $(`<div/>`,{class:'modalForm center'});
-          let list = new Features.List({header:'Available for Linking'});
+          let list = new Features.List({header:'Available for Linking',li_selectable:false});
           link_modal.append(`<h3>Select a Category</h3><div>Linking a question to a category will allow the user to select from an up-to-date list of that category. There will be no need to update the question if you add to the category</div>`,list.ele);
           for (let model in class_map_linkable) {
             if (model != 'list') list.add_item({
@@ -2158,16 +3141,10 @@ var forms = {
                 try{
                   blurTop('loading');
                   let list = linkable_lists[model] || await Models.Model.get_list({model}), list_ele = $("#OptionsList");
-                  forms.create.editor.options.list.reset();
-                  list.forEach((item,i) => {
-                    let options = list_ele.find('.answer.text'), option = options.get(i);
-                    if (!option) option = forms.create.editor.options.list.add_option().ele;
-                    $(option).getObj().value = item.name;
-                    $(option).data('value',item.uid);
-                  });
-                  log({model});
-                  list_ele.data('linked_to',model);
-                  forms.create.editor.options.linked_text_update_editor(model);
+                  Item.reset_modal();
+                  Item.option_list_fill(list);
+                  Item.LinkedTo = model;
+                  Item.linked_to_fill();
                   unblur(2);
                 }catch (error) {
                   log({error});
@@ -2198,30 +3175,6 @@ var forms = {
       return response;
     }
   },
-  autosave: {
-    send: () => {
-      let data = {
-        uid: forms.current.form_uid,
-        columns: forms.current.form_db,
-      }
-      log(data,'form autosave send data from forms.autosave.send');
-      // return;
-      return $.ajax({
-        url:'/save/Form',
-        method: 'POST',
-        data: data,
-      })    
-    },
-    callback: data => {
-      log({data},'callback data');
-      if (data.form_uid) {
-        forms.current.form_uid = data.form_uid;
-        forms.current.form_id = data.form_id;
-        forms.current.version_id = data.version_id;
-        // log(forms.current,'current form');
-      } else log('no form_uid');
-    },
-  },
   initialize: {
     all: () => {
       $.each(forms.initialize, function(name, initFunc){
@@ -2234,12 +3187,7 @@ var forms = {
           let data = $(proxy).data();
           if (!data.options) throw new Error('data-options not defined');
           if (!data.type) throw new Error('data-type not defined');
-
-          let answer = new Answer(data);
-          $(proxy).replaceWith(answer.ele);
-          if (!answer.ele.isInside('.item') && !answer.ele.isInside('#AddItem') && !answer.has_label && answer.settings.placeholder_shift !== false) {
-            answer.ele.css({marginTop:'1.5em'});
-          }
+          let answer = new Answer(data.merge({proxy:proxy}));
         }catch(error){
           log({error,proxy});
         }
@@ -2286,7 +3234,7 @@ var forms = {
         $(".itemOptionList").slideFadeOut();
         $("#AddItemType").on('change','select', function(){
           let type = $(this).val();
-          forms.create.editor.options.show(type);
+          Item.option_list_show(400, type);
         });
         $('#AddItem').on('click', '.save', Item.create)
 
@@ -2316,9 +3264,8 @@ var forms = {
             if (ev.keyCode == 13){
               let inputs = options_list.find('.answer.text'), i = options_list.find('input').index(this), next = $(inputs[i]).next('.answer');
               if (next.dne()) {
-                let option = forms.create.editor.options.list.add_option(), input = option.ele.find('input');
+                let option = Item.option_list_add(), input = option.ele.find('input');
                 input.val(''); input.focus();
-                // log({inputs,i,next,option});
               }
               else next.find('input').focus();
             }
@@ -2326,14 +3273,8 @@ var forms = {
         arrow_proxy.replaceWith(arrows.ele);
         options_list.find('.answer').removeClass('left').addClass('inline');
         forms.create.autofill();
-        // autosave.reset();
-        // autosave.initialize({
-        //   ajaxCall: forms.autosave.send,
-        //   callback: forms.autosave.callback,
-        //   delay: 10000
-        // });
+        Item.editor_setup();
       });
-      // if ($('#FormBuilder').dne()) forms.create.editor.mode = null;
     },
     calendars: () => {
       init('.calendar',function(){
@@ -2510,107 +3451,3 @@ var notes = {
 };
 
 export {forms, notes};
-
-
-// function initializeAdditionalNoteForm(targetObj = null, callback = null){
-//   console.log('use notes.initialize');
-//   return false;
-//   if (targetObj) notes.targetObj = targetObj;
-//   if (callback && typeof callback == 'function') notes.callback = callback;
-//   var form = filterByData('#AddNote','hasDynamicFx',false), addBtn = $('#AddNoteBtn');
-//   if (form.dne()) return;
-//   $("#NoteList").on('click','.delete', notes.remove);
-//   addBtn.on('click', notes.add);
-//   form.data('hasDynamicFx',true);
-// }
-// function autoSavePinnedNotes(){
-//   console.log('use notes.autosave');
-// }
-// function updatePinnedNotesOptionsNav(notes){
-//   var pinnedNotes = $(".optionsNav").find(".value.pinnedNotes");
-//   if (pinnedNotes.dne()) return;
-//   pinnedNotes.html("");
-//   $.each(notes,function(n,note){
-//     if (note.title) pinnedNotes.append("<div><span><span class='bold'>"+note.title+"</span>: "+note.text+"</span></div>");
-//     else pinnedNotes.append("<div><span>"+note.text+"</span></div>");
-//   });
-//   if (pinnedNotes.html() == "") pinnedNotes.html("None");
-// }
-// function fillNotes(notes){
-//   console.log('use notes.autofill');
-// }
-// function initializeNoApptsBtn(message){
-//   var btn = filterUninitialized("#NoEligibleApptsBtn");
-//   btn.on('click',function(){
-//     confirm('No Eligible Appointments',message,'create new appointment','dismiss',null,function(){clickTab("appointments-index");unblurAll();})
-//   });
-//   btn.data('initalized',true);
-// }
-// function initializeSelectNewApptBtns(fadeTheseIn = null){
-//   log('use appointments.initialize');
-//   return; 
-//   var selectBtn = filterUninitialized('.selectNewAppt');
-//   selectBtn.on('click',function(){
-//     showOtherAppts(fadeTheseIn);
-//   });
-//   selectBtn.data('initialized',true);
-// }
-// function showOtherAppts(fadeTheseIn = null){
-//   log('use appointments.initialize');
-//   return; 
-//   $(".selectNewAppt").hide();
-//   fadeTheseIn = fadeTheseIn ? $(fadeTheseIn).add("#ApptLegend") : $("#ApptLegend");
-//   fadeTheseIn.slideFadeIn();
-//   $("#CurrentAppt").slideFadeOut();
-//   $('.confirmApptBtn').addClass('disabled');
-// }
-// function selectThisAppt(){
-//   log('use appointment.initialize.externalSeleCtAndLoad');
-//   return;
-//   if ($(this).hasClass('active') || $(this).closest("#ApptLegend").length == 1){
-//     return;
-//   }else{
-//     $(".appt").removeClass('active');
-//     $(this).addClass('active');     
-//     $("#ApptSummary").html($(this).html().split("<br>").join(", ") + "<br>" + $(this).data('services'));
-//     $('.confirmApptBtn').removeClass('disabled');
-//     var newText;
-//     if ($(this).hasClass('hasNote')){newText = 'finish note';}
-//     else if ($(this).hasClass('noNote')){newText = 'start note';}
-//     else if ($(this).hasClass('hasInvoice')){newText = 'finish invoice';}
-//     else if ($(this).hasClass('noInvoice')){newText = 'create invoice';}
-//     $(".confirmApptBtn").text(newText);
-//   }
-// }
-// function initializeApptClicks(){
-//   var appts = filterUninitialized('.appt');
-//   if (appts.dne()) return;
-//   appts.on('click',selectThisAppt);
-//   appts.data('initialized');
-// }
-
-
-
-// function getModelNotes(model,uid){
-//   $.ajax({
-//     url:'/addNote/'+model+"/"+uid,
-//     method: "GET",
-//     success: function(data){
-//       if ($("#AddNoteModal").exists()){
-//         $("#AddNoteModal").html(data).data({model:model,uid,uid});
-//       }else{
-//         $("<div/>",{
-//           id: 'AddNoteModal',
-//           class: 'modalForm',
-//           data: {model:model,uid:uid},
-//           html: data
-//         }).appendTo("body");
-//       }
-//       minifyForm($("#AddNote"));
-//       var modelInfo = $("#AddNoteModal").find('.instance').data();
-//       initializeAdditionalNoteForm(autoSavePinnedNotes);
-//       blurTopMost('#AddNoteModal');
-//       notes.autofill(modelInfo.notes);
-//     }
-//   })
-// }

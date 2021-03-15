@@ -20,10 +20,10 @@
         	$isBreak = $timeBlock['break'] ? "breakTime" : "";
         	?>
             <tr class='timeBlock {{ $isBreak }}' data-block='{{ $loop->index }}'>
-	            <td class='days'><div class='tdSizeControl'>{{ displayDays($timeBlock['days']) }}<div class='indicator'>...</div></div></td>
-	            <td class='hours'><div class='tdSizeControl'>{{ $timeBlock['start_time'] }} to {{ $timeBlock['end_time'] }}<div class='indicator'>...</div></div></td>
+	            <td class='days'><div class='td_size_control'>{{ displayDays($timeBlock['days']) }}<div class='indicator'>...</div></div></td>
+	            <td class='hours'><div class='td_size_control'>{{ $timeBlock['start_time'] }} to {{ $timeBlock['end_time'] }}<div class='indicator'>...</div></div></td>
 	            @if ($model == 'Practitioner')
-		            <td class='services'><div class='tdSizeControl'>
+		            <td class='services'><div class='td_size_control'>
 		            	@if (isset($timeBlock['services']))
 		            		<?php 
 		            		$str = "";
@@ -45,9 +45,9 @@
         @endforeach
 		
 		<tr class='noMatch'>
-            <td class='days'><div class='tdSizeControl'>No Scheduled Time Blocks<div class='indicator'>...</div></div></td>
-            <td class='hours'><div class='tdSizeControl'><div class='indicator'>...</div></div></td>
-            <td class='services'><div class='tdSizeControl'><div class='indicator'>...</div></div></td>
+            <td class='days'><div class='td_size_control'>No Scheduled Time Blocks<div class='indicator'>...</div></div></td>
+            <td class='hours'><div class='td_size_control'><div class='indicator'>...</div></div></td>
+            <td class='services'><div class='td_size_control'><div class='indicator'>...</div></div></td>
 		</tr>
 	</table>
 </div>

@@ -9,7 +9,7 @@
 @endpush
 
 @section('content')
-    <div id='acu-chin-1' class='splash'>
+    <div id='acu_chin_1' class='splash'>
     	<div class="wrapper paddedBig topOnly shaded30">
 	        <div class='logo'></div>
 	        <h1 class='purple'>Online Booking</h1>    		

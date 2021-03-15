@@ -3,13 +3,20 @@
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
+// use Illuminate\Database\Eloquent\SoftDeletes;
+
+use App\Traits\IsUser;
 use App\Traits\TrackChanges;
-use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Traits\TableAccess;
+use App\Traits\HasSettings;
+
 
 class StaffMember extends Model
 {
+  use IsUser;
   use TrackChanges;
-  use SoftDeletes;
+  use TableAccess;
+  use HasSettings;
 
   protected $casts = [
     "schedule" => 'array',
@@ -20,34 +27,36 @@ class StaffMember extends Model
   protected $visible = ['id','name','email','username','date_of_birth','roles'];
   protected $appends = ['name'];
 
+  static public $display_name = 'Staff Member';
+  static public $instance_actions = [];
+  static public $static_actions = [];  
 
-  public $TableOptions;
-  public $optionsNavValues;
-  public $nameAttr;
-  public $connectedModels;
-  public $auditOptions;
-
-  public function __construct($attributes = []){
-    parent::__construct($attributes);
-    $this->auditOptions = [
-      'audit_table' => 'staff_members_audit',
-      'includeFullJson' => false
+  static public function table() {
+    $columns = [
+      'Name' => 'name',
+      'Phone' => 'phone',
+      'Email' => 'email',      
     ];
-    $this->nameAttr = ['preferred_name!!%preferred_name% %last_name%!!%first_name% %last_name%','user'];
+    $filters = [];
+    $buttons = [];
+    $data = [];
+    return compact('columns','filters','buttons','data');
   }
+  public function details() {
+    $instance = [
+      // 'Category' => $this->category_name,
+      // 'Description' => $this->description,
+    ];
+    $buttons = [];
+    return compact('instance','buttons');
+  }
+
+
   public function moreOptions(){
 
   }
   public function user(){
     return $this->belongsTo('App\User','user_id');
-  }
-  public function __get($key) {
-    if ($this->getAttribute($key)) return $this->getAttribute($key); 
-    else if ($this->user->getAttribute($key)) return $this->user->getAttribute($key);
-    else return null;
-  }
-  public function getNameAttribute(){
-    return $this->user->name;
   }
 
   

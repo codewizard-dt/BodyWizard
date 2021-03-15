@@ -2,26 +2,33 @@
 $form = App\Form::firstWhere('form_name','Recurring Appointment');
 $inputs = [];
   set($inputs, 'patient_id', new_input('text',
-    ['placeholder','linked_to','preLabel','labelHtmlTag','labelCss'],
-    ['Patient','Patient','Patient','h2',['width'=>'100%','marginTop'=>'0.2em','color'=>'var(--purple)']]),
+    ['placeholder','linked_to','preLabel','labelHtmlTag'],
+    ['Patient','Patient','Patient','h2']),
   'practitioner_id', new_input('text',
-    ['placeholder','linked_to','preLabel','labelHtmlTag','labelCss'],
-    ['Practitioner','Practitioner','Practitioner','h2',['width'=>'100%','marginTop'=>'0.2em','color'=>'var(--purple)']]),
+    ['placeholder','linked_to','preLabel','labelHtmlTag'],
+    ['Practitioner','Practitioner','Practitioner','h2']),
   'services', new_input('list',
-  	['linked_to','listLimit','linked_columns','preLabel','labelHtmlTag','labelCss','after_change_action','eleCss'],
-  	['Service','no limit',['price','duration','settings'],'Services','h2',['width'=>'100%','marginTop'=>'0.2em','color'=>'var(--purple)'],'Appointment.update_duration',['width'=>'min-content','marginRight'=>'1em']]),
+  	['linked_to','listLimit','linked_columns','preLabel','labelHtmlTag','after_change_action'],
+  	['Service','no limit',['price','duration','settings'],'Services','h2','Appointment.update_duration']),
   'date', new_input('date',
-  	['date_limit','preLabel','labelHtmlTag','labelCss'],
-  	[1,'Date','h2',['width'=>'100%','marginTop'=>'0.2em','color'=>'var(--purple)']]),
+  	['date_limit','preLabel','labelHtmlTag'],
+  	[1,'Date','h2']),
   'time', new_input('time',
-  	['date_limit','preLabel','labelHtmlTag','labelCss'],
-  	[1,'Time','h2',['width'=>'100%','marginTop'=>'0.2em','color'=>'var(--purple)']]),
+  	['date_limit','preLabel','labelHtmlTag'],
+  	[1,'Time','h2']),
   'duration', new_input('number',
-  	['min','max','initial','step','units','preLabel','labelHtmlTag','labelCss','after_change_action'],
-  	[0,600,0,1,'minutes','Duration','h2',['width'=>'100%','marginTop'=>'0.2em','color'=>'var(--purple)'],'Answer.hold']),
+  	['min','max','start','step','units','preLabel','labelHtmlTag','after_change_action'],
+  	[0,600,0,1,'minutes','Duration','h2','Answer.hold']),
 );
-// $linkable_lists = [];
-// set($linkable_lists,'Patient', basicList('Patient'))
+$RecurOptions = [];
+set($RecurOptions, 'header', 'Recurring Appointment Options',
+  'message', 'Your info here LOL',
+  'buttons', [
+    ['text'=>'this appointment only','action'=>'Appointment.EditThisOnly'],
+    ['text'=>'all future appointments','action'=>'Appointment.EditAllFuture'],
+    ['text'=>'cancel','class_list'=>'cancel'],
+  ],
+);
 ?>
 <div id="CreateAppointment" class='central large'>
 	<div class='body'>
@@ -41,7 +48,7 @@ $inputs = [];
 			</div>
 		</div>
 		<div class="section">
-			<h3 class='toggle_proxy' data-initial_state='hidden' data-target_ele='RecurringAppointment'>Recurring Settings</h3>
+			<h3 id="RecurToggle" class='toggle_proxy' data-initial_state='hidden' data-attribute='recurrence' data-target_ele='RecurringAppointment'>Recurring Settings</h3>
 			@include('layouts.forms.display.form',compact('form'))			
 		</div>
 	</div>
@@ -49,4 +56,7 @@ $inputs = [];
 		<div class='button submit create pink' data-model='Appointment'>save</div>
 		<div class='button cancel'>dismiss</div>
 	</div>
+</div>
+
+<div id="RecurringOptions" class="modalForm OptionBox" {!! dataAttrStr($RecurOptions) !!}>
 </div>

@@ -9,7 +9,7 @@ $listOptions = [
     'li_class' => 'flexbox spread',
     'li_css' => ['padding'=>'0.2em 0.6em','position'=>'relative'],
     'ul_css' => ['maxHeight'=>'calc(100vh - 25em)','overflow'=>'visible hidden'],
-    'limit' => 'none'
+    'limit' => 'none',
 ];
 session( [ 'notification_ids' => collect($listOptions['json'])->map(function($n){return $n['id'];})->toArray() ] );
 ?>
@@ -19,14 +19,14 @@ session( [ 'notification_ids' => collect($listOptions['json'])->map(function($n)
     </div>
     <div class="underline" style="width: 0%;"></div>
     <div class="dropDown">
-        <div class="List" data-options='{{ json_encode($listOptions) }}'></div>
+        <div class="List" data-initialized='true' data-options='{{ json_encode($listOptions) }}'></div>
         <div class="options">
-            <div class='pinkBg10 multiBtns'>
+            <div class='box pink squared'>
                 <div class="button pink xsmall" data-action='Notification.mark_as_unread'>mark unread</div>
                 <div class="button pink xsmall" data-action='Notification.mark_as_read'>mark read</div>
                 <div class="button pink xsmall" data-action='Notification.delete'>delete</div>
             </div>
-            <div class="yellowBg10 multiBtns">
+            <div class="box yellow squared">
                 <div class="button yellow xsmall" data-action='Notification.select_all'>select all</div>
                 <div class="button yellow xsmall" data-action='Notification.unselect_all'>unselect all</div>
             </div>

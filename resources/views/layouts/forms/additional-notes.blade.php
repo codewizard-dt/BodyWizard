@@ -10,5 +10,5 @@ $header = isset($header) ? $header : 'Additional Notes';
 		<h4 id="NoNotes">none</h4>	
 	</div>
 	{{$addNoteForm->formDisplay(false,false)}}
-	<div id='AddNoteBtn' class="button xxsmall pink">add note</div>
+	<div id='AddNoteBtn' class="button xsmall pink">add note</div>
 </div>

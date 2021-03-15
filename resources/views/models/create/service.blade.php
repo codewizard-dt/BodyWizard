@@ -17,10 +17,10 @@ $inputs = [];
     ['placeholder','linked_to'], 
     ['Service Category','service_category']));
   set($inputs, 'duration', new_input('number',
-    ['min', 'max', 'initial', 'step', 'units', 'preLabel','labelHtmlTag','labelClass'], 
+    ['min', 'max', 'start', 'step', 'units', 'preLabel','labelHtmlTag','labelClass'], 
     [0, 60*8, 60, 5, 'minutes', 'Duration:','h4','pink']));
   set($inputs, 'price', new_input('number',
-    ['min', 'max', 'initial', 'step', 'units', 'fixed_decimals', 'preLabel','labelHtmlTag','labelClass'], 
+    ['min', 'max', 'start', 'step', 'units', 'fixed_decimals', 'preLabel','labelHtmlTag','labelClass'], 
     [0, 1000, 60, 5, App\Practice::getFromSession()->currency['currency'], 2, 'Price:','h4','pink']));
 $initial = collect($inputs)->mapWithKeys(function($input,$attr) use ($instance){
 	return [$attr => isset($instance) && $instance != null ? $instance->$attr : null];

@@ -5,6 +5,23 @@ use Illuminate\Support\Facades\Log;
 
 trait HasSettings
 {
+	// static public $has_settings = true;
+
+	public function __get($key) {
+		$val = $this->getAttribute($key);
+		if ($val) return $val;
+		elseif (strpos($key, 'setting:') !== false) {
+			$array = explode(':',$key);
+			$key = $array[1];
+			$default = count($array) > 2 ? $array[2] : null;
+			return $this->get_setting($key,$default);
+		} else return null;
+	}
+
+	// public function __get($key) {
+
+	// }
+
 	public function get_setting($dot_notation, $default = null) {
 		if (!$this->settings) return $default;
 		$value = get($this->settings, $dot_notation, $default);

@@ -2,6 +2,7 @@
 
 /** @var \Illuminate\Database\Eloquent\Factory $factory */
 use App\User;
+use App\Complaint;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Faker\Generator as Faker;
@@ -43,8 +44,12 @@ $factory->state(User::class, 'practitioner', [
     'roles' => ['list'=>['practitioner'],'default'=>null]
 ]);
 $factory->state(User::class, 'patient', [
-    'roles' => ['list'=>['patient'],'default'=>null]
+    'roles' => ['list'=>['patient'],'default'=>null],
 ]);
+$factory->afterCreatingState(User::class, 'patient', function($user, $faker){
+    $complaints = Complaint::select('id')->get()->map(function($complaint){return $complaint->id;})->toArray();
+    $user->patient->complaints()->sync(random($complaints,3));
+});
 $factory->state(User::class, 'staff member', [
     'roles' => ['list'=>['staff member'],'default'=>null]
 ]);

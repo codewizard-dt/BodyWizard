@@ -8,8 +8,8 @@ if (isset($form)){
   $name = $form->form_name;
 }else{ throw \Exception('Form not given');}
 
-$mode = isset($mode) ? $mode : 'display';
-$action = isset($action) ? $action : 'FormEle.submit';
-
+$mode = isset($mode) ? $mode : request('mode','display');
+$action = isset($action) ? $action : request('action','FormEle.submit');
+Log::info(compact('mode','action'));
 ?>
 <div class='form_proxy' data-json='{{$form->toJson()}}' data-settings='{{json_encode($settings)}}' data-mode='{{$mode}}' data-action='{{$action}}'></div>

@@ -42,24 +42,24 @@ $initial = collect($attrs)->mapWithKeys(function($attr) use ($instance){
 	<h2>Contact Information</h2>
 	<div class='flexbox leftSided'>
 		@include('layouts.forms.display.answer',[
-			'type' => 'text',
+			'type' => 'phone',
 			'name' => 'phone',
 			'options' => ['placeholder' => 'Phone Number']
 		])
 		@include('layouts.forms.display.answer',[
-			'type' => 'text',
+			'type' => 'email',
 			'name' => 'email',
 			'options' => ['placeholder' => 'Email Address']
 		])
 	</div>
 	<div class='flexbox leftSided'>
 		@include('layouts.forms.display.answer',[
-			'type' => 'textbox',
+			'type' => 'address',
 			'name' => 'address_mailing',
 			'options' => ['placeholder' => 'Mailing Address']
 		])		
 		@include('layouts.forms.display.answer',[
-			'type' => 'textbox',
+			'type' => 'address',
 			'name' => 'address_billing',
 			'options' => ['placeholder' => 'Billing Address (leave blank if same as Mailing Address)'],
 			'settings' => ['required' => false]
