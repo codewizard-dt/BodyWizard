@@ -1,0 +1,24 @@
+@use 'sass:list';
+
+$banners: [
+  ['acu_chin_1', 26em, 70%],
+  ['bp_1', 30em, 60%],
+  ['crystals', 20em, 50% 65%],
+  ['crystalbuddha', 20em, 50% 40%],
+  ['palosanto', 45vh, 50% 35%],
+  ['headshot', 20em, 50% 10%],
+  ['head_1', 45vh, 40% 50%],
+  ['acu_arm_1', 15em, 50% 70%],
+  ['pulse', 45vh, 50% 55%],
+  ['shelf_1', 25em, 50% 45%],
+  ['shelf_2', 67vh, 50% 45%],
+  ['needle_tray_1', 25vh, 50% 50%],
+];
+
+@each $image in $banners {
+  ##{list.nth($image, 1)} {
+    background-image: url(/images/banners/#{list.nth($image,1)}.jpg);
+    height: list.nth($image,2);
+    background-position: list.nth($image,3);
+  }
+}

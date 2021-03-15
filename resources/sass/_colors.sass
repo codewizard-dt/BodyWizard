@@ -1,0 +1,83 @@
+@use "sass:map"
+@use "sass:color"
+@use "sass:math"
+
+$colors: ('purple':rgb(105,12,104), 'yellow':rgb(240,154,53), 'pink':rgb(234,78,80), 'white':rgb(255,255,255), 'gray':rgb(210,210,210), 'darkgray':rgb(120,120,120), 'black':rgb(0,0,0), 'green':rgb(46, 107, 53))
+
+@function get ($string, $opacity:100, $opaque:false)
+  $a: $opacity / 100
+  $rgb: map.get($colors,$string)
+  $rgba: color.change($rgb, $alpha: $a)
+  @if $opacity == 100
+    @return $rgb
+  @else if $opaque
+    @return rgba-to-rgb($rgba)
+  @else 
+    @return $rgba
+
+@function rgba-to-rgb($rgba, $opacity: 0, $background: #fff) 
+  @if $opacity > 0 
+    @if $opacity < 1 
+      $opacity: $opacity * 100
+    @return mix(mix(rgb(red($rgba), green($rgba), blue($rgba)), $background, alpha($rgba) * 100%), rgb(255,255,255), $opacity)
+  
+  @return mix(rgb(red($rgba), green($rgba), blue($rgba)), $background, alpha($rgba) * 100%)
+
+:root
+  // --main-color: #{get('pink',70)}
+  --fc-bg-event-color: #{get('yellow',50)}
+  --fc-event-bg-color: #{get('pink',80)}
+  --fc-event-border-color: #{get('pink',70)}
+  --fc-today-bg-color: #{get('purple',5)}
+  --fc-button-bg-color: #{get('purple',80)}
+  --fc-button-border-color: #{get('purple',90)}
+  --fc-button-active-border-color: #{get('purple')}
+  --fc-button-hover-border-color: #{get('purple')}
+  --fc-button-active-bg-color: #{get('purple')}
+  --fc-button-hover-bg-color: #{get('purple',90)}
+  // --green30: #{get('green')}
+  // --pink: #{get('pink')}
+  // @each $color in ['purple','green','pink','yellow']
+  //   --#{$color}: #{get($color)}
+  //   --#{$color}70o: #{get($color,70,true)}
+
+@font-face
+  font-family: 'Roboto'
+  src: url('/fonts/roboto-thin.ttf') format('truetype')
+  font-weight: 100
+  font-style: normal
+@font-face
+  font-family: 'Roboto'
+  src: url('/fonts/roboto-thin-italic.ttf') format('truetype')
+  font-weight: 100
+  font-style: italic
+@font-face
+  font-family: 'Roboto'
+  src: url('/fonts/roboto-light.ttf') format('truetype')
+  font-weight: normal
+  font-style: normal
+@font-face
+  font-family: 'Roboto'
+  src: url('/fonts/roboto-light-italic.ttf') format('truetype')
+  font-weight: normal
+  font-style: italic
+@font-face
+  font-family: 'Roboto'
+  src: url('/fonts/roboto-bold.ttf') format('truetype')
+  font-weight: bold
+  font-style: normal
+
+
+@each $num in [10 30 50 70]
+  .shaded#{$num}
+    background-color: get('white', $num)
+
+.pinkBgFlash 
+  animation: pinkBgFlash cubic-bezier(0.5, 0, 0.5, 1) 500ms infinite alternate
+
+@keyframes pinkBgFlash 
+  100% 
+    background-color: get('pink')
+  
+
+

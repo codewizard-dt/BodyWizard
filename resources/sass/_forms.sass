@@ -1,0 +1,269 @@
+// @forward "features"
+@use "models" as style
+
+.toggle
+  font-size: 0.8em
+  color: style.get('darkgray',70)
+  display: inline-block
+  vertical-align: baseline
+  padding: 0 3px
+  cursor: pointer
+  transition: color 400ms
+  &:hover
+    color: style.get('darkgray')
+.editable
+  .toggle
+    vertical-align: top
+    transform: translateY(-0.3em)
+
+.form
+
+  .section
+    text-align: left
+    border-radius: 5px
+    @include style.pad(0,0,0,50)
+    @include style.margin(100,0)
+    border-left: 1px solid style.get('darkgray',70)
+    h2
+      padding: 0 0.25em
+    .Items
+      // @include style.box_clear
+      // @include style.flexbox_left
+      width: 100%
+      .Items
+        background-color: transparent
+        border-color: transparent
+
+    .item
+      @include style.box('gray', 5px, false, 5)
+      display: flex
+      text-align: left
+      width: 100%
+      margin: 0.25em
+      max-width: calc(100% - 0.5em)
+      border-left-color: style.get('darkgray',50)
+      &.condensed
+        width: unset
+        display: inline-flex
+        flex: 1 0 0
+        .question_wrap
+          // width: unset
+    .question
+      display: inline-block
+      border-style: solid
+      border-color: style.get('yellow')
+      border-width: 0 0 1px 0
+      font-size: 1.3em
+      margin: 0.25em 0    
+    .question_wrap
+      width: 100%
+      margin-right: 1.5em
+    .answer
+
+.answer
+  position: relative
+  // display: inline-block
+  border-style: solid
+  border-radius: 5px
+  border-color: style.get('gray',70)
+  margin: 5px 0.2em
+  width: max-content
+  max-width: calc(100% - 0.4em)
+  h2
+    width: 100%
+  .preLabel, .postLabel
+    @include style.pad(0,50,0,0)
+  &.text input, &.textbox textarea
+    width: 100%
+  &.text
+    input
+      max-width: 20em
+  &.textbox
+    width: 100%
+  &.list
+    ul
+      @include style.flexbox_left
+      border: 1px solid style.get('yellow',5)
+    li
+      list-style: none
+      display: inline-block
+      background-color: white
+      color: black
+      border-radius: 3px
+      margin: 5px
+      padding: 0.2em 0.5em
+      border: 2px solid style.get('yellow',15)
+      cursor: pointer
+      opacity: 1
+      transition: background-color 500ms, border-color 500ms, font-size 500ms
+      &:hover
+        background-color: style.get('yellow',5)
+        border-color: style.get('yellow',30)
+      &.active
+        background-color: style.get('yellow',10)
+        border-color: style.get('yellow')
+  &.checkboxes
+    label 
+      width: max-content
+      max-width: 100%
+      padding: 0 3px
+      margin: 1px 2px
+      transition: background-color 800ms
+      border-radius: 5px
+      border: 1px solid transparent
+      &:hover 
+        background-color: style.get('yellow',10)
+      &.active
+        background-color: style.get('yellow',10)
+        border-color: style.get('yellow',20)
+      span
+        width: max-content
+        white-space: nowrap
+        margin: 0 0.2em
+    &.purple
+      color: black
+      label
+        &:hover
+          background-color: style.get('purple',10)
+        &.active
+          background-color: style.get('purple',10)
+          border-color: style.get('purple',20)
+  &.number
+    input
+      width: 5em
+      text-align: right
+  &.address
+    .search
+      min-width: 30em
+      max-width: calc(90% - 5em)
+    .unit
+      width: 5em
+    .address_display
+      padding: 0.5em
+  &.email
+    input
+      min-width: 20em
+  &.phone
+    input
+      width: 10em
+  &.time
+    input
+      width: 5.5em
+  &.date
+input, textarea, select
+  position: relative
+  border-width: 2px
+  border-color: rgba(210,210,210,0.8)
+  border-style: solid
+  border-radius: 5px
+  background-color: style.get('white',97)
+  padding: 0.5em
+  margin:0 1px
+  box-sizing: border-box
+  max-width: 100%
+  font-family: inherit
+  font-size: inherit
+  z-index: 1
+textarea
+  height: 6em
+
+.modalForm
+  position: absolute
+  display: none
+  background-color: style.get('white')
+  // border-color: style.
+  border-radius: 5px
+  border: 2px solid style.get('darkgray', 70)
+  box-sizing: border-box
+  @include style.pad(100)
+
+.minify
+  .question_wrap
+    width: unset !important
+
+.filter_box 
+  max-width: calc(100% + 1em)
+  min-width: 60vh
+
+
+#FormBuilder
+  .sections
+    min-width: 600px
+    max-width: 90%  
+    margin: auto
+  .item
+    margin: 0.5em 0
+    &.active
+      border-color: style.get('pink')
+    .toggleWrap
+      width: 100%
+      padding: 0.25em
+      // padding: 0.25em 0.25em 2em 0.25em
+  .insert_item_options
+    .button
+      color: style.get('pink')
+
+#SectionList
+  li 
+    min-width: 13em
+    @include style.pad(10, 70)
+
+#AddItemText, #AddItemType, #AddItemRequired
+  box-sizing: border-box
+  span
+    width: 9em
+    text-align: right
+    box-sizing: border-box
+  input
+    width: calc(100% - 9em)  
+  input, select
+    margin: 0
+#AddItem, #AddText, #AddSection
+  display: none
+  padding: 2em
+
+.itemOptionList
+  margin: 1em 0
+  .settingsLabel
+    width: 95%
+    margin: auto
+    font-weight: bold
+    color: style.get('purple')
+    border-bottom: 2px solid style.get('purple')
+    &.pink
+      border-bottom-color: style.get('pink')
+  .settingsInfo
+    color: style.get('purple')
+  .optionsList
+    @include style.flexbox
+    // width: max-content
+    margin: 0.6em auto
+    > div
+      @include style.box('gray',4px, false)
+      margin: 0.25em
+    .full
+      flex-basis: 100%
+      background-color: transparent
+      border-color: transparent
+
+.createModel
+  @include style.pad(100, 0)
+  .toggle_ele
+    // @include style.pad(25)
+    @include style.margin(200,auto,0)
+  // .target_ele:not(ul)
+  //   @include style.pad(0,0,0,100)
+
+//
+// SPECIFIC FORMS AND ELEMENTS
+//
+#LoginForm
+  padding: 2em 3em
+  min-width: 25em
+  .answer 
+    margin: 1em auto
+    input
+      width: 12em
+
+#ChartForms
+  @include style.margin(300,auto,100)

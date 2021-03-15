@@ -1,0 +1,176 @@
+// @forward "colors"
+// @use "colors"
+// @forward "layout" 
+// @use "layout"
+
+// @mixin box ($radius: 5px, $opaque: true, $base: 10)
+//   position: relative
+//   border: 1px solid colors.get('gray',$base*5)
+//   background-color: colors.get('gray',$base,$opaque)
+//   display: inline-block
+//   border-radius: $radius
+//   padding: 0.2em 0.5em  
+//   max-width: 100%
+//   box-sizing: border-box
+// @mixin box_clear ($radius: 5px)
+//   @include box($radius)
+//   background-color: transparent
+// @mixin box_purple ($radius: 5px)
+//   @include box($radius)
+//   border-color: colors.get('purple',50)
+//   background-color: colors.get('purple',5,true)
+// @mixin box_pink ($radius: 5px)
+//   @include box($radius)
+//   border-color: colors.get('pink',50)
+//   background-color: colors.get('pink',5,true)
+// @mixin box_yellow ($radius: 5px)
+//   @include box($radius)
+//   border-color: colors.get('yellow',50)
+//   background-color: colors.get('yellow',5,true)
+// @mixin box_green ($radius: 5px)
+//   @include box($radius)
+//   border-color: colors.get('green',50)
+//   background-color: colors.get('green',5,true)
+// @mixin box_squared
+//   @include box(0)
+
+// .box
+//   @include box
+//   &.clear
+//     background-color: transparent
+//   &.purple
+//     border-color: colors.get('purple',50)
+//     background-color: colors.get('purple',5,true)
+//   &.pink
+//     border-color: colors.get('pink',50)
+//     background-color: colors.get('pink',5,true)
+//   &.yellow
+//     border-color: colors.get('yellow',50)
+//     background-color: colors.get('yellow',5,true)
+//   &.green
+//     border-color: colors.get('green',50)
+//     background-color: colors.get('green',5,true)
+//   &.squared
+//     border-radius: 0
+
+// .prompt
+//   @extend .box
+
+// .Banner
+//   @extend .box
+//   z-index: 61
+//   &.green
+//     color: colors.get('green')
+//   &.yellow
+//     color: colors.get('yellow')
+//   &.pink
+//     color: colors.get('pink')
+//   &.purple
+//     color: colors.get('purple')
+
+// .indicator 
+//   @include layout.flexbox
+//   position: absolute
+//   bottom: 0
+//   right: 0
+//   transform: translate(50%,50%)
+//   background-color: colors.get('pink',90)
+//   padding: 0.1em 0.5em
+//   color: white
+//   box-shadow: 0 0 3px 3px colors.get('white',30)
+//   border-radius: 1em
+//   font-size: 0.8em
+//   font-weight: bold
+
+// .logo
+//   background-image: url(/images/logo/logo-text-with-star.png)
+//   background-size: contain
+//   background-position: center
+//   background-repeat: no-repeat
+//   height: 5em
+//   width: 5em
+//   &.notext_color
+//     background-image: url(/images/logo/logo-notext-color.png)
+//   &.notext_white
+//     background-image: url(/images/logo/logo-notext-white.png)
+// #NavBar
+//   .logo, a
+//     width: 10em
+//     height: 100%
+
+// .blur 
+//   position: absolute
+//   top:0
+//   left:0
+//   width: 100%
+//   height: 100%
+//   padding: 0 !important
+//   margin: 0 !important
+//   background-color: colors.get('white',50)
+//   z-index: 10
+//   .blur
+//     background-color: colors.get('white',90)
+//   .blur_clear
+//     position: absolute
+//     top: 0.2em
+//     right: 0.2em
+//     font-size: 1.4em
+//     padding: 0.1em
+//     color: rgb(220,220,220)
+//     cursor: pointer
+//     opacity: 0.3
+//     transition: opacity 400ms
+//     &:hover
+//       opacity: 1
+//   > *
+//     max-width: 96%
+//     max-height: 96%
+//     position: absolute
+//     display: block !important
+//     top: 50%
+//     left: 50%
+//     transform: translate(-50%, -50%)
+//     overflow-y: auto
+//     overflow-x: hidden
+//   > .checkmark
+//     border-radius: 50%
+//     padding: 2em 2em
+//     // width: 2em
+//     // height: 2em
+//     box-shadow: 0 0 20px 10px rgba(230,230,230,0.4)
+//     background-color: colors.get('green',10,true)
+//     border: 2px solid green        
+//   > .modalForm
+//     padding-top: 2em
+//     padding-bottom: 4em
+//   &.blur_body
+//     height: 100vh
+//     background-color: colors.get('darkgray',93)
+//     box-shadow: 0 0 20px 10px colors.get('darkgray') inset
+//     z-index: 60
+//     .blur 
+//       z-index: 60
+//     > *
+//       border-color: colors.get('gray')
+//       box-shadow: 0 0 20px 10px colors.get('gray')      
+//   &.loading
+//     background-color: colors.get('white',70)
+//     > *
+//       border-color: transparent
+//       box-shadow: unset
+
+// .OptionBox
+//   padding: 0 !important
+//   .body
+//     padding: 1em 2em
+//   .options
+//     background-color: colors.get('gray',30)
+//     border-top: 1px solid colors.get('gray',30)
+//     padding: 0.5em
+
+// .modalForm
+//   @extend .box
+//   display: none
+//   width: max-content
+//   h1
+//     color: colors.get('pink')

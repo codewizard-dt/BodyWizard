@@ -1,0 +1,412 @@
+@forward "colors"
+@use "colors"
+@use "sass:math"
+
+body
+  background-color: transparent
+  font-family: Roboto, sans-serif
+  font-size: clamp(14px, 1.6vw, 24px)
+  font-weight: normal
+  line-height: 1.5
+  text-align: center
+  min-height: 100vh
+  position: relative
+  padding-bottom: 3em
+  overflow-x: hidden
+  box-sizing: border-box
+  overflow-anchor: none
+  overflow-wrap: break-word
+
+footer
+  position: absolute
+  background-color: colors.get('purple',90)
+  color: white
+  bottom: 0
+  padding: 1em
+  width:100%
+
+h1, h2, h3, h4, h5
+  font-weight: 100
+  color: colors.get('purple')
+  $colors: 'pink', 'yellow', 'green'
+  @each $color in $colors
+    &.#{$color}
+      color: colors.get($color)
+h1
+  font-size: clamp(2em, 5vw, 3em)
+h2
+  font-size: clamp(1.7em, 4vw, 2.2em)
+h3
+  font-size: clamp(1.4em, 3vw, 1.8em)
+h4
+  font-size: clamp(1.2em, 2vw, 1.4em)
+h5
+  font-size: 1em
+  font-weight: bold
+
+div:not(.button), span
+  $colors: 'purple', 'pink', 'yellow', 'green'
+  @each $color in $colors
+    &.#{$color}
+      color: colors.get($color)
+
+@function val_check ($value)
+  @if $value == 'auto'
+    @return $value
+  @else
+    @return #{$value / 100}rem
+
+@mixin pad ($y: 0, $x: null, $bottom: null, $right: null) 
+  @if ($x == null)
+    padding: val_check($y) 
+  @else if ($bottom == null)
+    padding: val_check($y) val_check($x)
+  @else if ($right == null)
+    padding: val_check($y) val_check($x) val_check($bottom)
+  @else
+    padding: val_check($y) val_check($x) val_check($bottom) val_check($right)
+@mixin margin ($y: 0, $x: null, $bottom: null, $right: null) 
+  @if ($x == null)
+    margin: val_check($y) 
+  @else if ($bottom == null)
+    margin: val_check($y) val_check($x)
+  @else if ($right == null)
+    margin: val_check($y) val_check($x) val_check($bottom)
+  @else
+    margin: val_check($y) val_check($x) val_check($bottom) val_check($right)
+@mixin max ($auto_margin: true)
+  width: max-content
+  max-width: 100%
+  @if ($auto_margin)
+    margin: auto
+@mixin shadow ($color: 'darkgray', $opacity: 100, $strength: 10, $inset: false)
+  @if ($inset)
+    box-shadow: 0 0 #{$strength*2}px #{$strength}px colors.get($color, $opacity) inset
+  @else
+    box-shadow: 0 0 #{$strength*2}px #{$strength}px colors.get($color, $opacity)
+
+$pre_bounce: cubic-bezier(.46,-0.45,.54,.97)
+$post_bounce: cubic-bezier(.64,.57,.67,1.53)
+$both_bounce: cubic-bezier(.46,-0.45,.54,1.53)
+$strong_easeinout: cubic-bezier(.73,.03,.37,.99)
+$easeinout_sine: cubic-bezier(0.37, 0, 0.63, 1)
+
+@keyframes opacityFlash
+  100%
+    opacity: 1
+@mixin opacityFlash ($time: 800)
+  animation: opacityFlash #{$time}ms $easeinout_sine infinite alternate
+@each $time in [400 800 1200 1600]
+  .opacityFlash#{$time}
+    @include opacityFlash($time)
+
+.smaller 
+  font-size: 0.9em
+  vertical-align: baseline
+.bigger
+  font-size: 1.2em
+  vertical-align: baseline
+
+.link
+  cursor: pointer
+  color: colors.get('darkgray')
+  transition: color 400ms
+  &:hover
+    color: colors.get('black')
+  &.pink
+    color: colors.get('pink',70,true)
+    &:hover
+      color: colors.get('pink')
+
+.central
+  min-width: 600px
+  width: max-content
+  max-width: 90%
+  margin: auto
+  &.large
+    min-width: 800px
+  &.full
+    width: 90%
+.max
+  @include max
+
+.splash 
+  position: relative
+  width:100%
+  background-repeat: no-repeat
+  background-size: cover
+  min-height: min(10vh, 15em)
+
+.button 
+  display: inline-block
+  position: relative
+  background-color: black
+  font-family: Roboto
+  font-weight: normal
+  text-transform: uppercase
+  text-align: center
+  letter-spacing: 1px
+  font-size: 1em
+  line-height: 0.9
+  border-radius: 4px
+  border-width: 1px
+  border-style: solid
+  border-color: black
+  color: white
+  padding: 0.7em
+  margin: 0.5em
+  text-decoration: none
+  white-space: nowrap
+  transition: background-color 0.5s, color 1s, box-shadow 500ms    
+  cursor: pointer
+  touch-action: manipulate
+  user-select: none
+  $colors: 'pink', 'yellow', 'purple', 'green', 'white', 'black'
+  @each $color in $colors
+    &.#{$color} 
+      background-color: colors.get($color)
+      border-color: colors.get($color)
+    &.#{$color}70 
+      background-color: colors.get($color, 70)
+      border-color: colors.get($color, 70)
+    &.#{$color}70:hover
+      background-color: colors.get($color)
+  &.white, &.white70
+    color: black
+  &.cancel
+    @extend .black70
+  &.small
+    font-size: 0.9em
+  &.xsmall
+    font-size: 0.7em
+  &.large
+    font-size: 1.1em
+  &.disabled
+    opacity: 0.5
+    cursor: not-allowed
+
+@mixin box ($color:'gray', $radius: 5px, $opaque: true, $opacity: 10)
+  position: relative
+  border: 1px solid colors.get($color,$opacity*5)
+  background-color: colors.get($color,$opacity,$opaque)
+  display: inline-block
+  border-radius: $radius
+  padding: 0.2em 0.5em  
+  max-width: 100%
+  box-sizing: border-box
+  @each $color in ['pink' 'yellow' 'purple' 'green']
+    &.#{$color}
+      border: 1px solid colors.get($color,$opacity*5)
+      background-color: colors.get($color,$opacity,$opaque)
+      &.light
+        $opacity: $opacity * 0.75
+        border: 1px solid colors.get($color,$opacity*5)
+        background-color: colors.get($color,$opacity,$opaque)
+
+@mixin indent
+  @include pad(0,0,0,200)
+
+@mixin flexbox
+  display: flex
+  flex-wrap: wrap
+  justify-content: center
+  align-items: center
+  box-sizing: border-box
+  max-width: 100%
+  > * 
+    display: inline-block
+  > .flexbox
+    display: inline-flex
+  > .top
+    align-self: flex-start
+@mixin flexbox_spread
+  @include flexbox
+  justify-content: space-between
+@mixin flexbox_left
+  @include flexbox
+  justify-content: flex-start
+  text-align: left
+@mixin flexbox_right
+  @include flexbox
+  justify-content: flex-end
+  text-align: right
+@mixin flexbox_nowrap
+  @include flexbox
+  flex-wrap: nowrap
+@mixin flexbox_inline
+  @include flexbox
+  display: inline-flex
+@mixin flexbox_column
+  @include flexbox
+  flex-direction: column
+
+$colors: 'pink' 'yellow' 'purple' 'green'
+@each $color in $colors
+  .filled.#{$color}
+    background-color: colors.get($color,3)
+    border-radius: 0.5em
+  .lined.#{$color}
+    border-top: 2px solid colors.get($color,30)
+    border-radius: 0 0 0.5em 0.5em
+
+
+.Icon
+  &.clickable
+    opacity: 0.6
+    cursor: pointer
+    &:hover
+      @include opacityFlash()
+
+@mixin round ($diameter: 2)
+  width: #{$diameter}em
+  height: #{$diameter}em
+  border-radius: 50%
+.circle
+  overflow: visible !important
+  transform-origin: center
+  &.pink
+    stroke: colors.get('pink',70)
+  &.purple
+    stroke: colors.get('purple',70)
+  &.yellow
+    stroke: colors.get('yellow')
+  &.green
+    stroke: colors.get('green')
+
+  g
+    transform-origin: center
+  circle
+    position: relative
+    fill: transparent
+    border-radius: 50%
+    stroke-width: 15%
+    stroke-dasharray: math.$pi * 100% math.$pi * 100%
+    stroke-dashoffset: 0
+    stroke-linecap: round
+    box-sizing: border-box
+    transform: rotate(-90deg)
+    transform-origin: center
+  &.spin
+    animation: spin 2.3s linear 0.4s infinite
+    circle
+      animation: dash_start 0.4s ease-in, dash_offset 1.9s $easeinout_sine 0.4s infinite alternate
+    g
+      animation: spin 1.9s $easeinout_sine 0.4s infinite
+      transform-origin: center
+
+  &.countdown
+    circle
+      transform: rotate(-90deg)
+      stroke-dashoffset: math.$pi * 100% 
+      animation: dash_offset_fill 5s linear
+      // animation-fill-mode: forwards
+.loading
+  .circle
+    &.spin
+      animation: spin-50-50 2.3s linear infinite
+// @each $color in ['pink' 'purple' 'yellow' 'green']
+//   .circle.#{$color}
+//     stroke: colors.get($color,70,true)
+@keyframes dash_start
+  100%
+    stroke-dashoffset: - math.$pi * 15%
+@keyframes dash_offset
+  0%
+    stroke-dashoffset: - math.$pi * 15%
+  100%
+    stroke-dashoffset: - math.$pi * 90%
+@keyframes spin
+  100%
+    transform: rotate(360deg)
+@keyframes spin-50-50
+  100%
+    transform: translate(-50%,-50%) rotate(360deg)
+@keyframes dash_offset_fill
+  100%
+    stroke-dashoffset: 0
+
+.triangle
+  position: absolute
+  transform-origin: bottom center
+  stroke: colors.get('darkgray',93)
+  fill: colors.get('darkgray',70)
+  &.pink
+    stroke: colors.get('pink')
+    fill: colors.get('pink',70,true)
+  &.purple
+    stroke: colors.get('purple')
+    fill: colors.get('purple',70,true)
+  &.yellow
+    stroke: colors.get('yellow')
+    fill: colors.get('yellow',70,true)
+  &.green
+    stroke: colors.get('green')
+    fill: colors.get('green',70,true)
+
+
+.box
+  @include box
+.indent
+  @include indent
+
+.prompt
+  @extend .box
+
+.indicator 
+  @include flexbox
+  position: absolute
+  bottom: 0
+  right: 0
+  transform: translate(50%,50%)
+  background-color: colors.get('pink',90)
+  padding: 0.1em 0.5em
+  color: white
+  box-shadow: 0 0 3px 3px colors.get('white',30)
+  border-radius: 1em
+  font-size: 0.8em
+  font-weight: bold
+
+.logo
+  background-image: url(/images/logo/logo-text-with-star.png)
+  background-size: contain
+  background-position: center
+  background-repeat: no-repeat
+  height: 5em
+  width: 5em
+  &.notext_color
+    background-image: url(/images/logo/logo-notext-color.png)
+  &.notext_white
+    background-image: url(/images/logo/logo-notext-white.png)
+
+#NavBar
+  .logo, a
+    width: 10em
+    height: 100%
+
+
+.flexbox
+  @include flexbox
+
+  &.spread 
+    justify-content: space-between
+  &.left
+    justify-content: flex-start
+  &.right
+    justify-content: flex-end
+  &.nowrap
+    flex-wrap: nowrap
+  &.inline
+    display: inline-flex
+  &.column
+    flex-direction: column
+    &.left > *
+      align-self: flex-start
+
+.left
+  text-align: left
+.right
+  text-align: right
+
+#ModalHome
+  display: none
+

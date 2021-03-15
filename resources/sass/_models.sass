@@ -1,0 +1,430 @@
+@forward "colors"
+@use "colors"
+@forward "layout" 
+@use "layout" as style
+@use "sass:math"
+
+%active
+  background-color: colors.get('purple',50) !important
+  color: white
+
+.tooltip
+  @include style.box
+  position: fixed
+  top: 10em
+  text-align: left
+  z-index: 100
+  background-color: colors.get('white',97)
+  max-width: calc(min(600px, 100%) - 40px)
+  transition: opacity 800ms
+  &.hidden
+    // display: none
+    z-index: -1
+    opacity: 0  
+  &.visible
+    // display: inline-block
+    opacity: 1
+
+  .triangle
+    position: absolute
+    transform-origin: bottom center
+
+  .button_box
+    margin-top: 0.5em
+  .Filter
+    margin: 0
+    min-width: unset
+  .tooltip_clear
+    position: absolute
+    transform: translate(50%,-50%)
+    background-color: white
+    border-radius: 50%
+    border: 1px solid colors.get('pink',50)
+    padding: 2px
+    top: 0
+    right: 0
+    z-index: 50
+    cursor: pointer
+    transition: opacity 400ms, background-color 400ms
+    &:hover
+      background-color: colors.get('pink',10,true)
+  .date_link
+    @include style.pad(0,25)
+
+.List
+  @include style.max
+  ul
+    border-radius: 5px
+    border-width: 1px
+    border-style: solid
+    border-color: colors.get('purple',70)
+    margin: 0.5em
+    position: relative
+    list-style: none
+    li
+      transition: background-color 400ms, transform 400ms, opacity 400ms
+      border: 1px solid colors.get('purple',20)
+      border-width: 0 0 1px 0
+      padding: 0.1em 0.3em
+      &.active
+        @extend %active
+
+    &.transparent
+      border-color: transparent
+      li
+        border: 1px solid transparent
+        border-radius: 3px
+        &.active
+          border-color: colors.get('purple',50)
+
+.Table
+  table
+    max-width: 100%
+    text-align: left
+    background-color: white
+    font-weight: 400
+    tr
+      > *
+        padding: 0.25em 2em 0.25em 0.5em
+        border-bottom: 1px solid colors.get('purple',30)
+      &.head
+        background-color: colors.get('purple',90)
+        color: white
+      &.active
+        @extend %active
+
+  .List 
+    li
+      display: inline-block
+      padding: 0.1em 0.3em
+      margin: 0.1em 0.2em
+      background-color: colors.get('purple',5)
+      &:hover
+        background-color: colors.get('purple',10)
+
+  .table_wrapper
+    display: inline-block
+    border-radius: 5px
+    border-width: 2px
+    border-style: solid
+    border-color: colors.get('purple')
+    overflow: auto
+    box-sizing: border-box
+    background-color: colors.get('purple')
+    margin: 0.5em
+  .td_size_control
+    max-height: 4.5em
+    max-width: 400px
+    position: relative
+    overflow: hidden
+  .td_indicator
+    display: none
+    position: absolute
+    right: 0.25em
+    bottom: 0
+    font-size: 0.8em
+
+.List, .Table
+  .clickable, .selectable
+    cursor: pointer
+  .clickable:hover, .selectable:hover
+    background-color: colors.get('purple',5)
+
+.Toggle 
+  &.toggle_ele
+    cursor: pointer
+    @include style.pad(100)
+    .toggleText
+      transition: letter-spacing 400ms
+    .arrow
+      height: 1em
+      width: 1em
+      opacity: 0.3
+      cursor: pointer
+      transition: opacity 400ms, transform 400ms      
+    &.left
+      .arrow
+        transform: rotate(-90deg)
+      .toggleText
+        @include style.margin(0,0,0,25)
+    &.showing.left
+      .arrow
+        transform: rotate(0deg)
+    &.showing.below
+      .arrow
+        transform: rotate(-180deg)
+    // $colors: 'pink' 'yellow' 'purple' 'green'
+    // @each $color in $colors
+    //   &.filled.#{$color}
+    //     background-color: style.get($color,3)
+    //     border-radius: 0.5em
+    //   &.lined.#{$color}
+    //     border-top: 2px solid style.get($color,30)
+    //     border-radius: 0 0 0.5em 0.5em
+
+    &.disabled
+      cursor: not-allowed
+      opacity: 0.5
+    &:not(.disabled)
+      &:hover
+        .toggleText
+          letter-spacing: 0.02em
+        .arrow
+          @include style.opacityFlash()
+          // opacity: 1
+.target_ele.left:not(ul)
+  @include style.indent
+
+.toggle_msg
+  margin-bottom: 0.5em
+  width: max-content
+  display: block
+
+.Details
+  padding: 1em 0
+  box-sizing: border-box
+  position: relative
+  .KeyValueBox
+    @include style.pad(100,0)
+  .setting_name, .setting_value
+    display: inline-block
+    padding-right: 0.5rem
+    color: black
+  .setting_name
+    text-decoration: underline
+    text-decoration-color: rgb(0,0,0,0.5)
+
+.KeyValueBox 
+  .kv_header
+    @include style.margin(50,0)
+    &.toggleable 
+      cursor: pointer
+      transition: background-color 400ms, border-color 400ms
+    @each $color in ['pink' 'purple' 'yellow' 'green' 'gray']
+      &.#{$color}
+        border: 2px solid transparent
+        border-bottom-color: style.get($color,20)
+        &.hiding 
+          // background-color: style.get($color,40)
+          border-bottom-color: style.get($color,20)
+        &.toggleable:hover 
+          // background-color: style.get($color,30)
+          border-bottom-color: style.get($color,80)
+  .key
+    // font-weight: 700
+    display: inline-block
+    text-align: right
+    box-sizing: content-box
+    flex: 0 0 auto
+    align-self: flex-start
+    min-width: max-content
+    max-width: 50%
+    margin-left: 1em
+    transform: translateX(-1em)
+  .value
+    display: inline-block
+    text-align: left
+    box-sizing: content-box
+    flex: 0 0 auto
+    align-self: flex-start
+    max-width: 66%
+    padding-top: 0.3em
+  > .flexbox.column
+    box-sizing: content-box
+    > .flexbox
+      display: flex
+      width: calc(100% - 1em)
+      padding: 0 1em
+      margin: 0 0.5em
+      flex-wrap: nowrap
+      box-sizing: border-box
+
+.calendar 
+  max-width: 90%
+  width: 900px
+  margin: auto
+  *
+    transition: background-color 400ms
+  .fc-header-toolbar
+    position: sticky
+    top: 7em
+    z-index: 10
+    background-color: colors.get('white',97)
+  .fc-event:not(.fc-bg-event)
+    &:hover, &.hover
+      background-color: colors.get('pink')
+      z-index: 10 !important
+
+
+
+.Banner
+  @extend .box
+  z-index: 61
+  &.green
+    color: colors.get('green')
+  &.yellow
+    color: colors.get('yellow')
+  &.pink
+    color: colors.get('pink')
+  &.purple
+    color: colors.get('purple')
+
+
+.blur 
+  position: absolute
+  top:0
+  left:0
+  width: 100%
+  height: 100%
+  padding: 0 !important
+  margin: 0 !important
+  background-color: colors.get('white',50)
+  z-index: 10
+  .blur
+    background-color: colors.get('white',90)
+  .blur_clear
+    position: absolute
+    top: 0.2em
+    right: 0.2em
+    font-size: 1.4em
+    padding: 0.1em
+    color: rgb(220,220,220)
+    cursor: pointer
+    opacity: 0.3
+    transition: opacity 400ms
+    // z-index: 11
+    &:hover
+      opacity: 1
+  > *
+    max-width: calc(100% - 2rem)
+    max-height: calc(100% - 2rem)
+    position: absolute
+    display: block !important
+    top: 50%
+    left: 50%
+    transform: translate(-50%, -50%)
+    overflow-y: auto
+    overflow-x: hidden
+    // transition: width 400ms, height 400ms
+  > .checkmark
+    border-radius: 50%
+    padding: 2em 2em
+    box-shadow: 0 0 20px 10px colors.get('green',30) !important
+    background-color: colors.get('green',10,true)
+    border: 2px solid green !important
+  > .circle
+    padding: 0
+    margin: 0
+
+  &.blur_body
+    height: 100vh
+    background-color: colors.get('darkgray',93)
+    box-shadow: 0 0 20px 10px colors.get('darkgray') inset
+    z-index: 60
+    .blur 
+      z-index: 60
+    > *:not(.blur_msg), .blur > *:not(.blur_msg)
+      // border-radius: 5px
+      // border: 2px solid colors.get('darkgray',70)
+      border-color: colors.get('darkgray',30)
+      box-shadow: 0 0 20px 10px colors.get('gray')      
+  &.loading
+    background-color: colors.get('white',70)
+    > svg
+      border-color: transparent !important
+      box-shadow: unset !important
+.blurred
+  overflow-y: hidden
+.blur_msg
+  @include style.max(false)
+  @each $color in ['pink' 'purple' 'yellow' 'green']
+    &.#{$color}
+      @include style.box($color)
+      @include style.shadow($color,40,5)
+    
+
+
+
+.OptionBox
+  @include style.box
+  @include style.max(false)
+  padding: 0 !important
+  .body
+    padding: 1em 2em
+  .options
+    background-color: colors.get('gray',30)
+    border-top: 1px solid colors.get('gray',30)
+    padding: 0.5em
+
+.flexbox > .Filter
+  flex: 0 0 auto
+  margin: 5px
+
+.Filter
+  width: max-content
+  max-width: 100%
+  min-width: 20em
+  margin: auto
+  h3
+    // width: 100%
+  .answer 
+    max-width: 100%
+    min-width: unset
+    width: unset
+    .preLabel
+      padding: 0 0.25em
+
+
+#Notifications
+  .dropDown
+    padding: 0
+  .notification_options
+    @include style.box('purple')
+    margin-left: 1em
+    
+  > .indicator
+    bottom: 0.5em
+    right: 0.9em
+    z-index: 52
+    opacity: 0.7
+    &.active
+      display: flex
+    span
+      position: relative
+      left: 0.5px
+  li
+    .indicator
+      display: inline-block
+      position: absolute
+      width: 1em
+      height: 1em
+      left: 1em
+      top: 50%
+      transform: translateY(-50%)
+      box-shadow: 0 0 3px 3px colors.get('pink',30)
+    &.active
+      .indicator
+        box-shadow: 0 0 3px 3px colors.get('white',30)
+  .box
+    // @include style.box_squared
+    display: block
+    border-width: 1px 0 0 0
+    // &.pink
+    //   background-color: colors.get('pink',5)
+    //   // border-width: 1px 0 0 0
+    // &.yellow
+    //   background-color: colors.get('yellow',5)
+    //   // border-width: 1px 0 0 0
+
+
+.JankyStar
+  min-width: 10em
+  transition: transform 400ms
+  background-color: white
+  &:hover
+    background-color: colors.get('purple',5,true) !important
+  &.pending
+    background-color: colors.get('purple',10,true)
+    transform: scale(1.2)
+
+

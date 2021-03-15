@@ -1,0 +1,119 @@
+@use "colors"
+
+.loadTarget 
+  min-height: 30vh
+  position: relative
+
+.menuBar
+  height: 3em
+  background-color: colors.get('white',97)
+  z-index: 50
+
+  > div
+    display: inline-block
+  .divide
+    width: 1px
+    height: 2em
+    margin: 0 0.25em
+    background-color: rgb(0,0,0,0.2)
+    position: relative
+    top: 1.5em
+    transform: translateY(-50%)
+ 
+  .tab:not(.divide)
+    position: relative
+    cursor: pointer
+    padding: 0 0.3em
+    height: 3em
+    > .indicator
+      display: none
+    .title
+      display: inline-block
+      position: relative
+      padding: 0.4em 0.8em
+      border-radius: 4px
+      border: 2px solid transparent
+      top: 50%
+      transform: translateY(-50%)
+      transition: background-color 400ms, border-color 400ms, color 400ms, font-size 400ms
+      &.showingDD
+        background-color: colors.get('yellow',10)
+      &:hover
+        background-color: colors.get('yellow',10)
+      &.active
+        background-color: colors.get('yellow',20) !important
+        border-color: colors.get('yellow',30)
+        opacity:1 !important
+
+
+    .dropDown
+      display: none
+      list-style: none
+      position: absolute
+      left:50%
+      top:100%
+      transform: translateX(-50%) scaleX(0)
+      padding: 0 10px
+      text-align: center
+      white-space: nowrap
+      border-radius: 0 0 5px 5px
+      transition: transform 400ms
+      box-sizing: border-box
+      border: 4px solid colors.get('gray',80)
+      border-top-style: dotted
+      z-index: 50
+      background-color: colors.get('white',97)
+
+      &.active
+        transform: translateX(-50%) scaleX(1)
+      .tab 
+        height: unset
+        width: calc(100% + 28px)
+        margin-left: -14px
+        border-left: 4px solid transparent
+        border-right: 4px solid transparent
+        box-sizing: border-box
+        border-top-width: 0
+      .title
+        top: unset
+        transform: unset
+        padding: 4px 
+        margin-left: -6px
+        width: 100%
+        border-color: transparent
+
+      .dropDown
+        left: -4px
+        // top: calc(100% - 2.5em)
+        top: 0
+        border-top-color: colors.get('yellow',70)
+        border-right-color: colors.get('gray',80)
+        border-right-style: dotted
+        &.active 
+          transform: translateX(-100%) scaleX(1)
+
+      .divide
+        height: 1px
+        top:0
+        margin: 7px -14px
+  @each $num in [0, 1, 2, 3, 4, 5]
+    &.menu#{$num}
+      z-index: 50 - $num
+      padding: 0.15em 0
+      @if $num != 0
+        position: sticky
+        top: #{4 + 3 * ($num - 1.1)}em
+
+#NavBar
+  position: sticky
+  height: 4em
+  padding: 0 2em
+  top: 0  
+  background-color: colors.get('white',97)
+  z-index: 51
+
+#MobileMenu
+  display: none
+  &:hover
+    > .title 
+    background-color: colors.get('purple',10)
