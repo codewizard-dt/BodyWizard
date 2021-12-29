@@ -1,0 +1,17 @@
+@use "vars" as var
+@use "sass:map"
+
+@function maps($maps, $name)
+  $nomatch: null
+  @each $map in $maps
+    @if map.get($name)
+      @return map.get($name)
+  @return $nomatch
+
+@mixin width($name, $mod: false)
+  $width: maps((var.$widths,var.$widths_vw),$name)
+  @if $mod
+    #{$mod}-width: $width
+  @else 
+    width: $width
+

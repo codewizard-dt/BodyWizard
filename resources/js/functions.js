@@ -56,9 +56,11 @@ class Button {
   constructor(options) {
     let errors = [];
     try {
+      if (options.text === 'add new') log({ options });
       this.define_by(options);
       if (!this.ele) this.ele = $("<div/>", { text: this.text }).appendTo('body');
       this.ele.data('class_obj', this);
+      // this.action_data = this.ele.data('action_data') || {};
       if (!this.class_list) this.class_list = 'button';
       else if (!this.class_list.includes('button')) this.class_list += ' button';
       if (this.action) this.action = this.action.to_fx;
@@ -66,7 +68,7 @@ class Button {
       if (this.id) this.ele.attr('id', this.id);
       // if (options.css) this.ele.css(options.css);
       this.ele.addClass(this.class_list).data({ action: this.action, target: this.target, mode: this.mode });
-      this.ele.on('click', this.click.bind(this));
+      this.ele.on('click', this.action_data, this.click.bind(this));
       this.ele.data('generic_fx', true);
       if (this.tooltip) new ToolTip({ target: this.ele, ...this.tooltip });
       this.relocate();
@@ -83,6 +85,12 @@ class Button {
     else if (this.appendTo) this.ele.appendTo(this.appendTo);
   }
   text_update(string) { this.ele.text(string) }
+
+  get action_data() {
+    const data = {};
+    if (this.model) data.model = this.model;
+    return data;
+  }
 
   async click(ev) {
     if (this.ele.hasClass('cancel')) {

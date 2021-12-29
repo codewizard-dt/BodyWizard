@@ -2139,10 +2139,8 @@ class Answer {
   constructor(data, mode = 'display') {
     try {
       this.mode = mode;
-      // delete data.text;
       this.define_by(data);
       if (!this.options) this.options = {}.merge(data);
-
 
       this.name = this.name || this.options.name || '';
       this.setting_name = this.setting_name || this.name;
@@ -2180,7 +2178,7 @@ class Answer {
       }
 
       this.input.css(system.validation.json(data.input_css || this.options.input_css) || {});
-      // this.ele.css(system.validation.json(data.ele_css || this.options.ele_css) || {});
+
       if (this.options.autofill_settings) Models.SettingsManager.convert_obj_values_to_bool(this.options.autofill_settings);
       if (!this.settings.autocomplete) this.input.attr('autocomplete', 'off');
       if (this.options.eleClass) {
@@ -2205,6 +2203,7 @@ class Answer {
           else this.input.addClass(c);
         })
       }
+
       if (this.options.on_change_action && typeof this.options.on_change_action == 'string') this.options.on_change_action = this.options.on_change_action.to_fx;
       if (this.options.after_change_action && typeof this.options.after_change_action == 'string') {
         this.options.after_change_action = this.options.after_change_action.to_fx;
@@ -2213,9 +2212,9 @@ class Answer {
 
       if (data.proxy) {
         $(data.proxy).replaceWith(this.ele);
-        if (!this.ele.isInside('.item') && !this.ele.isInside('#AddItem') && !this.has_label && this.settings.placeholder_shift !== false && !this.options.ele_css) {
-          this.ele.css({ marginTop: '1.5em' });
-        }
+        // if (!this.ele.isInside('.item') && !this.ele.isInside('#AddItem') && !this.has_label && this.settings.placeholder_shift !== false && !this.options.ele_css) {
+        //   this.ele.css({ marginTop: '1.5em' });
+        // }
       }
 
       if (this.options.after_load_action) this.options.after_load_action.to_fx();
@@ -2455,8 +2454,9 @@ class Answer {
   }
   placeholder_shift() {
     if (this.ele.closest('#AddItem').exists() || this.ele.isInside('.item') || !this.options.placeholder || this.options.preLabel || this.settings.placeholder_shift === false) return;
-    let i = this;
+
     if (!this.placeholder_label) this.placeholder_label = $('<span/>', { text: this.options.placeholder }).css({ opacity: 0, position: 'absolute', left: '0.75em', top: '0.5em', color: 'var(--purple)', width: '100%', whiteSpace: 'nowrap', overflow: 'hidden' }).insertBefore(this.input);
+
     if (this.get() != null && !this.placeholder_visible) {
       this.placeholder_label.css({ zIndex: 2 }).animate({ opacity: 1, left: 0, top: '-1.5em' });
       this.placeholder_visible = true;
@@ -2500,13 +2500,13 @@ class Answer {
       message: this.autofill_list.ele,
       target: this.input,
       has_arrow: false,
-      // class_list: 'linked_popup'
+      class_list: 'p-small'
     });
     if (this.options.list_separator == 'line break') this.options.list_separator = '\n';
     let list = this.autofill_list, columns = this.options.linked_columns || [], data_list = await this.autofill_list_get(this.options.autofill_model, columns);
 
     data_list.forEach(option => {
-      list.add_item({ text: option.name, value: option.uid, entire_li_clickable: true, action: _ => { this.autofill_select_click() } });
+      list.add_item({ text: option.name, value: option.uid, entire_li_clickable: true, action: ev => { this.autofill_select_click(ev) } });
     })
     this.input.on('keyup', this.on_change.bind(this));
 
@@ -2522,7 +2522,8 @@ class Answer {
     })
   }
   autofill_select_click(ev) {
-    let target = $(ev.target).closest('li'), val = target.data('value');
+    log({ ev });
+    // let target = $(ev.target).closest('li'), val = target.data('value');
     this.autofill_text_update();
     this.on_change(ev);
   }
@@ -2580,11 +2581,8 @@ class Answer {
   disable(options) {
     this.is_disabled = true;
     if (this.disable_unique) this.disable_unique(options);
-    // let tooltip = options.tooltip || null;
-    // if (tooltip) new Features.ToolTip(tooltip.merge({target:this.input}));
-    // log({input:this.input})
   }
-  enable(options) { this.is_disabled = true; if (this.enable_unique) this.enable_unique(); }
+  enable(options) { this.is_disabled = false; if (this.enable_unique) this.enable_unique(); }
   create_password() {
     this.type = 'text';
     this.create_text();
@@ -2604,7 +2602,7 @@ class Answer {
     this.disable_unique = () => { this.input.attr('disabled', true) };
     this.enable_unique = () => { this.input.removeAttr('disabled') }
     this.placeholder_visible = false;
-    // if (this.options.name == 'username') system.validation.input.username(this.input);
+
     if (this.options.placeholder) this.input.on('keyup blur', this.placeholder_shift.bind(this));
     if (this.options.autofill_model) await this.autofill_popup_create();
   }

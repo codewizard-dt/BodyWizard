@@ -17,6 +17,8 @@ use App\Invoice;
 use App\ChartNote;
 use App\Form;
 use App\Appointment;
+use Illuminate\Support\Facades\View;
+
 use App\Events\BugReported;
 use App\Events\AppointmentSaved;
 use App\Notifications\NewRequiredForm;
@@ -25,21 +27,23 @@ use Illuminate\Support\Facades\Log;
 
 class AppServiceProvider extends ServiceProvider
 {
-  public function register()
-  {
-    include_once app_path("/php/functions.php");
-  }
+    public function register()
+    {
+        include_once app_path("/php/functions.php");
+    }
 
-  public function boot()
-  {
-    \Stripe\Stripe::setApiKey('sk_test_VO8cEI3MbKfcxeHOLlpjBOfa009mq5Zrze');
-    Appointment::observe(\App\Observers\AppointmentObserver::class);
-    User::observe(\App\Observers\UserObserver::class);
-    Patient::observe(\App\Observers\PatientObserver::class);
-    Practitioner::observe(\App\Observers\PractitionerObserver::class);
-    StaffMember::observe(\App\Observers\StaffMemberObserver::class);
-    ChartNote::observe(\App\Observers\ChartNoteObserver::class);
-    Invoice::observe(\App\Observers\InvoiceObserver::class);
-    Form::observe(\App\Observers\FormObserver::class);
-  }
+    public function boot()
+    {
+        \Stripe\Stripe::setApiKey('sk_test_VO8cEI3MbKfcxeHOLlpjBOfa009mq5Zrze');
+        Appointment::observe(\App\Observers\AppointmentObserver::class);
+        User::observe(\App\Observers\UserObserver::class);
+        Patient::observe(\App\Observers\PatientObserver::class);
+        Practitioner::observe(\App\Observers\PractitionerObserver::class);
+        StaffMember::observe(\App\Observers\StaffMemberObserver::class);
+        ChartNote::observe(\App\Observers\ChartNoteObserver::class);
+        Invoice::observe(\App\Observers\InvoiceObserver::class);
+        Form::observe(\App\Observers\FormObserver::class);
+
+        View::share('practice', Practice::first());
+    }
 }

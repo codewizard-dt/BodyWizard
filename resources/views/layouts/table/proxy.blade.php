@@ -24,3 +24,7 @@ try {
         @include('layouts.table.details', compact('class','uid'))
     @endif
 </div>
+
+@if ($index)
+    @include("models.create.template",compact('model'))
+@endif

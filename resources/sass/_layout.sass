@@ -1,5 +1,9 @@
 @forward "colors"
 @use "colors"
+@forward "mixins" as mix-*
+@use "mixins" as mix
+@forward "vars" as var-*
+@use "vars" as var
 @use "sass:math"
 @import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap')
 
@@ -352,12 +356,12 @@ a.button, div.button
     &.#{$name}
       height: $height
 
-$widths: ('mini':200px,'tiny':300px,'xsmall':400px,'small':600px, 'medium':800px, 'large':900px, 'xlarge': 1100px)
+// $widths: ('mini':200px,'tiny':300px,'xsmall':400px,'small':600px, 'medium':800px, 'large':900px, 'xlarge': 1100px, '95':95%, '100':100%)
 .w
   &-max
     width: max-content
     max-width: 100%
-  @each $name, $width in $widths
+  @each $name, $width in var.$widths
     &-#{$name}
       width: $width
     &-max
@@ -366,9 +370,9 @@ $widths: ('mini':200px,'tiny':300px,'xsmall':400px,'small':600px, 'medium':800px
     &-min
       &-#{$name}
         min-width: $width
-$widths: ('sixth':16vw,'fifth':20vw,'quarter':25vw,'third':33vw,'half':50vw,'two-thirds':66vw,'three-quarters':75vw)
+$widths_vw: ('sixth':16vw,'fifth':20vw,'quarter':25vw,'third':33vw,'half':50vw,'two-thirds':66vw,'three-quarters':75vw)
 .vw
-  @each $name, $width in $widths
+  @each $name, $width in var.$widths_vw
     &-#{$name}
       width: $width
     &-max
@@ -377,8 +381,6 @@ $widths: ('sixth':16vw,'fifth':20vw,'quarter':25vw,'third':33vw,'half':50vw,'two
     &-min
       &-#{$name}
         min-width: $width
-
-
 
 $heights: ('mini':100px, 'xsmall':200px, 'small':300px, 'medium':400px, 'large':600px, 'xlarge': 900px)
 .h

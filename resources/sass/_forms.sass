@@ -1,4 +1,3 @@
-// @forward "features"
 @use "models" as style
 
 .toggle
@@ -97,7 +96,8 @@
   border-style: solid
   border-radius: 5px
   border-color: style.get('gray',70)
-  margin: 5px 0.2em
+  // margin: 5px 0.2em
+
   &.max
     margin: 5px auto
   width: max-content
@@ -123,7 +123,6 @@
       border: 1px solid style.get('yellow',5)
       list-style: none
     li
-      // list-style: none
       display: inline-block
       background-color: white
       color: black
@@ -207,8 +206,6 @@
         border-radius: 50%
         background: style.get('yellow')
         cursor: pointer
-      
-
   &.address
     .search
       width: 30em
@@ -303,12 +300,8 @@
 
 // DISPLAY SETTINGS 
 .form
-  // &.width_form_auto
   &.width_form_full
     width: 100%
-  // &.width_item_full
-  //   .item
-  //     width: 100%
   &.width_item_half
     .item:not(.followup, .signature)
       width: calc(50% - 0.5rem)
@@ -320,7 +313,6 @@
       width: unset
       display: inline-flex
       flex: 1 0 0      
-  // &.height_item_auto
   &.height_item_stretch
     .item
       align-self: stretch
@@ -513,18 +505,15 @@ textarea
       border-color: transparent
   .answer
     max-width: 100%
-//
+
+
+
 // SPECIFIC FORMS AND ELEMENTS
-//
+
 
 .createModel
-  @include style.pad(100, 0)
   box-sizing: border-box
-  .toggle_ele
-    @include style.margin(200,auto,0)
-    @include style.pad(25, 100)
-  .module
-    @include style.margin(300,auto,100)
+  display: none
 
 #LoginForm
   .answer 

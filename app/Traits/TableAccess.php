@@ -237,10 +237,8 @@ trait TableAccess
         ];
         foreach ($table_buttons as &$button) {
             $button['class_list'] .= ' p-xsmall small';
+            $button['model'] = $model;
         }
-        // ['text' => 'add new', 'action' => 'Model.create', 'class_list' => 'pink'],
-        // ['text' => 'edit', 'action' => 'Model.edit', 'class_list' => 'pink70 disabled requires-selection'],
-        // ['text' => 'delete', 'action' => 'Model.delete', 'class_list' => 'pink70 disabled requires-selection'],
         return $table_buttons;
     }
 

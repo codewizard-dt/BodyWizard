@@ -800,15 +800,19 @@ class Model {
     try {
       let edit = false;
       if (options.instance) { edit = true; type = options.instance.type; }
+      if (options.data && options.data.model) type = options.data.model;
       let form = `#${type}`;
-      if ($(form).dne()) throw new Error(`form dne for type=${type}`);
+      if ($(form).dne()) {
+        log(arguments);
+        throw new Error(`form dne for type=${type}`);
+      }
 
       Forms.FormEle.model_edit(form, edit);
 
       let fill = options.fill || {};
       if (edit) fill.merge(options.instance.form_values);
       else Features.Toggle.get_all_within(form).forEach(t => t.reset_messages());
-      log({ options, form, fill });
+
       Forms.FormEle.simple_fill(form, fill);
       blurTop(form);
     } catch (error) {
@@ -945,9 +949,12 @@ class ModelList {
       return obj;
     }
     if (obj_waiting) obj_waiting.waiting_for_list = true;
+
+    model = model.toKeyString();
     let list_obj = ModelList.find(model);
     if (!list_obj) ModelList.add_to_pending(model);
     else return list_obj;
+
     if (obj_waiting && obj_waiting.ele) {
       obj_waiting.ele.initial_opacity = obj_waiting.ele.css('opacity');
       obj_waiting.ele.css({ opacity: 0.2 });
@@ -985,6 +992,10 @@ class ModelList {
     return ModelList.pending_array === undefined ? ModelList.pending_array = [] : ModelList.pending_array
   }
   static add_to_pending(model) {
+
+    if (model.includes('_')) {
+      throw new Error(`model must be title case`);
+    }
     ModelList.pending.smartPush(model);
     ModelList.retrieve_trigger();
   }

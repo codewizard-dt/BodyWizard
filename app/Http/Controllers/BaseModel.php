@@ -71,7 +71,7 @@ class BaseModel extends Controller
                 }
 
                 $list = $class::get_list(true);
-                // logger(compact('list'));
+
                 return [$model => [
                     'list' => $list,
                     'plural' => plural($model)],
