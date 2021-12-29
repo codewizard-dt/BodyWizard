@@ -13,12 +13,12 @@ class CreateAcuStylesTable extends Migration
      */
     public function up()
     {
-        Schema::connection('clinicwizard_base')->create('acu_styles', function (Blueprint $table) {
+        Schema::create('acu_styles', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('name');
             $table->string('description');
             $table->json('settings')->nullable()->default(null);
-            $table->timestamps();
+            $table->timestampsTz();
         });
     }
 

@@ -9,8 +9,8 @@
 @endpush
 
 @section('content')
-<div class='splash top' id='needle_tray_1'>
-    <h1 class='purple shaded10 paddedSmall'>User Settings</h1>
+<div class='splash' id='needle_tray_1'>
+    <h1 class='purple shaded10 p-y-50'>User Settings</h1>
 </div>
 @include('layouts.menus.portal-menu',[
 	'menuName'=>'settingsMenu',

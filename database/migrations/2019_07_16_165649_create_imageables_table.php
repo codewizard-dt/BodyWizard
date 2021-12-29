@@ -17,7 +17,7 @@ class CreateImageablesTable extends Migration
             $table->bigIncrements('id');
             $table->string('image_id');
             $table->morphs('imageable');
-            $table->timestamps();
+            $table->timestampsTz();
         });
     }
 

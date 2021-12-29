@@ -6,7 +6,7 @@ $value = isset($initial) && isset($initial[$name]) ? $initial[$name] : 'null';
 if (isset($initial) && isset($initial[$name])) {
 	$value = $initial[$name];
 	$options['initial'] = $value;
-}
+} elseif (isset($options['initial'])) $value = $options['initial'];
 try {
 	if (is_array($value)) throw new \Exception("value for '$name' is array -- string required");
 } catch (\Exception $e) {

@@ -20,7 +20,7 @@ class CreatePractitionersTable extends Migration
             // $table->json('schedule_exceptions')->nullable();
             $table->json('settings')->nullable();
             $table->softDeletes();
-            $table->timestamps();
+            $table->timestampsTz();
         });
     }
 

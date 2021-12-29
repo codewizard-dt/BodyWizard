@@ -19,34 +19,34 @@ class ScheduleController extends Controller
         $this->middleware('auth');
     }
 
-    public function scheduleFeed(){
-        return view('schedules.feeds');
+    public function scheduleFeed(Request $request){
+        return view('schedules.feeds', compact('request'));
     }
 
     //SCHEDULES
-        public function EditSchedule($model, $uid){
-            return view('portal.admin.schedule-edit',[
-                'model' => $model,
-                "uid" => $uid
-            ]);            
-        }
-        public function EditPracticeSchedule(){
-            return view('portal.admin.schedule-edit',[
-                'model' => 'Practice',
-                'uid' => Practice::getFromSession()->id
-            ]);
-        }
-        public function SavePracticeSchedule(Request $request){
-            $practice = \App\Practice::getFromSession();
-            $newSchedule = revertJsonBool($request->schedule);
-            $newBizHours = scheduleToFullCalBizHours($newSchedule);
-            if ($practice->schedule){
-                $practice->schedule['practice'] = $newSchedule;
-                $practice->schedule['business_hours'] = $newBizHours;
-            }else{
-                $practice->schedule = ['practice'=>$newSchedule,'business_hours'=>$newBizHours];
-            }
-            $practice->save();
-            return 'checkmark';
-        }
+        // public function EditSchedule($model, $uid){
+        //     return view('portal.admin.schedule-edit',[
+        //         'model' => $model,
+        //         "uid" => $uid
+        //     ]);            
+        // }
+        // public function EditPracticeSchedule(){
+        //     return view('portal.admin.schedule-edit',[
+        //         'model' => 'Practice',
+        //         'uid' => Practice::getFromSession()->id
+        //     ]);
+        // }
+        // public function SavePracticeSchedule(Request $request){
+        //     $practice = \App\Practice::getFromSession();
+        //     $newSchedule = revertJsonBool($request->schedule);
+        //     $newBizHours = scheduleToFullCalBizHours($newSchedule);
+        //     if ($practice->schedule){
+        //         $practice->schedule['practice'] = $newSchedule;
+        //         $practice->schedule['business_hours'] = $newBizHours;
+        //     }else{
+        //         $practice->schedule = ['practice'=>$newSchedule,'business_hours'=>$newBizHours];
+        //     }
+        //     $practice->save();
+        //     return 'checkmark';
+        // }
 }

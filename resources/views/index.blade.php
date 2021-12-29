@@ -1,78 +1,104 @@
 @extends("layouts.site")
 
 @push('metadata')
-<title>Body Wizard Integrative Medicine</title>
-<meta name='description' content="Bringing Scientific Rigor to the Practice of Chinese Medicine">
-<meta property='og:url' content="https://bodywizardmedicine.com">
-<meta property='og:title' content="Body Wizard Integrative Medicine">
-<meta property='og:description' content="Bringing Scientific Rigor to the Practice of Chinese Medicine">
+    <title>Body Wizard Integrative Medicine</title>
+    <meta name='description' content="Bringing Scientific Rigor to the Practice of Chinese Medicine">
+    <meta property='og:url' content="https://bodywizardmedicine.com">
+    <meta property='og:title' content="Body Wizard Integrative Medicine">
+    <meta property='og:description' content="Bringing Scientific Rigor to the Practice of Chinese Medicine">
 @endpush
 
 @section('content')
-        <div id='acu_chin_1' class='splash btnPopDown'>
-            <?php 
-            if (isset(getallheaders()["Referer"])){
-                $referer = getallheaders()["Referer"];
-                if (strpos($referer,"logout")>-1){
-                    echo "<div id ='LoggedOut' class='confirm'>Successfully Logged Out</div>";
-                }
-            }
-                
-            ?>
-            <div class="wrapper shaded30 paddedBig">
-                <div class='logo'></div>
-                <h1 class='nowrap'>Body Wizard Medicine</h1>
-                <h4 class='paddedSides caps letterStretch'>Chinese Medicine with a Foundation in Biochemistry</h4>
-            </div>
-            
-            <div class='button booknow small pink'>book an appointment</div>
+    <div id='acu_chin_1' class='splash'>
+        <div class="center shaded30 p-huge-y">
+            <div class='logo notext_color center_logo'></div>
+            <h1 class='purple'>Body Wizard Medicine</h1>
+            <h4 class='purple caps letterStretch'>Chinese Medicine with a Foundation in Biochemistry</h4>
         </div>
+        <div class='button booknow pink pop-up-half'>book an appointment</div>
+    </div>
 
-        <h1 class='purple central paddedBig letterStretch'>Effective as Magic Should Be</h1>
-        <div id='CondDesc'>
-            <div class='wrapper'>
-                <div class='icon stomach pink'></div>
-                <div class='divide hor yellowBg central small'></div>
-                <h3 class='paddedSmall'>Internal Medicine</h3>
-                <p class='central small'>Digestive Issues<br>Hormonal + Reproductive Issues<br>Fatigue + Insomnia</p>
+    <div id='Conditions' class="segment">
+        <h1 class='purple central p-y-150 letterStretch'>So Effective It Feels Like Magic</h1>
+        <div class='flexbox thirds top'>
+            <div class='center m-none-top m-small'>
+                <div class='icon internal pink'></div>
+                <div class='divider yellow'></div>
+                <h3 class='p-xsmall-y'>Internal Medicine</h3>
+                <div class='center list'>
+                    <div class="item">Digestive Issues</div>
+                    <div class="item">Hormonal + Reproductive Issues</div>
+                    <div class="item">Fatigue + Insomnia</div>
+                </div>
             </div>
-            <div class='wrapper'>
-                <div class='icon knee pink'></div>
-                <div class='divide hor yellowBg central small'></div>
-                <h3 class='paddedSmall'>Muscle, Joint + Nerve Pain</h3>
-                <p class='central small'>Back pain + Sciatica<br>Shoulder + Neck Pain<br>Headaches + Migraines</p>
+            <div class='center m-none-top m-small'>
+                <div class='icon joint pink'></div>
+                <div class='divider yellow '></div>
+                <h3 class='p-xsmall-y'>Aches + Pains</h3>
+                <div class='center list'>
+                    <div class="item">Back pain + Sciatica</div>
+                    <div class="item">Shoulder + Neck Pain</div>
+                    <div class="item">Headaches + Migraines</div>
+                </div>
             </div>
-            <div class='wrapper'>
-                <div class='icon brain pink'></div>
-                <div class='divide hor yellowBg central small'></div>
-                <h3 class='paddedSmall'>Psychosocial</h3>
-                <p class='central small'>Anxiety + Depression<br>Stress Related Disorders<br>Integrating Mind + Body</p>
+            <div class='center m-none-top m-small'>
+                <div class='icon psych pink'></div>
+                <div class='divider yellow '></div>
+                <h3 class='p-xsmall-y'>Psychosocial</h3>
+                <div class='center list'>
+                    <div class="item">Anxiety + Depression</div>
+                    <div class="item">Stress Related Disorders</div>
+                    <div class="item">Integrating Mind + Body</div>
+                </div>
             </div>
         </div>
-        <div id='ServiceDesc' class='split50'>
-            <div id='bp_1' class='splash'></div>
-            <div class='left paddedBig paddedSides'>
-                <h3 class='yellow'>Services Provided</h3>
-                <h4>Acupuncture</h4>
-                <p>Hair-thin needles used to stimulate the body, releasing anti-inflammatory and feel-good chemicals that cascade inward to the organs and the brain</p>
-                <h4>Botanical Medicine</h4>
-                <p>Botanical substances prescribed with scientific rigor and traditional wisdom, ensuring you get an effective, 100% personalized formula</p>
-                <h4>Fascial Release</h4>
-                <p>Fascial release techniques, such as cupping and scraping, release stored metabolic wastes and stimulate the healing process for soft tissues</p>
-                <h4>Guided Meditation</h4>
+    </div>
+
+    <div id='Services' class='flexbox top segment'>
+        <div id='bp_1' class='splash basis-40 grow-1'></div>
+        <div class='left list p-small basis-60 grow-1'>
+            <h3 class='yellow'>Services Provided</h3>
+            <div class="item">
+                <h4 class='purple'>Acupuncture</h4>
+                <p>Hair-thin needles used to stimulate the body, releasing anti-inflammatory and feel-good chemicals that
+                    cascade inward to the organs and the brain</p>
+            </div>
+            <div class="item">
+                <h4 class='purple'>Botanical Medicine</h4>
+                <p>Botanical substances prescribed with scientific rigor and traditional wisdom, ensuring you get an
+                    effective, 100% personalized formula</p>
+            </div>
+            <div class="item">
+                <h4 class='purple'>Fascial Release</h4>
+                <p>Fascial release techniques, such as cupping and scraping, release stored metabolic wastes and stimulate
+                    the healing process for soft tissues</p>
+            </div>
+            <div class="item">
+                <h4 class='purple'>Guided Meditation</h4>
                 <p>Methods to get you out of your head, connect with your body, and reawaken dormant aspects of yourself</p>
-                <a href='/treatments'><h4 class='pink'>READ MORE AND SEE RATES ></h4></a>
             </div>
+            <a href='/treatments' class="pink">
+                <h4>READ MORE AND SEE RATES ></h4>
+            </a>
         </div>
-        <div class='quoteBlock'>
-            <div class='bar purpleBg'></div>
-            <div id='crystals' class='splash'></div>
-            <div class='quote central btnPopDown'>
-                <div class='logo popUp'></div>
-                <div class='quoteText purple'>Within two sessions, my back pain was a thing of the past and I was back to full speed in the gym.</div>
-                <h4 class='yellow caps paddedSmall'>Nathan</h4>
-                <a href='/conditions'><div class='button small pink'>learn more</div></a>
-            </div>
-        </div>
-@endsection
+    </div>
 
+
+    <div class='segment indented centered w-max-large rounded-medium'>
+        <div class='band purple large'></div>
+        <div id='crystals' class='splash fit-content'>
+            <div class='center'>
+                <div class='logo notext_white pop-up-large m-small-bottom-neg'></div>
+                <div class='quote purple white-bg-light-o p-large text-double'>
+                    <div class="text">
+                        Within two sessions, my back pain was a thing of the past and I was back to full speed in the gym.
+                    </div>
+                    <div class='author yellow'>Nathan</div>
+                </div>
+                <a href='/conditions' class='button pink pop-up-half'>
+                    learn more
+                </a>
+            </div>
+        </div>
+    </div>
+@endsection

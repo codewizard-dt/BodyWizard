@@ -34,7 +34,7 @@ $categoryArr = $categories->map(function($category){
 		"id" => $category->id,
 		"name" => $category->name,
 		"description" => $category->description,
-		"display_order" => $category->display_order
+		"display_order" => $category->Display Order
 	];
 })->toArray();
 $categoryNames = $categories->map(function($category){

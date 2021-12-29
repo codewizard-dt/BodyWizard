@@ -32,7 +32,7 @@ class PagesController extends Controller
   public function logout(){
     session()->forget('usertype');
     Auth::logout();
-    return view('auth.loggedout');
+    return view('auth.login', ['logout' => true]);
   }
   public function headspace(){
     return view('headspace');

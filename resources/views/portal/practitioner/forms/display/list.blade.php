@@ -7,7 +7,7 @@ $uid = session('form_uid')!==null ? session('form_uid') : null;
 // dd(session('form_uid'));
 ?>
 
-<h2 class="paddedSmall">Available Forms</h2>
+<h2 class="p-y-50">Available Forms</h2>
 
 	<?php 
 	$destinations = array('forms-select');

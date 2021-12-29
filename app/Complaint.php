@@ -33,30 +33,12 @@ class Complaint extends Model
   }
   public function details() {
     $instance = [
-      'Category' => $this->category_name,
-      'Description' => $this->description,
-    ];
-    $buttons = [];
-    return compact('instance','buttons');
-  }
-
-  // static public function DefaultCollection() {
-  //   $complaints = Complaint::addSelect(['category_order' => ComplaintCategory::select('settings->display->order')->whereColumn('id','complaints.complaint_category_id')->limit(1)])
-  //     ->addSelect(['category_name' => ComplaintCategory::select('name')->whereColumn('id','complaints.complaint_category_id')->limit(1)])
-  //     ->orderBy('category_order')->orderBy('category_name')->orderBy('settings->display->order')->orderBy('name');
-  //   return $complaints;
-  // }
-
-  public function table_nav_options(){
-    return [];
-  }
-  public function modelDetails(){
-    return [
       'Complaint' => $this->name,
       'Category' => $this->category->name,
       'Description' => $this->description,
       'Applicable ICD Codes' => $this->icd_code_names,
     ];
+    return $instance;
   }
 
   public function getIcdCodeNamesAttribute () {

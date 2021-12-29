@@ -6,15 +6,16 @@
 @use 'nav';
 @use 'layout';
 @use 'images';
-// @use 'features';
 @use 'models';
 @use 'forms';
+// @use 'style' as base;
 
 //@import 'clear';
-@import 'jquery.datepick';
-@import 'jquery.timepicker';
-@import 'ui.datepick';
-@import '@whoicd/icd11ect/style';
+@use 'datepick';
+@use 'timepicker';
+// @use 'datepick_ui';
+@use '@whoicd/icd11ect/style';
+@use 'responsive';
 // @import 'style';
 // @import 'forms';
 

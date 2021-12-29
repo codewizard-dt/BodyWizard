@@ -2006,7 +2006,7 @@ input#PatientName {
     color: var(--purple);
     border-color: var(--purple50);
 }
-.insert_item_options {
+.insert_options {
     transition: border-color 500ms color 500ms;
 }
 .insertProxy{

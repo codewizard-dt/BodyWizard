@@ -13,7 +13,7 @@ class CreateAcuPointsTable extends Migration
      */
     public function up()
     {
-        Schema::connection('clinicwizard_base')->create('acu_points', function (Blueprint $table) {
+        Schema::create('acu_points', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('name_pinyin')->nullable()->default(null);
             $table->string('name_english')->nullable()->default(null);
@@ -21,8 +21,8 @@ class CreateAcuPointsTable extends Migration
             $table->string('channel');
             $table->string('actions');
             $table->string('indications');
-            $table->json('settings')->nullable()->default(null);            
-            $table->timestamps();
+            $table->json('settings')->nullable()->default(null);
+            $table->timestampsTz();
         });
     }
 

@@ -3,7 +3,7 @@ use App\Form;
 $forms = Form::where('hidden','0')->with('services')->orderBy('display_order')->get();
 ?>
 <h1 class="purple">Form Display Settings</h1>
-<div class="displayOrder paddedSmall">
+<div class="displayOrder p-y-50">
 	<div class='paddedSides'>
 		<h2>Display Order</h2>
 		<div>These settings determine display order throughout the portal and website.</div>

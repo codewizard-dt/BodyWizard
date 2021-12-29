@@ -19,8 +19,8 @@ class CreateComplaintsTable extends Migration
             $table->unsignedInteger('complaint_category_id');
             $table->string('description');
             $table->json('settings')->nullable();
-            $table->unique(['complaint_category_id','name']);
-            $table->timestamps();
+            $table->unique(['complaint_category_id', 'name']);
+            $table->timestampsTz();
         });
     }
 

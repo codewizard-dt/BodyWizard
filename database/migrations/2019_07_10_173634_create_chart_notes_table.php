@@ -23,7 +23,7 @@ class CreateChartNotesTable extends Migration
             $table->json('notes')->nullable();
             $table->json('signature')->nullable();
             $table->datetime('signed_at')->nullable();
-            $table->timestamps();
+            $table->timestampsTz();
             $table->softDeletes();
         });
     }

@@ -2,7 +2,7 @@
 <?php 
 $listOptions = [
     'json' => Auth::user()->notifications()->select('id','type','data','created_at','read_at')->get()->toArray(),
-    'header' => 'Notifications',
+    'header' => 'Messages',
     'header_html_tag' => 'h2',
     'header_class' => 'purple',
     'css' => ['padding'=>'1em 0'],
@@ -13,12 +13,9 @@ $listOptions = [
 ];
 session( [ 'notification_ids' => collect($listOptions['json'])->map(function($n){return $n['id'];})->toArray() ] );
 ?>
-<div id="Notifications" class='tab' data-afterdropdown='Notification.check_height' data-afterdropdownhide='Notification.check_height'>
-    <div class="title" data-image="/images/icons/mail_icon_yellow.png">
-        Notifications
-    </div>
-    <div class="underline" style="width: 0%;"></div>
-    <div class="dropDown">
+<div id="Notifications" class='tab' data-on_dropdown_toggle='Notification.check_height'>
+    <img class="title" src="/images/icons/mail_icon_yellow.png">
+    <div class="dropdown">
         <div class="List" data-initialized='true' data-options='{{ json_encode($listOptions) }}'></div>
         <div class="options">
             <div class='box pink squared'>

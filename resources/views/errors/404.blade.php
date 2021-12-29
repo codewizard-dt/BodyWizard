@@ -1,7 +1,7 @@
 @extends('layouts.site')
 
 @section('content')
-        <div id='crystalbuddha' class='splash top' style='padding-top:5em'>
+        <div id='crystalbuddha' class='splash' style='padding-top:5em'>
             <div class='textBox central btnPopDown'>
                 <div class='logo popUp'></div>
                 <h1>This page doesn't exist</h1>

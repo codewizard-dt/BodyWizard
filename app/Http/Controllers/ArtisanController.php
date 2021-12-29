@@ -41,6 +41,6 @@ class ArtisanController extends Controller
     		$message = 'command not recognized';
     	}
         session()->forget('uidList');
-    	return $message.' <div class="button pink" data-action="request.refresh_page">go back</div>';
+    	return $message.' <div class="button pink" data-action="Menu.refresh_page">go back</div>';
     }
 }

@@ -18,7 +18,7 @@ class CreateComplaintablesTable extends Migration
             $table->unsignedInteger('complaint_id');
             $table->unsignedInteger('complaintable_id');
             $table->string('complaintable_type');
-            $table->timestamps();
+            $table->timestampsTz();
         });
     }
 

@@ -36,11 +36,11 @@
 	<div class="message">
 		<h2 class='purple'>Line Items</h2>
 		<div>
-			<h3 class="purple paddedSmall topOnly">Currently Loaded</h3>
+			<h3 class="purple p-y-50 topOnly">Currently Loaded</h3>
 			<div id="LoadedForms"></div>
 		</div>
 		<div>
-			<h3 class="purple paddedSmall topOnly">Click-To-Load</h3>
+			<h3 class="purple p-y-50 topOnly">Click-To-Load</h3>
 			<div id="AvailableLineItems" class='flexbox styled'>
 			</div>
 		</div>		

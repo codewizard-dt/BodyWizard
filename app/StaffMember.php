@@ -47,8 +47,7 @@ class StaffMember extends Model
       // 'Category' => $this->category_name,
       // 'Description' => $this->description,
     ];
-    $buttons = [];
-    return compact('instance','buttons');
+    return $instance;
   }
 
 

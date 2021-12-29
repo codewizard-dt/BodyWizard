@@ -21,7 +21,7 @@ class RefreshUserTables extends Command
      *
      * @var string
      */
-    protected $signature = 'refresh:users {practiceId} {--factory}';
+    protected $signature = 'refresh:users {--factory}';
 
     /**
      * The console command description.
@@ -47,11 +47,11 @@ class RefreshUserTables extends Command
      */
     public function handle()
     {
-        $practiceId = $this->argument('practiceId');
+        // $practiceId = $this->argument('practiceId');
         $populate = $this->option('factory');
 
-        $practice = Practice::find($practiceId);
-        $practice->reconnectDB();
+        // $practice = Practice::find($practiceId);
+        // $practice->reconnectDB();
         RefreshTables::truncateUserTables();
         $this->info("User tables cleared");
         RefreshTables::createDefaultUser();

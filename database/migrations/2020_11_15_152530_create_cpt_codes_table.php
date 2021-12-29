@@ -15,7 +15,10 @@ class CreateCptCodesTable extends Migration
     {
         Schema::create('cpt_codes', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->timestamps();
+            $table->string('code')->unique();
+            $table->string('title');
+            $table->string('text');
+            $table->timestampsTz();
         });
     }
 

@@ -10,10 +10,10 @@
 
 @section('content')
         <div class='splash btnPopDown top' id='head_1'>
-            <h1 class='purple paddedXSmall shaded30'>Treatments Offered</h1>
+            <h1 class='purple p-y-25 shaded30'>Treatments Offered</h1>
             <div class='button small booknow pink'>book an appointment</div>
         </div>
-        <h2 class='yellow paddedSmall'>The Four Pillars of Treatment</h2>
+        <h2 class='yellow p-y-50'>The Four Pillars of Treatment</h2>
         <div class='menuBar website' id='TreatmentMenu' data-populated='no' data-target='window' data-mode='scroll'>
             <div class='tab' id='acu'><div class='title'>Acupuncture</div></div>
             <div class='tab' id='botanical'><div class='title'>Botanical Medicine</div></div>
@@ -80,19 +80,19 @@
         </div>
         <div id='CondDesc' class='small paddedXBig yellowBg10'>
             <div class='wrapper'>
-                <div class='icon stomach pink'></div>
-                <div class='divide hor yellowBg central xs'></div>
-                <h4 class='paddedSmall'>Internal Medicine</h4>
+                <div class='icon internal pink'></div>
+                <div class='divider yellow central xs'></div>
+                <h4 class='p-y-50'>Internal Medicine</h4>
             </div>
             <div class='wrapper'>
-                <div class='icon knee pink'></div>
-                <div class='divide hor yellowBg central xs'></div>
-                <h4 class='paddedSmall'>Muscle + Joint Pain</h4>
+                <div class='icon joint pink'></div>
+                <div class='divider yellow central xs'></div>
+                <h4 class='p-y-50'>Muscle + Joint Pain</h4>
             </div>
             <div class='wrapper'>
-                <div class='icon brain pink'></div>
-                <div class='divide hor yellowBg central xs'></div>
-                <h4 class='paddedSmall'>Psychosocial Conditions</h4>
+                <div class='icon psych pink'></div>
+                <div class='divider yellow central xs'></div>
+                <h4 class='p-y-50'>Psychosocial Conditions</h4>
             </div>
             <br>
             <div class='button fullWidth small pink marginBig bottomOnly link' data-target='/conditions'>more about what we treat</div>

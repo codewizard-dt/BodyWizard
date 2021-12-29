@@ -70,7 +70,7 @@ $initial = collect($attrs)->mapWithKeys(function($attr) use ($instance){
 	<h2>Optional Username</h2>
 	<div>If username is blank, email will be used. </div>
 	@include('layouts.forms.display.answer',[
-		'type' => 'text',
+		'type' => 'username',
 		'name' => 'username',
 		'options' => ['placeholder' => 'Username'],
 		'settings' => ['required' => false]

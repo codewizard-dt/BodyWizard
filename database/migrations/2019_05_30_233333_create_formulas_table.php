@@ -16,7 +16,7 @@ class CreateFormulasTable extends Migration
         Schema::create('formulas', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->json('full_json');
-            $table->timestamps();
+            $table->timestampsTz();
         });
     }
 

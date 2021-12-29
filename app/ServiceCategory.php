@@ -38,9 +38,6 @@ class ServiceCategory extends Model
       ],
     ];
   }
-  static public function DefaultCollection() {
-    return ServiceCategory::orderBy('settings->display->order')->orderBy('name');
-  }
 
   public function services(){
     return $this->hasMany('App\Service');

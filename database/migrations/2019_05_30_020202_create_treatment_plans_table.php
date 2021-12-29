@@ -16,7 +16,7 @@ class CreateTreatmentPlansTable extends Migration
         Schema::create('treatment_plans', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->json('full_json');
-            $table->timestamps();
+            $table->timestampsTz();
         });
     }
 

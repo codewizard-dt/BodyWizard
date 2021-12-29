@@ -14,7 +14,7 @@ $inputs = [];
   //   ['placeholder'], 
   //   ['Short Description (used for billing + invoicing)']));
   // set($inputs, 'service_category_id', new_input('text',
-  //   ['placeholder','linked_to'], 
+  //   ['placeholder','autofill_model'], 
   //   ['Service Category','service_category']));
   // set($inputs, 'duration', new_input('number',
   //   ['min', 'max', 'initial', 'step', 'units', 'preLabel','labelHtmlTag','labelClass'], 
@@ -26,7 +26,7 @@ $initial = collect($inputs)->mapWithKeys(function($input,$attr) use ($instance){
 	return [$attr => isset($instance) && $instance != null ? $instance->$attr : null];
 })->toArray();
 ?>
-<div class='paddedBig'>
+<div class='p-y-150'>
 	<h1>Create Service Category</h1>
 	<div id="CreateServiceCategory" class='central large left'>
 		<div class="section">

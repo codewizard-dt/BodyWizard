@@ -6,12 +6,15 @@
 @if ($name == 'notifications')
 	@include ('layouts.notifications')
 @else
-	<div id="{{ $name }}" class="tab{{$divide}}" data-uri="{{$uri}}" data-modal="{{$modal}}">
-		<div class="title" @if(isset($image_url))data-image='{{$image_url}}' @endif data-uri="{{ $uri }}">{{ $text }}</div>
-		<div class="underline"></div>
+	<div id="{{$name}}" class="tab{{$divide}}" data-uri="{{$uri}}" data-modal="{{$modal}}">
+		@if (isset($image_url))
+			<img class="title" src="{{$image_url}}">
+		@else
+			<div class="title" data-uri="{{$uri}}">{{$text}}</div>
+		@endif
 		@if ($dropdown)
 		<?php unset($image_url); ?>		
-		<div class="dropDown">
+		<div class="dropdown">
 			@foreach ($dropdown as $name => $info)
 				@include('layouts.menus.menu-item',$info)
 			@endforeach		

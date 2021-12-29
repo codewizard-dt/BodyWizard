@@ -5,8 +5,8 @@ $header = isset($header) ? $header : 'Additional Notes';
 ?>
 <div id="Notes">
 	<h3 class="invoiceHeader marginXBig topOnly purple">{{$header}}</h3>
-	@if ($context)<div class="pink left paddedSides small paddedXSmall topOnly">{{$context}}</div>@endif
-	<div id="NoteList" class="left paddedSides small paddedSmall">
+	@if ($context)<div class="pink left paddedSides small p-y-25 topOnly">{{$context}}</div>@endif
+	<div id="NoteList" class="left paddedSides small p-y-50">
 		<h4 id="NoNotes">none</h4>	
 	</div>
 	{{$addNoteForm->formDisplay(false,false)}}

@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use App\RefreshTables;
 
 class CreateUsersTable extends Migration
 {
@@ -24,23 +25,16 @@ class CreateUsersTable extends Migration
             $table->date('date_of_birth');
             $table->string('email');
             $table->string('phone');
-            $table->json('address_mailing')->nullable()->default(null);            
-            $table->json('address_billing')->nullable()->default(null);            
+            $table->json('address_mailing')->nullable()->default(null);
+            $table->json('address_billing')->nullable()->default(null);
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->json('security')->nullable();
             $table->json('settings')->nullable()->default(null);
 
-            // $table->boolean('require_new_pw')->default(true);
-            // $table->json('security_questions')->nullable()->default(null);
-            // $table->string('stripe_id')->nullable()->collation('utf8mb4_bin');
-            // $table->string('card_brand')->nullable();
-            // $table->string('card_last_four', 4)->nullable();
-            // $table->timestamp('trial_ends_at')->nullable();
-            // $table->json('full_json')->nullable();
             $table->softDeletes();
             $table->rememberToken();
-            $table->timestamps();
+            $table->timestampsTz();
         });
 
     }

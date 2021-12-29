@@ -10,7 +10,7 @@
 
 @section('content')
     <div id='acu_chin_1' class='splash'>
-    	<div class="wrapper paddedBig topOnly shaded30">
+    	<div class="wrapper p-y-150 topOnly shaded30">
 	        <div class='logo'></div>
 	        <h1 class='purple'>Online Booking</h1>    		
     	</div>

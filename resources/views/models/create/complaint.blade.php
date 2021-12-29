@@ -7,10 +7,10 @@ $inputs = [];
     ['placeholder'], 
     ['Description (used for forms + charting)']));
   set($inputs, 'complaint_category_id', new_input('text',
-    ['placeholder','linked_to'], 
+    ['placeholder','autofill_model'], 
     ['Complaint Category','ComplaintCategory']));
   set($inputs, 'icd_codes', new_input('textbox',
-    ['placeholder','linked_to','list_separator','listLimit','input_css'], 
+    ['placeholder','autofill_model','list_separator','listLimit','input_css'], 
     ['Applicable ICD Codes (used as suggestions when charting)','IcdCode','line break','none',['height'=>'10em']]));
 $initial = collect($inputs)->mapWithKeys(function($input,$attr) use ($instance){
   return [$attr => getInitial($instance, $attr)];

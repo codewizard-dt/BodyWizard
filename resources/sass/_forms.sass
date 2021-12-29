@@ -14,40 +14,60 @@
 .editable
   .toggle
     vertical-align: top
-    transform: translateY(-0.3em)
+    // transform: translateY(-0.3em)
+
+.settings_label
+  @include style.max(false)
+  display: block
+  margin-right: auto
+  .Icon
+    margin-left: 0.2rem
 
 .form
-
+  .form_settings_label
+    @include style.max
   .section
-    text-align: left
-    border-radius: 5px
-    @include style.pad(0,0,0,50)
+    @include style.box('gray',5px,true,5)
+    @include style.pad(50,50,0,50)
     @include style.margin(100,0)
     border-left: 1px solid style.get('darkgray',70)
-    h2
-      padding: 0 0.25em
+    width: 100%
+    .section_header
+      padding: 0.25em 0.25em 0 0.25em
+      text-align: left
     .Items
-      // @include style.box_clear
-      // @include style.flexbox_left
+      align-items: stretch
       width: 100%
+      > .button_box
+        display: block
+        text-align: left
+        width: 100%
       .Items
         background-color: transparent
         border-color: transparent
-
     .item
       @include style.box('gray', 5px, false, 5)
       display: flex
       text-align: left
       width: 100%
-      margin: 0.25em
+      margin: 0.25rem
       max-width: calc(100% - 0.5em)
       border-left-color: style.get('darkgray',50)
-      &.condensed
-        width: unset
-        display: inline-flex
-        flex: 1 0 0
-        .question_wrap
-          // width: unset
+      // &.condensed
+      //   width: unset
+      //   display: inline-flex
+      //   flex: 1 0 0
+      // &.minify
+      //   .question_wrap
+      //     width: unset
+      // &.full
+      //   width: 100%
+      // &.half
+      //   width: 50%
+      // &.third
+      //   width: 33%
+    > .Items > .item
+      @include style.margin(100, 25, 25, 25)
     .question
       display: inline-block
       border-style: solid
@@ -58,34 +78,52 @@
     .question_wrap
       width: 100%
       margin-right: 1.5em
-    .answer
-
+    &.minify
+      .item
+        .question_wrap
+          width: unset    
+        &.minify
+          .question_wrap
+            width: unset
+  &.section_titles_hidden
+    .section_header:not(.show_header)
+      display: none
+  &.minify
+    .item
+      .question_wrap
+        width: unset
 .answer
   position: relative
-  // display: inline-block
   border-style: solid
   border-radius: 5px
   border-color: style.get('gray',70)
   margin: 5px 0.2em
+  &.max
+    margin: 5px auto
   width: max-content
   max-width: calc(100% - 0.4em)
+  &:not(.imageclick) > img
+    margin-left: 0.5em
   h2
     width: 100%
-  .preLabel, .postLabel
+  .preLabel:not(input), .postLabel:not(input)
     @include style.pad(0,50,0,0)
-  &.text input, &.textbox textarea
+  // &.text input, &.textbox textarea
+  //   width: 100%
+  &.text, &.textbox
     width: 100%
-  &.text
-    input
-      max-width: 20em
-  &.textbox
-    width: 100%
+    input, textarea
+      width: 100%
+  // &.textbox
+  //   width: 100%
   &.list
     ul
       @include style.flexbox_left
+      border-radius: 3px
       border: 1px solid style.get('yellow',5)
-    li
       list-style: none
+    li
+      // list-style: none
       display: inline-block
       background-color: white
       color: black
@@ -106,10 +144,11 @@
     label 
       width: max-content
       max-width: 100%
-      padding: 0 3px
-      margin: 1px 2px
+      margin: 5px
+      padding: 0.2em 0.5em
       transition: background-color 800ms
       border-radius: 5px
+      color: black
       border: 1px solid transparent
       &:hover 
         background-color: style.get('yellow',10)
@@ -132,24 +171,233 @@
     input
       width: 5em
       text-align: right
+  &.scale
+    width: 100vh
+    > .flexbox > :not(input)
+      @include style.pad(0, 50)
+    input
+      -webkit-appearance: none
+      // width: 90vh
+      height: 0.6em
+      // z-index: 1
+      // position: relative
+      background: style.get('yellow',10)
+      outline: none
+      /*margin-top:5px*/
+      border-radius: 1.5em   
+      border: 1px solid style.get('yellow',50)
+      // border-style: solid
+      // border-color: var(--yellow50)
+      // border-width: 1px
+      box-sizing: border-box
+      flex-grow: 1
+      @include style.pad(0)
+      @include style.margin(0, 50)
+      &::-webkit-slider-thumb 
+        -webkit-appearance: none
+        appearance: none
+        width: 1.2em
+        height: 1.2em
+        border-radius: 50%
+        background: style.get('yellow')
+        cursor: pointer
+      &::-moz-range-thumb 
+        width: 1.2em
+        height: 1.2em
+        border-radius: 50%
+        background: style.get('yellow')
+        cursor: pointer
+      
+
   &.address
     .search
-      min-width: 30em
+      width: 30em
       max-width: calc(90% - 5em)
     .unit
       width: 5em
-    .address_display
+    .address_display.active
       padding: 0.5em
   &.email
-    input
-      min-width: 20em
+    // input
+    //   width: 20em
   &.phone
     input
       width: 10em
   &.time
     input
       width: 5.5em
-  &.date
+  // &.date
+  &.imageclick
+    position: relative
+    display: block
+    margin: auto
+    background-position: center
+    background-size: contain
+    background-repeat: no-repeat
+    border: 1px solid transparent
+    max-width: 100%
+    max-height: 90vh
+    transition: height 500ms, width 500ms
+    text-align: center
+    overflow: visible
+    .dot
+      position: absolute
+      width: 1em
+      height: 1em
+      transform: translate(-50%, -50%)
+      border-radius: 50%
+      border: 1px solid style.get('pink')
+      background-color: style.get('pink',50)
+      @include style.shadow('pink',50,2)
+      cursor: crosshair
+    // .dot_wrap
+    //   position: absolute
+    //   // display: flex
+    //   transform: translate(-50%, -50%)
+    //   background-color: 
+    //   // width: 0
+    //   // height: 0
+    //   overflow: visible
+    // .dot
+    //   // position: absolute
+    //   display: block
+    //   // transform: translate(-50%, -50%)
+    //   // width: 1em
+    //   // height: 1em
+    //   cursor: crosshair
+    //   // stroke-width: 0
+    //   g
+    //     // transform: translate(-50%, -50%)        
+    //     cx: 0
+    //     cy: 0
+    //   circle
+    //     fill: style.get('pink',70)
+    //     stroke: style.get('pink',20)
+    //     // cx: 0
+    //     // cy: 0
+    .undo
+      position: absolute
+      right: 0
+      top: 0
+    img
+      max-width: 100%
+      height: auto
+      max-height: inherit
+      cursor: crosshair
+    &.small
+      max-height: max(70vh, 20em)
+    &.medium
+      max-height: max(80vh, 30em)
+    &.large
+      max-height: max(90vh, 40em)
+  &.signature
+    width: 100vw
+    .j_sig
+      @include style.box
+      border-width: 2px
+      width: 100%
+      .clear
+        position: absolute
+        top: 0
+        right: 0
+
+// DISPLAY SETTINGS 
+.form
+  // &.width_form_auto
+  &.width_form_full
+    width: 100%
+  // &.width_item_full
+  //   .item
+  //     width: 100%
+  &.width_item_half
+    .item:not(.followup, .signature)
+      width: calc(50% - 0.5rem)
+  &.width_item_third
+    .item:not(.followup, .signature)
+      width: calc(33% - 0.5rem)
+  &.width_item_auto
+    .item:not(.followup, .signature)
+      width: unset
+      display: inline-flex
+      flex: 1 0 0      
+  // &.height_item_auto
+  &.height_item_stretch
+    .item
+      align-self: stretch
+  &.justification_left
+    .Items
+      justify-content: flex-start
+  &.justification_center
+    .Items
+      justify-content: center
+  &.justification_right
+    .Items
+      justify-content: flex-end
+  .section
+    &.width_item_full
+      .item
+        width: 100%
+    &.width_item_half
+      .item:not(.followup, .signature)
+        width: calc(50% - 0.5rem)
+    &.width_item_third
+      .item:not(.followup, .signature)
+        width: calc(33% - 0.5rem)
+    &.width_item_auto
+      .item:not(.followup, .signature)
+        width: unset
+        display: inline-flex
+        flex: 1 0 0      
+    &.height_item_auto
+      .item
+        align-self: flex-start
+    &.height_item_stretch
+      .item
+        align-self: stretch
+    &.justification_left
+      .Items
+        justify-content: flex-start
+    &.justification_center
+      .Items
+        justify-content: center
+    &.justification_right
+      .Items
+        justify-content: flex-end
+    .item
+      &.width_full
+        // .item
+        width: 100% !important
+        flex: unset !important
+      &.width_half
+        // .item:not(.followup, .signature)
+        width: calc(50% - 0.5rem) !important
+        flex: unset !important
+      &.width_third
+        // .item:not(.followup, .signature)
+        width: calc(33% - 0.5rem) !important
+        flex: unset !important
+      &.width_auto
+        // .item:not(.followup, .signature)
+        width: unset !important
+        display: inline-flex !important
+        flex: 1 0 0      
+      &.height_auto
+        // .item
+        align-self: unset !important
+      &.height_stretch
+        // .item
+        align-self: stretch
+      &.justification_left
+        .Items
+          justify-content: flex-start
+      &.justification_center
+        .Items
+          justify-content: center
+      &.justification_right
+        .Items
+          justify-content: flex-end
+
+
 input, textarea, select
   position: relative
   border-width: 2px
@@ -171,20 +419,17 @@ textarea
   position: absolute
   display: none
   background-color: style.get('white')
-  // border-color: style.
   border-radius: 5px
   border: 2px solid style.get('darkgray', 70)
   box-sizing: border-box
-  @include style.pad(100)
-
-.minify
-  .question_wrap
-    width: unset !important
+  // width: max-content
+  @include style.pad(200, 100)
+  .top_0
+    top: -0.75rem
 
 .filter_box 
   max-width: calc(100% + 1em)
   min-width: 60vh
-
 
 #FormBuilder
   .sections
@@ -195,11 +440,27 @@ textarea
     margin: 0.5em 0
     &.active
       border-color: style.get('pink')
-    .toggleWrap
+    .toggleWrap 
       width: 100%
-      padding: 0.25em
-      // padding: 0.25em 0.25em 2em 0.25em
-  .insert_item_options
+    .toggle_ele
+      width: 100%
+      @include style.pad(25)
+      // .toggle_ele
+        // @include style
+        // padding: 0.25em 0.25em 2em 0.25em
+    &.no_items
+      @include style.pad(50, 100)
+  .insert_options
+    background-color: style.get('pink')
+    position: absolute
+    left: -1px
+    top: 0
+    transform: translateY(-50%)
+    padding-left: -0.05em
+    opacity: 0.7
+    border-radius: 0 1em 1em 0
+    border: 1px solid style.get('pink')
+    z-index: 1  
     .button
       color: style.get('pink')
 
@@ -210,6 +471,9 @@ textarea
 
 #AddItemText, #AddItemType, #AddItemRequired
   box-sizing: border-box
+  max-width: 100%
+  width: max-content
+  @include style.margin(25, 0)
   span
     width: 9em
     text-align: right
@@ -234,6 +498,8 @@ textarea
       border-bottom-color: style.get('pink')
   .settingsInfo
     color: style.get('purple')
+    &.parentInfo
+      font-weight: bold
   .optionsList
     @include style.flexbox
     // width: max-content
@@ -245,25 +511,31 @@ textarea
       flex-basis: 100%
       background-color: transparent
       border-color: transparent
-
-.createModel
-  @include style.pad(100, 0)
-  .toggle_ele
-    // @include style.pad(25)
-    @include style.margin(200,auto,0)
-  // .target_ele:not(ul)
-  //   @include style.pad(0,0,0,100)
-
+  .answer
+    max-width: 100%
 //
 // SPECIFIC FORMS AND ELEMENTS
 //
+
+.createModel
+  @include style.pad(100, 0)
+  box-sizing: border-box
+  .toggle_ele
+    @include style.margin(200,auto,0)
+    @include style.pad(25, 100)
+  .module
+    @include style.margin(300,auto,100)
+
 #LoginForm
-  padding: 2em 3em
-  min-width: 25em
   .answer 
-    margin: 1em auto
+    margin: 0.75em auto
     input
       width: 12em
 
-#ChartForms
-  @include style.margin(300,auto,100)
+.settings_popup
+  @include style.pad(50)
+  .answer
+    max-width: 100%
+    @include style.margin(0)
+    @include style.pad(10, 50, 10, 100)
+

@@ -1,5 +1,5 @@
 
-<div class='paddedBig'>
+<div class='p-y-150'>
 	<h1>New Practitioner</h1>
 	<div id='CreatePractitioner' class='central large left'>
 		@include('models.create.user')

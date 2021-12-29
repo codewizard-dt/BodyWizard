@@ -21,8 +21,8 @@ class CreateTemplatesTable extends Migration
             $table->text('markup');
             $table->json('full_json');
             $table->json('settings')->nullable()->default(null);
-            $table->json('settings_json')->nullable()->default(null);            
-            $table->timestamps();
+            $table->json('settings_json')->nullable()->default(null);
+            $table->timestampsTz();
         });
     }
 

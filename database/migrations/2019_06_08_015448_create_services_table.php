@@ -20,9 +20,9 @@ class CreateServicesTable extends Migration
             $table->text('description_calendar');
             $table->text('description_admin');
             $table->unsignedInteger('duration');
-            $table->decimal('price',9,2);
+            $table->decimal('price', 9, 2);
             $table->json('settings')->nullable()->default(null);
-            $table->timestamps();
+            $table->timestampsTz();
         });
     }
 

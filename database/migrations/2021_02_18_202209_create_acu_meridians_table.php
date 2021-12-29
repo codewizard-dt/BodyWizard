@@ -13,9 +13,9 @@ class CreateAcuMeridiansTable extends Migration
      */
     public function up()
     {
-        Schema::connection('clinicwizard_base')->create('acu_meridians', function (Blueprint $table) {
+        Schema::create('acu_meridians', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->timestamps();
+            $table->timestampsTz();
         });
     }
 

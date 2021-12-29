@@ -1,0 +1,49 @@
+@use 'sass:list'
+
+$banners: ['acu_chin_1', 26em, 70%], ['bp_1', 30em, 60%], ['crystals', 20em, 50% 65%], ['crystalbuddha', 20em, 50% 40%],  ['palosanto', 45vh, 50% 35%],  ['headshot', 20em, 50% 10%],  ['head_1', 45vh, 40% 50%],  ['acu_arm_1', 15em, 50% 70%],  ['pulse', 45vh, 50% 55%],  ['shelf_1', 25em, 50% 45%],  ['shelf_2', 67vh, 50% 45%],  ['needle_tray_1', 25vh, 50% 50%]
+
+@each $image in $banners 
+  ##{list.nth($image, 1)} 
+    background-image: url(/images/banners/#{list.nth($image,1)}.jpg)
+    height: list.nth($image,2)
+    background-position: list.nth($image,3)
+  
+.splash 
+  position: relative
+  width:100%
+  background-repeat: no-repeat
+  background-size: cover
+  min-height: min(10vh, 15em)
+  &.fit-content
+    height: auto !important
+
+$icons: 'internal','joint','psych','acupuncture','botanical','fascial','meditation'
+
+.icon
+  background-size: contain
+  background-repeat: no-repeat
+  background-position: center
+  height:6em
+  margin: 1em 0
+  @each $name in $icons
+    &.#{$name}
+      background-image: url(/images/icons/pink/svg/#{$name}.svg)
+
+$social: 'fb', 'ig', 'youtube'
+.icon-social
+  display: inline-block
+  background-size: contain
+  background-repeat: no-repeat
+  background-position: center
+  height: 3em
+  width: 3em
+  margin: 0.2em 0
+  transition: opacity 400ms
+  @each $name in $social
+    &.#{$name}
+      background-image: url(/images/icons/social/#{$name}-white.png)
+a.icon-social
+  opacity: 0.7
+  &:hover
+    opacity: 1
+

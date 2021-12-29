@@ -2,6 +2,7 @@
 @use "sass:color"
 @use "sass:math"
 
+
 $colors: ('purple':rgb(105,12,104), 'yellow':rgb(240,154,53), 'pink':rgb(234,78,80), 'white':rgb(255,255,255), 'gray':rgb(210,210,210), 'darkgray':rgb(120,120,120), 'black':rgb(0,0,0), 'green':rgb(46, 107, 53))
 
 @function get ($string, $opacity:100, $opaque:false)
@@ -15,6 +16,9 @@ $colors: ('purple':rgb(105,12,104), 'yellow':rgb(240,154,53), 'pink':rgb(234,78,
   @else 
     @return $rgba
 
+@function dark ($c, $change: -20%) 
+  @return color.adjust($c, $lightness: $change)
+
 @function rgba-to-rgb($rgba, $opacity: 0, $background: #fff) 
   @if $opacity > 0 
     @if $opacity < 1 
@@ -23,8 +27,26 @@ $colors: ('purple':rgb(105,12,104), 'yellow':rgb(240,154,53), 'pink':rgb(234,78,
   
   @return mix(rgb(red($rgba), green($rgba), blue($rgba)), $background, alpha($rgba) * 100%)
 
+@each $name,$rgb in $colors
+  .#{$name}
+    &:not(.box, .button)
+      color: get($name)
+    &-bg
+      background-color: get($name)
+      &-o
+        background-color: get($name,90)
+      &-light
+        background-color: get($name,70,true)
+        &-o
+          background-color: get($name,70)
+      &-xlight
+        background-color: get($name,40,true)
+        &-o
+          background-color: get($name,40)
+      &-pale
+        background-color: get($name,10,true)
+
 :root
-  // --main-color: #{get('pink',70)}
   --fc-bg-event-color: #{get('yellow',50)}
   --fc-event-bg-color: #{get('pink',80)}
   --fc-event-border-color: #{get('pink',70)}
@@ -35,49 +57,34 @@ $colors: ('purple':rgb(105,12,104), 'yellow':rgb(240,154,53), 'pink':rgb(234,78,
   --fc-button-hover-border-color: #{get('purple')}
   --fc-button-active-bg-color: #{get('purple')}
   --fc-button-hover-bg-color: #{get('purple',90)}
-  // --green30: #{get('green')}
-  // --pink: #{get('pink')}
-  // @each $color in ['purple','green','pink','yellow']
-  //   --#{$color}: #{get($color)}
-  //   --#{$color}70o: #{get($color,70,true)}
-
-@font-face
-  font-family: 'Roboto'
-  src: url('/fonts/roboto-thin.ttf') format('truetype')
-  font-weight: 100
-  font-style: normal
-@font-face
-  font-family: 'Roboto'
-  src: url('/fonts/roboto-thin-italic.ttf') format('truetype')
-  font-weight: 100
-  font-style: italic
-@font-face
-  font-family: 'Roboto'
-  src: url('/fonts/roboto-light.ttf') format('truetype')
-  font-weight: normal
-  font-style: normal
-@font-face
-  font-family: 'Roboto'
-  src: url('/fonts/roboto-light-italic.ttf') format('truetype')
-  font-weight: normal
-  font-style: italic
-@font-face
-  font-family: 'Roboto'
-  src: url('/fonts/roboto-bold.ttf') format('truetype')
-  font-weight: bold
-  font-style: normal
-
+  --green75: #{get('green',75,true)}
 
 @each $num in [10 30 50 70]
   .shaded#{$num}
     background-color: get('white', $num)
 
-.pinkBgFlash 
-  animation: pinkBgFlash cubic-bezier(0.5, 0, 0.5, 1) 500ms infinite alternate
+@each $color in ['pink' 'yellow' 'purple' 'green' ]
+  .bg_flash_#{$color} 
+    animation: bg_flash_#{$color} cubic-bezier(0.5, 0, 0.5, 1) 500ms infinite alternate
+    &.slow
+      animation: bg_flash_#{$color} cubic-bezier(0.5, 0, 0.5, 1) 1000ms infinite alternate
+    &.twice
+      animation: bg_flash_#{$color} cubic-bezier(0.5, 0, 0.5, 1) 1000ms 5 alternate forwards
+  @keyframes bg_flash_#{$color} 
+    100% 
+      background-color: get($color)
 
-@keyframes pinkBgFlash 
-  100% 
-    background-color: get('pink')
+  .border_flash_#{$color} 
+    animation: border_flash_#{$color} cubic-bezier(0.5, 0, 0.5, 1) 500ms infinite alternate
+    &.slow
+      animation: border_flash_#{$color} cubic-bezier(0.5, 0, 0.5, 1) 1000ms infinite alternate
+    &.twice
+      animation: border_flash_#{$color} cubic-bezier(0.5, 0, 0.5, 1) 1000ms 5 alternate forwards
+  @keyframes border_flash_#{$color} 
+    100% 
+      border-color: get($color)
   
+
+
 
 

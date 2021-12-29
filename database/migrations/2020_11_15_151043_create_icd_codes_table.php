@@ -15,12 +15,11 @@ class CreateIcdCodesTable extends Migration
     {
         Schema::create('icd_codes', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->string('code');
+            $table->string('code')->unique();
             $table->string('title');
-            $table->string('text');
-            $table->string('url');
-            $table->unique(['code','text']);
-            $table->timestamps();
+            $table->string('text')->nullable();
+            $table->string('url')->nullable();
+            $table->timestampsTz();
         });
     }
 

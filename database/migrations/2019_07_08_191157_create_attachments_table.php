@@ -18,7 +18,7 @@ class CreateAttachmentsTable extends Migration
             $table->string('file_name');
             $table->string('mime_type');
             $table->longText('data_string');
-            $table->timestamps();
+            $table->timestampsTz();
         });
     }
 

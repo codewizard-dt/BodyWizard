@@ -49,8 +49,7 @@
         },
         "classmap": [
             "database/seeds",
-            "database/factories",
-            "vendor/google/apiclient/src/Google"
+            "database/factories"
         ]
     },
     "autoload-dev": {

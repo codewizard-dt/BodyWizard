@@ -27,7 +27,7 @@ class CreateAppointmentsTable extends Migration
             $table->mediumtext('notes')->nullable();
             $table->json('status')->nullable();
             $table->string('appt_link')->nullable();
-            $table->timestamps();
+            $table->timestampsTz();
         });
     }
 

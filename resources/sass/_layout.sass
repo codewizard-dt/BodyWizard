@@ -1,54 +1,90 @@
 @forward "colors"
 @use "colors"
 @use "sass:math"
+@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap')
 
 body
   background-color: transparent
   font-family: Roboto, sans-serif
-  font-size: clamp(14px, 1.6vw, 24px)
-  font-weight: normal
+  font-size: clamp(14px, 1.6vw, 18px)
+  font-weight: 300
   line-height: 1.5
   text-align: center
   min-height: 100vh
   position: relative
-  padding-bottom: 3em
   overflow-x: hidden
   box-sizing: border-box
   overflow-anchor: none
   overflow-wrap: break-word
 
-footer
-  position: absolute
-  background-color: colors.get('purple',90)
-  color: white
-  bottom: 0
-  padding: 1em
-  width:100%
+// @media (max-width: 500px) and (min-width:0px)
+//   body 
+//     font-size: 12px !important
+
+// @media (min-width: 501px)
+//   body 
+//     font-size: 14px !important
+
+
+// footer
+//   position: absolute
+//   background-color: colors.get('purple',90)
+//   color: white
+//   bottom: 0
+//   padding: 1em
+//   width:100%
+
+.smaller 
+  font-size: 0.9em
+  vertical-align: baseline
+.bigger
+  font-size: 1.2em
+  vertical-align: baseline
+.bold
+  font-weight: bold
+.italic
+  font-style: italic
+  margin: 0 0.1em 0 0
+i
+  display: inline-block
+  margin: 0 0.1em 0 0
+.strikethrough
+  text-decoration: line-through
+.break_all 
+  word-break: break-all
+.caps
+  text-transform: capitalize
+
+$colors: 'purple', 'pink', 'yellow', 'green', 'white',
 
 h1, h2, h3, h4, h5
-  font-weight: 100
-  color: colors.get('purple')
-  $colors: 'pink', 'yellow', 'green'
+  font-weight: 400
+  line-height: 1.2
+  min-width: max-content
+  max-width: 100%
+  &.bold, .bold
+    font-weight: 400
   @each $color in $colors
     &.#{$color}
       color: colors.get($color)
 h1
-  font-size: clamp(2em, 5vw, 3em)
+  font-size: 2.5em
 h2
-  font-size: clamp(1.7em, 4vw, 2.2em)
+  font-size: 2em
 h3
-  font-size: clamp(1.4em, 3vw, 1.8em)
+  font-size: 1.5em
 h4
-  font-size: clamp(1.2em, 2vw, 1.4em)
+  font-size: 1.2em
 h5
   font-size: 1em
   font-weight: bold
 
-div:not(.button), span
-  $colors: 'purple', 'pink', 'yellow', 'green'
+div:not(.button, .tooltip), span
+  $colors: 'purple', 'pink', 'yellow', 'green', 'gray', 'darkgray'
   @each $color in $colors
     &.#{$color}
       color: colors.get($color)
+      text-decoration-color: colors.get($color)
 
 @function val_check ($value)
   @if $value == 'auto'
@@ -78,12 +114,14 @@ div:not(.button), span
   width: max-content
   max-width: 100%
   @if ($auto_margin)
-    margin: auto
-@mixin shadow ($color: 'darkgray', $opacity: 100, $strength: 10, $inset: false)
+    margin-left: auto
+    margin-right: auto
+@mixin shadow ($color: 'darkgray', $opacity: 100, $width: 10, $darken: -15%, $inset: false)
+  $c: colors.get($color,$opacity)
   @if ($inset)
-    box-shadow: 0 0 #{$strength*2}px #{$strength}px colors.get($color, $opacity) inset
+    box-shadow: 0 0 #{$width*2}px #{$width}px colors.dark($c, $darken) inset
   @else
-    box-shadow: 0 0 #{$strength*2}px #{$strength}px colors.get($color, $opacity)
+    box-shadow: 0 0 #{$width*2}px #{$width}px colors.dark($c, $darken)
 
 $pre_bounce: cubic-bezier(.46,-0.45,.54,.97)
 $post_bounce: cubic-bezier(.64,.57,.67,1.53)
@@ -100,44 +138,62 @@ $easeinout_sine: cubic-bezier(0.37, 0, 0.63, 1)
   .opacityFlash#{$time}
     @include opacityFlash($time)
 
-.smaller 
-  font-size: 0.9em
-  vertical-align: baseline
-.bigger
-  font-size: 1.2em
-  vertical-align: baseline
 
-.link
-  cursor: pointer
-  color: colors.get('darkgray')
-  transition: color 400ms
-  &:hover
-    color: colors.get('black')
-  &.pink
-    color: colors.get('pink',70,true)
+.link, a
+  &:not(.button, .icon, .icon-social)
+    cursor: pointer
+    color: colors.get('darkgray')
+    transition: color 400ms, text-decoration-color 400ms
+    text-decoration-color: colors.get('darkgray',70,true)
+    text-underline-position: under
     &:hover
-      color: colors.get('pink')
+      color: black
+      text-decoration-color: black
+    @each $color in $colors
+      &.#{$color}
+        color: colors.get($color,70,true)
+        text-decoration-color: colors.get($color,25)
+        &:hover
+          color: colors.get($color)
+          text-decoration-color: colors.get($color)
+
 
 .central
-  min-width: 600px
-  width: max-content
-  max-width: 90%
+  min-width: min-content
+  max-width: 100%
+  padding: 0 1em
+  box-sizing: border-box
   margin: auto
   &.large
-    min-width: 800px
+    min-width: min(100%, 800px)
   &.full
-    width: 90%
+    width: 100%
 .max
   @include max
+  &.button_box
+    display: block
 
-.splash 
+
+
+ul
+  list-style: inside
+  text-align: left
+  li
+    margin-left: 1rem
+
+.list
+  .item
+    margin: 0.5em 0.2em
+
+.segment
+  margin: 2.5rem 0
   position: relative
-  width:100%
-  background-repeat: no-repeat
-  background-size: cover
-  min-height: min(10vh, 15em)
+  &.indented
+    margin: 2.5rem
+  &.centered
+    margin: 2.5rem auto
 
-.button 
+a.button, div.button
   display: inline-block
   position: relative
   background-color: black
@@ -152,15 +208,17 @@ $easeinout_sine: cubic-bezier(0.37, 0, 0.63, 1)
   border-width: 1px
   border-style: solid
   border-color: black
-  color: white
-  padding: 0.7em
+  color: colors.get('white',80)
+  padding: 1em
   margin: 0.5em
   text-decoration: none
   white-space: nowrap
-  transition: background-color 0.5s, color 1s, box-shadow 500ms    
+  transition: background-color 400ms, color 400ms, box-shadow 400ms
   cursor: pointer
   touch-action: manipulate
   user-select: none
+  &:hover
+    color: white
   $colors: 'pink', 'yellow', 'purple', 'green', 'white', 'black'
   @each $color in $colors
     &.#{$color} 
@@ -169,39 +227,50 @@ $easeinout_sine: cubic-bezier(0.37, 0, 0.63, 1)
     &.#{$color}70 
       background-color: colors.get($color, 70)
       border-color: colors.get($color, 70)
-    &.#{$color}70:hover
-      background-color: colors.get($color)
+      &.active
+        background-color: colors.get($color)
+      &:hover:not(.disabled)
+        background-color: colors.get($color)
   &.white, &.white70
     color: black
   &.cancel
     @extend .black70
-  &.small
-    font-size: 0.9em
-  &.xsmall
-    font-size: 0.7em
-  &.large
-    font-size: 1.1em
+  $sizes: ('xsmall':0.7em,'small':0.9em,'large':1.1em, 'xlarge':1.2em)
+  @each $name, $size in $sizes
+    &.#{$name}
+      font-size: $size
   &.disabled
     opacity: 0.5
     cursor: not-allowed
 
-@mixin box ($color:'gray', $radius: 5px, $opaque: true, $opacity: 10)
+@mixin box ($color:'gray', $radius: 5px, $opaque: true, $opacity: 10, $border-width: 1px, $color_bg: true, $flex: false)
   position: relative
-  border: 1px solid colors.get($color,$opacity*5)
+  border: #{$border-width} solid colors.get($color,$opacity*5,$opaque)
   background-color: colors.get($color,$opacity,$opaque)
-  display: inline-block
+  @if ($flex)
+    display: inline-flex
+  @else
+    display: inline-block
   border-radius: $radius
-  padding: 0.2em 0.5em  
+  padding: 0.2em 0.5em
   max-width: 100%
   box-sizing: border-box
+  &.max, &.full
+    display: block
+  &.squared
+    border-radius: 0
   @each $color in ['pink' 'yellow' 'purple' 'green']
     &.#{$color}
-      border: 1px solid colors.get($color,$opacity*5)
-      background-color: colors.get($color,$opacity,$opaque)
+      border: #{$border-width} solid colors.get($color, $opacity*7.5, $opaque)
+      @if ($color_bg)
+        background-color: colors.get($color, $opacity, $opaque)
+      > h1, > h2, > h3, > h4, > h5
+        color: colors.get($color)      
       &.light
-        $opacity: $opacity * 0.75
-        border: 1px solid colors.get($color,$opacity*5)
-        background-color: colors.get($color,$opacity,$opaque)
+        $lighter: $opacity * 0.5
+        border: #{$border-width} solid colors.get($color, $lighter*7.5, $opaque)
+        @if ($color_bg)
+          background-color: colors.get($color, $lighter, $opaque)
 
 @mixin indent
   @include pad(0,0,0,200)
@@ -219,6 +288,8 @@ $easeinout_sine: cubic-bezier(0.37, 0, 0.63, 1)
     display: inline-flex
   > .top
     align-self: flex-start
+  > .new_line
+    width: 100%
 @mixin flexbox_spread
   @include flexbox
   justify-content: space-between
@@ -240,15 +311,118 @@ $easeinout_sine: cubic-bezier(0.37, 0, 0.63, 1)
   @include flexbox
   flex-direction: column
 
+.flexbox
+  @include flexbox
+  &.spread 
+    justify-content: space-between
+  &.left
+    justify-content: flex-start
+  &.right
+    justify-content: flex-end
+  &.nowrap
+    flex-wrap: nowrap
+  &.inline
+    display: inline-flex
+  &.top 
+    align-items: flex-start
+    align-content: flex-start
+  &.column
+    flex-direction: column
+    &.left
+      align-items: flex-start
+  &.thirds
+    > *
+      flex-basis: 33%
+      max-width: 300px
+  .basis
+    @each $width in [25 33 40 50 60 66 75]
+      &-#{$width}
+        box-sizing: border-box
+        flex-basis: $width * 1%
+  .grow
+    @each $width in [0 1 2 3 4]
+      &-#{$width}
+        flex-grow: $width
+
+.band
+  @each $color in $colors
+    &.#{$color}
+      background-color: colors.get($color)
+  @each $name,$height in ('mini':0.5rem,'xsmall':0.75rem,'small':1rem, 'medium':2rem, 'large':3rem, 'xlarge': 4rem)
+    &.#{$name}
+      height: $height
+
+$widths: ('mini':200px,'tiny':300px,'xsmall':400px,'small':600px, 'medium':800px, 'large':900px, 'xlarge': 1100px)
+.w
+  &-max
+    width: max-content
+    max-width: 100%
+  @each $name, $width in $widths
+    &-#{$name}
+      width: $width
+    &-max
+      &-#{$name}
+        max-width: $width
+    &-min
+      &-#{$name}
+        min-width: $width
+$widths: ('sixth':16vw,'fifth':20vw,'quarter':25vw,'third':33vw,'half':50vw,'two-thirds':66vw,'three-quarters':75vw)
+.vw
+  @each $name, $width in $widths
+    &-#{$name}
+      width: $width
+    &-max
+      &-#{$name}
+        max-width: $width
+    &-min
+      &-#{$name}
+        min-width: $width
+
+
+
+$heights: ('mini':100px, 'xsmall':200px, 'small':300px, 'medium':400px, 'large':600px, 'xlarge': 900px)
+.h
+  @each $name, $height in $heights
+    &-#{$name}
+      height: $height
+    &-max
+      &-#{$name}
+        max-height: $height
+    &-min
+      &-#{$name}
+        min-height: $height
+    
+$pops: ('small':20%,'medium':35%, 'half':50%, 'large':70%)
+.pop
+  @each $name, $pop in $pops
+    &-down
+      &-#{$name}
+        transform: translateY($pop)
+        &.button
+          margin: 0
+    &-up
+      &-#{$name}
+        transform: translateY(-$pop)
+        &.button
+          margin: 0
+
 $colors: 'pink' 'yellow' 'purple' 'green'
 @each $color in $colors
   .filled.#{$color}
-    background-color: colors.get($color,3)
+    background-color: colors.get($color,5, true)
     border-radius: 0.5em
   .lined.#{$color}
-    border-top: 2px solid colors.get($color,30)
+    border-top: 2px solid colors.get($color, 30, true) !important
     border-radius: 0 0 0.5em 0.5em
+  .filled.lined.#{$color}
+    border-top: 2px solid colors.get($color, 30, true) !important
+    border: 1px solid colors.get($color,20, true)
 
+svg
+  $colors: 'pink' 'yellow' 'purple' 'green' 'gray' 'darkgray'
+  @each $color in $colors
+    &.#{$color}
+      fill: colors.get($color)
 
 .Icon
   &.clickable
@@ -256,12 +430,20 @@ $colors: 'pink' 'yellow' 'purple' 'green'
     cursor: pointer
     &:hover
       @include opacityFlash()
+    &.active
+      opacity: 1
+    &.inactive
+      opacity: 0.3
+  &.max
+    display: block
 
 @mixin round ($diameter: 2)
   width: #{$diameter}em
   height: #{$diameter}em
   border-radius: 50%
 .circle
+  // *
+  //   overflow: visible !important
   overflow: visible !important
   transform-origin: center
   &.pink
@@ -299,14 +481,18 @@ $colors: 'pink' 'yellow' 'purple' 'green'
       transform: rotate(-90deg)
       stroke-dashoffset: math.$pi * 100% 
       animation: dash_offset_fill 5s linear
+    @each $s in [1 2 3 4]
+      &.timer#{$s*1000}
+        circle
+          animation: dash_offset_fill #{$s}s linear
+      
+
       // animation-fill-mode: forwards
 .loading
   .circle
     &.spin
       animation: spin-50-50 2.3s linear infinite
-// @each $color in ['pink' 'purple' 'yellow' 'green']
-//   .circle.#{$color}
-//     stroke: colors.get($color,70,true)
+
 @keyframes dash_start
   100%
     stroke-dashoffset: - math.$pi * 15%
@@ -325,32 +511,113 @@ $colors: 'pink' 'yellow' 'purple' 'green'
   100%
     stroke-dashoffset: 0
 
+.option_dots
+  @include box
+  padding: 0.1em
+  position: absolute
+  top: 0
+  box-sizing: content-box
+  &.left
+    left: 0
+    border-radius: 5px 0 0 5px 
+    transform: translateX(-100%)
+  &.right
+    right: 0
+    border-radius: 0 5px 5px 0
+    transform: translateX(100%)
+
 .triangle
   position: absolute
   transform-origin: bottom center
-  stroke: colors.get('darkgray',93)
-  fill: colors.get('darkgray',70)
-  &.pink
-    stroke: colors.get('pink')
-    fill: colors.get('pink',70,true)
-  &.purple
-    stroke: colors.get('purple')
-    fill: colors.get('purple',70,true)
-  &.yellow
-    stroke: colors.get('yellow')
-    fill: colors.get('yellow',70,true)
-  &.green
-    stroke: colors.get('green')
-    fill: colors.get('green',70,true)
+  stroke: colors.get('darkgray')
+  fill: colors.get('darkgray',80)
+  @each $color in ['pink','purple','yellow','green','gray']
+    &.#{$color}
+      stroke: colors.get($color)
+      fill: colors.get($color,80,true)    
 
 
-.box
+.box, .button_box
   @include box
+.button_box
+  @include pad(0)
+  background-color: transparent
+  border-color: transparent
+  // text-align: center
+
+// margin and padding
+$spacings: ('none':0, 'mini':0.25rem, 'xsmall':0.5rem, 'small':1rem, 'medium':1.5rem, 'large': 2rem, 'xlarge': 2.5rem, 'huge':3rem, 'massive':4rem )
+@each $name,$space in $spacings
+  .m-#{$name}
+    margin: $space !important
+    &-y
+      margin-top: $space !important
+      margin-bottom: $space !important
+    &-x
+      margin-left: $space !important
+      margin-right: $space !important
+    &-top
+      margin-top: $space !important
+      &-neg
+        margin-top: -$space !important
+    &-bottom
+      margin-bottom: $space !important
+      &-neg
+        margin-bottom: -$space !important
+  .p-#{$name}
+    padding: $space !important
+    &-y
+      padding-top: $space !important
+      padding-bottom: $space !important
+    &-x
+      padding-left: $space !important
+      padding-right: $space !important
+    &-top
+      padding-top: $space !important
+    &-bottom
+      padding-bottom: $space !important
+    
+$fonts: ('xsmall':0.8em, 'small':0.9em, 'large':1.1em, 'xlarge':1.2em, 'huge':1.5em, 'double':2em, 'triple':3em)
+@each $name, $size in $fonts
+  .text
+    &-#{$name}
+      font-size: $size
+
+$thicknesses: ('thin':1px,'medium':2px,'thick':3px,'xthick':4px)
+$styles: ['solid', 'dashed']
+.b
+  @each $style in $styles
+    &-#{$style}
+      border-style: $style
+  @each $name, $thickness in $thicknesses
+    &.#{$name}
+      border-width: $thickness
+$rounded: ('small':3px, 'medium':5px, 'large':7px, 'full':50%)
+@each $name, $round in $rounded
+  .rounded-#{$name}
+    overflow: hidden
+    border-radius: $round
+
+  
+
 .indent
   @include indent
-
 .prompt
   @extend .box
+.quote
+  width: max-content
+  max-width: 80%
+  .text
+    &::before
+      content: "\201C"
+    &::after
+      content: "\201D"
+  .author
+    &::before
+      content: "-"
+
+.body
+  max-width: 100%
 
 .indicator 
   @include flexbox
@@ -375,37 +642,43 @@ $colors: 'pink' 'yellow' 'purple' 'green'
   width: 5em
   &.notext_color
     background-image: url(/images/logo/logo-notext-color.png)
+    width: 10em
   &.notext_white
     background-image: url(/images/logo/logo-notext-white.png)
+  &.center_logo
+    margin: auto
 
 #NavBar
   .logo, a
     width: 10em
     height: 100%
+#booknow, #portal_home
+  font-weight: bold
+  color: colors.get('pink')
+  font-size: 1em
+  transform: scale(1.1)
 
-
-.flexbox
-  @include flexbox
-
-  &.spread 
-    justify-content: space-between
-  &.left
-    justify-content: flex-start
-  &.right
-    justify-content: flex-end
-  &.nowrap
-    flex-wrap: nowrap
-  &.inline
-    display: inline-flex
-  &.column
-    flex-direction: column
-    &.left > *
-      align-self: flex-start
 
 .left
   text-align: left
 .right
   text-align: right
+.center
+  text-align: center
+  > *
+    margin: auto
+
+.sticky
+  position: sticky
+  z-index: 2
+  &.top_0
+    top: 0
+
+.divider
+  height: 3px
+  @each $color in $colors
+    &.#{$color}
+      background-color: colors.get($color)
 
 #ModalHome
   display: none

@@ -17,7 +17,7 @@ class CreateAttachmentablesTable extends Migration
             $table->bigIncrements('id');
             $table->unsignedInteger('attachment_id');
             $table->morphs('attachmentable');
-            $table->timestamps();
+            $table->timestampsTz();
         });
     }
 

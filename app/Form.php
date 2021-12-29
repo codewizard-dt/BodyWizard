@@ -19,8 +19,8 @@ class Form extends Model
   use TableAccess;
   use HasSettings;
 
-  protected $primaryKey = 'form_uid';
-  protected $visible = ['form_uid','form_id','version_id','form_name','settings','sections'];
+  // protected $primaryKey = 'form_uid';
+  protected $visible = ['id','name','sections','form_id','version_id','settings'];
   protected $guarded = [];
 
   protected $casts = [
@@ -29,15 +29,20 @@ class Form extends Model
   ];
 
   // static public $display_name = 'Chief Complaint';
-  static public $name_attr = 'name_with_version_plus';
-  static public $instance_actions = [];
+  // static public $name_attr = 'name_with_version_plus';
+  static public $instance_actions = [
+    [
+      'text' => 'preview',
+      'action' => 'Form.preview',
+      'class_list' => 'xsmall yellow',
+    ]
+  ];
   static public $static_actions = [];
 
   static public function table() {
     $columns = [
       'Usage' => 'setting:Availability + Usage.GeneralUsage:not set:usage',
       'Filled By' => 'setting:Availability + Usage.FilledOutBy:not set:filled_by',
-      'Charting' => 'setting:Availability + Usage.UsedForPatientCharts:not set:charting',
     ];
     $bool_cols = ['charting'];
     if (Auth::user()->is_superuser) {
@@ -61,28 +66,24 @@ class Form extends Model
   }
   public function details() {
     $instance = [
-      // 'Category' => $this->category_name,
-      // 'Description' => $this->description,
     ];
-    $buttons = [];
-    return compact('instance','buttons');
+    return $instance;
   }
 
   protected static function boot()  {
     parent::boot();
 
     static::addGlobalScope('sys', function (Builder $builder) {
-      $builder->orderBy('settings->system','desc')->orderBy('form_name');
-      if (!Auth::user()->is_superuser) $builder->where('settings->system','!=','true');
+      if (Auth::check() && !Auth::user()->is_superuser) $builder->where('settings->system','!=','true');
     });
   }
 
   public static function successResponse(){
     $form = Form::find(getUid('Form'));
-    return ['form_uid'=>$form->form_uid,'form_id'=>$form->form_id,'version_id'=>$form->version_id];
+    return ['uid'=>$form->id,'form_id'=>$form->form_id,'version_id'=>$form->version_id];
   }
   public static function nextFormId(){
-    $max = Form::orderBy('form_id','desc')->limit(1)->get()->first();
+    $max = Form::select('form_id')->orderBy('form_id','desc')->limit(1)->get()->first();
     $next = $max ? $max->form_id + 1 : 1;
     return $next;
   }
@@ -93,7 +94,11 @@ class Form extends Model
   }
 
   public function scopeCharting($query){
-    return $query->where("settings->Availability + Usage->UsedForPatientCharts",'true');
+    // logger(session('usertype','no usertype'));
+    $usertype = session('usertype');
+    return $query->whereJsonContains("settings->Availability + Usage->FilledOutBy",$usertype)
+                 ->whereJsonContains("settings->Availability + Usage->GeneralUsage",'clinical');
+    // return $query->where("settings->Availability + Usage->UsedForPatientCharts",'true');
   }
 
   // public function table_nav_options() {
@@ -197,15 +202,15 @@ class Form extends Model
   public function getSectionNamesAttribute(){
     return collect($this->sections)->transform(function($section){return $section['name'];})->all();
   }
-  public function getNameAttribute(){
-    return $this->form_name;
-  }
-  public function getNameWithVersionAttribute(){
-    return $this->form_name." (v".$this->version_id.")";
-  }
-  public function getNameWithVersionPlusAttribute(){
-    return $this->version_id === 1 ? $this->form_name : $this->form_name." (v".$this->version_id.")";
-  }  
+  // public function getNameAttribute(){
+  //   return $this->form_name;
+  // }
+  // public function getNameWithVersionAttribute(){
+  //   return $this->form_name." (v".$this->version_id.")";
+  // }
+  // public function getNameWithVersionPlusAttribute(){
+  //   return $this->version_id === 1 ? $this->form_name : $this->form_name." (v".$this->version_id.")";
+  // }  
   // public function getChartingValueForTableAttribute(){
   //   if ($this->settings && isset($this->settings['chart_inclusion'])){
   //     return $this->settings['chart_inclusion'] ? "yes" : "no";

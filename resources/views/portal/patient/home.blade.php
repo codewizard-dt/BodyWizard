@@ -6,8 +6,8 @@ $patient = [
     'name' => $patient->name
 ];
 ?>
-<div class='splash top' id='needle_tray_1'>
-    <h1 class='purple white10 paddedSmall'>Portal Home</h1>
+<div class='splash' id='needle_tray_1'>
+    <h1 class='purple white10 p-y-50'>Portal Home</h1>
 </div>
 <div id="patient" data-patient='{{json_encode($patient)}}'></div>
 <div id='ScheduleFeedTarget'>

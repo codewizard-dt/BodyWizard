@@ -13,16 +13,16 @@ class CreatePracticesTable extends Migration
      */
     public function up()
     {
-        Schema::connection('clinicwizard_base')->create('practices', function (Blueprint $table) {
-            $table->bigIncrements('id');
-            $table->string('practice_id')->unique();
+        Schema::create('practices', function (Blueprint $table) {
+            $table->bigIncrements('id')->unique();
+            // $table->string('practice_id')->unique();
             $table->string('name');
-            $table->string('dbname');
-            $table->string('host');
-            $table->string('cryptokey')->nullable()->default(null);
+            // $table->string('dbname');
+            // $table->string('host');
+            // $table->string('cryptokey')->nullable()->default(null);
             $table->json('schedule')->nullable()->default(null);
             $table->json('settings')->nullable()->default(null);
-            $table->timestamps();
+            $table->timestampsTz();
         });
     }
 

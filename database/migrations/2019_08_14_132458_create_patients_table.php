@@ -24,7 +24,7 @@ class CreatePatientsTable extends Migration
             // $table->boolean("is_new_patient")->default(true);
             $table->json("settings")->nullable();
             $table->softDeletes();
-            $table->timestamps();
+            $table->timestampsTz();
         });
     }
 

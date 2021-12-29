@@ -1,5 +1,5 @@
 <div class="optionsNavWrapper">
-	<h3 class="optionsNavHeader purple paddedSmall topOnly">Error Loading</h3>
+	<h3 class="optionsNavHeader purple p-y-50 topOnly">Error Loading</h3>
 	<div class='optionsNav'>
 		<div class="navHead">
 			<span class="optionsBar">

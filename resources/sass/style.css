@@ -299,12 +299,12 @@ h5 span {font-size: 0.9em;}
 .marginXBig.topOnly, .marginBig.topOnly, .marginSmall.topOnly{margin-bottom: 0;}
 .marginXBig.bottomOnly, .marginBig.bottomOnly, .marginSmall.bottomOnly{margin-top: 0;}
 .paddedXBig{padding-top:2.5em;padding-bottom: 2.5em;}
-.paddedBig.topOnly{padding-bottom: 0em;}
-.paddedBig{padding-top:1.5em;padding-bottom: 1.5em;}
-.paddedXSmall{padding-top:0.25em;padding-bottom: 0.25em;}
-.paddedSmall{padding-top:0.5em;padding-bottom: 0.5em;}
-.paddedSmall.bottomOnly{padding-top: 0em;}
-.paddedSmall.topOnly{padding-bottom: 0em;}
+.p-y-150.topOnly{padding-bottom: 0em;}
+.p-y-150{padding-top:1.5em;padding-bottom: 1.5em;}
+.p-y-25{padding-top:0.25em;padding-bottom: 0.25em;}
+.p-y-50{padding-top:0.5em;padding-bottom: 0.5em;}
+.p-y-50.bottomOnly{padding-top: 0em;}
+.p-y-50.topOnly{padding-bottom: 0em;}
 .paddedSides{padding-left:2.5em;padding-right: 2.5em;box-sizing: border-box;}
 .paddedSides.xsmall{padding-left:0.25em;padding-right: 0.25em;}
 .paddedSides.small{padding-left:1em;padding-right: 1em;}
@@ -349,7 +349,7 @@ h1 b, h2 b, h3 b, h4 b {font-weight: 400}
   border-color: var(--pink50);
   background-color: var(--pink5);
 }
-.purple {
+.boxPurple {
   color: var(--purple);
   border-color: var(--purple50);
   background-color: var(--purple5);
@@ -488,10 +488,6 @@ a:hover {color:var(--pink);}
   border-top-color: var(--purple10);
 }
 
-.siteMenu .title.active {
-  /*background-color: var(--yellow);*/
-  /*color:black;*/
-}
 .siteMenu .underline {bottom:-0.5em}
 .siteMenu .dropDown {
   background-color: rgba(250, 250, 250, 0.97);
@@ -512,42 +508,6 @@ a:hover {color:var(--pink);}
 }
 #booknow .underline{bottom:calc(-0.5em + 2px)}
 
-#NavBar {
-  position: fixed;
-  top:0;
-  left:0;
-  width:100%;
-  z-index: 51;
-  height: 4em;
-  background-color: var(--white97);
-}
-
-#NavBar .logo {
-  display: inline-block;
-  height: 100%;
-  width: 10em;
-  background-image: url(/images/logo/logo-text-with-star.png);
-  background-size: contain;
-  background-position: center;
-  background-repeat: no-repeat;
-  position: absolute;
-  left: 3em;
-}
-
-.logo {
-  height:5em;
-  background-image: url(/images/logo/logo-notext-color.png);
-  background-size: contain;
-  background-position: center;
-  background-repeat: no-repeat;
-}
-.logo.white{background-image: url(/images/logo/logo-notext-white.png);}
-.logo.popUp{
-  transform: translateY(-40%);
-  margin-bottom: -2em;
-}
-
-
 .button {
   display: inline-block;
   position: relative;
@@ -567,7 +527,7 @@ a:hover {color:var(--pink);}
   padding: 1.2rem 2rem;
   text-decoration: none;
   white-space: nowrap;
-  transition: background-color 0.5s, color 1s, box-shadow 500ms;    
+  transition: background-color 300ms, color 300ms, box-shadow 300ms;    
   cursor: pointer;
   touch-action:manipulate;
   user-select: none;
@@ -632,8 +592,8 @@ a:hover {color:var(--pink);}
 .pink10BgFlash {
   animation: pink10BgFlash cubic-bezier(0.5, 0, 0.5, 1) 500ms infinite alternate;
 }
-.pinkBgFlash {
-  animation: pinkBgFlash cubic-bezier(0.5, 0, 0.5, 1) 500ms infinite alternate;
+.bg_flash_pink {
+  animation: bg_flash_pink cubic-bezier(0.5, 0, 0.5, 1) 500ms infinite alternate;
 }
 .button.pinkflash:hover {
   animation: none;
@@ -699,6 +659,7 @@ a:hover {color:var(--pink);}
 }
 .btnPopDown > .button{
   position: absolute;
+  margin: 0;
   bottom: 0;
   transform: translate(-50%,50%);
 }
@@ -753,8 +714,6 @@ a:hover {color:var(--pink);}
   padding: 0.5em 1em;
   box-sizing: border-box;
 }
-#BookingDetails{
-}
 #BookingDetails .label{
   display: inline-block;
   width: 5em;
@@ -793,18 +752,18 @@ a:hover {color:var(--pink);}
 }
 
 
-#acu_chin_1 {
+/* #acu_chin_1 {
   padding-top: 4em;
   height:26em;
   background-image: url(/images/acupuncture/chin-amanda-seirin.jpg);
   background-position: 70%;
-}
-#acu_chin_1 .button{
+} */
+/* #acu_chin_1 .button{
   position: absolute;
   bottom: 0;
   transform: translate(-50%,50%);
-}
-#bp_1 {
+} */
+/* #bp_1 {
   min-height:30em;
   background-image: url(/images/vitals/bp-miguel-1.jpg);
   background-position: 60%;
@@ -859,41 +818,9 @@ a:hover {color:var(--pink);}
   height: 25vh;
   background-image: url(/images/other/needle_tray_1.jpg);
   background-position: 50% 50%;
-}
+} */
 
 
-.divide.hor{
-  height:3px;
-}
-
-.icon {
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  height:6em;
-  margin: 1em 0;
-}
-.stomach.pink{
-  background-image: url(/images/icons/Pink/SVG/internal%20medicine.svg);
-}
-.knee.pink{
-  background-image: url(/images/icons/Pink/SVG/muscle%20and%20joint%20pain.svg);
-}
-.brain.pink{
-  background-image: url(/images/icons/Pink/SVG/psychosocial.svg);
-}
-.acu.pink.icon{
-  background-image: url(/images/icons/Pink/SVG/acupuncture.svg);
-}
-.botanical.pink.icon{
-  background-image: url(/images/icons/Pink/SVG/botanical%20medicine.svg);
-}
-.fascial.pink.icon{
-  background-image: url(/images/icons/Pink/SVG/fascial%20release.svg);
-}
-.meditation.pink.icon{
-  background-image: url(/images/icons/Pink/SVG/guided%20meditation.svg);
-}
 
 .listings .splash{
   border-bottom: 3px solid var(--yellow);
@@ -996,12 +923,6 @@ a:hover {color:var(--pink);}
 #Rates .break .paddedSides{
   padding-left:1em;
   padding-right:1em;
-}
-
-#CondDesc .wrapper, #TreatmentDesc .wrapper {
-  display: inline-block;
-  margin: 0 0 2em 0;
-  max-width:100%;
 }
 
 .editable .toggle {
@@ -1356,8 +1277,6 @@ a:hover {color:var(--pink);}
 #Notifications {
   display: inline-block;
   cursor: default;
-}
-#Notifications .multiBtns .button{
 }
 #Notifications .multiBtns {
   margin: 0 -10px;
@@ -1853,9 +1772,6 @@ a:hover {color:var(--pink);}
   max-height: 80%;
   overflow-y: scroll;
 }
-.loading {
-
-}
 .lds-ring {
   display: block;
   text-align: center;
@@ -1975,7 +1891,7 @@ a:hover {color:var(--pink);}
     background-color: var(--pink10);
   }
 }
-@keyframes pinkBgFlash {
+@keyframes bg_flash_pink {
   100% {
     background-color: var(--pink);
   }

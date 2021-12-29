@@ -17,7 +17,7 @@ class CreateDiagnosisablesTable extends Migration
             $table->bigIncrements('id');
             $table->unsignedInteger('diagnosis_id');
             $table->morphs("diagnosisable");
-            $table->timestamps();
+            $table->timestampsTz();
         });
     }
 

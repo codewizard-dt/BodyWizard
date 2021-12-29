@@ -22,7 +22,7 @@ class CreateBugsTable extends Migration
             $table->json('details')->nullable();
             $table->string('status');
             $table->unsignedInteger('user_id')->nullable();
-            $table->timestamps();
+            $table->timestampsTz();
         });
     }
 

@@ -98,7 +98,7 @@
         </nav>
 
         <div id='acu_chin_1' class='splash btnPopDown'>
-            <div class="wrapper paddedBig">
+            <div class="wrapper p-y-150">
             	<div class="logoWarp">
 	                <div class='logo'></div>        		
 	                <div class="oldlogo"></div>

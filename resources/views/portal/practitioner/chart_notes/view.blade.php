@@ -29,24 +29,24 @@ $todaysNotes = $note->notes;
 	<div id="NotesFromLastTime" class='left'>
 		<h3 class="chartNoteHeader marginXBig topOnly purple">Pinned Notes From {{$lastNoteDate}}</h3>
 		@forelse ($notesFromLastChartNote as $pinnedNote)
-			<div class='left paddedSides small paddedSmall'>
+			<div class='left paddedSides small p-y-50'>
 				@if (isset($pinnedNote['title']))<h4>{{$pinnedNote['title']}}</h4>@endif
 				<div>{{$pinnedNote['text']}}</div>
 			</div>
 		@empty
-			<h4 class='left paddedSides small paddedSmall'>None</h4>
+			<h4 class='left paddedSides small p-y-50'>None</h4>
 		@endforelse
 	</div>
 @endif
 <div id="NotesFromThisTime" class='left'>
 	<h3 class="chartNoteHeader marginXBig topOnly purple">Pinned Notes For Next Time</h3>
 	@forelse ($todaysNotes as $pinnedNote)
-		<div class='left paddedSides small paddedSmall'>
+		<div class='left paddedSides small p-y-50'>
 			@if (isset($pinnedNote['title']))<h4>{{$pinnedNote['title']}}</h4>@endif
 			<div>{{$pinnedNote['text']}}</div>
 		</div>
 	@empty
-		<h4 class='left paddedSides small paddedSmall'>None</h4>
+		<h4 class='left paddedSides small p-y-50'>None</h4>
 	@endforelse
 </div>
 

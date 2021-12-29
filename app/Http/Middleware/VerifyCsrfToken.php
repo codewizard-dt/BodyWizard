@@ -25,6 +25,7 @@ class VerifyCsrfToken extends Middleware
         'appointment/feed',
         'portal',
         'push/*',
-        'portal/logout'
+        'portal/logout',
+        'register'
     ];
 }

@@ -36,8 +36,8 @@
 		'action_data' => '#ChartFormList',
 	];
 	$appointment_forms = $appointment->chart_forms;
-	$all_chart_forms = Form::charting()->select('form_uid','form_name')->get()->map(function($form){
-		return ['text' => $form->form_name, 'value' => $form->form_uid];
+	$all_chart_forms = Form::charting()->select('id','name')->get()->map(function($form){
+		return ['text' => $form->name, 'value' => $form->id];
 	})->all();
 	$form_list_options = [
 		'json' => $all_chart_forms,
@@ -56,40 +56,39 @@
 ?>
 
 <div id='ChartNote' class='central large' data-attr_list='{{json_encode($columns)}}'>
-	<div class="body">
-		@include('models.instance-details',['instance' => $instance->patient])
-		<div class="header box yellow">
-			<h1 class='yellow bold max'>{{$instance->name}}</h1>
-			<h2 class='yellow'>{{$appointment->service_list}}</h2>			
-		</div>
-		<div id="ChartComplaints" class='central full left'>
-			<h1 class="toggle_proxy" {!!dataAttrStr($complaint_toggle)!!}>Chief Complaints</h1>
-			<div id="ComplaintInfo">
-				<h3 class="yellow flexbox left">Add new complaint<div class="Icon" {!!dataAttrStr($complaint_plus)!!}></div></h3>	
-	      @include('layouts.forms.display.answer',[
-	        'type' => 'list',
-	        'name' => 'complaint_selection',
-	        'options' => [
-	        	'id' => 'complaint_selection',
-	          'list' => $complaints->count() ? mapForList($complaints) : ['null%%None listed'],
-	          'listLimit' => 'none',
-	          'ele_css' => ['marginTop'=>'0'],
-	        ], 'settings' => ['required' => true],
-	      ])				
-			</div>
-		</div>
-		<div id="ChartForms" class="central full left">
-			<div id='ChartFormList' class='List modalForm' data-options="{{json_encode($form_list_options)}}"></div>
-			<h2 class="pink flexbox left">Charting Forms<div class="Icon" {!!dataAttrStr($form_plus)!!}></div></h2>	
-			@foreach ($appointment_forms as $form)
-				@include('layouts.forms.display.form',array_merge(compact('form'),[
-					'mode'=>'chart',
-					'action'=>null,
-				]))
-			@endforeach			
-		</div>
+	@include('models.instance-details',['instance' => $instance->patient])
+	<div class="header box yellow">
+		<h1 class='yellow bold max'>{{$instance->name}}</h1>
+		<h2 class='yellow'>{{$appointment->service_list}}</h2>			
 	</div>
-	<div class="options">
-		<div class="button cancel">close</div>
+	<div id="ChartComplaints" class='central full left module'>
+		<h2 class="yellow flexbox left lined">Today's Chief Complaints<div class="Icon" {!!dataAttrStr($complaint_plus)!!}></div></h2>	
+		<h4 class="yellow left">Previously used complaints:</h3>
+    @include('layouts.forms.display.answer',[
+      'type' => 'list',
+      'name' => 'complaint_selection',
+      'options' => [
+      	'id' => 'complaint_selection',
+        'list' => $complaints->count() ? mapForList($complaints) : ['null%%None listed'],
+        'listLimit' => 'none',
+        'ele_css' => ['marginTop'=>'0'],
+      ], 'settings' => ['required' => true],
+    ])				
 	</div>
+	<div id="ChartForms" class="central full left module">
+		<div id='ChartFormList' class='List modalForm' data-options="{{json_encode($form_list_options)}}"></div>
+		<h2 class="pink flexbox left lined">Charting Forms<div class="Icon" {!!dataAttrStr($form_plus)!!}></div></h2>	
+		@forelse ($appointment_forms as $form)
+			@include('layouts.forms.display.form',array_merge(compact('form'),[
+				'mode'=> 'chart',
+				'action'=> null,
+			]))
+		@empty
+			<h4 class="pink">No default forms for {{$appointment->service_list}}</h4>
+		@endforelse	
+	</div>
+	<div class="button_box">
+		<div class="button cancel">close</div>	
+	</div>
+	
 </div>

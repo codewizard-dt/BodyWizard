@@ -350,7 +350,7 @@
 // },
 // error: function(e){
 // 	if (e.status == 404){
-// 		$(target).html("<h2 class='paddedSmall'>Content Unavailable</h2><div class='central small paddedSmall bottomOnly'>Sorry for the inconvenience. If this continues, please submit an error report. Submitting an error report is just one-click away.</div><div class='button pink xxsmall errorReport'>send error report</div>");
+// 		$(target).html("<h2 class='p-y-50'>Content Unavailable</h2><div class='central small p-y-50 bottomOnly'>Sorry for the inconvenience. If this continues, please submit an error report. Submitting an error report is just one-click away.</div><div class='button pink xxsmall errorReport'>send error report</div>");
 // 	}
 // // console.log(e);
 // }

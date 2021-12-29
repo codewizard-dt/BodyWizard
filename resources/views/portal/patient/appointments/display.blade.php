@@ -32,7 +32,7 @@
     }
 ?>  
 
-<h2 class="purple paddedSmall">Your Appointments</h2>
+<h2 class="purple p-y-50">Your Appointments</h2>
 <div id="TimezoneWrap"></div>
 <div id="PatientCalendar" class='calendar patient' data-location='Austin, TX' data-timezone='{{date_default_timezone_get()}}'>
     <div class='lds-ring dark'><div></div><div></div><div></div><div></div></div>

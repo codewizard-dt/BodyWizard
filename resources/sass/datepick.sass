@@ -1,0 +1,196 @@
+@use "colors"
+@use "layout"
+/* Default styling for jQuery Datepicker v5.0.1. */
+
+
+.datepick 
+  &-popup 
+    @include layout.shadow('purple',50,5,0%)
+    border-radius: 10px
+    border: 1px solid colors.get('purple')
+    background-color: colors.get('purple',70,true)
+    overflow: hidden
+    *
+      transition: background-color 400ms, color 400ms
+      box-sizing: content-box
+  // background-color: #fff
+  color: #000
+  // border: 1px solid colors.get('purple')
+  border-radius: 10px
+  // font-family: Arial,Helvetica,Sans-serif
+  // font-size: 90%
+
+  a
+    color: white
+    text-decoration: none  
+    &.datepick-disabled
+      color: #888
+      cursor: not-allowed    
+    &.datepick-cmd
+      height: 1.5em
+  button
+    margin: 0.25em
+    padding: 0.125em 0em
+    background-color: #fcc
+    border: none
+    border-radius: 0.25em
+    font-weight: bold
+    &.datepick-cmd
+      text-align: center
+  &-nav, &-ctrl
+    // float: left
+    // width: 100%
+    display: flex
+    justify-content: space-between
+    background-color: colors.get('purple',70,true)
+    color: #fff
+    font-size: 90%
+    font-weight: bold  
+  &-cmd
+    width: 30%
+    &:hover
+      background-color: colors.get('purple',80,true)
+    &-prevJump, &-nextJump
+      width: 8%
+    &-prev, &-prevJump, &-clear
+      // float: left
+      padding-left: 2%      
+    &-current, &-today
+      // float: left
+      width: 35%
+      text-align: center    
+    &-next, &-nextJump, &-close
+      // float: right
+      padding-right: 2%
+      text-align: center      
+  &-rtl
+    direction: rtl
+    .datepick-cmd
+      &-prev, &-prevJump, &-clear
+        // float: right
+        padding-left: 0%
+        padding-right: 2%
+        text-align: right
+      &-current, &-today
+        // float: right      
+      &-next, &-nextJump, &-close 
+        // float: left
+        padding-left: 2%
+        padding-right: 0%
+        text-align: left
+  &-month
+    // float: left
+    width: 15em
+    border: 1px solid colors.get('purple',70,true)
+    text-align: center
+    table
+      width: calc(100% + 1px)
+      border-collapse: collapse    
+      *
+        box-sizing: border-box
+    thead
+      border-bottom: 1px solid colors.get('purple',80,true)
+    th, td
+      margin: 0em
+      padding: 0em
+      font-weight: normal
+      text-align: center    
+    th
+      border: 1px solid colors.get('purple',70,true)
+    th, a
+      background-color: colors.get('purple',70,true)
+      color: #fff
+    td
+      background-color: white
+      border: 1px solid colors.get('yellow',70,true)
+      span
+        color: #bbb
+        cursor: not-allowed
+      .datepick
+        &-other-month
+          background-color: #fff  
+        &-weekend
+          background-color: colors.get('yellow',5,true)    
+        &-today
+          background-color: colors.get('yellow',60,true)
+        &-highlight
+          background-color: colors.get('yellow',65,true)
+        &-selected
+          background-color: colors.get('yellow',90,true)
+          color: #fff
+      &.datepick
+        &-week
+          border: 1px solid colors.get('yellow',50,true)
+          *
+            background-color: colors.get('yellow',50,true)
+            color: #fff
+            border: none
+    a
+      display: block
+      width: 100%
+      padding: 0.125em 0em
+      background-color: colors.get('yellow',50,true)
+      color: #000
+      text-decoration: none  
+    span
+      display: block
+      width: 100%
+      padding: 0.125em 0em    
+    // td
+    th
+      &.datepick-week
+        background-color: colors.get('purple',70,true)
+        color: #fff    
+
+
+    &-nav
+      display: flex
+      align-items: space-between
+      background-color: colors.get('purple',70,true)
+      text-align: center
+      border-bottom: 1px solid colors.get('purple',80,true)
+      div
+        width: 12.5%
+        margin: 1%
+        padding: 1%
+      span
+        color: colors.get('gray')
+    &-row
+      width: 15em
+    &-header
+      height: 1.5em
+      background-color: colors.get('purple',70,true)
+      color: #fff
+      font-weight: bold
+      border-bottom: 1px solid colors.get('purple',80,true)
+      select, input
+        background-color: colors.get('purple',70,true)
+        color: #fff
+        font-weight: bold
+        height: 1.4em
+        margin: 0em
+        padding: 0em
+        border: none
+        font-size: 100%
+        cursor: pointer
+      select:first-of-type
+        text-align: right
+        option
+          text-align: right
+      input
+        position: absolute
+        display: none      
+  &-popup
+    z-index: 1000
+  &-disable
+    position: absolute
+    z-index: 100
+    background-color: white
+    opacity: 0.5
+    filter: alpha(opacity=50)  
+  &-status
+    // clear: both
+    background-color: #ddd
+    text-align: center  
+  &-clear-fix
+    // clear:both

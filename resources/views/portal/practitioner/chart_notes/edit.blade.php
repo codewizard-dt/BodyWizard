@@ -69,11 +69,11 @@
 	<div class="message">
 		<h2 class='purple'>Charting Forms</h2>
 		<div>
-			<h3 class="purple paddedSmall topOnly">Currently Loaded</h3>
+			<h3 class="purple p-y-50 topOnly">Currently Loaded</h3>
 			<div id="LoadedForms"></div>
 		</div>
 		<div>
-			<h3 class="purple paddedSmall topOnly">Click-To-Load</h3>
+			<h3 class="purple p-y-50 topOnly">Click-To-Load</h3>
 			<div id="AvailableChartingForms" class='flexbox styled'>
 				@forelse ($availableForms as $form)
 					<div class="availableChartForm" data-formid='{{$form->form_id}}'><span class="label">{{$form->form_name}}</span></div>
@@ -91,12 +91,12 @@
 	<div id="NotesFromLastTime" class='left'>
 		<h3 class="chartNoteHeader marginXBig topOnly purple">Pinned Notes From {{$lastNoteDate}}</h3>
 		@forelse ($notesFromLastChartNote as $note)
-			<div class='left paddedSides small paddedSmall'>
+			<div class='left paddedSides small p-y-50'>
 				@if (isset($note['title']))<h4>{{$note['title']}}</h4>@endif
 				<div>{{$note['text']}}</div>
 			</div>
 		@empty
-			<h4 class='left paddedSides small paddedSmall'>None</h4>
+			<h4 class='left paddedSides small p-y-50'>None</h4>
 		@endforelse
 	</div>
 @endif

@@ -205,6 +205,12 @@ function handleError($exception,$location=null) {
   function isEven($num){return $num % 2 == 0;}
   function isOdd($num){return $num % 2 == 1;}
   function boolToYN(bool $bool){return $bool ? "yes" : "no";}
+  function to_bool($value) {
+    if ($value === true || $value === false) return $value;
+    elseif (Str::contains($value,['true','yes'])) return true;
+    elseif (Str::contains($value,['false','no'])) return false;
+    return $value;
+  }
   function makeNumeric($val){
     return intval($val);
   }
@@ -289,6 +295,7 @@ function handleError($exception,$location=null) {
   function only($array, $keys = []) {
     return Arr::only($array, $keys);
   }
+  function dot($array) { return Arr::dot($array); }
   function smart_merge(&$array1, ...$arrays) {
     foreach($arrays as $array) { 
       $array1 = array_merge($array1, $array);
@@ -332,6 +339,14 @@ function handleError($exception,$location=null) {
     }
     return $array;
   }
+  function forget(&$array, $key) {
+    try{
+      Arr::forget($array, $key);
+    }catch(\Exception $e){
+      reportError($e,'fx forget() in functions.php');
+    }
+    return $array;
+  }
   function new_input($type, $options, $values_o, $settings = [], $values_s = []){
     $input = [];
     set($input, 'type', $type);
@@ -356,6 +371,7 @@ function handleError($exception,$location=null) {
     return $str;
   }
   function implodeAnd($array){
+    if (count($array) == 0) return '';
     for ($x = 0; $x < count($array); $x++){
       if ($x == 0) $str = $array[$x];
       elseif ($x == count($array) - 1) $str .= (count($array) == 2 ? '':',').' and '.$array[$x];
@@ -461,7 +477,7 @@ function handleError($exception,$location=null) {
     $instance = getInstanceFromUid($model); $name = $instance->name;
     if (session('model_action') == 'create') $str = "\"$name\" successfully added!";
     else $str = "\"$name\" information updated";
-    $response = "<h1 class='paddedBig'>$str</h1>";
+    $response = "<h1 class='p-y-150'>$str</h1>";
     $response .= "<div class='button pink' data-action='Menu.reload'>continue</div>";
     return $response;
   }

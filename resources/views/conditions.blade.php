@@ -10,10 +10,10 @@
 
 @section('content')
         <div class='splash btnPopDown top' id='pulse_1'>
-            <h1 class='paddedXSmall shaded30 purple'>Commonly Treated Conditions</h1>
+            <h1 class='p-y-25 shaded30 purple'>Commonly Treated Conditions</h1>
             <div class='button booknow small pink'>book an appointment</div>
         </div>
-        <h2 class='yellow paddedSmall'>Three Realms of Healing</h2>
+        <h2 class='yellow p-y-50'>Three Realms of Healing</h2>
         <div class='menuBar website' id='ConditionMenu' data-populated='no' data-target='window' data-mode='scroll'>
             <div class='tab' id='internal'><div class='title'>Internal Medicine</div></div>
             <div class='tab' id='pain'><div class='title'>Muscle, Joint + Nerve Pain</div></div>
@@ -22,7 +22,7 @@
         <div id='Conditions' class='central large left listings'>
             <div id='InternalMedicineListing'>
                 <div class='splash'>
-                    <div class='icon stomach pink'></div>
+                    <div class='icon internal pink'></div>
                     <h3 class='white'>Internal Medicine</h3>
                 </div>
                 <h4>A typical treatment plan for internal medicine includes regular acupuncture sessions and relies heavily on botanical medicine.</h4>
@@ -31,7 +31,7 @@
             </div>
             <div id='MuscleJointPainListing'>
                 <div class='splash'>
-                    <div class='icon knee pink'></div>
+                    <div class='icon joint pink'></div>
                     <h3 class='white'>Muscle + Joint Pain</h3>
                 </div>
                 <h4>A typical treatment plan for muscle and joint pain includes regular acupuncture and fascial release</h4>
@@ -40,7 +40,7 @@
             </div>
             <div id='PsychoSocialListing'>
                 <div class='splash'>
-                    <div class='icon brain pink'></div>
+                    <div class='icon psych pink'></div>
                     <h3 class='white'>Psychosocial Conditions</h3>
                 </div>
                 <h4>A typical treatment plan for psychosocial conditions includes regular acupuncture and guided meditation + breathing</h4>
@@ -51,23 +51,23 @@
         <div id='TreatmentDesc' class='small paddedXBig yellowBg10'>
             <div class='wrapper'>
                 <div class='icon acu pink'></div>
-                <div class='divide hor yellowBg central xs'></div>
-                <h4 class='paddedSmall'>Acupuncture</h4>
+                <div class='divider yellow central xs'></div>
+                <h4 class='p-y-50'>Acupuncture</h4>
             </div>
             <div class='wrapper'>
                 <div class='icon botanical pink'></div>
-                <div class='divide hor yellowBg central xs'></div>
-                <h4 class='paddedSmall'>Botanicals</h4>
+                <div class='divider yellow central xs'></div>
+                <h4 class='p-y-50'>Botanicals</h4>
             </div>
             <div class='wrapper'>
                 <div class='icon fascial pink'></div>
-                <div class='divide hor yellowBg central xs'></div>
-                <h4 class='paddedSmall'>Fascial Release</h4>
+                <div class='divider yellow central xs'></div>
+                <h4 class='p-y-50'>Fascial Release</h4>
             </div>
             <div class='wrapper'>
                 <div class='icon meditation pink'></div>
-                <div class='divide hor yellowBg central xs'></div>
-                <h4 class='paddedSmall'>Guided Meditation</h4>
+                <div class='divider yellow central xs'></div>
+                <h4 class='p-y-50'>Guided Meditation</h4>
             </div>
             <br>
             <div class='button fullWidth small pink marginBig bottomOnly link' data-target='/treatments'>more about treatments</div>

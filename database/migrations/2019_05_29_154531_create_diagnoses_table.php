@@ -21,7 +21,7 @@ class CreateDiagnosesTable extends Migration
             $table->string("affects");
             $table->json('full_json');
             $table->json('settings')->nullable()->default(null);
-            $table->timestamps();
+            $table->timestampsTz();
         });
     }
 

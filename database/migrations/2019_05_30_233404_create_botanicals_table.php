@@ -16,7 +16,7 @@ class CreateBotanicalsTable extends Migration
         Schema::create('botanicals', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->json('full_json');
-            $table->timestamps();
+            $table->timestampsTz();
         });
     }
 

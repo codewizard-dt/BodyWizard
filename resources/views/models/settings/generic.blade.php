@@ -1,6 +1,6 @@
 <?php 
-$form = App\Form::firstWhere('form_name','like',$model.' Settings');
-$mode = 'display';
+$form = App\Form::firstWhere('name','like',$model.' Settings');
+// $mode = $instance->proxy ? 'settings' : 'display';
 // logger(compact('form'));
 ?>
 
