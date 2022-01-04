@@ -22,5 +22,5 @@ try {
 ?>
 
 
-<span class='answer_proxy' data-type='{{ $type }}' data-initial='{{ $value }}'
-    data-options='{{ json_encode($options) }}' data-settings='{{ $settings }}'></span>
+<div class='answer_proxy' data-type='{{ $type }}' data-initial='{{ $value }}'
+    data-options='{{ json_encode($options) }}' data-settings='{{ $settings }}'><input /></div>

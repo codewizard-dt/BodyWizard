@@ -44,6 +44,10 @@ class AppServiceProvider extends ServiceProvider
         Invoice::observe(\App\Observers\InvoiceObserver::class);
         Form::observe(\App\Observers\FormObserver::class);
 
-        View::share('practice', Practice::first());
+        $practice = Practice::first();
+        View::share('practice', $practice);
+        $this->app->singleton(Practice::class, function () use ($practice) {
+            return $practice;
+        });
     }
 }

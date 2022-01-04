@@ -26,11 +26,13 @@ export const log = function (info, text = null) {
     for (let attr in info) { data[attr] = info[attr]; attrText.push(attr); }
     attrText = attrText.join(', ');
   } else attrText = 'log info';
+
   let stack_steps = (new Error()).stack.match(/at (.*) \((.*js):(.*):/g), stack_info = '', fx = '', file = '';
   if (stack_steps && stack_steps[1]) {
     let last_step = stack_steps[1].match(/at (.*) \((.*js):(.*):/);
     file = last_step[2].split('/').pop();
     fx = last_step[1];
+    // console.log({ stack_steps });
     stack_info = ` - ${file}`;
   }
 
@@ -46,9 +48,9 @@ export const log = function (info, text = null) {
   console.log(`%c ${file} @ ${fx}`, style)
   error ? console.error(data) : console.log(data);
   if (error !== null && error.stack) console.log(error.stack);
-  console.groupCollapsed('trace');
+  // console.groupCollapsed('trace');
   console.trace();
-  console.groupEnd();
+  // console.groupEnd();
   console.groupEnd();
 };
 
@@ -56,7 +58,6 @@ class Button {
   constructor(options) {
     let errors = [];
     try {
-      if (options.text === 'add new') log({ options });
       this.define_by(options);
       if (!this.ele) this.ele = $("<div/>", { text: this.text }).appendTo('body');
       this.ele.data('class_obj', this);
@@ -87,8 +88,10 @@ class Button {
   text_update(string) { this.ele.text(string) }
 
   get action_data() {
-    const data = {};
+    let data = {};
     if (this.model) data.model = this.model;
+    if (this.table) data = { ...data, table: this.table, selected: this.table.uids };
+    if (this.url) data.url = this.url;
     return data;
   }
 
@@ -100,13 +103,15 @@ class Button {
       this.disabled_warning.show(); return;
     }
 
-    let action = this.action, target = this.target, mode = this.mode, callback = this.callback;
+    // let action = this.action, target = this.target, mode = this.mode, callback = this.callback;
+    const { action, target, mode, callback } = this;
     if (user.isSuper() && ev.metaKey) {
       log({ action, ev, button: this }, `BTN ${this.ele.text()}`);
+      ev.stopPropagation();
       return;
     }
     try {
-      if (action) action.bind(this.ele, ev)();
+      if (action) action.bind(this.ele)(this.action_data);
       if (mode && target) {
         if (!['same_tab', 'new_modal'].some(t => target.includes(t))) {
           if ($(target).dne()) target = `#${target}`;
@@ -127,9 +132,7 @@ class Button {
       log({ error, message, options });
     }
   }
-  // blur_undo (ev) {
 
-  // }
 };
 class ButtonBox {
   constructor(options = {}) {
@@ -336,6 +339,7 @@ class KeyValueBox {
     )
   }
   realign() {
+    return;
     if (!this.ele.is(':visible')) return;
     this.pairs_grouped_by_header.forEach(pairs => {
       if (!pairs.is(':visible')) return;
@@ -367,10 +371,9 @@ class KeyValueBox {
     }
     return groups;
   }
-  // get grouped_pairs_with_headers () {
 
-  // }
   static realign(ele = null) {
+    return;
     let boxes = $(ele || 'body').find('.KeyValueBox').get();
     boxes.forEach(kv => $(kv).getObj().realign());
     // log({ele,boxes});
@@ -395,12 +398,10 @@ class KeyValueBox {
     });
   }
   add_header(header, options = {}) {
-    options.merge(this.header_options || {});
-    // let css = (options.css || {}).merge({display:'block'});
-    let tag = options.html_tag || 'div';
-    let class_list = options.class_list || '';
-    // let text = header;
-    if (typeof header == 'string') header = $(`<${tag} class='kv_header box bigger ${this.color}'>${header}</${tag}>`);
+    if (this.header_options) options = { ...this.header_options, ...options };
+    const { tag = 'div', class_list = '' } = options;
+
+    if (typeof header == 'string') header = $(`<${tag} class='kv_header ${this.color}'>${header}</${tag}>`);
     this.flex.append(header.addClass(class_list));
     this.headers.push(header[0]);
     let toggle = KeyValueBox.header_toggle.bind(header);
@@ -487,7 +488,7 @@ class KeyValueBox {
   }
 }
 
-class FilterNew {
+class Filter {
   constructor(options = {}) {
     this.define_by(options);
     // log({options});
@@ -611,13 +612,13 @@ class List {
 
   add_filters() {
     let target = this, selector = 'li';
-    this.search_box = new FilterNew({
+    this.search_box = new Filter({
       target, selector,
       name: 'text', type: 'text', filter_type: 'text',
       placeholder: 'Type to search',
       settings: { placeholder_shift: false }
     });
-    this.active_only = new FilterNew({
+    this.active_only = new Filter({
       target, selector,
       name: 'is_active', filter_type: 'active',
       type: 'checkboxes',
@@ -853,7 +854,10 @@ class Toggle {
       let color = this.color = this.color || 'purple';
       this.arrow_position = options.arrow_position || 'left';
       if (this.toggle_ele.find('.arrow').exists()) this.arrow = this.toggle_ele.find('.arrow')[0];
-      else this.arrow = new Icon({ type: 'arrow', size: 1, color, dir: 'down' });
+      else {
+        const arrow_size = this.arrow_size || 1;
+        this.arrow = new Icon({ type: 'arrow', size: arrow_size, color, dir: 'down' });
+      }
       this.text = this.toggle_ele.text().trim();
       this.text_ele = $(`<div/>`, { text: this.text, class: 'toggleText' });
 
@@ -1299,7 +1303,7 @@ class Warning {
     if (options.message) this.tooltip.message_reset(options.message);
     if (options.target) this.tooltip.target = options.target;
     let class_list = options.warning_class || this.warning_class || null;
-    log({ class_list, tt: this.tooltip });
+    // log({ class_list, tt: this.tooltip });
     this.tooltip.show();
     clearTimeout(this.hide_timer);
     if (class_list) this.target.addClass(class_list);
@@ -1739,10 +1743,11 @@ class Autosave {
       this.delay = ifu(this.delay, 10000);
       this.size = this.size || 2;
       this.message = this.message || 'changes saved';
-      if (this.obj) {
-        this.name = this.obj.attr_list ? this.obj.attr_list.name : this.obj.name || 'nameless';
-        log({ autosave: this, obj: this.obj }, `new Autosave for "${this.name}"`);
-      } else log({ autosave: this, obj: this.obj }, `new Autosave, NO OBJ`);
+      if (this.obj) this.name = this.obj.attr_list ? this.obj.attr_list.name : this.obj.name || 'nameless';
+      // if (this.obj) {
+      //   this.name = this.obj.attr_list ? this.obj.attr_list.name : this.obj.name || 'nameless';
+      //   log({ autosave: this, obj: this.obj }, `new Autosave for "${this.name}"`);
+      // } else log({ autosave: this, obj: this.obj }, `new Autosave, NO OBJ`);
     } catch (error) {
       log({ error });
     }
@@ -1858,7 +1863,7 @@ class Icon {
   static option_dots(options) {
     let size = options.size || 2, color = options.color || 'gray', position = options.position || 'right';
 
-    let g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    // let g = document.createElementNS("http://www.w3.org/2000/svg", "g");
 
     let wrap = $(`<svg viewBox='0 0 ${size * 12} ${size * 16}'/>`).addClass(`${color} ${position}`).css({ width: `${size * 0.75}em`, height: `${size}em` });
     // options.size = size / 4; options.color = color;
@@ -1923,6 +1928,13 @@ class Icon {
     let size = options.size || 5, color = options.color || 'red';
     let x = new Image();
     x.src = `/images/icons/x_styled_${color}.png`;
+    $(x).css({ width: `${size}em`, height: `${size}em` }).addClass(color);
+    return { img: $(x), color };
+  }
+  static x(options) {
+    let size = options.size || 5, color = options.color || 'red';
+    let x = new Image();
+    x.src = `/images/icons/red_x.png`;
     $(x).css({ width: `${size}em`, height: `${size}em` }).addClass(color);
     return { img: $(x), color };
   }
@@ -2146,7 +2158,7 @@ class Blur {
     return modal;
   }
   get load_ele() {
-    let circle = new Icon({ type: 'circle', size: 4, color: this.color || 'purple' });
+    let circle = new Icon({ type: 'circle', size: this.size || 4, color: this.color || 'purple' });
     this.block.addClass('loading');
     this.icon = circle;
     circle.spin();
@@ -2180,7 +2192,7 @@ class Blur {
 
   add_x() {
     this.block.children('.blur_x').remove();
-    let cancel_x = new Icon({ type: 'styled_x', size: 0.75, class_list: 'blur_x', action: _ => { this.undo() } });
+    let cancel_x = new Icon({ type: 'x', size: 1, class_list: 'blur_x', action: _ => { this.undo() } });
     this.block.children().first().append(cancel_x.img);
   }
 
@@ -2325,22 +2337,23 @@ export class Menu {
     $('.menuBar').last().getObj().reload();
   }
   static async fetch(options = {}) {
-    let data = options.data || {}, method = options.method || 'GET', url = options.url, target = options.target,
-      replace_target = options.replace_target || false,
-      in_background = options.in_background || false,
-      is_html = ifu(options.is_html, true),
-      new_modal = (typeof target == 'string' && target.includes('new_modal'));
+    let { data = {}, method = 'GET', url, target, replace_target = false, is_html = true } = options;
+    const new_modal = (typeof target == 'string' && target.includes('new_modal'));
+    if (new_modal) return Menu.new_modal(options);
 
     if (!target) throw new Error('target missing');
+    else if (target === 'same_tab') target = $('.loadTarget').last();
+
     if (options.blur === true) options.blur = {};
-    if (new_modal) {
-      return Menu.new_modal(options);
-    } else if (target === 'same_tab') {
-      target = $('.loadTarget').last();
-      blur(target, 'loading', options.blur);
-    } else if (options.blur) {
-      blur(target, 'loading', options.blur);
-    }
+
+    if (options.blur) blur(target, 'loading', options.blur);
+
+    // if (target === 'same_tab') {
+    //   // target = $('.loadTarget').last();
+    //   blur(target, 'loading', options.blur);
+    // } else if (options.blur) {
+    //   blur(target, 'loading', options.blur);
+    // }
     return $.ajax({
       url: url,
       headers: Menu.headers,
@@ -2420,6 +2433,14 @@ export class Menu {
     if (uid_list) uids(uid_list);
     if (tab_list) tabs(tab_list);
     if (csrf) $('meta[name="csrf-token"]').attr('content', csrf);
+    if (xhr.responseJSON) {
+      const { error } = xhr.responseJSON;
+      if (error) {
+        const modal = $("#Error");
+        $(modal).find(".message").html(`<h2 class='pink'>${error.header}</h2><div class='p-small'>${error.message}</div>`);
+        blurTop(modal);
+      }
+    }
   }
   static notifications_extracted(data) {
     let regex = /###notifications(.*)###/;
@@ -2460,6 +2481,13 @@ export class Menu {
         affirm: function () { $.ajax('/keep-session'); }
       });
     }
+  }
+  static load(options) {
+    console.log(options);
+    const { url, blur = true } = options;
+    const target = $('.loadTarget').last();
+    log({ url, target });
+    Menu.fetch({ url, target, blur });
   }
   // static refresh_page () {location.reload(true)}  
 }
@@ -2511,26 +2539,11 @@ export class MenuItem {
 $(document).on('keyup', ev => { if (ev.keyCode == 27) Blur.undo({ exclude_loading: true }) });
 $(document).on('scroll', ev => { ToolTip.hide_all() });
 
-export const Features = { Notification, Button, ButtonBox, FilterNew, Editable, OptionBox, List, UpDown, Toggle, ToolTip, Warning, Banner, Autosave, Icon, KeyValueBox, Confirm, Blur };
+export const Features = { Notification, Button, ButtonBox, Filter, Editable, OptionBox, List, UpDown, Toggle, ToolTip, Warning, Banner, Autosave, Icon, KeyValueBox, Confirm, Blur };
 window.Notification = Notification;
 
 
 window.Http = Menu;
-// export const menu = {
-//   list: () => $('.menuBar').get().map(menu => $(menu).getObj()),
-//   get: name => menu.list().find(menu => menu.name == name) || null,
-//   initialize: {
-//     all: function(){
-//       init('.menuBar', function() { 
-//         let options = {ele: $(this)}.merge($(this).data());
-//         new Menu(options);
-//       })
-//     },
-//   },
-//   load: async (options) => {
-//     throw new Error('EWWWWW');
-//   }
-// }
 
 export const system = {
   user: {
@@ -3791,7 +3804,7 @@ $(document).ajaxError(function (ev, xhr, settings, error) {
       blurTop("#Feedback");
     } else {
       $(modal).find(".submit").data('error', xhr);
-      $(modal).find(".message").html("<h2>Error</h2><div>" + message + "</div>");
+      $(modal).find(".message").html("<h2 class='pink'>Error</h2><div>" + message + "</div>");
       blurTop(modal);
     }
     var btn = $(modal).find(".submit");
@@ -4114,32 +4127,6 @@ $(document).keyup(function (e) {
 // })
 
 
-// function highlightRow(){
-//     if ($(this).find("th").length==0){
-//         $(this).addClass("hover");
-//     }
-// }
-// function reverseHighlight(){
-//     $(this).removeClass("hover");
-// }
-// function stylizeTables(){
-//     var tables = $(document).find(".styledTable").filter(function(){
-//         return $(this).data("styled") == undefined;
-//     });
-//     tables.wrap("<div class='table_wrapper'/>");
-//     tables.filter(".clickable").find("tr").not(".head").hover(highlightRow,reverseHighlight);
-//     tables.each(function(){
-//         if ($(this).hasClass('hideOverflow')){
-//             var t = $(this).closest(".table_wrapper"), h = $(this).data('maxheight');
-//             t.addClass('manageOverflow').data("maxHeight",h);
-//             $("<div/>",{
-//                 class:"showOverflow",
-//                 text:"show all matches"
-//             }).appendTo(t);
-//         }
-//     })
-//     tables.data('styled',true);
-// }
 
 function animateWidthChange(elem) {
   var w1 = elem.scrollWidth, w2 = $(elem).innerWidth(), w3;
@@ -4172,7 +4159,7 @@ function wrapAndCenter(item) {
 }
 
 // function filterTableList(table){
-//     $(".styledTable").removeClass("active");
+//     $(".styled-table").removeClass("active");
 //     table.addClass("active");
 
 //     var filterObj = {}, 
@@ -4295,7 +4282,7 @@ function wrapAndCenter(item) {
 //     checkHorizontalTableFit(table);
 // }
 function checkMatches() {
-  var table = $(".styledTable").filter(".active");
+  var table = $(".styled-table").filter(".active");
   var filterCount = $(".filter").filter(function () {
     return table.is($(this).data("target")) && $(this).hasClass("active") && $(this).data('filter') != 'hide';
   }).length;
@@ -4342,7 +4329,7 @@ function checkHorizontalTableFit(table) {
 //         clearTimeout(tableCheck);
 //     }
 //     tableCheck = setTimeout(function(){
-//         $(".styledTable").each(function(i,t){
+//         $(".styled-table").each(function(i,t){
 //             if ($(t).data("hideorder")!=undefined){
 //                 checkHorizontalTableFit($(t));
 //             }

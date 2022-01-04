@@ -19,17 +19,22 @@ if (Auth::guest()) {
 </head>
 
 <body>
-    @include('layouts.menus.site-menu',
-    [
-    'items' => $items,
-    'menuName' => "SiteMenu",
-    'menuData' => $menuData
-    ]
-    )
-
-    @yield("content")
-    @include('layouts.footer')
-
+    <div id="App" class='flexbox column stretch'>
+        <div id="Nav">
+            @include('layouts.menus.site-menu',
+            [
+            'items' => $items,
+            'menuName' => "SiteMenu",
+            'menuData' => $menuData
+            ]
+            )
+        </div>
+        <div id="Content" class='grow-1 flexbox column stretch'>
+            @yield("content")
+        </div>
+        @include('layouts.modal-home')
+        @include('layouts.footer',['contact_info'=>true])
+    </div>
 </body>
 
 </html>

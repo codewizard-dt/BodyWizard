@@ -1,6 +1,5 @@
-@forward "colors"
+
 @use "colors"
-@forward "layout" 
 @use "layout" as style
 @use "sass:math"
 
@@ -9,7 +8,7 @@
   color: white
 
 .tooltip
-  @include style.box('darkgray',5px,true,10,2px, false)
+  @include style.box('darkgray')
   position: fixed
   top: 10em
   text-align: left
@@ -53,12 +52,12 @@
     &:hover
       background-color: colors.get('pink',10,true)
   .date_link
-    @include style.pad(0,25)
+    @include style.pad('mini','x')
   @each $color in ['pink','purple','yellow','green','gray']
     &.#{$color}
       &.shadow
         @include style.shadow($color,30,10)
-        border-color: style.get($color,70)
+        border-color: colors.get($color,70)
         &_small
           @include style.shadow($color,30,5)
       h1, h2, h3, h4, h5
@@ -76,10 +75,8 @@
   @include style.max
   ul
     border-radius: 5px
-    border-width: 1px
-    border-style: solid
-    border-color: colors.get('purple',70)
-    margin: 0.5em
+    border: 1px solid colors.get('purple',70)
+    @include style.margin('xsmall')
     position: relative
     list-style: none
     li
@@ -90,22 +87,12 @@
       padding: 0.1em 0.3em
       margin-left: 0
       .UpDown
-        @include style.margin(0,0,0,75)
+        @include style.margin('xsmall','left')
       &.active
         @extend %active
 
-    // &.horizontal
-    //   border-color: transparent
-    //   li
-    //     displa
-    //     border: 1px solid transparent
-    //     border-radius: 3px
-    //     &.active
-    //       border-color: colors.get('purple',50)
-
     &.horizontal
-      // border-color: transparent
-      border-color: colors.get('purple',50)
+      border-color: colors.get('purple',25)
       li
         display: inline-block
         padding: 0.1em 0.3em
@@ -118,9 +105,11 @@
         &.active
           border-color: colors.get('purple',50)
 
-
+.UpDown
+  width: 1em
 
 .Table
+  max-width: 100%
   table
     max-width: 100%
     text-align: left
@@ -128,8 +117,7 @@
     font-weight: 400
     tr
       > *
-        @include style.pad(25,100)
-        // padding: 0.25em 2em 0.25em 0.5em
+        @include style.pad('xsmall','y','small','x')
         border-bottom: 1px solid colors.get('purple',30)
       &.head
         background-color: colors.get('purple',90)
@@ -142,15 +130,21 @@
         background-color: colors.get('purple',3.5)
 
   .List 
+    max-width: 95%
+    ul
+      text-align: center
+      border-width: 0
+      @include style.margin('none')
+      @include style.pad('xmini')
     li
       display: inline-block
       padding: 0.1em 0.3em
       margin: 0.1em 0.2em
-      background-color: colors.get('purple',5)
+      background-color: colors.get('purple',10)
       &:hover
-        background-color: colors.get('purple',10)
+        background-color: colors.get('purple',15)
 
-  .table_wrapper
+  .table-container
     display: inline-block
     position: relative
     border-radius: 5px
@@ -162,10 +156,16 @@
     background-color: colors.get('purple')
     margin: 0.5em
     .option_dots
-      &.left
-        left: -2px
-      &.right
-        right: -2px
+      box-sizing: border-box
+      position: absolute
+      border: 2px solid colors.get('purple',70)
+      @include style.pad('xmini','y')
+      // &.left
+      //   left: -2px
+      //   // border-radius: 
+      // &.right
+      //   right: -2px
+      //   border-radius: 0 5px 5px 0
   .td_size_control
     max-height: 4.5em
     max-width: 400px
@@ -185,7 +185,7 @@
 .Toggle 
   &.toggle_ele
     cursor: pointer
-    @include style.pad(100)
+    @include style.pad('xsmall')
     .toggleText
       transition: letter-spacing 400ms
     .arrow
@@ -197,12 +197,12 @@
     // &.sticky.lined
       // margin-bottom: 3px
     &.half_pad
-      @include style.pad(50)
+      @include style.pad('xsmall')
     &.left
       .arrow
         transform: rotate(-90deg)
       .toggleText
-        @include style.margin(0,0,0,50)
+        @include style.margin('xsmall','left')
     &.showing.left
       .arrow
         transform: rotate(0deg)
@@ -220,7 +220,7 @@
           @include style.opacityFlash()
           // opacity: 1
 .target_ele.left:not(ul, .Banner)
-  @include style.indent
+  @include style.pad('xsmall','left')
 
 .toggle_msg
   margin-bottom: 0.5em
@@ -228,67 +228,55 @@
   display: block
 
 .KeyValueBox 
+  @include style.fit-content(auto, $min:'small')
   .kv_header
-    @include style.margin(100, 0, 50)  
+    @include style.pad('xsmall','x','mini','y')
     &.toggleable 
       cursor: pointer
       transition: background-color 400ms, border-color 400ms
     @each $color in ['pink' 'purple' 'yellow' 'green' 'gray']
       &.#{$color}
-        border: 2px solid transparent
-        border-bottom-color: style.get($color,80)
-        &.hiding 
-          // background-color: style.get($color,40)
-          border-bottom-color: style.get($color,20)
-        &.toggleable:hover 
-          background-color: style.get($color,10)
-          border-bottom-color: style.get($color,80)
-    &:first-of-type
-      @include style.margin(50,0)
-    &.left
-      align-self: flex-start
+        @include style.border('thin','purple',$shade:50)
+        background-color: style.get($color,5)
 
   .key
-    &:not(.flexbox)
-      display: inline-block
     text-align: right
-    box-sizing: content-box
-    flex: 0 0 auto
+    flex: 0 0 50%
     align-self: flex-start
-    min-width: max-content
-    max-width: 50%
-    margin-left: 1em
-    transform: translateX(-1em)
+    @include style.fit-content
+    @include style.pad('xsmall','right')
     // .Icon
     //   @include style.margin(0, 35, 0, 0)
   .value
-    display: inline-block
+    // display: inline-block
     text-align: left
-    box-sizing: content-box
-    flex: 0 0 auto
+    // box-sizing: content-box
+    flex: 0 0 50%
     align-self: flex-start
     color: black
+    @include style.fit-content
+    // flex-basis: 50%
     * 
       box-sizing: border-box
   .Icon
-    @include style.margin(0, 0, 0, 35)
+    @include style.margin('xsmall','left')
   > .flexbox.column
     box-sizing: content-box
     > .flexbox
       display: flex
       width: calc(100% - 1em)
-      @include style.pad(0, 10)
-      @include style.margin(20, 50)
+      @include style.pad('xsmall','x')
+      @include style.margin('mini','top')
       // padding: 0 1em
       // margin: 0 0.5em
       flex-wrap: nowrap
       box-sizing: border-box
-  &.settings, &.details
-    @include style.pad(25,0,100)
-    // > .column > .pair
-    //   @include style.margin(20,0)
-    .value
-      padding-top: 0.3em
+  // &.settings, &.details
+  //   @include style.pad('xsmall','y')
+  //   // > .column > .pair
+  //   //   @include style.margin(20,0)
+  //   .value
+  //     padding-top: 0.3em
   .setting_name
     display: inline-block
     padding-right: 0.5rem
@@ -312,15 +300,13 @@
 
 
 .Details
-  padding: 1em 0
   box-sizing: border-box
   position: relative
   display: none
-  // display: block
-  // width: max-content
-  // margin: auto
   .toggle_ele
-    @include style.pad(25,100)
+    @include style.pad('medium','x','none','y')
+    // img
+    //   @include style.pad()
 
 .calendar 
   max-width: 90%
@@ -331,7 +317,7 @@
   .fc-header-toolbar
     position: sticky
     top: 7em
-    z-index: 10
+    // z-index: 10
     background-color: colors.get('white',97)
   .fc-event:not(.fc-bg-event)
     &:hover, &.hover
@@ -340,19 +326,19 @@
 
 
 #BannerContainer
-  @include style.flexbox_column
+  @include style.flex_column
   align-items: flex-end
   position: fixed 
   top: 5em 
   right: 3.5em 
   z-index: 9999 
   .Banner
-    @include style.margin(10, 0)
+    @include style.margin('mini','y')
 .Banner
   z-index: 61
   &:not(h1, h2, h3, h4, h5)
     font-size: 1.3em
-  @include style.pad(50)
+  @include style.pad('xsmall')
 body
   > #BannerContainer
     top: 5em
@@ -389,10 +375,10 @@ body
     // &:hover
     //   opacity: 1
   > *
-    max-width: calc(100% - 2rem) !important
-    max-height: calc(100% - 2rem) !important
+    max-width: calc(100% - 2rem) 
+    max-height: calc(100% - 2rem) 
     position: absolute
-    display: block !important
+    display: block 
     top: 50%
     left: 50%
     transform: translate(-50%, -50%)
@@ -423,15 +409,17 @@ body
       box-shadow: 0 0 20px 10px colors.get('gray')
     *.blur_ele
       z-index: 79
+    .blur_msg
+      @include style.max(false)
   &.loading
     background-color: colors.get('white',70)
     > svg
       border-color: transparent !important
       box-shadow: unset !important
+
 .blurred
   overflow-y: hidden
 .blur_msg
-  @include style.max(false)
   @each $color in ['pink' 'purple' 'yellow' 'green']
     &.#{$color}
       @include style.box($color)
@@ -451,21 +439,19 @@ body
     border-top: 1px solid colors.get('gray',30)
     padding: 0.5em
 
-.flexbox > .Filter
-  flex: 0 0 auto
-  margin: 5px
+.filter_box 
+  @include style.box('purple',$shade:'light')
+  @include style.fit-content(0.5rem auto)
+  @include style.width('two-thirds','min')
 
 .Filter
-  width: max-content
-  max-width: 100%
-  min-width: 20em
-  margin: auto
-  h3
-    // width: 100%
+  @include style.fit-content(0.5rem auto)
+  @include style.width('xsmall','min')
   .answer 
     max-width: 100%
-    min-width: unset
-    width: unset
+    // min-width: unset
+    width: 100%
+    @include style.margin('xsmall','y')
     .preLabel
       padding: 0 0.25em
     &.checkboxes
@@ -478,16 +464,16 @@ body
     padding: 0
     cursor: default
   .notification_options
-    @include style.box('green', 3px, true, 5)
+    @include style.box('green')
     margin-left: 1em
     padding: 0
     // justify-content: space-around
     img
-      @include style.margin(10,20)
+      @include style.margin('xsmall')
       &:first-of-type
-        @include style.margin(10,20,10,40)
+        @include style.margin('xsmall')
       &:last-of-type
-        @include style.margin(10,40,10,20)
+        @include style.margin('xsmall')
   > .indicator
     bottom: 0.5em
     right: 0.9em
@@ -538,8 +524,8 @@ body
   .KeyValueBox
     color: black
     .value
-      background-color: style.get('gray',5)
-      border: 1px solid style.get('gray',50)
+      background-color: colors.get('gray',5)
+      border: 1px solid colors.get('gray',50)
   .KeyValueBox:first-of-type
     > .value
       background-color: transparent

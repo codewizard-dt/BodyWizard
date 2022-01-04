@@ -70,7 +70,6 @@ class FormEle {
       li_selectable: false,
     });
 
-
     this.section_array = [];
     this.section_ele = $(`<div/>`, { class: 'sections' }).appendTo(this.ele);
     if (this.charting) this.section_ele.hide();
@@ -548,7 +547,7 @@ class FormEle {
       answers.forEach(a => a.reset());
       let toggles = form.find('.Toggle').get().map(t => $(t).getObj())
       toggles.forEach(t => t.to_initial_state(0));
-      log({ answers, json });
+      // log({ answers, json });
       for (let name in json) {
         let answer = find(name);
         if (answer) answer.value_change = json[name];
@@ -569,6 +568,7 @@ class FormEle {
     }
   }
 }
+
 class SubmissionJson {
   constructor(json = null) {
     try {
@@ -661,7 +661,7 @@ class Section {
     this.ele = $(`<div class='section'></div>`);
     this.ele.data('class_obj', this);
     this.header = $(`<h2 class='section_header'>${this.name}</h2>`).appendTo(this.ele);
-    // this.add_header();
+
     this.item_list = $(`<div/>`, { class: 'Items flexbox' }).appendTo(this.ele);
     this.items = [];
 
@@ -681,10 +681,8 @@ class Section {
       callback: (ev, value) => { this.name = value; this.form.autosave.trigger() }
     });
     this.header.replaceWith(name_input.ele);
-    // this.header = name_input.ele.appendTo(this.ele);
 
     this.item_list.append(`<div class='no_items item no_sort'><span>No items</span></div>`);
-    // this.buttons = $(`<div class='flexbox left'></div>`).appendTo(this.item_list);
     this.buttons = new Features.ButtonBox({
       buttons: [
         {
@@ -968,7 +966,6 @@ class Item {
       this.text_key = options.text.toKeyString();
       // log({options: options.options},`${this.text_key}`);
       if (options.options.autofill_model) this.new_proxy();
-      // this.linked_proxy = 
       this.type = options.type;
       this.settings = options.settings || {};
       this.ele = $('<div/>', { class: `item flexbox left top ${this.type}` });
@@ -1400,7 +1397,7 @@ class Item {
 
     let model = Item.AutofillModel = answer.options.autofill_model || null;
     let settings = Item.AutofillSettings = answer.options.autofill_settings || null;
-    log({ model, settings });
+    // log({ model, settings });
     if (answer.options.autofill_model) this.autofill_option_fill();
     else $('#AutofillOptions').slideFadeOut(0);
     log({ answer, options: answer.options, answers, linked: Item.AutofillModel }, `editing ${answer.text}`);
@@ -1528,21 +1525,10 @@ class Item {
       })
       if (list.notEmpty()) obj.options.list = list;
 
-
-      // if (Item.LinkedInfo && Item.LinkedInfo.is(':visible')) {
-      //   obj.options.autofill_model = Item.AutofillModel;
-      //   obj.options.autofill_settings = Item.AutofillSettings;
-      //   let limit_obj = answers.find(a => a.name == 'listLimit');
-      //   // log({limit_obj,answers});
-      //   let limit = limit_obj.verify('required');
-      //   if (!limit) return;
-      //   obj.options.listLimit = limit;
-      // }
       if (Item.AutofillProxy) {
         obj.options.autofill_model = Item.AutofillModel;
         obj.options.autofill_settings = Item.AutofillSettings;
         let limit_obj = answers.find(a => a.name == 'listLimit');
-        // log({limit_obj,answers});
         let limit = limit_obj.verify('required');
         if (!limit) return;
         obj.options.listLimit = limit;
@@ -2229,15 +2215,12 @@ class Answer {
 
   verify(string = null) {
     let message = string || this.if_null_str || 'required', value = this.get();
-    if (value === null && this.settings.required) {
-      log({ this: this, value });
+    if ((value === null || value === undefined) && this.settings.required) {
       this.input.smartScroll({
-        // offset: get_rem_px() * 4,
         callback: _ => this.warning.show({ message })
       });
-      // return false;
+      return false;
     }
-    // this.input.removeClass('border_flash_pink slow twice');
     return value;
   }
 
@@ -2455,15 +2438,16 @@ class Answer {
   placeholder_shift() {
     if (this.ele.closest('#AddItem').exists() || this.ele.isInside('.item') || !this.options.placeholder || this.options.preLabel || this.settings.placeholder_shift === false) return;
 
-    if (!this.placeholder_label) this.placeholder_label = $('<span/>', { text: this.options.placeholder }).css({ opacity: 0, position: 'absolute', left: '0.75em', top: '0.5em', color: 'var(--purple)', width: '100%', whiteSpace: 'nowrap', overflow: 'hidden' }).insertBefore(this.input);
+    try {
+      if (!this.placeholder_label) {
+        this.ele.addClass('has-placeholder');
+        this.placeholder_label = $('<span/>', { text: this.options.placeholder }).addClass('placeholder text-large').insertBefore(this.input);
+      }
+      if (this.get() != null || this.autofill_list) this.placeholder_label.addClass('visible');
+      else this.placeholder_label.removeClass('visible');
 
-    if (this.get() != null && !this.placeholder_visible) {
-      this.placeholder_label.css({ zIndex: 2 }).animate({ opacity: 1, left: 0, top: '-1.5em' });
-      this.placeholder_visible = true;
-    }
-    else if (this.get() == null && this.placeholder_visible) {
-      this.placeholder_label.animate({ opacity: 0, left: '0.75em', top: '0.5em' }, function () { $(this).css({ zIndex: 0 }) });
-      this.placeholder_visible = false;
+    } catch (error) {
+      log({ error, this: this, arguments: arguments });
     }
   }
   async autofill_list_get(model) {
@@ -2545,21 +2529,21 @@ class Answer {
     try {
       if (this.type == 'list') {
         this.ele.resetActives();
-        if (!uids) return;
-        this.ele.find('li').filter((l, li) => uids.some(uid => $(li).data('value') == uid)).addClass('active');
+        if (uids) this.ele.find('li').filter((l, li) => uids.some(uid => $(li).data('value') == uid)).addClass('active');
       } else if (this.type == 'checkboxes') {
         let checkboxes = this.input.find('input');
         checkboxes.removeAttr('checked');
-        if (!uids) return;
-        checkboxes.filter((c, checkbox) => uids.some(id => $(checkbox).attr('value') == id)).attr('checked', true);
+        if (uids) checkboxes.filter((c, checkbox) => uids.some(id => $(checkbox).attr('value') == id)).attr('checked', true);
       } else {
         this.autofill_text_update(uids);
       }
+      this.on_change();
     } catch (error) {
       log({ error, uids });
     }
   }
   autofill_text_update(uids = null) {
+    log('autofill', { uids });
     if (uids) {
       if (!uids.is_array()) uids = [uids];
       this.autofill_list.ele.resetActives();
@@ -2773,7 +2757,7 @@ class Answer {
         }
         this.change.timer = setInterval(this.change.adjust, this.change.interval);
         this.change.adjust();
-        let change = this.change;
+        // let change = this.change;
       },
       stop: (ev) => {
         if (this.change.timer) {
@@ -2792,7 +2776,9 @@ class Answer {
       adjust: () => {
         this.change.next = this.change.current;
         if (this.change.next === null) this.change.next = Number(this.options.start);
-        else this.change.next = (this.change.direction == 'up') ? this.change.next + this.step : this.change.next - this.step;
+        else this.change.next = (this.change.direction == 'up') ? Number(this.change.next) + this.step : Number(this.change.next) - this.step;
+        const { next, direction, current } = this.change;
+        console.log({ step: this.step, next, direction, current });
         if (this.change.check()) {
           this.change.current = this.change.next;
           this.change.count++;
@@ -2835,7 +2821,6 @@ class Answer {
     this.arrows = new Features.UpDown({
       action: this.change.start,
       callback: this.change.stop,
-      css: { fontSize: '1.2em', margin: '2px 0 2px 0.5em' }
     });
     this.nowrap = $(`<div/>`, { class: 'flexbox left nowrap', css: { whiteSpace: 'nowrap' } }).append(this.input, this.units_ele, this.arrows.ele).appendTo(this.ele);
     this.input.data(this.options).attr('placeholder', this.options.start);
@@ -2945,7 +2930,7 @@ class Answer {
     let list = this.options.list;
     if (this.options.autofill_model) {
       list = await this.autofill_list_get(this.options.autofill_model);
-      log({ model: this.options.autofill_model, list });
+      // log({ model: this.options.autofill_model, list });
       list = list.map(model => `${model.uid}%%${model.name}`);
     }
     list.forEach(option => {

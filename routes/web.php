@@ -52,21 +52,16 @@ Route::get('/schedule/appointments', 'ScheduleController@appointmentEventFeed');
 Route::get('/schedule/non-ehr', 'ScheduleController@nonEhrEventFeed');
 
 // ROUTES USING DYNAMIC {model} URI
-// Route::get('/optionsNav/{model}/{uid}', 'BaseModel@OptionsNav');
-// Route::get('/options-nav/{model}/{uid}', 'BaseModel@OptionsNavNew');
-// Route::get('/display/table/{model}', 'BaseModel@ResourceTable');
 Route::post('/retrieve/list', 'BaseModel@retrieve_list');
-// Route::post('/{model}/list', 'BaseModel@BasicList');
 Route::get('/{model}/index', 'BaseModel@index');
 Route::match(['get', 'post'], '/{model}/select', 'BaseModel@selection_modal');
 Route::match(['get', 'post'], '/{model}/details/{uid}', 'BaseModel@details');
 Route::post('/{model}/display_order/update', 'BaseModel@update_display_order');
 
-// Route::get('/portal/practices', 'BaseModel@index');
 Route::get('/{model}/modal', 'BaseModel@ListAsModal');
 Route::get('/create/{model}', 'BaseModel@create');
 Route::delete('/delete/{model}/{uid}', 'BaseModel@delete');
-// Route::get('/addNote/{model}/{uid}', 'BaseModel@AddNotes');
+Route::post('/delete/{model}', 'BaseModel@delete_multi');
 Route::post('/save/multi', 'BaseModel@save_multi');
 Route::post('/save/{model}', 'BaseModel@save_single');
 Route::post('/retrieve/multi', 'BaseModel@retrieve_multi');

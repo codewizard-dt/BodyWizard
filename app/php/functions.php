@@ -98,15 +98,21 @@ function handleError($exception, $location = null)
     $msg = $exception->getMessage();
     $error = null;
     if (strpos($msg, 'constraint violation: 1062 Duplicate entry')) {
-        $re = "/Duplicate entry '(.*)' for key '(.*)_(.*)_.*' \(SQL/m";
-        preg_match_all($re, $msg, $matches, PREG_SET_ORDER, 0);
-        Log::info(compact('matches', 'msg'));
+        $regex = "/Duplicate entry '(.*)' for key '(.*)_(.*)_.*' \(SQL/m";
+        preg_match_all($regex, $msg, $matches, PREG_SET_ORDER, 0);
         $type = singular(title($matches[0][2]));
         $value = $matches[0][1];
         $attr = $matches[0][3];
         $error = ['header' => "Duplicate " . title(singularSpaces($type)), 'message' => title($attr) . " '$value' already exists. Please try another $attr.", 'attr' => $attr];
     } elseif ($msg == 'no changes') {
         $error = ['header' => 'Error', 'message' => 'No changes were made.'];
+    } elseif (strpos($msg, 'Call to undefined method') > -1) {
+        $regex = "/Call to undefined method (.*)::(.*)\(\)/m";
+        preg_match_all($regex, $msg, $matches, PREG_SET_ORDER, 0);
+        $class = $matches[0][1];
+        $method = $matches[0][2];
+        logger(compact('msg', 'class', 'method'));
+        $error = ['header' => 'App Error', 'message' => "$class does not have method '$method'"];
     } else {
         reportError($exception, $location);
         Log::error($exception);

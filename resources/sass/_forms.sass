@@ -1,4 +1,4 @@
-@use "models" as style
+@use "layout" as style
 
 .toggle
   font-size: 0.8em
@@ -25,14 +25,14 @@
 .form
   .form_settings_label
     @include style.max
+  > .header 
+    @include style.margin('small')
   .section
-    @include style.box('gray',5px,true,5)
-    @include style.pad(50,50,0,50)
-    @include style.margin(100,0)
+    @include style.box('gray')
     border-left: 1px solid style.get('darkgray',70)
     width: 100%
-    .section_header
-      padding: 0.25em 0.25em 0 0.25em
+    > .header
+      @include style.margin('small','bottom')
       text-align: left
     .Items
       align-items: stretch
@@ -45,7 +45,7 @@
         background-color: transparent
         border-color: transparent
     .item
-      @include style.box('gray', 5px, false, 5)
+      @include style.box('gray')
       display: flex
       text-align: left
       width: 100%
@@ -66,7 +66,7 @@
       // &.third
       //   width: 33%
     > .Items > .item
-      @include style.margin(100, 25, 25, 25)
+      // @include style.margin(100, 25, 25, 25)
     .question
       display: inline-block
       border-style: solid
@@ -91,34 +91,46 @@
     .item
       .question_wrap
         width: unset
+
 .answer
   position: relative
   border-style: solid
   border-radius: 5px
   border-color: style.get('gray',70)
-  // margin: 5px 0.2em
-
+  @include style.margin('medium','top')
   &.max
     margin: 5px auto
   width: max-content
   max-width: calc(100% - 0.4em)
+  .preLabel, .postLabel
+    &:not(input)
+      @include style.pad('xsmall')
+  &.has-placeholder
+    @include style.margin('large','top')
+  .placeholder
+    opacity: 0
+    position: absolute
+    left: 0.75em
+    top: 0.5em
+    width: 100%
+    overflow: hidden
+    transition: opacity 300ms, left 300ms, top 300ms
+    &.visible
+      z-index: 2
+      opacity: 1
+      left: 0
+      top: -1.5em
   &:not(.imageclick) > img
     margin-left: 0.5em
   h2
     width: 100%
-  .preLabel:not(input), .postLabel:not(input)
-    @include style.pad(0,50,0,0)
-  // &.text input, &.textbox textarea
-  //   width: 100%
   &.text, &.textbox
     width: 100%
     input, textarea
       width: 100%
-  // &.textbox
-  //   width: 100%
   &.list
     ul
-      @include style.flexbox_left
+      @include style.flex_left
       border-radius: 3px
       border: 1px solid style.get('yellow',5)
       list-style: none
@@ -167,31 +179,26 @@
           background-color: style.get('purple',10)
           border-color: style.get('purple',20)
   &.number
+    .UpDown
+      @include style.margin('small','right') 
     input
       width: 5em
       text-align: right
   &.scale
     width: 100vh
     > .flexbox > :not(input)
-      @include style.pad(0, 50)
+      @include style.pad('none','y','xsmall','x')
     input
       -webkit-appearance: none
-      // width: 90vh
       height: 0.6em
-      // z-index: 1
-      // position: relative
       background: style.get('yellow',10)
       outline: none
-      /*margin-top:5px*/
       border-radius: 1.5em   
       border: 1px solid style.get('yellow',50)
-      // border-style: solid
-      // border-color: var(--yellow50)
-      // border-width: 1px
       box-sizing: border-box
       flex-grow: 1
-      @include style.pad(0)
-      @include style.margin(0, 50)
+      @include style.pad('none')
+      @include style.margin('xsmall','x')
       &::-webkit-slider-thumb 
         -webkit-appearance: none
         appearance: none
@@ -247,31 +254,6 @@
       background-color: style.get('pink',50)
       @include style.shadow('pink',50,2)
       cursor: crosshair
-    // .dot_wrap
-    //   position: absolute
-    //   // display: flex
-    //   transform: translate(-50%, -50%)
-    //   background-color: 
-    //   // width: 0
-    //   // height: 0
-    //   overflow: visible
-    // .dot
-    //   // position: absolute
-    //   display: block
-    //   // transform: translate(-50%, -50%)
-    //   // width: 1em
-    //   // height: 1em
-    //   cursor: crosshair
-    //   // stroke-width: 0
-    //   g
-    //     // transform: translate(-50%, -50%)        
-    //     cx: 0
-    //     cy: 0
-    //   circle
-    //     fill: style.get('pink',70)
-    //     stroke: style.get('pink',20)
-    //     // cx: 0
-    //     // cy: 0
     .undo
       position: absolute
       right: 0
@@ -297,7 +279,10 @@
         position: absolute
         top: 0
         right: 0
-
+  @each $color in style.$answer-colors
+    &.#{$color}
+      input
+        border-color: style.get($color,20)
 // DISPLAY SETTINGS 
 .form
   &.width_form_full
@@ -415,13 +400,9 @@ textarea
   border: 2px solid style.get('darkgray', 70)
   box-sizing: border-box
   // width: max-content
-  @include style.pad(200, 100)
+  @include style.pad('xsmall','y','small','x')
   .top_0
     top: -0.75rem
-
-.filter_box 
-  max-width: calc(100% + 1em)
-  min-width: 60vh
 
 #FormBuilder
   .sections
@@ -436,12 +417,12 @@ textarea
       width: 100%
     .toggle_ele
       width: 100%
-      @include style.pad(25)
+      @include style.pad('xsmall','y')
       // .toggle_ele
         // @include style
         // padding: 0.25em 0.25em 2em 0.25em
     &.no_items
-      @include style.pad(50, 100)
+      @include style.pad('xsmall','y', 'small','x')
   .insert_options
     background-color: style.get('pink')
     position: absolute
@@ -459,13 +440,13 @@ textarea
 #SectionList
   li 
     min-width: 13em
-    @include style.pad(10, 70)
+    @include style.pad('xmini','y','xsmall','x')
 
 #AddItemText, #AddItemType, #AddItemRequired
   box-sizing: border-box
   max-width: 100%
   width: max-content
-  @include style.margin(25, 0)
+  @include style.margin('mini','y')
   span
     width: 9em
     text-align: right
@@ -497,7 +478,7 @@ textarea
     // width: max-content
     margin: 0.6em auto
     > div
-      @include style.box('gray',4px, false)
+      @include style.box('gray')
       margin: 0.25em
     .full
       flex-basis: 100%
@@ -522,9 +503,9 @@ textarea
       width: 12em
 
 .settings_popup
-  @include style.pad(50)
+  @include style.pad('xsmall')
   .answer
     max-width: 100%
-    @include style.margin(0)
-    @include style.pad(10, 50, 10, 100)
+    @include style.margin('none')
+    @include style.pad('xmini','y','xsmall','x')
 

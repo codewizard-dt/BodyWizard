@@ -31,9 +31,6 @@ class Practice extends Model
     use TableAccess;
     use HasSettings;
 
-    // protected $connection = 'clinicwizard_base';
-    // protected $connection = 'old_practices';
-    // protected $table = 'practice_info';
     protected $casts = [
         // 'contact_info' => 'array',
         // 'cal_webhook' => 'array',
@@ -45,7 +42,7 @@ class Practice extends Model
 
     public static $instance_actions = [];
     public static $static_actions = [];
-    public static $list_cols = ['duration', 'price'];
+    // public static $list_cols = ['duration', 'price'];
     public static function table()
     {
         $columns = [
@@ -64,32 +61,6 @@ class Practice extends Model
         ];
         return $instance;
     }
-
-    // public static function getFromRequest(Request $request)
-    // {
-    //     return Practice::get();
-    //     // $host = $request->getHost();
-    //     // $practices = Practice::where('host', $host)->get();
-    //     // $practice = ($practices->count() == 0) ? Practice::find('body_wizard_medicine_8f935c6718b4402') : $practices->first();
-    //     // if ($practices->count() > 1) {
-    //     //     reportError('Multiple practices with the same host: ' . $practice->host, ['location' => 'Practice.php 49']);
-    //     // }
-
-    //     // return $practice ? $practice : null;
-    // }
-    // public static function getFromSession()
-    // {
-    //     return
-    //     if (app()->runningInConsole()) {
-    //         $practiceId = getActiveStorage('Practice');
-    //         $practice = Practice::find($practiceId);
-    //     } elseif (session('practiceId') !== null) {
-    //         $practice = Practice::find(session('practiceId'));
-    //     } else {
-    //         $practice = null;
-    //     }
-    //     return $practice;
-    // }
 
     public function getTimezoneAttribute()
     {

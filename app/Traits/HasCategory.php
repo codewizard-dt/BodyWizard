@@ -6,12 +6,12 @@ use Illuminate\Database\Eloquent\Builder;
 
 trait HasCategory
 {
-    private static $model_name;
-    private static $model_table_name;
-    private static $category_name;
-    private static $category_name_id;
-    private static $category_table_name;
-    private static $category_table_filter;
+    public static $model_name;
+    public static $model_table_name;
+    public static $category_name;
+    public static $category_name_id;
+    public static $category_table_name;
+    public static $category_table_filter;
 
     public static function bootHasCategory()
     {
@@ -54,4 +54,5 @@ trait HasCategory
     {
         return $this->category ? $this->category->settings : 'none';
     }
+
 }

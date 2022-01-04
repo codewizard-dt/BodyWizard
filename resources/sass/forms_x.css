@@ -2328,14 +2328,14 @@ table img.checkmark {
     height:1em;
 }
 
-.styledTable {
+.styled-table {
     /*width:100%;*/
     max-width: 100%;
     text-align: left;
     background-color: white;
     font-weight: 400;
 }
-.styledTable .clickable {cursor:pointer;}
+.styled-table .clickable {cursor:pointer;}
 .Filter {
     transition: background-color 800ms;
 }
@@ -2349,7 +2349,7 @@ table img.checkmark {
     /*width: clamp(50vh,  calc(100% + 1em));*/
 }
 
-.table_wrapper, .displayOrder ul {
+.table-container, .displayOrder ul {
     display: inline-block;
     border-radius: 5px;
     border-width: 2px;
@@ -2368,7 +2368,7 @@ table img.checkmark {
     display: inline-block;
 }
 
-.styledTable th{
+.styled-table th{
     background-color: var(--purple90);
     color: white;
     font-weight: 700;
@@ -2461,7 +2461,7 @@ table img.checkmark {
     background-size: contain;
     background-repeat: no-repeat;
 }
-.styledTable tr, .displayOrder li, #LoadedForms .availableChartForm {
+.styled-table tr, .displayOrder li, #LoadedForms .availableChartForm {
     border-style: solid;
     border-width: 1px 0px;
     border-color: var(--purple30);
@@ -2471,17 +2471,17 @@ table img.checkmark {
     z-index: 2;
 }
 
-.styledTable tr.hover{
+.styled-table tr.hover{
     background-color: var(--purple10);
 }
-.styledTable tr.hide {
+.styled-table tr.hide {
     display:none !important;
 }
-.styledTable tr.match {
+.styled-table tr.match {
     display:table-row;
 }
 
-.styledTable tr.head {
+.styled-table tr.head {
     border: 0px solid rgb(160,160,160);
     cursor: default !important; 
     background-color: var(--purple);
@@ -2489,29 +2489,29 @@ table img.checkmark {
     border-bottom: 2px solid var(--purple);
 }
 
-.styledTable tr.a {
+.styled-table tr.a {
     background-color: rgb(255,255,255);
 }
-.styledTable tr.b, .displayOrder li:nth-child(even), #LoadedForms .availableChartForm:nth-child(even){
+.styled-table tr.b, .displayOrder li:nth-child(even), #LoadedForms .availableChartForm:nth-child(even){
     background-color: var(--purple5);
 }
-.styledTable tr.a.hover, .displayOrder li:nth-child(odd):hover {
+.styled-table tr.a.hover, .displayOrder li:nth-child(odd):hover {
     background-color: var(--purple15);
 }
-.styledTable tr.b.hover, .displayOrder li:nth-child(even):hover {
+.styled-table tr.b.hover, .displayOrder li:nth-child(even):hover {
     background-color: var(--purple15);
 }
 
-.styledTable.clickable tr{
+.styled-table.clickable tr{
     cursor: pointer;
 }
 
-.styledTable tr.required{
+.styled-table tr.required{
     background-color: var(--yellow10);
     color: var(--pink);
 }
 
-.styledTable td {
+.styled-table td {
     padding: 0.25em 0.5em;
     vertical-align: middle;
 }
@@ -2551,7 +2551,7 @@ table img.checkmark {
     font-size: 0.9em;
 }*/
 
-.styledTable tr.active{
+.styled-table tr.active{
     background-color: var(--purple50) !important;
     border-color: var(--white30);
     color: white;

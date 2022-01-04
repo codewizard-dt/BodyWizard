@@ -3,14 +3,15 @@
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
-use App\ServiceCategory;
 use App\Form;
 use App\Traits\TableAccess;
 use App\Traits\HasSettings;
 use App\Traits\HasCategory;
+use App\Traits\UsePractice;
 
 class Service extends Model
 {
+    use UsePractice;
     use TableAccess;
     use HasSettings;
     use HasCategory;
@@ -37,20 +38,19 @@ class Service extends Model
     }
     public function details()
     {
-        $instance = [
+        return [
             'Category' => $this->category_name,
             'Description - Calendar' => $this->description_calendar,
             'Description - Admin' => $this->description_admin,
             'Duration' => $this->display_duration,
             'Price' => $this->display_price,
         ];
-        return $instance;
+        // return $instance;
     }
 
     public function getDisplayPriceAttribute()
     {
-        $practice = Practice::getFromSession();
-        return $practice->currency['symbol'] . $this->price;
+        return $this->practice->currency['symbol'] . $this->price;
     }
     public function getDisplayDurationAttribute()
     {
@@ -59,7 +59,6 @@ class Service extends Model
     public function getChartFormsAttribute()
     {
         $ids = $this->get_setting('Default Forms.AutoloadedChartForms');
-        logger(compact('ids'));
         return Form::find($ids);
     }
 

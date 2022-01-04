@@ -3,11 +3,11 @@
 @use "sass:math"
 
 
-$colors: ('purple':rgb(105,12,104), 'yellow':rgb(240,154,53), 'pink':rgb(234,78,80), 'white':rgb(255,255,255), 'gray':rgb(210,210,210), 'darkgray':rgb(120,120,120), 'black':rgb(0,0,0), 'green':rgb(46, 107, 53))
+$all-colors: ('purple':rgb(105,12,104), 'yellow':rgb(240,154,53), 'pink':rgb(234,78,80), 'white':rgb(255,255,255), 'gray':rgb(210,210,210), 'darkgray':rgb(120,120,120), 'black':rgb(0,0,0), 'green':rgb(46, 107, 53))
 
 @function get ($string, $opacity:100, $opaque:false)
   $a: $opacity / 100
-  $rgb: map.get($colors,$string)
+  $rgb: map.get($all-colors,$string)
   $rgba: color.change($rgb, $alpha: $a)
   @if $opacity == 100
     @return $rgb
@@ -27,24 +27,24 @@ $colors: ('purple':rgb(105,12,104), 'yellow':rgb(240,154,53), 'pink':rgb(234,78,
   
   @return mix(rgb(red($rgba), green($rgba), blue($rgba)), $background, alpha($rgba) * 100%)
 
-@each $name,$rgb in $colors
-  .#{$name}
+@each $color,$rgb in $all-colors
+  .#{$color}
     &:not(.box, .button)
-      color: get($name)
+      color: get($color)
     &-bg
-      background-color: get($name)
+      background-color: get($color)
       &-o
-        background-color: get($name,90)
+        background-color: get($color,90)
       &-light
-        background-color: get($name,70,true)
+        background-color: get($color,70,true)
         &-o
-          background-color: get($name,70)
+          background-color: get($color,70)
       &-xlight
-        background-color: get($name,40,true)
+        background-color: get($color,40,true)
         &-o
-          background-color: get($name,40)
+          background-color: get($color,40)
       &-pale
-        background-color: get($name,10,true)
+        background-color: get($color,10,true)
 
 :root
   --fc-bg-event-color: #{get('yellow',50)}

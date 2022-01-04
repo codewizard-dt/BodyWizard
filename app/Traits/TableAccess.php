@@ -2,22 +2,22 @@
 
 namespace App\Traits;
 
+use Mockery\Undefined;
+
 // use Illuminate\Http\Request;
 
 trait TableAccess
 {
     private static $table_name;
     private static $primary_key;
-    private static $model_name;
-    private static $model_display_name;
+    public static $model_name;
+    public static $display_name = '';
+    public static $display_name_plural;
+    private static $is_category;
     private static $has_category;
     private static $has_settings;
     private static $is_user;
-    // private static $basic_buttons = [
-    //     ['text' => 'add new', 'action' => 'Model.create', 'class_list' => 'pink'],
-    //     ['text' => 'edit', 'action' => 'Model.edit', 'class_list' => 'pink70 disabled requires-selection'],
-    //     ['text' => 'delete', 'action' => 'Model.delete', 'class_list' => 'pink70 disabled requires-selection'],
-    // ];
+    public static $name_attr = 'name';
 
     public static function bootTableAccess()
     {
@@ -25,7 +25,9 @@ trait TableAccess
         static::$table_name = static::query()->getQuery()->from;
         static::$primary_key = $proxy->getKeyName();
         static::$model_name = class_basename(get_class());
-        static::$model_display_name = isset(static::$display_name) ? static::$display_name : static::$model_name;
+        static::$display_name = title(singularSpaces(static::$model_name));
+        static::$display_name_plural = title(pluralSpaces(static::$display_name));
+        static::$is_category = uses_trait($proxy, 'IsCategory');
         static::$has_category = uses_trait($proxy, 'HasCategory');
         static::$has_settings = uses_trait($proxy, 'HasSettings');
         static::$is_user = uses_trait($proxy, 'IsUser');
@@ -62,6 +64,7 @@ trait TableAccess
                 ->orderBy(static::$table_name . ".name");
         }
         $items = $query->get();
+        logger("Fetch " . static::$table_name, $items->toArray());
         return $items;
     }
 
@@ -110,8 +113,10 @@ trait TableAccess
         try {
             $items = static::fetch($query_array);
             $options = static::base_table();
-            $unique = static::table();
-            merge($options, $unique);
+            if (method_exists(static::class, 'table')) {
+                $unique = static::table();
+                merge($options, $unique);
+            }
 
             function a($value)
             {return is_array($value) ? implodeAnd($value) : $value;}
@@ -123,12 +128,12 @@ trait TableAccess
                 set($row, 'data', $data);
                 return $row;
             })->toArray();
+            // logger(compact('rows', 'items'));
 
             $columns = collect($options['columns'])->map(function ($str, $key) {
                 if (strpos($str, 'setting:') !== false) {
                     $str = snake($key);
                 }
-
                 return $str;
             })->toArray();
 
@@ -143,25 +148,26 @@ trait TableAccess
             set($options, 'list_update', static::get_list(false, $items));
             return dataAttrStr($options);
         } catch (\Exception $e) {
-            reportError($e);
-            return '';
+            $error = handleError($e);
+            return null;
         }
     }
 
     public static function base_table()
     {
-        $name = isset(static::$name_attr) ? static::$name_attr : 'name';
+        $name = static::$name_attr;
         $array = [
             'model' => static::$model_name,
-            'display_name' => static::$model_display_name,
-            'header' => plural(static::$model_display_name),
+            'display_name' => static::$display_name,
+            'header' => static::$display_name_plural,
             'buttons' => 'hello',
             'limit' => request('table_selection_limit', 'no limit'),
             'columns' => ['Name' => $name],
+            'data' => [],
             'filters' => [
                 new_input('text',
-                    ['name', 'placeholder', 'ele_css'],
-                    ['text_search', 'Type to search ' . plural(static::$model_display_name), ['width' => '25em', 'maxWidth' => '95%']],
+                    ['name', 'placeholder'],
+                    ['text_search', 'Type to search ' . static::$display_name_plural],
                     ['placeholder_shift'],
                     ['false']
                 ),
@@ -177,69 +183,90 @@ trait TableAccess
 
     public static function instance_details($uid = null)
     {
-        if ($uid === null || $uid === '') {
+        if ($uid === null || $uid === '' || $uid === 'undefined') {
             return null;
         }
 
         try {
             $instance = static::find($uid);
+            if (!$instance) {
+                throw new \Exception(static::$display_name . ' with $uid = ' . $uid . ' not found');
+            }
             $details = $instance->details();
-            $array = $instance == null ? [] : [
+            if (!$details) {
+                throw new \Exception(static::$display_name . ' "details" method is undefined');
+            }
+
+            $array = [
                 'name' => $instance->name,
                 'uid' => $uid,
-                static::$model_name . ' Details' => $details,
+                'General Info' => $details,
             ];
-            if (uses_trait($instance, 'HasSettings')) {
+            if (static::$has_settings) {
                 $array['Settings'] = $instance->settings;
             }
             return $array;
-            // return $as_array ? $array : dataAttrStr($array);
-
         } catch (\Exception $e) {
             $error = handleError($e);
+            return compact('error');
         }
     }
 
     public static function instance_buttons()
     {
-        $model = static::$model_name;
-        $instance_buttons = isset(static::$instance_actions) ? static::$instance_actions : [];
+        return [];
+        // $model = static::$model_name;
+        // $buttons = isset(static::$instance_actions) ? static::$instance_actions : [];
 
-        $class_list = 'xsmall purple70';
-        $instance_buttons[] = [
-            'text' => 'edit ' . $model,
-            'action' => $model . '.edit',
-            'class_list' => $class_list,
-        ];
-        if (isset(static::$has_settings)) {
-            $instance_buttons[] = [
-                'text' => 'settings',
-                'action' => $model . '.settings',
-                'class_list' => $class_list,
-            ];
-        }
-
-        $instance_buttons[] = [
-            'text' => 'delete',
-            'action' => $model . '.delete',
-            'class_list' => $class_list,
-        ];
-        return $instance_buttons;
+        // $class_list = 'xsmall purple70 p-xsmall';
+        // if (static::$has_settings) {
+        //     $buttons[] = [
+        //         'text' => 'edit settings',
+        //         'action' => $model . '.settings',
+        //         'class_list' => $class_list,
+        //     ];
+        // }
+        // return $buttons;
     }
 
     public static function table_buttons()
     {
         $model = static::$model_name;
-        $table_buttons = [
+        // $instance = new static;
+        $buttons = [
             ['text' => 'add new', 'action' => 'Model.form_open', 'class_list' => 'pink'],
-            ['text' => 'edit', 'action' => 'Model.edit', 'class_list' => 'pink70 disabled requires-selection'],
-            ['text' => 'delete', 'action' => 'Model.delete', 'class_list' => 'pink70 disabled requires-selection'],
+            ['text' => 'edit', 'action' => 'Model.edit', 'class_list' => 'pink disabled requires-selection'],
+            ['text' => 'delete', 'action' => 'Model.delete', 'class_list' => 'pink disabled requires-selection'],
         ];
-        foreach ($table_buttons as &$button) {
-            $button['class_list'] .= ' p-xsmall small';
+        if (static::$has_settings) {
+            $buttons[] = [
+                'text' => 'settings',
+                'action' => $model . '.settings',
+                'class_list' => 'pink disabled requires-selection',
+            ];
+        }
+        if (static::$has_category) {
+            $buttons[] = [
+                'text' => 'categories',
+                'action' => 'Menu.load',
+                'class_list' => 'yellow',
+                'url' => "/$model" . "Category/index",
+            ];
+        }
+        if (static::$is_category) {
+            $item_class = str_replace(" Category", "", static::$display_name);
+            $buttons[] = [
+                'text' => plural($item_class),
+                'action' => 'Menu.load',
+                'class_list' => 'yellow',
+                'url' => "/$item_class/index",
+            ];
+        }
+        foreach ($buttons as &$button) {
+            $button['class_list'] .= ' small';
             $button['model'] = $model;
         }
-        return $table_buttons;
+        return $buttons;
     }
 
 }

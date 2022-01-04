@@ -49,6 +49,7 @@ class BaseModel extends Controller
         $class = "App\\$model";
         try {
             $details = $class::instance_details(isset($uid) ? $uid : null);
+            logger(compact('details'));
             return $details;
         } catch (\Exception $e) {
             $error = handleError($e);
@@ -124,9 +125,6 @@ class BaseModel extends Controller
         }
         return $response;
     }
-    // public function retrieve_multi (Request $request) {
-    //   return 'hello';
-    // }
 
     public function create($model, Request $request)
     {
@@ -274,7 +272,22 @@ class BaseModel extends Controller
     {
         try {
             $class = "App\\$model";
-            $instance = $class::destroy($uid);
+            $instance = $class::withoutGlobalScopes()->where('id', $uid)->delete();
+            unsetUid($model);
+            return 'checkmark';
+        } catch (\Exception $e) {
+            $error = handleError($e, "delete $model");
+            return compact('error');
+        }
+    }
+    public function delete_multi($model)
+    {
+        try {
+            $class = "App\\$model";
+            $uids = request()->uids;
+            $instance = $class::withoutGlobalScopes()->whereIn('id', $uids)->delete();
+            // $instance->delete();
+            unsetUid($model);
             return 'checkmark';
         } catch (\Exception $e) {
             $error = handleError($e, "delete $model");
