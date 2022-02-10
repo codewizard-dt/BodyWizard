@@ -11,13 +11,13 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
-use Laravel\Cashier\Billable;
+// use Laravel\Cashier\Billable;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
     use Notifiable;
     use TrackChanges;
-    use Billable;
+    // use Billable;
     use SoftDeletes;
     use TableAccess;
     use HasSettings;

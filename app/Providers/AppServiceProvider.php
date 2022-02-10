@@ -34,7 +34,7 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot()
     {
-        \Stripe\Stripe::setApiKey('sk_test_VO8cEI3MbKfcxeHOLlpjBOfa009mq5Zrze');
+        // \Stripe\Stripe::setApiKey('sk_test_VO8cEI3MbKfcxeHOLlpjBOfa009mq5Zrze');
         Appointment::observe(\App\Observers\AppointmentObserver::class);
         User::observe(\App\Observers\UserObserver::class);
         Patient::observe(\App\Observers\PatientObserver::class);
