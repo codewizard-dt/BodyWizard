@@ -2,9 +2,9 @@
 
 namespace App\Exceptions;
 
-use Exception;
+use Throwable;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
-use Google\Cloud\ErrorReporting\Bootstrap;
+// use Google\Cloud\ErrorReporting\Bootstrap;
 // use App\Events\BugReported;
 // use Illuminate\Support\Facades\Auth;
 // use Illuminate\Support\Facades\Log;
@@ -36,37 +36,19 @@ class Handler extends ExceptionHandler
      * @param  \Exception  $exception
      * @return void
      */
-    public function report(Exception $exception)
+    public function report(Throwable $exception)
     {
-        if (isset($_SERVER['GAE_SERVICE'])) {
-            if ($this->shouldReport($exception)) {
-                Bootstrap::exceptionHandler($exception);
-            }
-        } else {
-            // Standard behavior
-            // event(new BugReported(
-            //     [
-            //         'description' => "Uncaught Exception", 
-            //         'details' => $exception, 
-            //         'category' => 'Exceptions', 
-            //         'location' => 'ExceptionHandler',
-            //         'user' => Auth::check() ? Auth::user()->id : null
-            //     ]
-            // ));
-            // Log::error($exception);
-
-            parent::report($exception);
-        }
+        parent::report($exception);
     }
 
     /**
      * Render an exception into an HTTP response.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @param  \Exception  $exception
+     * @param  \Throwable  $exception
      * @return \Illuminate\Http\Response
      */
-    public function render($request, Exception $exception)
+    public function render($request, Throwable $exception)
     {
         return parent::render($request, $exception);
     }
