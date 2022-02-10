@@ -46,6 +46,8 @@ $contact_info = isset($contact_info) ? $contact_info : false;
     <script type="text/javascript" src="{{ asset('/js/mark/jquery.mark.js') }}"></script>
     <script type='text/javascript' src="{{ asset('/js/summernote-lite.min.js') }}"></script>
     <script type='text/javascript' src="{{ asset('/js/jSignature.min.js') }}"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAWtxBxZgTCJ2xSy_GBBXxechbOS7iN_1A&libraries=places"
+        async></script>
     <script src="https://js.stripe.com/v3/"></script>
 
     @yield('scripts')

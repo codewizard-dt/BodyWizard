@@ -8,192 +8,93 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\Model;
 use App\Traits\Encryptable;
+use App\Traits\TableAccess;
 
 class Invoice extends Model
 {
-  use TrackChanges;
-  use Encryptable;
+    use TableAccess;
+    use TrackChanges;
+    use Encryptable;
 
-  protected $casts = [
-    'status' => 'array',
-    'settled_at' => 'datetime',
-    'updated_at' => 'datetime',
-    'created_at' => 'datetime'
-  ];
-  protected $hidden = ['autosave'];
-  protected $fillable = ['invoiced_to_user_id','created_by_user_id','appointment_id','notes','autosave','total_charge','settled_at'];
-
-  public static function TableOptions(){
-    $usertype = Auth::user()->user_type;
-    $commonArr = [
-      'tableId' => 'InvoiceList',
-      'index' => 'id'
+    protected $casts = [
+        'status' => 'array',
+        'settled_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'created_at' => 'datetime',
     ];
-    if ($usertype == 'practitioner'){
-      $arr = [
-        'columns' => 
-        [
-          'Invoicee' => 'invoicee_name',
-          'Created' => 'created_at',
-          'Total' => 'total_charge_formatted',
-          'Status' => 'status',
-        ],
-        'hideOrder' => "date,status",
-        'filters' => [],
-        'optionsNavValues' => [
-          'destinations' => ["details"],
-          'btnText' => ["details"]
-        ],
-        'orderBy' => [
-          ['updated_at',"desc"],
-        ]
-      ];
-    }elseif ($usertype == 'patient'){
-      $arr = 
-      [
-        'columns' => 
-        [
-                    // ["label" => 'Form Name',
-                    // "className" => 'name',
-                    // "attribute" => 'form_name'],
-                    // ["label" => 'Submitted',
-                    // "className" => 'submitted',
-                    // "attribute" => 'last_submitted'],
-                    // ["label" => 'Status',
-                    // "className" => 'status',
-                    // "attribute" => 'status']
-        ],
-        'hideOrder' => "",
-        'filtersColumn' => [],
-        'filtersOther' => [
-        ],
-        'optionsNavValues' => [
-          'destinations' => ['loadForm'],
-          'btnText' => ['open form']
-        ],
-        'orderBy' => [
-          ['form_name',"asc"]
-        ]
-      ];
+    protected $hidden = ['autosave'];
+    protected $fillable = ['invoiced_to_user_id', 'created_by_user_id', 'appointment_id', 'notes', 'autosave', 'total_charge', 'settled_at'];
 
+    public function invoicee()
+    {
+        return $this->belongsTo('App\User', 'invoiced_to_user_id');
     }
-    return array_merge($commonArr,$arr);
-  }
-  public static function successResponse(){
-    try{
-      $invoice = Invoice::find(getUid('Invoice'));
-      $response = ['uid'=>$invoice->id,'status'=>$invoice->status];
-    }catch(\Exception $e){
-      reportError($e,'invoice successResponse');
-      $response = 'null';
+    public function appointment()
+    {
+        return $this->belongsTo('App\Appointment', 'appointment_id');
     }
-    return $response;
-  }
-  public function navOptions(){
-    $dataAttrs = [
-      [
-        'key' => 'status',
-        'value' => $this->status
-      ],
-    ];
-    $extraClasses = "";
-    $buttons = ($this->status == 'settled') ? [
-      [
-        'text' => 'view',
-        'destination' => 'view'
-      ],
-      [
-        'text' => 'email',
-        'destination' => 'email'
-      ],
-      [
-        'text' => 'notes',
-        'destination' => 'addNote'
-      ],
-    ] : [
-      [
-        'text' => 'edit',
-        'destination' => 'edit'
-      ],
-      [
-        'text' => 'notes',
-        'destination' => 'addNote'
-      ],
-    ];
-    $data = [
-      'dataAttrs' => $dataAttrs,
-      'extraClasses' => $extraClasses,
-      'buttons' => $buttons,
-      'instance' => $this,
-      'model' => getModel($this)
-    ];
-    return $data;
-  }
-  public function modelDetails(){
-    $isSettled = ($this->status == 'settled');
-    return [
-      'Status' => $this->status.checkOrX($isSettled),
-      'Appointment' => $this->appointment->detailClick(),
-      'Pinned Notes' => $this->notes ?: 'none',
-      'Total Charge' => $this->total_charge_formatted,
-    ];
-  }
-
-  public function invoicee(){
-    return $this->belongsTo('App\User','invoiced_to_user_id');
-  }
-  public function appointment(){
-    return $this->belongsTo('App\Appointment','appointment_id');
-  }
-  public function getNameAttribute(){
-    return $this->invoicee->name.' '.$this->created_at;
-  }
-  public function getInvoiceeNameAttribute(){
-    return $this->invoicee->name;
-  }
-  public function getTotalChargeFormattedAttribute(){
-    $practice = Practice::getFromSession();
-    $currency = $practice->currency;
-    return $currency['symbol'].number_format($this->total_charge,2);
-  }
-  public function getCreatedAtAttribute($value){
-    $date = new Carbon($value);
-    return $date->format('n/j g:ia');
-  }
-  public function getSettledAtAttribute($value){
-    $date = $value ? new Carbon($value) : null;
-    return $date ? $date->format('n/j g:ia') : 'pending';
-  }
-  public function getStatusAttribute(){
-    return ($this->settled_at == 'pending') ? 'pending' : 'settled';
-  }
+    public function getNameAttribute()
+    {
+        return $this->invoicee->name . ' ' . $this->created_at;
+    }
+    public function getInvoiceeNameAttribute()
+    {
+        return $this->invoicee->name;
+    }
+    public function getTotalChargeFormattedAttribute()
+    {
+        $practice = Practice::getFromSession();
+        $currency = $practice->currency;
+        return $currency['symbol'] . number_format($this->total_charge, 2);
+    }
+    public function getCreatedAtAttribute($value)
+    {
+        $date = new Carbon($value);
+        return $date->format('n/j g:ia');
+    }
+    public function getSettledAtAttribute($value)
+    {
+        $date = $value ? new Carbon($value) : null;
+        return $date ? $date->format('n/j g:ia') : 'pending';
+    }
+    public function getStatusAttribute()
+    {
+        return ($this->settled_at == 'pending') ? 'pending' : 'settled';
+    }
     // public function getCurrentStatusAttribute(){
 
     // }
-  public function getLineItemsAttribute($value){
-    return $this->decryptKMS($value);
-  }
-  public function setLineItemsAttribute($value){
-    $this->attributes['line_items'] = $this->encryptKms($value);
-  }
-  public function getPaymentsAttribute($value){
-    return $this->decryptKMS($value);
-  }
-  public function setPaymentsAttribute($value){
-    $this->attributes['payments'] = $this->encryptKms($value);
-  }
-  public function getNotesAttribute($value){
-    return $this->decryptKMS($value);
-  }
-  public function setNotesAttribute($value){
-    $this->attributes['notes'] = $this->encryptKms($value);
-  }
-  public function getAutosaveAttribute($value){
-    return $this->decryptKMS($value);
-  }
-  public function setAutosaveAttribute($value){
-    $this->attributes['autosave'] = $this->encryptKms($value);
-  }
-
+    public function getLineItemsAttribute($value)
+    {
+        return $this->decryptKMS($value);
+    }
+    public function setLineItemsAttribute($value)
+    {
+        $this->attributes['line_items'] = $this->encryptKms($value);
+    }
+    public function getPaymentsAttribute($value)
+    {
+        return $this->decryptKMS($value);
+    }
+    public function setPaymentsAttribute($value)
+    {
+        $this->attributes['payments'] = $this->encryptKms($value);
+    }
+    public function getNotesAttribute($value)
+    {
+        return $this->decryptKMS($value);
+    }
+    public function setNotesAttribute($value)
+    {
+        $this->attributes['notes'] = $this->encryptKms($value);
+    }
+    public function getAutosaveAttribute($value)
+    {
+        return $this->decryptKMS($value);
+    }
+    public function setAutosaveAttribute($value)
+    {
+        $this->attributes['autosave'] = $this->encryptKms($value);
+    }
 
 }

@@ -25,19 +25,23 @@ class UserObserver
             setUid('StaffMember', $sub->id);
         }
 
-        $options = [
-            'name' => $user->name,
-            // 'metadata' => ['practice_id' => $practice->practice_id]
-        ];
-        $stripeCustomer = $user->createAsStripeCustomer($options);
+        // $options = [
+        //     'name' => $user->name,
+        //     // 'metadata' => ['practice_id' => $practice->practice_id]
+        // ];
+        // $stripeCustomer = $user->createAsStripeCustomer($options);
 
     }
     public function creating(User $user)
     {
         // Log::info($user);
-        // if (!$user->password && request()->password == null) $user->password = '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi';
+        if (!$user->password && request()->password == null) {
+            $user->password = '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'; // password
+        }
+
         if (!$user->roles && request()->roles == null) {
-            $user->roles = ['list' => ['patient'], 'default' => null];
+            $usertype = request('usertype', 'patient');
+            $user->roles = ['list' => [$usertype], 'default' => null];
         }
 
     }

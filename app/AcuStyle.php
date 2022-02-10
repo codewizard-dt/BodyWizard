@@ -12,11 +12,11 @@ class AcuStyle extends Model
     use TableAccess;
     use HasSettings;
 
-    protected $connection = 'practices';
+    // protected $connection = 'practices';
     protected $guarded = [];
     // protected $with = ['Category'];
 
-    public static $display_name = 'Acupuncture Style';
+    public static $alternate_name = 'Acupuncture Style';
     public static $instance_actions = [];
     public static $static_actions = [];
 

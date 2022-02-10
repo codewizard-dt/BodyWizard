@@ -18,6 +18,7 @@ class CreateCptCodesTable extends Migration
             $table->string('code')->unique();
             $table->string('title');
             $table->string('text');
+            $table->json('settings')->nullable();
             $table->timestampsTz();
         });
     }

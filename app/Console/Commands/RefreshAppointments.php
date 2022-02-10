@@ -7,7 +7,6 @@ use App\Appointment;
 use App\Practice;
 use App\RefreshTables;
 
-
 class RefreshAppointments extends Command
 {
     /**
@@ -15,7 +14,7 @@ class RefreshAppointments extends Command
      *
      * @var string
      */
-    protected $signature = 'refresh:appointments {practiceId} {--factory=0}';
+    protected $signature = 'refresh:appointments {--factory=0}';
 
     /**
      * The console command description.
@@ -41,17 +40,18 @@ class RefreshAppointments extends Command
      */
     public function handle()
     {
-        $service = app('GoogleCalendar');
-        $practiceId = $this->argument('practiceId');
+        // $service = app('GoogleCalendar');
+        // $practiceId = $this->argument('practiceId');
         $apptCount = $this->option('factory');
-        $practice = Practice::find($practiceId);
-        $practice->reconnectDB();
+        // $practice = Practice::find($practiceId);
+        // $practice->reconnectDB();
+        $practice = Practice::first();
         $calendarId = $practice->calendar_id;
 
         $result = $practice->clearCalendar();
-        if ($result){
+        if ($result) {
             $this->info('Google calendar cleared.');
-        }else{
+        } else {
             $this->error('Error clearing Google calendar. Refresh process canceled.');
             $this->error('Appointment database not cleared or populated.');
             $this->error('Appointments not added to Google Calendar.');
@@ -60,18 +60,18 @@ class RefreshAppointments extends Command
 
         RefreshTables::clearApptTables();
         $this->info('Appointment tables cleared and feed updated.');
-        $this->info('Adding '.$apptCount.' appointments to EHR......');
-        if ($apptCount != 0){
+        $this->info('Adding ' . $apptCount . ' appointments to EHR......');
+        if ($apptCount != 0) {
             RefreshTables::seedApptTables($apptCount);
-            $this->info('Appointments added to EHR database.');    
-            $this->info('Adding appointments to Google Calendar: '.$calendarId);
-            try{
+            $this->info('Appointments added to EHR database.');
+            $this->info('Adding appointments to Google Calendar: ' . $calendarId);
+            try {
                 $appointments = Appointment::all();
-                foreach ($appointments as $appointment){
-                    $appointment->saveToGoogleCal("POST",$calendarId);
-                }        
+                foreach ($appointments as $appointment) {
+                    $appointment->saveToGoogleCal("POST", $calendarId);
+                }
                 $this->info('Appointments added to Google Calendar.');
-            }catch(\Exception $e){
+            } catch (\Exception $e) {
                 $this->error('Error adding appointments to Google Calendar. Refresh process canceled.');
                 $this->error('Event feed not updated.');
             }
@@ -83,7 +83,7 @@ class RefreshAppointments extends Command
         RefreshTables::clearInvoiceTables();
         $this->info('Invoice table cleared.');
 
-        setActiveStorage('Practice',$practice->practice_id);
+        setActiveStorage('Practice', $practice->practice_id);
         $practice->updateEntireEventFeed();
         $this->info('Practitioner event feed updated.');
 

@@ -9,6 +9,7 @@ use App\Traits\IsUser;
 use App\Traits\TrackChanges;
 use App\Traits\TableAccess;
 use App\Traits\HasSettings;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class StaffMember extends Model
 {
@@ -16,6 +17,7 @@ class StaffMember extends Model
     use TrackChanges;
     use TableAccess;
     use HasSettings;
+    use SoftDeletes;
 
     protected $casts = [
         "schedule" => 'array',

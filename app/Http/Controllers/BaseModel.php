@@ -49,7 +49,6 @@ class BaseModel extends Controller
         $class = "App\\$model";
         try {
             $details = $class::instance_details(isset($uid) ? $uid : null);
-            logger(compact('details'));
             return $details;
         } catch (\Exception $e) {
             $error = handleError($e);
@@ -67,11 +66,11 @@ class BaseModel extends Controller
             return collect($models)->mapWithKeys(function ($model) {
                 $class = "App\\$model";
                 if (!method_exists($class, 'get_list')) {
-                    throw new \Exception("$model not accessible");
+                    throw new \Exception("$model must use Trait TableAccess");
                     // return [$model => [['uid' => '0', 'name' => 'enable TableAccess']]];
                 }
 
-                $list = $class::get_list(true);
+                $list = $class::get_list();
 
                 return [$model => [
                     'list' => $list,
@@ -134,7 +133,7 @@ class BaseModel extends Controller
     {
         $class = "App\\$model";
         $collection = null;
-        $limit = $request->limit || 1;
+        $limit = 1;
         try {
             $collection = $class::where($request->where)->limit($limit + 1)->get();
             if ($collection->count() > $limit) {
@@ -163,30 +162,29 @@ class BaseModel extends Controller
     public function save($model, $columns, $relationships, $uid = null)
     {
         $class = "App\\$model";
+        // logger(compact('model', 'columns', 'relationships', 'uid'));
         try {
             if ($uid != null) {
                 $instance = $class::findOrFail($uid);
-                $none_updated = true;
+                $no_changes = true;
                 if ($relationships) {
                     foreach ($relationships as $rel => $info) {
                         $uids = $info['uids'];
                         $method = $info['method'];
                         if ($method == 'sync') {
                             $sync = $instance->$rel()->sync($uids);
+                            // logger(compact('uids', 'method', 'rel', 'sync'));
                         } else {
-                            throw new \Exception("Relationship method ($method) not defined");
+                            throw new \Exception("Relationship method '$method' not defined");
                         }
 
                         if ($sync['attached'] || $sync['detached'] || $sync['updated']) {
-                            $none_updated = false;
+                            $no_changes = false;
                         }
 
                     }
-                } else {
-                    $none_updated = false;
                 }
 
-                logger(compact('columns'));
                 if (isset($columns['settings'])) {
                     if ($columns['settings'] == 'null') {
                         $instance->settings = null;
@@ -196,18 +194,22 @@ class BaseModel extends Controller
 
                     unset($columns['settings']);
                 }
-                $instance->fill($columns);
-                if (!$instance->isDirty() && $none_updated) {
-                    throw new \Exception('no changes');
+
+                if ($columns) {
+                    $instance->fill($columns);
                 }
 
-                $instance->update($columns);
-                session(['model_action' => 'update']);
+                $dirty = $instance->isDirty();
+
+                if (!$dirty && $no_changes) {
+                    throw new \Exception('no changes');
+                } else {
+                    $instance->save();
+                }
             } else {
                 $instance = new $class();
                 $instance->fill($columns);
                 $instance->save();
-                session(['model_action' => 'create']);
                 if ($relationships) {
                     foreach ($relationships as $rel => $info) {
                         $uids = $info['uids'];
@@ -223,14 +225,17 @@ class BaseModel extends Controller
             }
             $uid = $instance->getKey();
             setUid($model, $uid);
-            $save_response = compact('uid');
-            return request('wants_checkmark', false) ? 'checkmark' : compact('save_response');
-            // if (request()->has('wants_checkmark')) $response = 'checkmark';
-            // else $response = method_exists($class, 'successResponse') ? $class::successResponse() : successResponse($model);
+            // $save_response = compact('uid');
+            return $instance;
+            // return [
+            //     'uid' => $uid,
+            //     'type' => $model,
+            //     'success' => true,
+            // ];
         } catch (\Exception $e) {
             $error = handleError($e, 'BaseModelController save 100');
-            $request = request()->all();
-            logger(compact('request'));
+            // $request = request()->all();
+            // logger(compact('request'));
             $response = compact('error');
         }
         return $response;
@@ -238,13 +243,31 @@ class BaseModel extends Controller
     public function save_single($model, Request $request)
     {
         $class = "App\\$model";
-        $columns = $request->input('columns', null);
-        $relationships = $request->input('relationships', null);
+        $columns = $request->input('columns', []);
+        $relationships = $request->input('relationships', []);
         $uid = $request->input('uid', null);
-        $save_result = $this->save($model, $columns, $relationships, $uid);
-        // $model_list_update = basicList($model);
+        $instance = $this->save($model, $columns, $relationships, $uid);
+        // $save_result = $this->save($model, $columns, $relationships, $uid);
+        if (get($instance, 'error')) {
+            $save_result = $instance;
+        } else {
+            if ($model === 'User') {
+                $usertype = request('usertype');
+                if ($usertype) {
+                    $instance = $instance->$usertype;
+                    $model = toKeyString($usertype);
+                }
+            }
+            $save_result = [
+                'uid' => $instance->getKey(),
+                'type' => $model,
+                'list' => $instance->list_map(),
+                'table' => $instance->table_map(),
+                'details' => $instance->details_map(),
+            ];
+        }
         $notification_update = Auth::user()->unreadNotifications->toJson();
-        // return compact('save_result','model_list_update','notification_update');
+        // logger(compact('notification_update'));
         return compact('save_result', 'notification_update');
     }
     public function save_multi(Request $request)
@@ -259,8 +282,6 @@ class BaseModel extends Controller
                 return $this->save($model['type'], $columns, $relationship, $uid);
             })->toArray();
             return request('wants_checkmark', false) ? 'checkmark' : compact('save_response');
-            // return compact('save_response');
-            throw new \Exception('Update BaseModel save_multi to include list_update and notification_update');
         } catch (\Exception $e) {
             $error = handleError($e, 'BaseModelController save 100');
             $response = compact('error');
@@ -272,9 +293,12 @@ class BaseModel extends Controller
     {
         try {
             $class = "App\\$model";
-            $instance = $class::withoutGlobalScopes()->where('id', $uid)->delete();
+
+            $instance = $class::withoutGlobalScopes()->find($uid);
+            logger("DELETE", compact('model', 'instance'));
+            $instance->delete();
             unsetUid($model);
-            return 'checkmark';
+            return ['deleted' => ['uids' => [$uid]]];
         } catch (\Exception $e) {
             $error = handleError($e, "delete $model");
             return compact('error');
@@ -285,10 +309,14 @@ class BaseModel extends Controller
         try {
             $class = "App\\$model";
             $uids = request()->uids;
-            $instance = $class::withoutGlobalScopes()->whereIn('id', $uids)->delete();
+            $instances = $class::withoutGlobalScopes()->whereIn('id', $uids)->get();
+            $instances->each(function ($instance) {
+                $instance->delete();
+            });
             // $instance->delete();
             unsetUid($model);
-            return 'checkmark';
+
+            return ['deleted' => ['uids' => $uids]];
         } catch (\Exception $e) {
             $error = handleError($e, "delete $model");
             return compact('error');

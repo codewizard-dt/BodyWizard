@@ -21,7 +21,7 @@ class CreateServicesTable extends Migration
             $table->text('description_admin');
             $table->unsignedInteger('duration');
             $table->decimal('price', 9, 2);
-            $table->json('settings')->nullable()->default(null);
+            $table->json('settings')->nullable();
             $table->timestampsTz();
         });
     }

@@ -2,6 +2,7 @@
 
 namespace App;
 
+use Illuminate\Support\Facades\Auth;
 use App\Traits\HasSettings;
 use App\Traits\TableAccess;
 use App\Traits\TrackChanges;
@@ -21,14 +22,8 @@ class User extends Authenticatable implements MustVerifyEmail
     use TableAccess;
     use HasSettings;
 
-    // protected $fillable = [
-    //   'first_name', 'user_type','last_name', 'username', 'date_of_birth', 'email', 'phone', 'password','roles'
-    // ];
     protected $guarded = [];
 
-    // protected $hidden = [
-    //   'password', 'remember_token','stripe_id','card_brand','card_last_four','trial_ends_at'
-    // ];
     protected $visible = [
         'first_name', 'middle_name', 'last_name', 'preferred_name', 'name', 'legal_name', 'full_name',
     ];
@@ -40,48 +35,41 @@ class User extends Authenticatable implements MustVerifyEmail
         'updated_at' => 'datetime',
         'date_of_birth' => 'date',
         'roles' => 'json',
+        'address_mailing' => 'json',
+        'address_billing' => 'json',
     ];
 
-    public $TableOptions;
-    public $optionsNavValues;
-    public $nameAttr;
-    public $connectedModels;
-    public $auditOptions;
+    public static function Role()
+    {
+        return session('usertype');
+    }
+    public static function IsPatient()
+    {
+        return session('usertype') === 'patient';
+    }
+    public static function PatientId()
+    {
+        return Auth::user()->patient->id;
+    }
 
     public static function admins()
     {
-        return User::where('email', 'david@bodywizardmedicine.com')->get();
+        return User::where('email', 'david@codewizard.app')->get();
     }
     public function navbarInfo()
     {
-        if ($this->is('practitioner')) {
-            $info = [
-                'id' => $this->id,
-                'type' => $this->user_type,
-                'is_admin' => $this->is_admin,
-                'is_super' => $this->is_superuser,
-                'practitioner_id' => $this->practitioner->id,
-                'name' => $this->name,
-            ];
-        }
+        $role = User::Role();
+        $relationId = snake($role) . '_id';
+        $relation = camel($role);
+        $info = [
+            'id' => $this->id,
+            'role' => $role,
+            'is_admin' => $this->is_admin,
+            'is_superuser' => $this->is_superuser,
+            'name' => $this->name,
+            $relationId => $this->$relation->id,
+        ];
         return $info;
-    }
-
-    public static function successResponse()
-    {
-        $user = User::find(getUid('User'));
-        if (session('model_action') == 'create') {
-            $str = $user->full_name . ' successfully added as a new ' . $user->roles['list'][0] . '!';
-        } else {
-            $str = $user->full_name . ' information updated';
-        }
-
-        $response = "<h1 class='p-y-150'>$str</h1>";
-        foreach ($user->roles['list'] as $role) {
-            $roles = plural($role);
-            $response .= "<div class='button pink' data-mode='click' data-target='$role-index'>go to $roles</div>";
-        }
-        return $response;
     }
 
     public function is($type)
@@ -109,17 +97,18 @@ class User extends Authenticatable implements MustVerifyEmail
         }
 
     }
+
     public function getNameAttribute()
     {
-        return $this->preferred_name . " " . $this->last_name;
+        return $this->preferred_or_first . " " . $this->last_name;
     }
-    public function getPreferredNameAttribute($value)
+    public function getPreferredOrFirstAttribute()
     {
-        return $value ? $value : $this->first_name;
+        return $this->preferred_name ? $this->preferred_name : $this->first_name;
     }
     public function getFullNameAttribute()
     {
-        $name = $this->preferred_name;
+        $name = $this->preferred_or_first;
         if ($this->middle_name) {
             $name .= ' ' . $this->middle_name;
         }
@@ -129,7 +118,13 @@ class User extends Authenticatable implements MustVerifyEmail
     }
     public function getLegalNameAttribute()
     {
-        return $this->first_name . " " . $this->middle_name . " " . $this->last_name;
+        $name = [$this->first_name];
+        if ($this->middle_name) {
+            array_push($name, $this->middle_name);
+        }
+        array_push($name, $this->last_name);
+        return implode(' ', $name);
+        // return $this->first_name . " " . $this->middle_name . " " . $this->last_name;
     }
     public function getIsSuperuserAttribute()
     {
@@ -143,6 +138,11 @@ class User extends Authenticatable implements MustVerifyEmail
     public function getIsAdminAttribute()
     {
         return true;
+    }
+    public function details()
+    {
+        $type = camel(request('usertype', $this->default_role));
+        return $this->$type->details();
     }
     public function patient()
     {

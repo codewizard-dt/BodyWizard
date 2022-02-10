@@ -49,5 +49,6 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(Practice::class, function () use ($practice) {
             return $practice;
         });
+
     }
 }

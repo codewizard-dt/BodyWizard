@@ -22,7 +22,17 @@ class ServiceSeeder extends Seeder
             ];
         }, $serviceCategories);
         foreach ($inserts as $category) {
-            ServiceCategory::create($category);
+            $category = ServiceCategory::create($category);
+            Service::create([
+                'name' => 'Standard ' . $category->name,
+                'service_category_id' => $category->id,
+                'description_calendar' => $faker->text(100),
+                'description_admin' => $faker->text(50),
+                'duration' => 60,
+                'price' => 120,
+
+            ]);
+
         }
 
     }

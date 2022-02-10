@@ -299,12 +299,12 @@ h5 span {font-size: 0.9em;}
 .marginXBig.topOnly, .marginBig.topOnly, .marginSmall.topOnly{margin-bottom: 0;}
 .marginXBig.bottomOnly, .marginBig.bottomOnly, .marginSmall.bottomOnly{margin-top: 0;}
 .paddedXBig{padding-top:2.5em;padding-bottom: 2.5em;}
-.p-y-150.topOnly{padding-bottom: 0em;}
-.p-y-150{padding-top:1.5em;padding-bottom: 1.5em;}
-.p-y-25{padding-top:0.25em;padding-bottom: 0.25em;}
-.p-y-50{padding-top:0.5em;padding-bottom: 0.5em;}
-.p-y-50.bottomOnly{padding-top: 0em;}
-.p-y-50.topOnly{padding-bottom: 0em;}
+.p-y-medium.topOnly{padding-bottom: 0em;}
+.p-y-medium{padding-top:1.5em;padding-bottom: 1.5em;}
+.p-y-mini{padding-top:0.25em;padding-bottom: 0.25em;}
+.p-y-xsmall{padding-top:0.5em;padding-bottom: 0.5em;}
+.p-y-xsmall.bottomOnly{padding-top: 0em;}
+.p-y-xsmall.topOnly{padding-bottom: 0em;}
 .paddedSides{padding-left:2.5em;padding-right: 2.5em;box-sizing: border-box;}
 .paddedSides.xsmall{padding-left:0.25em;padding-right: 0.25em;}
 .paddedSides.small{padding-left:1em;padding-right: 1em;}

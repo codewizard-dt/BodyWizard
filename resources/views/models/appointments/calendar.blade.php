@@ -1,7 +1,7 @@
 <?php
 $practitioners = App\Practitioner::where('schedule', '!=', null)->get();
 $practice = App\Practice::first();
-$models = ['Service', 'Patient', 'Practitioner'];
+$models = ['Service', 'Patient', 'Practitioner', 'Appointment'];
 $bizhours = $practice->full_cal_biz_hours;
 ?>
 <div class="calendar">
@@ -16,6 +16,6 @@ $bizhours = $practice->full_cal_biz_hours;
         data-feed_url="/appointment/feed"></div>
 </div>
 @include('models.list_update',compact('models'))
-<div id="Appointment" class='modalForm'>
+<div class="hidden">
     @include('models.create.template',['model'=>'Appointment'])
 </div>

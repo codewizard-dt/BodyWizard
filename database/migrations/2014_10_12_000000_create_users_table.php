@@ -25,8 +25,8 @@ class CreateUsersTable extends Migration
             $table->date('date_of_birth');
             $table->string('email');
             $table->string('phone');
-            $table->json('address_mailing')->nullable()->default(null);
-            $table->json('address_billing')->nullable()->default(null);
+            $table->json('address_mailing')->nullable();
+            $table->json('address_billing')->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->json('security')->nullable();

@@ -6,7 +6,7 @@ try {
     $instance_str = '';
     $instance_buttons = [];
     $error = handleError($e);
-    return compact($error);
+    return compact('error');
 }
 ?>
 

@@ -19,6 +19,7 @@ class CreateIcdCodesTable extends Migration
             $table->string('title');
             $table->string('text')->nullable();
             $table->string('url')->nullable();
+            $table->json('settings')->nullable();
             $table->timestampsTz();
         });
     }

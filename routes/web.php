@@ -75,6 +75,7 @@ Route::get('/retrieve/{model}/{uid}', 'BaseModel@fetchModel');
 Route::post('/savePinnedNotes/{model}/{uid}', 'BaseModel@savePinnedNotes');
 
 Route::get('/icd-api/token', 'CodeController@getIcdApiToken');
+Route::get('/appointments/home', 'AppointmentController@home');
 Route::get('/appointments/calendar', 'AppointmentController@calendar');
 Route::post('/appointment/feed', 'AppointmentController@feed');
 

@@ -15,8 +15,7 @@ $initial = collect($inputs)
     ->toArray();
 ?>
 
-<h1 class='header purple'>Create Service</h1>
-<div id="CreateService" class='central large left'>
+<div id="CreateService" class='central fit-content left'>
     <div class="section">
         <h2 class='header'>Basic Information</h2>
         @include('layouts.forms.display.answer',array_merge($inputs['name'],['name'=>'name']))
@@ -29,5 +28,3 @@ $initial = collect($inputs)
         </div>
     </div>
 </div>
-<div class='button pink submit create' data-model='Service' data-wants_checkmark='true'>add service</div>
-@if (isset($mode) && $mode == 'modal')<div class='button cancel'>cancel</div>@endif

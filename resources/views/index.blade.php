@@ -19,7 +19,7 @@
     </div>
 
     <div id='Conditions' class="segment">
-        <h1 class='purple central p-y-150 letterStretch'>So Effective It Feels Like Magic</h1>
+        <h1 class='purple central p-y-medium letterStretch'>So Effective It Feels Like Magic</h1>
         <div class='flexbox thirds top'>
             <div class='center m-none-top m-small'>
                 <div class='icon internal pink'></div>

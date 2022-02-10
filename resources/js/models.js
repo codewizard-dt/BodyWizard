@@ -15,11 +15,10 @@ class Table {
       this.define_by(options);
       this.ele.removeAttr('data-rows');
       this.ele.data({ class_obj: this });
-      if (this.header) this.header_ele = $(`<${this.header_html_tag || 'h1'}/>`, { text: this.header, class: this.header_class || 'purple' }).appendTo(this.ele);
       this.table = $(`<table/>`, { class: 'styled-table' });
       this.wrap = $(`<div/>`, { class: 'table-container' }).appendTo(this.ele).append(this.table);
       this.head_row_create();
-      this.rows.map(row => this.add_row(row));
+      this.rows.forEach(row => this.add_row(row));
       this.selectable = ifu(options.selectable, true);
       this.show_selection = ifu(options.selectable, true);
       this.limit = Number.isNaN(Number(this.limit || 1)) ? null : Number(this.limit || 1);
@@ -27,14 +26,13 @@ class Table {
         message: `Limited to ${this.limit} ${this.limit == 1 ? this.display_name : this.header}`,
       });
       this.filter_box = $(`<div/>`, { class: 'filter_box' }).insertBefore(this.wrap);
-      // this.filter_box.wrap('<div/>');
-      // this.filter_flex_box = $(`<div/>`, { class: 'flexbox' }).appendTo(this.filter_box);
+      if (this.header) this.header_ele = $(`<${this.header_html_tag || 'h1'}/>`, { text: this.header, class: this.header_class || 'purple' }).appendTo(this.filter_box);
       this.filters.forEach(f => this.add_filter(f));
 
       if (this.selectable && this.show_selection) {
         this.button_box = $('<div/>', { class: 'button_box m-none' }).appendTo(this.filter_box);
-        this.selection_list = new Features.List(this.list_options);
-        this.selection_list.ele.insertAfter(this.filter_box);
+        this.selection_list = new Features.List(this.selection_list_options());
+        this.selection_list.ele.appendTo(this.filter_box);
         if (this.buttons) this.buttons = this.buttons.map(options => {
           let button = new Features.Button({ disabled_message: 'none selected', table: this, ...options });
           button.ele.appendTo(this.button_box);
@@ -53,18 +51,82 @@ class Table {
         persist: true,
         fade: null,
       })
-      log({ this: this, options }, 'new TABLE!!');
-
+      if (this.model === 'Form') {
+        this.change_button_actions({
+          "button-add-new": () => $('#forms-create').find('.title').trigger('click'),
+          "button-edit": () => $('#forms-edit').find('.title').trigger('click'),
+        })
+      }
+      // log({ this: this, options }, 'new TABLE!!');
+      // window.table = this;
     } catch (error) {
       log({ error, table: this, options });
     }
   }
+  change_button_actions(buttonChanges = {}) {
+    const button = (nameString) => this.filter_box.find(`.${nameString}`).getObj();
+    for (let name in buttonChanges) {
+      button(name).action = buttonChanges[name];
+    }
+  }
+  selection_list_options() {
+    let options = {
+      header: `Selected ${this.header}`,
+      header_html_tag: 'h4',
+      ul_class: 'horizontal',
+      post_add_fx: _ => {
+        if (!this.continue_btn) return;
+        if (this.active.dne()) this.continue_btn.ele.addClass('disabled');
+        else this.continue_btn.ele.removeClass('disabled');
+      }
+    };
+    if (this.is_index) options.merge({
+      header: `Selected ${this.header} (0)`,
+      ul_class: 'horizontal',
+      no_item_text: 'none selected',
+      selectable: true,
+      action: ev => {
+        this.update_selection(ev);
+      }
+    });
+    return options;
+  }
+
+  update_selection(ev) {
+    const model = this.model, list = this.selection_list;
+    if (ev) {
+      const li = $(ev.target).closest('li'), uid = li.data('value');
+      const active = li.hasClass('active');
+      if (this.details) {
+        if (active) this.details.load(model, uid);
+
+      }
+    }
+    const count = list.active.length, uids = list.active_values;
+    list.header.text(`Selected ${this.header} (${count})`);
+    this.active = uids;
+    this.update_buttons();
+
+  }
+
+  update_buttons() {
+    const buttons = this.button_box.find('.button.requires-selection');
+    const uids = this.selection_list.active_values, count = uids.length;
+    if (count === 0) buttons.addClass('disabled');
+    else if (count === 1) buttons.removeClass('disabled');
+    else {
+      buttons.removeClass('disabled');
+      buttons.filter('.select-1').addClass('disabled');
+    }
+  }
+
+
   add_index_options() {
-    Models.table = this;
+    Table.CurrentIndex = this;
     let ele = this.ele.find('.Details');
 
     this.details = new Details(ele.data().merge({ ele, table: this }));
-    this.details.ele.appendTo(this.selection_list.ele);
+    this.details.ele.insertAfter(this.filter_box);
 
     this.option_dots = new Features.Icon({ type: 'option_dots', size: 1.75, color: 'purple' });
     this.option_tooltip = new Features.ToolTip({ target: this.option_dots.img, message: this.options_ele, click_toggle: true, color: 'purple' });
@@ -79,7 +141,7 @@ class Table {
     let subheader = `${this.has_category ? `Default order is by category name, and then ${this.model} name.` : `Default order is by ${this.model} name.`}<br>This will affect how all users see these ${this.header} throughout the portal.`;
     let order_autosave = new Features.Autosave({ send: _ => this.change_order(), show_status: true, delay: 1000 });
     let arrow_callback = _ => order_autosave.trigger();
-    this.order_list = new Features.List({ header: `Change Display Order`, subheader, json, li_selectable: false, class_list: 'box', has_arrows: true, arrow_callback });
+    this.order_list = new Features.List({ header: `Change Display Order`, subheader, json, selectable: false, class_list: 'box', has_arrows: true, arrow_callback });
     this.reset_order_btn = new Features.Button({
       text: 'reset to default', class_list: 'pink xsmall', button_box: true, action: _ => {
         this.reset_order();
@@ -145,7 +207,16 @@ class Table {
     }
   }
   add_row(json) {
-    let row = $(`<tr/>`, { class: 'body clickable' }).appendTo(this.table).addHoverClassToggle()
+    this.create_row(json).appendTo(this.table);
+  }
+  append_row(row) {
+    row.appendTo(this.table);
+  }
+  prepend_row(row) {
+    row.insertAfter(this.table.find('tr.head').first());
+  }
+  create_row(json) {
+    let row = $(`<tr/>`, { class: 'body clickable' }).addHoverClassToggle()
       .on('click', ev => { this.row_click(ev) }).data({ info: json });
     let is_bool = (col) => this.bool_cols ? this.bool_cols.includes(col) : false;
     let style = (col, val) => {
@@ -172,6 +243,23 @@ class Table {
     }
     return row;
   }
+  update_or_add_row(json) {
+    const { data: { uid } } = json;
+    const newRow = this.create_row(json), existingRow = this.find_by_uid(uid);
+    log(`Adding ${this.model}:${uid}`, { json, existingRow, uid, newRow });
+    if (existingRow.exists()) existingRow.replaceWith(newRow);
+    else this.prepend_row(newRow);
+    return newRow;
+  }
+  remove_rows(uids) {
+    this.find_by_uid(uids).remove();
+    if (this.selection_list) {
+      this.selection_list.remove_by_value(uids, 0);
+    }
+    if (this.details) this.details.hide();
+    this.update_selection();
+  }
+
   async row_click(ev) {
     let row = $(ev.target).closest('tr'), info = row.data('info'), was_active = row.is('.active'), uid = info.data.uid;
     let meta = ev.metaKey, ctrl = ev.ctrlKey, alt = ev.altKey;
@@ -206,23 +294,20 @@ class Table {
       const item = this.selection_list.find_by_value(uid);
       if (item.dne()) {
         this.selection_list.add_item({ value: uid, text: info.Name });
-        // this.selection_list.ele.resetActives();
-        this.details.load(this.model, uid);
       }
+      this.details.load(this.model, uid);
     }
+
     let active = this.active;
     if (active.dne()) {
-      this.disable_buttons();
       if (this.selection_list) this.selection_list.ele.resetActives();
-    }
-    else {
-      this.enable_buttons();
+    } else {
       if (this.selection_list) {
         this.selection_list.ele.resetActives();
         this.selection_list.find_by_value(this.uids).addClass('active');
       }
     }
-
+    this.selection_list.update_list();
   }
   get_filter_type(filter) {
     if (filter.options.name == 'text_search') return 'text';
@@ -245,7 +330,12 @@ class Table {
   disable_buttons() { this.button_box.find('.button.requires-selection').addClass('disabled') }
   enable_buttons() { this.button_box.find('.button.requires-selection').removeClass('disabled') }
 
+  get all_rows() { return this.table.find('tr.body') }
   get active() { return this.table.find('tr.active') }
+  set active(uids) {
+    this.table.resetActives();
+    this.find_by_uid(uids).addClass('active');
+  }
   get names() { return this.active.get().map(row => $(row).data('info').Name) }
   get uids() { return this.active.get().map(row => $(row).data('info').data.uid) }
   get info() { return this.active.get().map(row => $(row).data('info')) }
@@ -255,33 +345,16 @@ class Table {
   }
   find_by_uid(uids = []) {
     if (!uids.is_array()) uids = [uids];
-    return this.rows.filter(row => uids.includes($(row).data('info').data.uid));
+    uids = uids.map(uid => parseInt(uid));
+    const match = this.all_rows.get().filter(row => uids.includes($(row).data('info').data.uid));
+    // log(`Find rows ${uids.join(',')}`, { uids, match });
+    return $(match);
   }
   static td_indicator() { return $(`<div/>`, { class: 'td_indicator', text: '...' }); }
-  get list_options() {
-    let options = {
-      header: `Selected ${this.header}`,
-      header_html_tag: 'h4',
-      ul_class: 'horizontal text-large',
-      // ul_css: { marginTop: '-0.2em' },
-      action: this.is_index ? (ev) => {
-        let li = $(ev.target).closest('li'), model = this.model, uid = li.data('value');
-        this.details.load(model, uid);
-      } : null,
-      post_add_fx: _ => {
-        if (!this.continue_btn) return;
-        if (this.active.dne()) this.continue_btn.ele.addClass('disabled');
-        else this.continue_btn.ele.removeClass('disabled');
-      }
-    };
-    if (this.is_index) options.merge({
-      header: ``,
-      no_item_text: 'none selected',
-      limit: 1,
-    });
-    return options;
-  }
 
+  refresh = () => {
+
+  }
   suggest_reload() { this.reload_warning.show() }
 }
 class Details {
@@ -290,47 +363,57 @@ class Details {
     this.ele.removeAttr('data-buttons');
     this.ele.removeAttr('data-details');
     this.ele.data({ initialized: true, class_obj: this });
-    this.header = $('<h4/>', { text: '' });
+    this.header = $('<h3/>', { text: '' });
     this.body = $('<div/>');
     this.button_box = $('<div/>', { class: 'button_box low_margin box purple light' }).appendTo(this.body);
-    if (this.buttons) this.buttons = this.buttons.map(b => {
+    if (this.buttons && this.buttons.length) this.buttons = this.buttons.map(b => {
       let button = new Features.Button(b);
       b.ele = button.ele.appendTo(this.button_box);
       return button;
     });
+    else this.button_box.hide();
     this.key_values = new Features.KeyValueBox({
       header: 'loading',
+      transform_fx: Details.model_details_display
     });
     this.key_values.ele.addClass('details');
     this.ele.append(this.header, this.body.append(this.key_values.ele)).slideFadeOut(0);
     this.toggle = new Features.Toggle({
       toggle_ele: this.header,
       target_ele: this.body,
-      arrow_size: 2,
+      // arrow_size: 0.5,
       initial_state: 'hidden',
       arrow_position: 'below',
     });
     if (this.recent.notEmpty()) this.recent.forEach(m => this.table.selection_list.add_item({ value: m.uid, text: m.name || m.attr_list.name || 'no name' }));
     if (this.details) {
-      const { model } = this.table, { uid, name } = this.details;
+      const { model, selection_list } = this.table, { uid, name } = this.details;
       const instance = Model.find_or_create(model, uid, { name });
       instance.details = this.details;
       this.load(model, uid);
-      if (this.table.selection_list.find_by_value(uid).dne()) this.table.selection_list.add_item({ value: uid, text: name }).addClass('active');
+      if (selection_list.find_by_value(uid).dne()) {
+        selection_list.add_item({ value: uid, text: name }).click();
+      }
     }
     this.toggle.target_ele.hide();
+    // log('DETAILS', { details: this });
+    // window.details = this;
   }
-
+  hide() {
+    this.ele.slideFadeOut();
+  }
   async load(model, uid, options = {}) {
+    if (!uid) return;
     let request = {
-      target: this.toggle.target_ele,
-      blur: true,
+      target: this.toggle.toggle_ele,
+      blur: { size: 2 },
       url: `/${model}/details/${uid}`,
       is_html: false,
     };
     this.ele.slideFadeIn();
 
     let instance = Model.find(model, uid), details = null;
+    // log({ model, uid, instance });
     if (instance && options.force_reload) details = await Http.fetch(request);
     else if (instance && instance.details) details = instance.details;
     else if (instance) details = await Http.fetch(request);
@@ -338,10 +421,12 @@ class Details {
       details = await Http.fetch(request);
       instance = new Models[model]({ uid, name: details.name });
     }
-    log(`LOAD`, { details, instance });
+
     Model.current = Models[model].current = instance;
     instance.details = details;
-    this.toggle.text_ele.text('');
+    this.details = details;
+    const { name } = details;
+    this.toggle.text_ele.text(name);
     this.key_values.reset_all();
     for (let section_name in details) {
       if (['name', 'uid'].includes(section_name)) continue;
@@ -352,6 +437,7 @@ class Details {
       }
     }
   }
+
   static load(model, uid, options = {}) {
     let details = $(`#${model}Details`);
     if (details.dne()) return;
@@ -381,7 +467,7 @@ class Details {
         }
       } else if (key == 'display') return null;
 
-      let span = $('<span/>', { css: { display: 'inline-block' } });
+      let span = $('<span/>');
 
       if (key == 'Settings') {
         this.add_header(`Settings`);
@@ -394,14 +480,13 @@ class Details {
         return span.append(value.smartJoin('and'));
       } else if (type == 'object') {
         if (obj_to_bool_array) return span.append(SettingsManager.obj_to_bool_array(value).smartJoin('and'));
-        let div = $('<div/>');
+        let div = $('<div/>', { class: 'settings-section' });
         for (let k in value) {
           let inner_div = $('<div/>', { class: k }), key_span = $('<span/>', { class: `setting_name`, text: `${k.toKeyString(true)}:` }), value_k = Details.model_details_display(k, value[k], true);
           if (value_k == null) value_k = $('<span/>', { text: 'default', css: { display: 'inline-block' } })
           if (value_k instanceof jQuery) value_k.addClass('setting_value');
           div.append(inner_div.append(key_span, value_k));
         }
-        // if (!div.children().isSolo()) div.css({paddingTop:'0.25em'});
         return div;
       } else if (type == 'boolean') {
         let icon = new Features.Icon({ type: value ? 'checkmark' : 'styled_x', size: 1, css: { margin: '0.2em 0.3em', opacity: 0.9 } });
@@ -417,20 +502,28 @@ class Details {
 }
 
 class Model {
+  valid = true;
+
   constructor(attr_list, type) {
     try {
-      if (!attr_list) throw new Error('attr_list not provided to Model constructor');
-      else this.valid = true;
+      if (!attr_list || $.isEmptyObject(attr_list)) {
+        this.valid = false;
+        const error = new Error('attr_list not provided to Model constructor');
+        log({ error });
+      }
       this.attr_list = attr_list;
       this.type = type.toKeyString();
-      if (this.attr_list.uid) { this.uid = this.attr_list.uid; }
-      this.name = this.attr_list.name || this.name || 'nameless';
+      if (this.attr_list.uid) this.uid = this.attr_list.uid;
+      if (this.attr_list.name) this.name = this.attr_list.name;
+      // this.name = this.attr_list.name || this.name || 'nameless';
+
       if (this.uid != 'proxy') Model.loaded.push(this);
-      if (this.uid != 'proxy' && this.type != 'Appointment') log({ list: Model.loaded, this: this, attr_list }, `new ${type} : ${this.name}`);
+      if (this.uid != 'proxy' && this.type != 'Appointment') log(`new ${type} : ${this.name}`, { list: Model.loaded, this: this, attr_list });
     } catch (error) {
       log({ error, attr_list, type });
     }
   }
+  backup_attrs = [];
   backup_attr_values(array) {
     let model = this;
     array.forEach(value_str => {
@@ -441,6 +534,7 @@ class Model {
       if (model.attr_list[attr] == undefined) delete model.attr_list[attr];
     })
   }
+
 
   static get loaded() { return Model.loaded_array === undefined ? Model.loaded_array = [] : Model.loaded_array }
   static filter(options = {}) {
@@ -477,7 +571,7 @@ class Model {
     let attr_list = {}, all_pass = true;;
     try {
       let form = $(selector);
-      if (form.dne()) throw new Error('form does not exist');
+      if (form.dne()) throw new Error(`${selector} not found`);
       if (form.length > 1) throw new Error('more than one form found');
       form.find('.answer').filter(':visible').each((a, answer) => {
         let obj = $(answer).getObj(), value = $(answer).verify('required'), name = obj.options.name;
@@ -491,20 +585,24 @@ class Model {
     }
     return all_pass ? attr_list : false;
   }
-  update_attr_by_form(options = {}) {
+  update_attrs_by_form(options = {}) {
     let attr_list = this.attr_list, all_pass = true;
     try {
-      let form = options.form || null, type = this.attr_list.model || this.type;
-      log({ instance: this });
-      if (!form) form = $(`#Create${type}`);
-      if (form.dne()) throw new Error('form does not exist');
-      if (form.length > 1) throw new Error('more than one form found');
+      let form = options.form || null, type = this.attr_list.model || this.usertype || this.type;
+      if (!form) form = $(`#${type.toKeyString()}`);
+      if (form.dne()) throw new Error(`Form #${type} not found`);
+      if (form.length > 1) throw new Error(`Multiple forms #${type} found`);
+
       let answers = Forms.Answer.get_all_within(form);
       answers.forEach(answer => {
         let value = answer.verify('required'), name = answer.options.name;
-        if (value === false) all_pass = false;
-        attr_list[name] = value;
-        // log({answer,value},value === false ? "FALSE" : value);
+        if (value === false) {
+          all_pass = false;
+          log(`Verify ${name} failed`, { answer, form });
+        } else {
+          attr_list[name] = value;
+        }
+
       })
     } catch (error) {
       log({ error, options, all_pass });
@@ -516,24 +614,46 @@ class Model {
     this.uid = null;
     this.attr_list.uid = null;
   }
-
-  static async edit() { Model.current.edit() }
-  async edit() {
-    log({ current: Model.current }, `edit ${this.type}`);
-    if (!this.edit_unique) {
-      await Http.fetch({ url: `/edit/${this.type.toKeyString()}/${this.uid}`, target: 'new_modal:EditModel' });
-      Models[this.type.toKeyString()].editing = this;
+  set_attributes(attributes = {}) {
+    const form_values = this.form_values || {};
+    const values = { ...this.attr_list, ...form_values, ...attributes };
+    this.attr_list = values;
+    return values;
+  }
+  get_attribute(key, value = null) {
+    const attr = this[key] || this.attr_list[key];
+    if (value === null) {
+      return attr;
     } else {
-      await this.edit_unique();
-    }
-    let form = Features.Blur.top.find('.createModel');
-    if (form.exists()) {
-      Model.form_mode('edit', form);
-      form.show();
+      return attr === value;
     }
   }
 
-  static async settings() { Model.current.settings() }
+  static async edit() { Model.current.edit() }
+  edit = async () => {
+    log(`Edit ${this.type}`, { current: Model.current });
+    if (!this.edit_unique) {
+      await Http.fetch({ url: `/edit/${this.type.toKeyString()}/${this.uid}`, target: `new_modal:EditModel` });
+    } else {
+      await this.edit_unique();
+    }
+    Models[this.type.toKeyString()].editing = this;
+
+    let form = $('#EditModel'), initial = form.data('initial') || {};
+    const values = this.set_attributes(initial);
+    Forms.FormEle.simple_fill(form, values);
+    log({ form, initial, values, model: this });
+
+  }
+
+  static async settings(options = {}) {
+    const { model, selected, table } = options;
+    const { uids, names } = table;
+    if (uids.length == 1) Model.current.settings();
+    else {
+      log({ uids });
+    }
+  }
   static settings_icon(icon_css = { margin: '0.2em', cursor: 'pointer', opacity: 0.6 }) {
     let icon = new Features.Icon({ type: 'gears', size: '1.4' });
     // icon.img.css(icon_css).addOpacityHover();
@@ -547,26 +667,27 @@ class Model {
         method: 'POST',
         data: { uids }
       })
-      let modal = $('#SettingsModal'), header = $('#Settings'), names = ModelList.find(model).names_by_id(uids), form = modal.find('.form');
+      let modal = $('#SettingsModal'), header = modal.find('.form_header'), names = ModelList.find(model).names_by_id(uids), form = modal.find('.form');
+      log({ modal, header, form });
       let manager = Model.settings_manager_multi;
-      header.addClass('left').text('Settings For:').append('<ul>');
-      header.find('ul').append(names.map(name => `<li>${name}</li>`));
-      // $(`<h3/>`,{class: 'pink box', html:``})
+      header.toggleClass('center left').text('Settings For:').append('<ul>');
+      header.find('ul').addClass('text-xlarge-rem').append(names.map(name => `<li>${name}</li>`));
       log({ names: ModelList.find(model).names_by_id(uids) }, "MULTI SETTINGS");
       let kv_display = new Features.KeyValueBox({
-        key_class: 'box padded_side purple light',
+        key_class: 'purple',
         transform_fx: Details.model_details_display,
       });
       kv_display.ele.addClass('settings');
       let confirmation = confirm({
-        header: `Caution: Editing multiple ${Models.table.header.toLowerCase()}`,
+        header: `Caution: Editing multiple ${Table.CurrentIndex.header.toLowerCase()}`,
         header_html_tag: 'h1',
         header_class_list: 'pink bold',
         // message: kv_display.ele.addClass('.settings'),
         affirm: _ => manager.autosave.trigger(),
       });
-      confirmation.box.add_info(`<h3 class='box pink left m-y-50'><div>This will overwrite the following settings for:</div><ul>${names.map(name => `<li>${name}</li>`).join('')}</ul><div>Any settings not listed will be unchanged</div>`).add_info(kv_display.ele.addClass('settings'));
-      form.getObj().submit_btn.action = _ => {
+      confirmation.box.add_info(`<h3 class='box pink left'><div>This will overwrite the following settings for:</div><ul>${names.map(name => `<li>${name}</li>`).join('')}</ul><div>Any settings not listed will be unchanged</div>`).add_info(kv_display.ele.addClass('settings'));
+
+      modal.find('.submit.button').getObj().action = _ => {
         // delete manager.settings_obj.display;
         kv_display.reset_all();
         kv_display.new_pairs(manager.settings_obj);
@@ -602,7 +723,7 @@ class Model {
             Http.reload_tab();
             setTimeout(_ => {
               unblurAll(1000);
-              // Models.table.suggest_reload();
+              // Table.CurrentIndex.suggest_reload();
             }, 2000)
             // log({response});
             // return
@@ -698,54 +819,75 @@ class Model {
     $('#SettingsModal').getObj('blur').on_undo_replace = Http.reload_tab;
   }
 
-  async save(options = {}) {
-    let type = this.type, model = this, columns = {}, relationships = {}, addl_post_data = {};
-    let proceed = true, clear_on_success = ifu(options.clear_on_success, true), clear_count = this.clear_count || options.clear_count || null;
+  save = async (options = {}) => {
+    let type = this.type;
+    let proceed = true;
+    const { showProgress = true } = options;
     if (this.on_save) {
-      console.groupCollapsed(`${this.type} on_save`);
       proceed = await this.on_save();
-      console.groupEnd();
     }
-    if (!proceed) return;
+    if (!proceed) {
+      console.groupEnd();
+      return;
+    }
     try {
       if (this.valid) {
-        let save_blur = this.save_blur || false;
+        this.backup_attr_values(this.backup_attrs);
+        const db_obj = this.db_save_obj;
+
+        if (type == 'User') {
+          db_obj.uid = this.attr_list.user_id;
+          db_obj.usertype = this.usertype;
+        }
+
+        const save_blur = this.save_blur || false;
         if (save_blur) blur(save_blur.ele, 'loading', save_blur.options);
-        else blurTop('loading', { color: 'green' });
+        else if (showProgress) blurTop('loading', { color: 'green' });
 
-        let db_obj = this.db_save_obj, callback = this.save_callback ? this.save_callback.bind(this) : null;
-        if (type == 'User') db_obj.uid = this.attr_list.user_id;
-        // if (this.wants_checkmark || options.wants_checkmark) db_obj.merge({ wants_checkmark: true });
+        console.group(`Save ${this.type}, ${this.name}`, { model: this, db_obj });
 
-        const wants_checkmark = this.wants_checkmark || options.wants_checkmark || true;
-        let result = await $.ajax({
+        const result = await $.ajax({
           url: `/save/${type}`,
           method: 'POST',
           data: db_obj,
-          success: function (response) {
-            log({ response, db_obj, callback, options, wants_checkmark });
-            if (system.validation.xhr.error.exists(response.save_result)) return;
-            if (callback) {
-              console.log('A');
-              callback(response.save_result);
+          success: ({ save_result: result }) => {
+            log('Save Response', { result });
+            const { error, uid, type, details, list, table } = result;
+            const index = Table.CurrentIndex;
+            if (error) {
+              const { header = "Error", message } = error;
+              blurError({ header, message });
+            } else {
+              const listItem = ModelList.find(type, uid);
+              this.uid = uid;
+              this.details = details;
+              log({ details, list, table, type, index });
+              if (list && listItem) listItem.define_by(list);
+
+              if (index && index.model === type) {
+                log({ table, type, index });
+                index.update_or_add_row(table).click();
+              }
+              if (this.save_callback) this.save_callback(result);
+              if (showProgress) Features.Blur.Checkmark();
             }
-            else if (wants_checkmark) {
-              blurTop('checkmark', { auto_undoall_timeout: 1000 });
-            }
-            else {
-              console.log('B');
-              $('.loadTarget').last().html(response.save_result);
-            }
+            console.groupEnd();
           }
         })
-        // console.groupEnd();
         return result;
-      } else throw new Error('cannot save invalid model, !this.valid');
+      } else throw new Error(`Invalid ${type}`);
     } catch (error) {
-      log({ error, attr_list: this.attr_list });
+      // if (showProgress) unblur();
+      const { message, responseJSON = {} } = error;
+      if (message) Features.Banner.error({ message, inital_state: 'fadein' });
+      // else if (responseJSON.message) {
+
+      // }
+      log({ error, message, responseJSON, instance: this });
     }
+    console.groupEnd();
   }
-  async delete(name = null) {
+  delete = async (name = null) => {
     if (!this.delete_unique) {
       let instance = this, callback = this.delete_callback || Http.reload;
       let name = this.attr_list.name || null;
@@ -761,11 +903,24 @@ class Model {
             let result = $.ajax({
               url: `/delete/${instance.type}/${instance.uid}`,
               method: 'DELETE',
-              success: function (response) {
-                if (response == 'checkmark') {
-                  blurTop('checkmark', { auto_undoall_timeout: 1000 })
-                  resolve(true);
-                } else resolve(false);
+              success: function ({ deleted, error }) {
+                if (error) {
+                  const { header, message } = error;
+                  Features.Banner.error({ header, message });
+                } else {
+                  Features.Blur.Checkmark();
+                  const { uids } = deleted;
+                  const index = Table.CurrentIndex;
+                  if (index && index.model === instance.type) {
+                    index.remove_rows(uids);
+                  }
+                }
+                resolve(true);
+
+                // if (response == 'checkmark') {
+                //   blurTop('checkmark', { auto_undoall_timeout: 1000 })
+                //   resolve(true);
+                // } else resolve(false);
               }
             })
           }
@@ -778,8 +933,9 @@ class Model {
     // log({ ev, data });
     const { model, selected, table } = options;
     const { uids, names } = table;
+    const underline = (text) => `<u>${text}</u>`;
     confirm({
-      header: `Delete ${names.smartJoin()}?`,
+      header: `Delete ${names.smartJoin({ map: underline })}?`,
       message: '<h3 class="pink">This cannot be undone!<br>Are you sure?</h3>',
       yes_text: 'permanently delete',
       no_text: 'cancel',
@@ -790,10 +946,24 @@ class Model {
           url: `/delete/${model}`,
           method: 'POST',
           data: { uids },
+          success: ({ deleted, error }) => {
+            if (error) {
+              const { header, message } = error;
+              Features.Banner.error({ header, message });
+            } else {
+              Features.Blur.Checkmark();
+              const { uids } = deleted;
+              const index = Table.CurrentIndex;
+              // log(`Deleted ${uids}`, { index, uids });
+              if (index && index.model === model) {
+                index.remove_rows(uids);
+              }
+            }
+          }
         })
-        if (response === 'checkmark') {
-          blurTop('checkmark', { auto_undoall_timeout: 1000 })
-        } else log({ error: response });
+        // if (response === 'checkmark') {
+        //   blurTop('checkmark', { auto_undoall_timeout: 1000 })
+        // } else log({ error: response });
       }
     })
 
@@ -802,23 +972,32 @@ class Model {
   }
 
   get db_save_obj() {
-    let model = this, columns = {}, relationships = {}, uid = this.save_uid || this.uid || this.attr_list.uid || null;
-    if (!this.db_columns) throw new Error(`db_columns not defined for ${this.type}`);
-    this.db_columns.forEach(column => {
-      if (model.attr_list[column]) {
-        let attr = model.attr_list[column];
-        if (attr instanceof LUX) {
-          if (column.includes('datetime') || column.includes('date_time')) attr = attr.datetime_db;
+    try {
+      let model = this, columns = {}, relationships = {}, uid = this.save_uid || this.uid || this.attr_list.uid || null;
+      const { attr_list } = this;
+      if (!this.db_columns) throw new Error(`db_columns not defined for ${this.type}`);
+      this.db_columns.forEach(column => {
+        if (typeof model.attr_list[column] !== 'undefined') {
+          let attr = model.attr_list[column];
+          if (attr instanceof LUX) {
+            // const dateColumns = ['datetime', 'date_time', 'signed_at'];
+            // if (column.includes('datetime') || column.includes('date_time')) attr = attr.datetime_db;
+            // if (dateColumns.find(d => column.includes(d))) attr = attr.datetime_db;
+            attr = attr.datetime_db;
+          }
+          columns[column] = attr;
         }
-        columns[column] = attr;
+      });
+      if (this.db_relationships) {
+        for (let model in this.db_relationships) {
+          if (this.attr_list[model]) relationships[model] = { uids: this.attr_list[model], method: this.db_relationships[model] }
+        }
       }
-    });
-    if (this.db_relationships) {
-      for (let model in this.db_relationships) {
-        if (this.attr_list[model]) relationships[model] = { uids: this.attr_list[model], method: this.db_relationships[model] }
-      }
+      return { uid, columns, relationships };
+
+    } catch (error) {
+      Features.Banner.error(error.message);
     }
-    return { uid, columns, relationships };
   }
   dont_save(attrs) {
     let list = this.attrs_not_to_save || [];
@@ -827,43 +1006,58 @@ class Model {
     this.attrs_not_to_save = list;
   }
 
-  static form_mode(mode, form, options = {}) {
-    // let mode = options.mode || 'create';
-    let header = form.find('h1'), submit_btn = form.find('.submit.create, .submit.edit'), type = submit_btn.data('model');
-    if (mode == 'create') {
-      header.text(header.text().replace('Edit', 'Create'));
-      let text = options.btn_text || `create ${type.addSpacesToKeyString()}`;
-      submit_btn.addClass('create').removeClass('edit').text(text);
-    } else if (mode == 'edit') {
-      header.text(header.text().replace('Create', 'Edit'));
-      let text = options.btn_text || `save changes to ${type.addSpacesToKeyString()}`;
-      submit_btn.addClass('edit').removeClass('create').text(text);
-    }
+  get Form() {
+    const form = $(`#${this.type}`).closest('.form');
+    if (form.dne()) throw new Error(`${this.type} Form not found`);
+    return form;
   }
-  static form_open(options = {}, type = null) {
+  static FormOpen(options = {}) {
+    let { instance, data, model, type, fill = {} } = options;
     try {
-      let edit = false;
-      if (options.instance) { edit = true; type = options.instance.type; }
-      if (options.data && options.data.model) type = options.data.model;
-      if (options.model) type = options.model;
-      let form = `#${type}`;
-      if ($(form).dne()) {
-        log(arguments);
-        throw new Error(`form dne for type=${type}`);
+      if (data && data.model) type = data.model;
+      if (model) type = model;
+
+      const form = instance ? instance.Form : $(`#${type}`);
+      if (instance) {
+        Model.IsEditing(instance);
+        fill.merge(instance.form_values);
+      } else {
+        Model.IsCreating(type);
+        Features.Toggle.get_all_within(form).forEach(t => t.reset_messages());
       }
-
-      Forms.FormEle.model_edit(form, edit);
-
-      let fill = options.fill || {};
-      if (edit) fill.merge(options.instance.form_values);
-      else Features.Toggle.get_all_within(form).forEach(t => t.reset_messages());
-
       Forms.FormEle.simple_fill(form, fill);
       blurTop(form);
     } catch (error) {
       log({ error, options, type });
     }
   }
+
+  static IsEditing(instance, options = {}) {
+    try {
+      const form = instance.Form;
+      // log({ instance, form });
+      const header = form.find('h1').first(), button = form.find('.button.submit.model');
+      const { headerText = instance.name, buttonText = instance.submitButtonText || 'save changes' } = options;
+      header.text(headerText);
+      button.text(buttonText).removeClass('create').addClass('edit');
+      Models[instance.type.toKeyString()].editing = instance;
+    } catch (error) {
+      log({ error, instance });
+    }
+  }
+  static IsCreating(type, options = {}) {
+    try {
+      const form = $(`#${type}`);
+      const header = form.find('h1').first(), button = form.find('.button.submit.model');
+      const { headerText = `New ${type}`, buttonText = `create ${type}` } = options;
+      header.text(headerText);
+      button.text(buttonText).removeClass('edit').addClass('create');
+      Models[type].editing = null;
+    } catch (error) {
+      log({ error, type });
+    }
+  }
+
 
   static popup_links(model) {
     let unique = Models[model].popup_links_unique;
@@ -933,28 +1127,38 @@ class Model {
   }
   static async create_or_edit(options = {}) {
     try {
-      if (!options.where) throw new Error('create_or_edit requires options.where');
-      if (!options.type) throw new Error('create_or_edit requires options.type');
-      let data = { where: options.where }.merge(options.ajax_data || {});
-      log(data, 'create or edit request');
+      let { where, type, data = {} } = options;
+      data = { ...data, where };
       await Http.fetch({
-        url: `/create_or_edit/${options.type}`,
-        target: `new_modal:CreateOrEdit${options.type}`,
+        url: `/create_or_edit/${type}`,
+        target: `new_modal:${type}`,
         method: "POST",
         data
       });
-      let modal = $(`#${options.type}`), attr_list = modal.exists() ? modal.data('attr_list') || {} : {};
-      Model.current = Models[options.type].current = new Models[options.type]({ type: options.type }.merge(attr_list));
+      let modal = $(`#${type}`), attr_list = modal.exists() ? modal.data('initial') || {} : {};
+      if (modal.find('#ModelId').exists()) attr_list.id = modal.find('#ModelId').data('id');
+      const Type = Models[type];
+      const { id: uid = null } = attr_list;
+      log({ attr_list });
+      // const instance = Model.find_or_create(type, uid, attr_list);
+      const instance = Model.current = Type.current = Type.editing = Model.find_or_create(type, uid, attr_list);
+      Model.IsEditing(instance);
+      if (Type.autosave) Type.autosave(instance);
     } catch (error) {
       log({ error, options });
     }
   }
 }
+
 class ModelList {
   constructor(options = {}) {
     this.define_by(options);
-    ModelList.all[this.model] = this;
-    if (typeof this.list === 'string') this.list = JSON.parse(this.list);
+    try {
+      ModelList.all[this.model] = this;
+      if (typeof this.list === 'string') this.list = JSON.parse(this.list);
+    } catch (error) {
+      log({ error, options, list: this.list, instance: this });
+    }
   }
   find(options = {}) {
     try {
@@ -977,7 +1181,7 @@ class ModelList {
         return true;
       });
     } catch (error) {
-      log({ error, options });
+      log({ error, options, instance: this });
     }
   }
   get names() {
@@ -1025,7 +1229,9 @@ class ModelList {
     try {
       let attr = null, split = model.split('.');
       if (split.notSolo()) { model = split[0]; attr = split.slice(1).join('.') }
-      let list = ModelList.all[model], instance = uid ? list.find({ uid }) : null;
+      const list = ModelList.all[model];
+      if (!list) return;
+      const instance = uid ? list.find({ uid }) : null;
       return !instance ? list : !attr ? instance : instance.dot_notation_get(attr);
     } catch (error) {
       log({ error, model, uid });
@@ -1052,7 +1258,15 @@ class ModelList {
       method: 'POST',
       data: { models: ModelList.pending },
     });
-    ModelList.pending.forEach(model => { new ModelList({ model, list: response[model].list, plural: response[model].plural }) });
+    ModelList.pending.forEach(model => {
+      const { list, plural } = response[model];
+      if (list.error) {
+        const { message = 'Error retrieving list' } = list.error;
+        Features.Banner.error(message);
+        log({ error: list.error });
+      }
+      new ModelList({ model, list: response[model].list, plural: response[model].plural })
+    });
     ModelList.pending_array = [];
     // log({all:ModelList.all,pending:ModelList.pending},'LISTS');
   }
@@ -1067,17 +1281,19 @@ class SettingsManager {
       if (this.obj instanceof Model) {
         if (!this.obj.attr_list.settings) this.obj.attr_list.settings = {};
         this.settings_obj = this.obj.attr_list.settings;
-        log(this, `new SETTINGS MANAGER ${this.obj.type}:${this.obj.uid}`);
+        // log(this, `new SETTINGS MANAGER ${this.obj.type}:${this.obj.uid}`);
 
       } else {
         if (!this.obj.settings) this.obj.settings = {};
         this.settings_obj = this.obj.settings;
       }
-      if (this.obj instanceof Forms.FormEle) log(this, `new SETTINGS MANAGER FormEle`);
+      // if (this.obj instanceof Forms.FormEle) log(this, `new SETTINGS MANAGER FormEle`);
       if (this.initial_override) this.settings_obj.merge(this.initial_override);
       else if (this.initial_override === null) this.settings_obj = {};
       SettingsManager.convert_obj_values_to_bool(this.settings_obj);
-      if (this.mode == 'edit' && this.form) this.form_ele = this.form;
+      if (this.mode == 'edit' && this.form) {
+        this.form_ele = this.form;
+      }
       if (!this.autosave && this.mode == 'edit') {
         if (!this.save || typeof this.save != 'function') throw new Error('Must supply a save function for Autosave');
         if (this.callback && typeof this.callback != 'function') throw new Error('Invalid callback function for Autosave');
@@ -1098,6 +1314,7 @@ class SettingsManager {
       this.obj.get_setting = this.get_setting.bind(this);
       this.obj.set_setting = this.set_setting.bind(this);
       this.obj.delete_setting = this.delete_setting.bind(this);
+      this.obj.settings_obj = this.settings_obj;
     } catch (error) {
       log({ error, options, mode });
     }
@@ -1107,6 +1324,7 @@ class SettingsManager {
       let settings_manager = this;
       if (ele.dne()) throw new Error('settings form ele dne');
       if (!ele.is('.form')) throw new Error('settings form is not .form');
+      console.log("SETTING FORMELE FOR AUTOSAVE", { settings_manager, ele });
       this.form = { ele: ele, obj: ele.getObj() }
       this.form_fill();
       this.autosave_on_form_change = ifu(this.autosave_on_form_change, true);
@@ -1160,15 +1378,16 @@ class SettingsManager {
   apply() {
 
     let display = this.get_setting('display');
-    // log({this:this,obj:this.obj,display},"APPLY SETTINGS");
+
     if (display && this.obj.ele) {
       let display_bools = display.dot_notation_flatten('_');
       for (let class_name in display_bools) {
         if (!display_bools.hasOwnProperty(class_name)) continue;
-        if (display_bools[class_name]) this.obj.ele.addClass(class_name);
-        else this.obj.ele.removeClass(class_name);
+        const value = display_bools[class_name];
+        const name = typeof value === 'boolean' ? class_name : `${class_name}_${value}`;
+        if (value) this.obj.ele.addClass(name);
+        else this.obj.ele.removeClass(name);
       }
-      // log({display_bools});
     }
   }
   update(answer) {
@@ -1188,7 +1407,7 @@ class SettingsManager {
       // };
       dot_array.push(setting_name);
       if (dot_array[0] == 'settings') dot_array.shift();
-      log({ value, settings: this.settings_obj, obj: this.obj }, `SETTING ${setting_name}`);
+      log(`SETTING ${setting_name}`, { value, settings: this.settings_obj, obj: this.obj });
 
       let is_linked = answer.options.autofill_model || null, is_number = answer.type == 'number', is_address = answer.type == 'address', adjusted = value;
       if (is_linked || is_number || is_address) {
@@ -1303,9 +1522,32 @@ class SettingsManager {
   }
   static autofill_filter(list, autofill_settings) {
     let autofill_dot = autofill_settings.dot_notation_flatten();
-    log({ autofill_settings, autofill_dot });
+    // log({ list, autofill_settings, autofill_dot });
+    return list.filter(item => {
+      const item_dot = item.settings.dot_notation_flatten();
+      for (const setting_name in autofill_dot) {
+        const value = autofill_dot[setting_name];
+        // log({ text: setting_name });
+        const match = SettingsManager.matches(value, item_dot[setting_name]);
+        if (!match) return false;
+      }
+      return true;
+    })
 
-    return list;
+  }
+  static matches(valueToMatch, testValue) {
+    if (!testValue) return;
+    const [v1, v2] = [valueToMatch, testValue].map(v => v.toBool());
+    const t1 = typeof v1, t2 = typeof v2;
+    // console.log(valueToMatch, testValue, v1, v2, t1, t2);
+    if (t1 === 'object' && v1.is_array()) {
+      if (!v2.is_array()) return false;
+      if (!v1.every(v => v2.includes(v))) return false;
+      if (!v2.every(v => v1.includes(v))) return false;
+      return true;
+    }
+    // log({ v1, v2 });
+    return v1 === v2;
   }
   // static obj_to_dot_notation (obj) {
 
@@ -1420,19 +1662,23 @@ class Practice extends Model {
   }
 }
 class User extends Model {
-  constructor(attr_list, type = 'patient') {
+  db_columns = ['first_name', 'middle_name', 'last_name', 'preferred_name', 'phone', 'email', 'username', 'address_mailing', 'address_billing', 'date_of_birth'];
+  backup_attrs = ['username:email'];
+
+  constructor(attr_list) {
     super(attr_list, 'User');
-    this.backup_attr_values(['username:email', 'address_billing:address_mailing']);
-    this.usertype = type;
-    if (!this.attr_list.roles) this.attr_list.roles = { list: [type], default: null };
-    // this.dont_save(['name','user_id']);
-    this.save_uid = this.user_id;
+    this.backup_attr_values(this.backup_attrs);
+    // this.usertype = type;
+    // if (!this.attr_list.roles) this.attr_list.roles = { list: [type], default: null };
+    // this.save_uid = this.user_id;
   }
+
+  static IsPatient() { return User.Auth.get_attribute('role', 'patient') }
 
   get is_super() { return this.attr_list.is_super || false }
   get is_admin() { return this.attr_list.is_admin || false }
   async delete_unique() {
-    log({ this: this });
+    // log({ this: this });
     let instance = this;
     confirm({
       header: `Delete ${this.attr_list.model}: ${this.attr_list.name}?`,
@@ -1455,11 +1701,10 @@ class User extends Model {
     })
   }
   async edit_unique() {
-    return Http.fetch({ url: `/edit/${this.usertype.toKeyString()}/${this.uid}`, target: 'new_modal:EditUser' });
+    const type = this.usertype.toKeyString();
+    return Http.fetch({ url: `/edit/${type}/${this.uid}`, target: `new_modal:EditModel` });
   }
-  // async settings_unique () {
-  //   await Http.fetch({url:`/settings/${this.usertype.toKeyString()}/${this.uid}`,target:'new_modal:SettingsModal'});
-  // }
+
   async roles_edit() { log("EDITING") }
   async roles_save() { }
 
@@ -1481,20 +1726,23 @@ class User extends Model {
   }
 }
 class Patient extends User {
+  usertype = 'patient';
   constructor(attr_list = null) {
-    let attrs = attr_list || Model.construct_from_form('#CreatePatient');
+    let attrs = attr_list || Model.construct_from_form('#Patient');
     super(attrs, 'patient');
   }
 }
 class Practitioner extends User {
+  usertype = 'practitioner';
   constructor(attr_list = null) {
-    let attrs = attr_list || Model.construct_from_form('#CreatePractitioner');
+    let attrs = attr_list || Model.construct_from_form('#Practitioner');
     super(attrs, 'practitioner');
   }
 }
 class StaffMember extends User {
+  usertype = 'staffMember';
   constructor(attr_list = null) {
-    let attrs = attr_list || Model.construct_from_form('#CreateStaffMember');
+    let attrs = attr_list || Model.construct_from_form('#StaffMember');
     super(attrs, 'staff member');
   }
 }
@@ -1510,6 +1758,7 @@ class Calendar {
     let schedule_eles = this.ele.find('.schedule'), schedules = [];
     schedule_eles.each((s, schedule) => {
       let obj = new Schedule(schedule, s, this.ele);
+      log({ scheduleNode: schedule, schedule: obj });
       schedules.push(obj);
       obj.calendar = this;
     })
@@ -1520,10 +1769,10 @@ class Calendar {
       headerToolbar: {
         left: "title",
         center: "",
-        right: "prev,today,next dayGridMonth,timeGridWeek,timeGridDay",
+        right: "prev,today,next dayGridMonth,timeGridWeek,timeGridDay listWeek",
       },
       height: 'auto',
-      initialView: "timeGridWeek",
+      initialView: "listWeek",
       slotMinTime: '08:00:00',
       slotMaxTime: '20:00:00',
       editable: true,
@@ -1549,6 +1798,9 @@ class Calendar {
     if (this.options.fullcal) fullcal_options.merge(this.options.fullcal);
     this.fullcal = new FullCal(this.ele[0], fullcal_options);
     this.fullcal.render();
+
+    const { form, options, schedule_active } = this;
+    log(`New Calendar`, { ele, form, schedules, schedule_active, options });
   }
   get event_list() { return this.events ? this.events : [] }
   get event_sources() {
@@ -1637,6 +1889,7 @@ class Calendar {
 
 
   event_click(info) {
+    log(`event click`, { info });
     let tt = $(info.el).data('tooltip');
     if (tt) tt.toggle();
     else {
@@ -1696,7 +1949,8 @@ class Schedule {
 
     this.modal = { id: this.modal, ele: this.modal ? ($(`#${this.modal}`).exists() ? $(`#${this.modal}`) : null) : null };
     this.form = this.modal.ele ? this.modal.ele.find('.form').getObj() : null;
-    this.is_background = this.form === null;
+    // this.is_background = this.form === null;
+    this.is_background = !this.active;
     this.display = this.display || 'auto';
     // this.loading = (this.feed_url || this.events) ? false : true;
     // this.refresh_events();
@@ -1869,8 +2123,10 @@ class Schedule {
       if (this.edit) this.form.fill_by_response(this.edit);
       else if (options.fill) this.form.fill_by_key_value_object(options.fill);
     } else if (this.model) {
+      // const { current, model } = this;
+      // log({current,model,options});
       if (this.current) this.current.edit();
-      else Models[this.model].form_open(options, this.model);
+      else Models[this.model].FormOpen({ ...options, type: this.model });
     }
   }
 
@@ -2103,11 +2359,15 @@ class Schedule {
   }
 }
 class Appointment extends Model {
+  type = 'Appointment';
+
   constructor(attr_list = null) {
-    attr_list = attr_list || Model.construct_from_form('#Appointment');
+    attr_list = attr_list || Model.construct_from_form('#Appointment') || {};
     super(attr_list, 'Appointment');
 
-    this.schedule = $('.calendar').getObj().schedules.find(s => s.modal.id == 'Appointment');
+    log(`Appointment`, { model: this, attr_list });
+    this.calendar = $('.calendar').getObj();
+    this.schedule = this.calendar ? this.calendar.schedules.find(s => s.modal.id == 'Appointment') : null;
   }
 
   get rrule() { return this.rrule_obj.toString(); }
@@ -2184,6 +2444,7 @@ class Appointment extends Model {
     this.attr_list.date_time_end = this.end_lux.plus(delta);
   }
   get start_lux() {
+
     let start = this.attr_list.date_time_start || this.attr_list.start;
     if (!start) return null;
     let iso = LUX.fromISO(start), db = LUX.From.db(start);
@@ -2197,18 +2458,24 @@ class Appointment extends Model {
   }
 
   get form_values() {
-    let start = this.start_lux;
-    let values = {
-      patient_id: this.attr_list.patient_id,
-      practitioner_id: this.attr_list.practitioner_id,
-      date: start.date_num,
-      time: start.time,
-      services: this.attr_list.service_ids,
-    };
-    let sub_forms = Appointment.sub_forms || {};
-    for (let attr in sub_forms) {
-      let form_name = sub_forms[attr];
-      if (this.attr_list[attr]) values[form_name] = this.attr_list[attr];
+    let values = {};
+    try {
+      const start = this.start_lux || {};
+      values = {
+        patient_id: this.attr_list.patient_id,
+        practitioner_id: this.attr_list.practitioner_id,
+        date: start.date_num,
+        time: start.time,
+        services: this.attr_list.service_ids,
+      };
+      let sub_forms = Appointment.sub_forms || {};
+      for (let attr in sub_forms) {
+        let form_name = sub_forms[attr];
+        if (this.attr_list[attr]) values[form_name] = this.attr_list[attr];
+      }
+
+    } catch (error) {
+      log({ error, values, appointment: this });
     }
     return values;
   }
@@ -2216,36 +2483,39 @@ class Appointment extends Model {
     return { recurrence: 'RecurringAppointment' };
   }
 
-  async edit() {
-    Appointment.current = this;
-    if (this.attr_list.recurrence) {
-      blurTop('#RecurringOptions');
-    } else {
-      Appointment.EditNonRecurring();
-      Model.form_open({ instance: this });
-    }
+  edit = async () => {
+    Model.current = this;
+    Appointment.editing = this;
+    //   if (this.attr_list.recurrence) {
+    //     blurTop('#RecurringOptions');
+    //   } else {
+    Appointment.EditNonRecurring();
+    Model.FormOpen({ instance: this });
+    //   }
   }
+
   static get RecurToggle() { return $('#Appointment').find('#RecurToggle').getObj() }
   static RecurringForm(enable = true, message = null) {
     let toggle = Appointment.RecurToggle;
+    if (!toggle) return;
     if (enable) toggle.enable({ message });
     else toggle.disable({ message, color: 'pink' })
   }
   static EditNonRecurring() {
     Appointment.RecurringForm();
-    Model.form_open({ instance: this });
+    // Model.FormOpen({ instance: this });
   }
   static EditThisOnly() {
     unblur();
     Appointment.RecurringForm(false, `Unavailable When Editing A Single Instance of a Recurring Appointment`);
-    Model.form_open({ instance: Appointment.current });
+    Model.FormOpen({ instance: Appointment.current });
     alert('update current date field to match actually clicked date')
     Appointment.EditMode = { recurring: true, edit: 'single' };
   }
   static EditAllFuture() {
     unblur();
     let instance = Appointment.current;
-    Model.form_open({ instance });
+    Model.FormOpen({ instance });
     Appointment.RecurringForm(true, `This will only affect appointments from ${instance.start_lux.date_num} onward`);
     alert('update current date field to match actually clicked date')
     Appointment.EditMode = { recurring: true, edit: 'future' };
@@ -2255,15 +2525,17 @@ class Appointment extends Model {
     let service_list = await ModelList.get('Service'), duration = 0, duration_obj = $('#Appointment').find('.duration').getObj();
     if (services instanceof Forms.Answer) services = services.get();
     if (services) {
-      log({ services, service_list });
-      services.forEach(uid => { duration += service_list.find({ uid }).duration; });
+      services.forEach(uid => { duration += Number(service_list.find({ uid }).duration); });
     }
     if (duration_obj) duration_obj.value = duration;
     return duration;
   }
-  async retrieve_chart_note(appt_id, date_time_start, date_time_end) {
-
+  retrieve_chart_note = async () => {
+    const where = { appointment_id: this.uid, date_time_start: this.attr_list.date_time_start };
+    const type = 'ChartNote';
+    await Model.create_or_edit({ where, type });
   }
+
   get event_obj() {
     try {
       // let obj = {type:'Appointment',uid:this.uid};
@@ -2307,34 +2579,30 @@ class Appointment extends Model {
     let chartnote_btn = new Features.Button({
       text: 'chart note',
       class_list: 'xsmall yellow',
-      action: async function () {
-        await Model.create_or_edit({ where, type: 'ChartNote' });
-      }
+      action: this.retrieve_chart_note
     });
-    let invoice_btn = new Features.Button({
-      text: 'invoice',
-      class_list: 'xsmall yellow',
-      action: async function () {
-        await Model.create_or_edit({ where, type: 'Invoice' });
-      }
-    });
+    // let invoice_btn = new Features.Button({
+    //   text: 'invoice',
+    //   class_list: 'xsmall yellow',
+    //   action: async function () {
+    //     await Model.create_or_edit({ where, type: 'Invoice' });
+    //   }
+    // });
     let edit_btn = new Features.Button({
       text: 'edit',
       class_list: 'xsmall pink70',
-      action: _ => {
-        log({ this: this });
-        this.edit();
-      }
+      action: this.edit
     });
     let delete_btn = new Features.Button({
       text: 'delete',
       class_list: 'xsmall pink70',
       action: _ => {
-        log({ this: this });
+        // log({ this: this });
         this.delete();
       }
     });
-    return [chartnote_btn, invoice_btn, edit_btn, delete_btn].map(btn => btn.ele);
+    // return [chartnote_btn, invoice_btn, edit_btn, delete_btn].map(btn => btn.ele);
+    return [chartnote_btn, edit_btn, delete_btn].map(btn => btn.ele);
   }
 
   get db_columns() {
@@ -2352,6 +2620,13 @@ class Appointment extends Model {
 
   async on_save() {
     let sched = this.schedule, edit = sched.edit, edit_recur = sched.edit_recur;
+    const Auth = User.Auth, IsPatient = User.IsPatient();
+
+    if (IsPatient) this.set_attributes({ patient_id: Auth.get_attribute('patient_id') });
+    // log({ Auth, IsPatient, appt: this });
+    // return false;
+
+    if (!this.attr_list) throw new Error(`Invalid ${this.type}`);
 
     if (this.attr_list.date && this.attr_list.time) {
       this.attr_list.date_time_start = LUX.From.datetime(this.attr_list.date, this.attr_list.time);
@@ -2360,8 +2635,9 @@ class Appointment extends Model {
     }
 
     if (this.attr_list.WhenWillThisAppointmentRepeat) {
-      let recur_form = $('#RecurringAppointment').getObj();
-      this.attr_list.recurrence = recur_form.response;
+      const recur_form = $('#RecurringAppointment').getObj(), recurrence = recur_form.response;
+      log({ recur_form, recurrence });
+      this.attr_list.recurrence = recurrence;
     }
     if (this.attr_list.recurrence && !this.attr_list.recurring_id) {
       this.attr_list.recurring_id = this.uid;
@@ -2403,9 +2679,10 @@ class Appointment extends Model {
     }
     return true;
   }
-  async save_callback(data) {
+  save_callback = async (data) => {
     this.uid = data.uid;
-    blurTop('checkmark');
+    log({ data, this: this });
+    // blurTop('checkmark');
     if (this.schedule && this.schedule.calendar) {
       let top = $('.blur_body').getObj();
       if (top) top.on_undo = () => { this.schedule.calendar.fullcal.updateSize() }
@@ -2525,6 +2802,12 @@ class IcdCode extends Model {
     };
   }
 }
+class CptCode extends Model {
+  type = 'CptCode';
+  get db_columns() {
+    return ['code', 'title', 'text'];
+  }
+}
 class Form extends Model {
   constructor(attr_list) {
     super(attr_list, 'Form');
@@ -2567,12 +2850,35 @@ class Form extends Model {
   static async preview_by_uid(uid) { Http.fetch({ url: `/form/preview/${uid}`, target: 'new_modal:FormPreview' }); }
 }
 class ChartNote extends Model {
+  submitButtonText = 'sign chart';
+
   constructor(attr_list = null) {
     attr_list = attr_list || Model.construct_from_form('#ChartNote');
     super(attr_list, 'ChartNote');
+    ChartNote.Current = this;
   }
-  static autosave() {
-    log("find current CHARTNOTE and AUTOSAVE ");
+  static get ComplaintList() { return $('#complaints').getObj() }
+  static ComplaintListValues() { return ChartNote.ComplaintList.get() }
+  static get IcdList() { return $('#icd_codes').getObj() }
+  static IcdListValues() { return ChartNote.IcdList.get() }
+  static get CptList() { return $('#cpt_codes').getObj() }
+  static CptListValues() { return ChartNote.CptList.get() }
+  static get FormList() { return $('#ChartFormList').getObj() }
+  static FormListValues() { return ChartNote.FormList.get() }
+
+  static autosave(instance) {
+    instance.autosave = new Features.Autosave({
+      send: () => instance.save({ showProgress: false }),
+      obj: instance,
+      delay: 2000,
+      show_status: false
+    })
+    instance.Form.find('.button.submit').data({ action: instance.sign });
+    // log({ complaints: ChartNote.ComplaintList });
+    ChartNote.ComplaintList.after_change_action = () => instance.autosave.trigger();
+    ChartNote.IcdList.after_change_action = () => instance.autosave.trigger();
+    ChartNote.CptList.after_change_action = () => instance.autosave.trigger();
+
   }
   static async toggle_form(info) {
     let was_active = info.was_active, uid = info.value, item = info.item,
@@ -2613,14 +2919,78 @@ class ChartNote extends Model {
     }
   }
   static add_complaints() {
-    let complaints = Complaint.table.info, answer = $('#ChartNote').find('.complaint_selection'), existing_ids = answer.find('li').get().map(li => $(li).data('value'));
+    let complaints = Complaint.table.info, answer = ChartNote.ComplaintList, existing_ids = answer.find('li').get().map(li => $(li).data('value'));
     let eles = complaints.filter(c => !existing_ids.includes(c.data.uid)).map(c => `<li data-value="${c.data.uid}">${c.Name}</li>`);
     answer.append(eles);
     unblur();
   }
+
+  update_attrs_by_form(options = {}) {
+    let attr_list = this.attr_list, all_pass = true;
+    try {
+      // let form = options.form || null, type = this.attr_list.model || this.usertype || this.type;
+      // if (!form) form = $(`#${type.toKeyString()}`);
+      // if (form.dne()) throw new Error(`Form #${type} not found`);
+      // if (form.length > 1) throw new Error(`Multiple forms #${type} found`);
+
+      // const form = $('#ChartNote');
+
+      // let answers = Forms.Answer.get_all_within(form);
+      const answers = $('#ChartNote').find('.answer').get().filter(answerEle => !$(answerEle).isInside('#ChartForms')).map(answerEle => $(answerEle).getObj('answer', false));
+      // log({ answers });
+      answers.forEach(answer => {
+        let value = answer.verify('required'), name = answer.options.name;
+        if (value === false) {
+          all_pass = false;
+        } else {
+          attr_list[name] = value;
+        }
+
+      })
+    } catch (error) {
+      log({ error, options, all_pass });
+      all_pass = false;
+    }
+    return all_pass;
+  }
+
+  on_save() {
+    this.set_attributes({
+      complaints: ChartNote.ComplaintListValues(),
+      icd_codes: ChartNote.IcdListValues(),
+      cpt_codes: ChartNote.CptListValues(),
+    });
+    return true;
+  }
+
+  get db_columns() { return ['date_time_end', 'icd_codes', 'cpt_codes', 'signature', 'signed_at'] }
+  get db_relationships() {
+    return {
+      complaints: 'sync'
+    };
+  }
+  get forms() {
+    return $('#ChartForms').find('.form').get().map(form => $(form).getObj());
+  }
+  get submissions() {
+    return this.forms.map(form => ({ form, response: form.response }));
+  }
+  sign = async () => {
+    const submissions = this.submissions;
+    const invalid = submissions.find(({ response }) => response === false);
+    if (invalid) return;
+
+    const { patient_id, appointment_id, id: chart_note_id } = this.attr_list;
+    blurTop('loading', { color: 'green' });
+    const results = await Promise.all([...submissions.map(({ form, response: responses }) => form.submit({
+      patient_id, appointment_id, chart_note_id, responses
+    })), this.save({ showProgress: false })]).then(data => data.map(({ save_result }) => save_result));
+    Features.Blur.Checkmark();
+    log({ results });
+  }
 }
 
-export const Models = { Table, Details, Model, ModelList, SettingsManager, Practice, User, Patient, Practitioner, StaffMember, Calendar, Schedule, Appointment, Service, ServiceCategory, Complaint, ComplaintCategory, IcdCode, Form, ChartNote };
+export const Models = { Table, Details, Model, ModelList, SettingsManager, Practice, User, Patient, Practitioner, StaffMember, Calendar, Schedule, Appointment, Service, ServiceCategory, Complaint, ComplaintCategory, IcdCode, CptCode, Form, ChartNote };
 
 export const linkable_models = ['Patient', 'Practitioner', 'StaffMember', 'Service', 'Form', 'Complaint', 'ComplaintCategory'];
 export const linkable_lists = {};

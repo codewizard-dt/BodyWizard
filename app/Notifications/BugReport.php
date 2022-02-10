@@ -58,13 +58,13 @@ class BugReport extends Notification
         return [
             'type' => 'Bug Report',
             'description' => $this->bug->description,
-            'details' => ['location' => $this->bug->location, 'details' => $this->bug->details],
+            'details' => ['location' => $this->bug->location, 'details' => json_encode($this->bug->details)],
             'model' => 'Bug',
             'uid' => $this->bug->id,
             'buttons' => [
                 ['text' => 'go to bugs', 'type' => 'click', 'target' => "#bug-index"],
                 ['text' => 'view bug', 'type' => 'viewModel'],
-            ]
+            ],
         ];
     }
 }

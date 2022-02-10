@@ -5,12 +5,14 @@ if (isset($form)) {
     $data = json_encode($form->full_json);
     $sections = json_encode($form->sections);
     $settings = $form->settings;
-    $name = $form->form_name;
+    // $name = $form->form_name;
 } else {
-    throw new \Exception('Form not given: ' . request()->path());
+    echo '<h4>Form not specified</h4>';
+    // return;
+    throw new \Exception('Form not specified: ' . request()->path() . ', ' . json_encode(request()->all()));
 }
 
-$mode = isset($mode) ? $mode : request('mode', 'display');
+$mode = isset($mode) ? $mode : request('mode', 'use');
 $action = isset($action) ? $action : request('action', 'FormEle.submit');
 $is_proxy = isset($is_proxy) ? $is_proxy : request('is_proxy', 'false');
 $is_multi = isset($is_multi) ? $is_multi : request('is_multi', 'false');

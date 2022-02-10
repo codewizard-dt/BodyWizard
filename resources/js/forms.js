@@ -48,26 +48,24 @@ class FormEle {
     this.define_by(options);
     this.define_by(this.json);
 
-    log({ form: this }, `new FormEle "${this.name}" mode:${this.mode}`);
-
-    if (this.mode == 'chart') { this.mode = 'display'; this.charting = true; }
+    if (this.mode == 'chart') { this.mode = 'use'; this.charting = true; }
 
     if (this.settings === null) this.settings = {};
-    if (this.mode == 'display' && this.name == 'Form Settings') this.ele_id = 'Form Settings Display';
+    if (this.mode == 'use' && this.name == 'Form Settings') this.ele_id = 'Form Settings Display';
 
     this.ele = $(`<div/>`, { class: 'form', id: (this.ele_id || this.name || '').toKeyString() });
     $(proxy).replaceWith(this.ele);
     this.ele.data({ class_obj: this, uid: this.id }).addClass(this.mode);
     if (this.charting) this.ele.addClass('charting');
 
-    this.header = $(`<h1/>`, { text: this.name, class: 'form_header pink center' }).appendTo(this.ele);
+    this.header = $(`<h1/>`, { text: this.name, class: 'form_header center' }).appendTo(this.ele);
 
     this.section_list = new Features.List({
       id: 'SectionList',
       header: 'Sections',
       entire_li_clickable: false,
       li_class: 'flexbox spread',
-      li_selectable: false,
+      selectable: false,
     });
 
     this.section_array = [];
@@ -78,20 +76,28 @@ class FormEle {
     forms.initialize.signatures();
     // this.add_buttons();
 
+    if (this.autosave) {
+      // log(this.autosave);
+      this.fill_by_key_value_object(this.autosave);
+    } else if (this.responses) {
+      this.fill_by_response(this.responses);
+      this.disable();
+    }
+
     this[`${this.mode}_mode`]();
     if (this.charting) this.chart_mode();
 
 
-    // if (this.mode == 'settings' && !this.is_proxy) this.add_settings_features();
-    // else if (this.mode == 'display' && this.is_multi) this.multi_model_settings();
     if (this.mode != 'build') {
       if (!this.settings_manager) this.settings_manager = new Models.SettingsManager({ obj: this });
       this.settings_apply();
     }
 
-
     // if (this.mode == 'build' && Item.clipboard_history && Item.clipboard_history.notEmpty()) Item.ClipboardBanner.show();
-    if (this.charting) this.add_charting_features();
+    // if (this.charting) this.add_charting_features();
+
+    log(`FormEle (${this.mode.toUpperCase()}) "${this.name}" `, { form: this });
+
   }
 
   build_mode() {
@@ -128,8 +134,8 @@ class FormEle {
     this.autosave = new Features.Autosave({
       show_status: true,
       delay: 10000,
-      send: this.autosave_send.bind(this),
-      callback: this.autosave_callback.bind(this),
+      send: this.autosave_send,
+      callback: this.autosave_callback,
       obj: this,
       message: `"${this.name}" saved`,
     });
@@ -137,24 +143,45 @@ class FormEle {
   chart_mode() {
     this.form_toggle = new Features.Toggle({
       toggle_ele: this.header,
-      toggle_ele_class_list: 'lined filled form_header',
+      toggle_ele_class_list: 'lined filled form_header m-small-bottom',
       target_ele: this.section_ele,
       color: 'pink',
       initial_state: 'hidden'
+    });
+    this.autosave = new Features.Autosave({
+      send: () => {
+        // const { patient_id, appointment_id } = Models.ChartNote.Current.attr_list;
+        // const chart_note_id = Models.ChartNote.Current.uid;
+        const { uid: chart_note_id, attr_list: { patient_id, appointment_id } } = Models.ChartNote.Current;
+        return this.autosave_submission({ patient_id, appointment_id, chart_note_id });
+      },
+      callback: ({ uid, error }) => {
+        log({ uid, error });
+        // const { uid, error } = response.save_result;
+        if (error) Features.Banner.error(error)
+        else if (uid) this.submission_id = uid;
+      },
+      delay: 5000
+    });
+    Answer.get_all_within(this.ele, false).forEach(answer => {
+      answer.options.on_change_action = () => this.autosave.trigger();
     })
+    this.header.removeClass('center');
+    this.section_ele.addClass('indent');
   }
   preview_mode() {
-    this.display_mode();
+    this.use_mode();
   }
-  display_mode() {
+  use_mode() {
     if (this.is_multi) this.multi_model_settings();
+    // else if (this.form_name == 'Form Settings' && this.mode == 'display') FormEle.current_settings_manager.form_ele = this.ele;
   }
   settings_mode() {
     if (this.is_proxy) return;
     this.settings_manager = new Models.SettingsManager({
       obj: this,
-      save: this.autosave_send.bind(this),
-      callback: this.autosave_callback.bind(this),
+      save: this.autosave_send,
+      callback: this.autosave_callback,
     }, 'edit');
     FormEle.current_settings_manager = this.settings_manager;
     this.settings_manager.form_ele = $('#FormSettingsDisplay');
@@ -227,10 +254,10 @@ class FormEle {
     // return;
     this.settings_manager.autosave.trigger({ delay: 0, message: 'Display settings reset', callback: _ => { unblur(); Models.Model.find('Form', this.id).settings() } });
   }
-  // settings_apply (time = 0) {
-  //   let manager = this.settings_manager || new Models.SettingsManager({obj:this});
-  //   manager.apply();
-  // }
+  settings_apply_unique(time = 0) {
+
+
+  }
   settings_icons_superuser(options = {}) {
     let manager = this.settings_manager;
     let sys = manager.popup_create(options);
@@ -426,6 +453,49 @@ class FormEle {
     return matches.isEmpty() ? null : allow_multiple ? matches : matches[0];
   }
 
+  autosave_submission({ patient_id, appointment_id, chart_note_id }) {
+    const submission = this.db_obj;
+    const autosave = {};
+    for (let answer of this.answer_objs) {
+      autosave[answer.options.name] = answer.get();
+    }
+
+    submission.columns = { ...submission.columns, autosave, patient_id, appointment_id, chart_note_id };
+    if (this.submission_id) submission.uid = this.submission_id;
+    // log({ submission });
+    return $.ajax({
+      url: '/save/Submission',
+      data: submission,
+      method: "POST",
+    })
+  }
+
+  submit({ patient_id, appointment_id, chart_note_id, responses }) {
+    const submission = this.db_obj;
+
+    submission.columns = { ...submission.columns, responses, patient_id, appointment_id, chart_note_id };
+    if (this.submission_id) submission.uid = this.submission_id;
+
+    return $.ajax({
+      url: '/save/Submission',
+      data: submission,
+      method: "POST",
+    })
+  }
+
+
+  get db_obj() {
+    // db_obj for SUBMISSIONS
+    return {
+      columns: {
+        form_id: this.id,
+        form_name: this.name,
+        submitted_by: user.current.attr_list.type,
+        submitted_by_user_id: user.current.attr_list.id,
+        // autosave: this.response
+      },
+    }
+  }
   get response() {
     let sections = {}, all_pass = true;
     this.section_array.forEach(section => {
@@ -470,9 +540,9 @@ class FormEle {
     }
   }
 
-  static submit(ev) {
-    log({ ev });
-  }
+  // submit(ev) {
+  //   log({ ev });
+  // }
   static waiting_for_list(ele) {
     let answers = ele.find('.answer');
     if (answers.dne()) return false;
@@ -491,7 +561,7 @@ class FormEle {
     }
     return obj;
   }
-  async autosave_send() {
+  autosave_send = async () => {
     let data = {
       uid: this.id,
       columns: this.form_db,
@@ -502,7 +572,7 @@ class FormEle {
       this.settings_manager.has_changes = false;
       this.section_array.forEach(section => section.has_changes_reset());
     }
-    log({ data, form: this }, 'form autosave send data from FormEle');
+    log('form autosave send data from FormEle', { data, form: this });
     if ($.isEmptyObject(data.columns.settings)) data.columns.settings = 'null';
     return $.ajax({
       url: '/save/Form',
@@ -510,35 +580,20 @@ class FormEle {
       data: data,
     })
   }
-  async autosave_callback(data) {
-    log(data, 'AUTOSAVE RESPONSE & CALLBACK');
-    if (data.form_uid) {
-      this.form_uid = data.form_uid;
-      this.form_id = data.form_id;
-      this.version_id = data.version_id;
+  autosave_callback = async (data) => {
+    log('AUTOSAVE RESPONSE & CALLBACK', data);
+    const { uid, error } = data;
+    if (uid) this.id = uid;
+    else if (error) {
+      log({ error });
     }
+    // if (data.form_uid) {
+    //   this.form_uid = data.form_uid;
+    //   this.form_id = data.form_id;
+    //   this.version_id = data.version_id;
+    // }
   }
 
-  static model_edit(ele, edit = true) {
-    try {
-      // log({ele});
-      ele = $(ele);
-      let form = ele.is('.createModel') ? ele : ele.find('.createModel'), model = form.data('model');
-      if (form.dne()) throw new Error('cannot find .createModel');
-      let header = form.find('h1').first(), submit_btn = form.find('.button.submit'), text = header.text();
-      if (!edit) {
-        header.text(text.replace('Edit', 'Create'));
-        let btn_text = `create ${model}`;
-        submit_btn.text(btn_text);
-      } else {
-        header.text(text.replace(/(Create|New)/, 'Edit'));
-        let btn_text = `save changes to ${model}`;
-        submit_btn.text(btn_text);
-      }
-    } catch (error) {
-      log({ error, ele, edit });
-    }
-  }
   static simple_fill(ele, json = {}) {
     try {
       let form = $(ele),
@@ -550,14 +605,16 @@ class FormEle {
       // log({ answers, json });
       for (let name in json) {
         let answer = find(name);
-        if (answer) answer.value_change = json[name];
+        const value = json[name];
+        if (name == 'services') log(`${name} ${value}`, { answer, name, value });
+        if (answer) answer.value_change = value;
         else if ($(`#${name}`).exists()) {
           let sub_form = $(`#${name}`).getObj('form', false);
           if (sub_form) {
-            log({ sub_form });
-            sub_form.fill_by_response(json[name]);
-            let toggle = toggles.find(t => t.target_ele.is(`#${name}`));
-            log({ toggle });
+            // log({ sub_form, name, toggles });
+            sub_form.fill_by_response(value);
+            let toggle = toggles.find(t => t.target.is(`#${name}`));
+            // log({ toggle });
             if (toggle) toggle.show(0);
           }
         }
@@ -654,7 +711,7 @@ class SubmissionJson {
   }
 }
 class Section {
-  constructor(options, mode = 'display') {
+  constructor(options, mode = 'use') {
     this.mode = mode;
     this.name = ifu(options.name, '');
     this.settings = options.settings || {};
@@ -665,7 +722,7 @@ class Section {
     this.item_list = $(`<div/>`, { class: 'Items flexbox' }).appendTo(this.ele);
     this.items = [];
 
-    log({ section: this, mode });
+    // log({ section: this, mode });
     this[`${this.mode}_mode`]();
 
     if (!this.settings_manager) this.settings_manager = new Models.SettingsManager({ obj: this });
@@ -731,9 +788,9 @@ class Section {
     });
   }
   preview_mode() {
-    this.display_mode();
+    this.use_mode();
   }
-  display_mode() {
+  use_mode() {
 
   }
   settings_mode() {
@@ -956,7 +1013,7 @@ class Section {
   }
 }
 class Item {
-  constructor(options, parent, mode = 'display') {
+  constructor(options, parent, mode = 'use') {
     try {
       this.options = options;
       this.mode = mode;
@@ -976,6 +1033,7 @@ class Item {
         this.ele.addClass('range');
       }
       this.ele.append(this.question_wrap, this.answer.ele).data(options);
+      this.answer.ele.removeClass('has-placeholder');
       this.ele.data('class_obj', this);
       this.items = [];
       let existing_items = options.followups || options.items || [], editor = forms.create.editor;
@@ -1042,6 +1100,9 @@ class Item {
     });
     this.ele.append(this.arrows.ele);
     this.ele.on('click', this.select.bind(this))
+    if (this.autofill_proxy) {
+      this.proxy_build_display();
+    }
     let current_item = this, item_list = this.item_list;
     if (item_list) {
       this.item_list_wrapper = $(`<div/>`, { class: 'toggleWrap' }).insertBefore(item_list);
@@ -1103,14 +1164,14 @@ class Item {
     if (this.item_list) this.update_summary();
   }
   preview_mode() {
-    this.display_mode();
+    this.use_mode();
   }
-  display_mode() {
+  use_mode() {
     // this.settings_apply();
     if (this.parent instanceof Item) this.ele.slideFadeOut(0);
   }
   settings_mode() {
-
+    // console.log("SETTINGS");
   }
 
   select(ev) {
@@ -1350,7 +1411,7 @@ class Item {
   get index() { return this.parent.items.indexOf(this) }
   fill_by_response(json) {
     try {
-      log({ answer: json.answer }, `FILL ${this.text_key}`);
+      // log(`FILL ${this.text_key}`, { answer: json.answer });
       this.value = json.answer;
       this.items.forEach(item => {
         let response = json.items ? json.items[item.text_key] : null;
@@ -1379,7 +1440,7 @@ class Item {
   edit() {
     let modal = $('#AddItem'), item = this, parent = this.parent, form = this.form, action = 'edit', answer = item.options;
     Item.Current = { item, parent, form, action };
-    if (!Item.proxy) { }
+    // if (!Item.proxy) { Item.AutofillProxyReset() }
     blurTop(modal);
     let text = answer.text, required = answer.settings.required, type = answer.type;
     $('#AddItemType').find('select').val(type);
@@ -1390,17 +1451,16 @@ class Item {
     if (parent instanceof Item) parent.show_followup_options(answer.condition);
     else $('#FollowUpOptions').hide();
 
-    // Item.linked_to_fill(answer.options.list);
-
     Item.option_list_reset();
     let answers = Answer.get_all_within(modal);
 
     let model = Item.AutofillModel = answer.options.autofill_model || null;
     let settings = Item.AutofillSettings = answer.options.autofill_settings || null;
     // log({ model, settings });
-    if (answer.options.autofill_model) this.autofill_option_fill();
-    else $('#AutofillOptions').slideFadeOut(0);
-    log({ answer, options: answer.options, answers, linked: Item.AutofillModel }, `editing ${answer.text}`);
+    Item.proxy_option_fill(this.autofill_proxy);
+    // if (answer.options.autofill_model) this.autofill_option_fill();
+    // else $('#AutofillOptions').slideFadeOut(0);
+    log(`editing ${answer.text}`, { answer, options: answer.options, answers, linked: Item.AutofillModel });
 
     function named(name) { return Answer.find(answers, { name }) };
     for (name in answer.options) {
@@ -1641,10 +1701,11 @@ class Item {
   }
   new_proxy(options = {}) {
     try {
-      log('new proxy');
+
       let info = this.options.options, model = options.model || info.autofill_model, settings = info.autofill_settings || {};
       this.autofill_proxy = new Models[model]({ uid: 'proxy' });
       if (this.mode == 'build') {
+
         this.autofill_proxy.settings_manager = new Models.SettingsManager({
           obj: this.autofill_proxy,
           initial_override: settings,
@@ -1653,8 +1714,10 @@ class Item {
             send: _ => {
               return new Promise(resolve => {
                 let settings = Item.AutofillProxy.settings_manager.settings_obj;
+                let settings2 = this.autofill_proxy.attr_list.settings;
+                log({ settings, settings2 });
                 resolve(this.autofill_proxy.attr_list.settings);
-                Item.AutofillProxySettings = Item.AutofillProxy.settings_manager.settings_obj;
+                Item.AutofillSettings = Item.AutofillProxy.settings_manager.settings_obj;
               })
             },
             obj: this.autofill_proxy,
@@ -1676,6 +1739,7 @@ class Item {
           mode: 'edit'
         });
         Item.AutofillSettings = $.isEmptyObject(settings) ? null : settings;
+        log('new ' + model + ' BUILD PROXY', { item: this, settings, info, model });
       } else {
         this.autofill_proxy.settings_manager = new Models.SettingsManager({
           obj: this.autofill_proxy,
@@ -1688,76 +1752,117 @@ class Item {
 
     // log({proxy:this.autofill_proxy,item:this},this.text_key);
   }
-  async open_proxy_settings() {
-    blurTop('loading');
-
-    let settings = Item.AutofillSettings;
-    log({ linkedto: Item.AutofillSettings, thisproxy: settings });
-    Item.AutofillProxy = this.autofill_proxy;
-    Item.AutofillProxySettings = settings;
-
-    let fetch = await this.autofill_proxy.settings({
-      in_background: true,
-      settings_manager: {
-        obj: this.autofill_proxy,
-        initial_override: settings,
-        autosave_on_form_change: true,
-        autosave: new Features.Autosave({
-          send: _ => {
-            return new Promise(resolve => {
-              let settings = Item.AutofillProxy.settings_manager.settings_obj;
-              resolve(this.autofill_proxy.attr_list.settings);
-              Item.AutofillProxySettings = Item.AutofillProxy.settings_manager.settings_obj;
-            })
-          },
-          obj: this.autofill_proxy,
-          delay: 50,
-        }),
-        update_callback: (options = {}) => {
-          let answer = options.answer, key = options.key, value = options.value;
-          let is_linked = answer.options.autofill_model || null, is_number = answer.type == 'number';
-          Item.LinkedSettingsAdjustMe = Item.LinkedSettingsAdjustMe || {};
-          if (is_linked) {
-            log({ answer, key, value, is_linked, is_number, adjusted }, `ADJUST ME ${key}`);
-          } else if (is_number) {
-            let adjusted = value;
-            if (answer.options.preLabel) adjusted = `${answer.options.preLabel} ${value}`;
-            if (answer.options.units) adjusted += ` ${answer.options.units}`;
-            Item.LinkedSettingsAdjustMe[key] = adjusted;
-          }
-        },
-        mode: 'edit'
-      },
-    });
-    if (fetch) {
-      this.proxy_form = $('#SettingsModal');
-      let modal = $("#SettingsModal");
-      modal.save_btn = new Features.Button({
-        text: 'use these settings for autofill',
-        class_list: 'pink small',
-        action: function () {
-          Item.autofill_settings_update();
-          Item.LinkedSettingsOptionBox.toggle(false);
-          blurTop(Item.LinkedSettingsOptionBox.ele);
-        }
-      });
-      modal.save_btn.ele.appendTo(modal).on('click', _ => {
-        let settings = Item.AutofillSettings == null ? {} : Item.AutofillSettings;
-        this.autofill_proxy.settings_manager.settings_obj = settings;
-      });
-      await Item.autofill_settings_update();
-      Item.LinkedSettingsOptionBox.toggle(true);
-      blur($('#AddItem'), Item.LinkedSettingsOptionBox.ele);
-    } else {
-      $("#SettingsModal").append(`<h1 class='box pink'>You can't restrict this category because there are not appropriate settings by which to filter it</h1>`);
-      blur('#AddItem', '#SettingsModal');
+  async proxy_build_display() {
+    const instance = this.autofill_proxy, { type, settings_obj: settings } = instance;
+    log({ instance, options: this.options });
+    const { plural } = await Models.ModelList.get(type);
+    const text = $.isEmptyObject(settings) ? `a complete list of ${plural}` : `a filtered list of ${plural}`;
+    $(`<div class='linked-settings'></div>`).insertAfter(this.question_wrap)
+      .append(`<div class='info'>Autopopulated with ${text}`);
+  }
+  static async proxy_option_fill(proxy) {
+    log({ proxy });
+    if (!proxy) {
+      Item.AutofillProxyReset();
+      $("#AutofillOptions").hide();
+      $('.NewLinkBtn').show();
+      return;
     }
+    $("#AutofillOptions").slideFadeIn();
+    $('.NewLinkBtn').hide();
+    const { type, settings_obj: settings } = proxy;
+    const { plural = 'items' } = await Models.ModelList.get(type);
+    const text = $.isEmptyObject(settings) ? `A <u>complete list of ${plural.toLowerCase()}</u>` : `A <u>filtered list of ${plural.toLowerCase()}</u>`;
+    let info = `${text} will autofill the list options`, header = `${type.addSpacesToKeyString()} Autofill Options`, btn_text = `autofill settings`;
+    console.log({ text, settings, type });
+    const ItemType = $('#AddItemType').getObj().get();
+    // if (Item.Current.item.type.includes('text')) {
+    if (ItemType.includes('text')) {
+      info = `${text} in a pop up format`;
+      header = `${type.addSpacesToKeyString()} Pop Up Options`;
+      btn_text = 'pop up settings';
+    }
+    Item.AutofillInfo = { header, btn_text, info, plural };
+    $('#AutofillOptions').find('.settingsLabel').text(header);
+    $("#AutofillInfo").html(info);
+    $('#AutofillSettingsBtn').text(btn_text);
+    Item.AutofillProxy = proxy;
+    let limit = $('#AutofillOptions').find('.listLimit').first().getObj('answer');
+    // console.log({ model, this: this, limit });
+    const ProxyLimit = Item.Current.item ? Item.Current.item.answer.options.listLimit : 'no limit';
+    limit.value = ProxyLimit;
+
   }
-  set proxy_form(form) {
-    if (!form.is('.form')) form = form.find('.form').first();
-    log({ form });
-    this.autofill_proxy.settings_manager.form_ele = form;
-  }
+  // async open_proxy_settings() {
+  //   blurTop('loading');
+
+  //   let settings = Item.AutofillSettings;
+  //   log({ linkedto: Item.AutofillSettings, thisproxy: settings });
+  //   Item.AutofillProxy = this.autofill_proxy;
+  //   Item.AutofillProxySettings = settings;
+
+  //   let fetch = await this.autofill_proxy.settings({
+  //     in_background: true,
+  //     settings_manager: {
+  //       obj: this.autofill_proxy,
+  //       initial_override: settings,
+  //       autosave_on_form_change: true,
+  //       autosave: new Features.Autosave({
+  //         send: _ => {
+  //           return new Promise(resolve => {
+  //             let settings = Item.AutofillProxy.settings_manager.settings_obj;
+  //             resolve(this.autofill_proxy.attr_list.settings);
+  //             Item.AutofillProxySettings = Item.AutofillProxy.settings_manager.settings_obj;
+  //           })
+  //         },
+  //         obj: this.autofill_proxy,
+  //         delay: 50,
+  //       }),
+  //       update_callback: (options = {}) => {
+  //         let answer = options.answer, key = options.key, value = options.value;
+  //         let is_linked = answer.options.autofill_model || null, is_number = answer.type == 'number';
+  //         Item.LinkedSettingsAdjustMe = Item.LinkedSettingsAdjustMe || {};
+  //         if (is_linked) {
+  //           log({ answer, key, value, is_linked, is_number, adjusted }, `ADJUST ME ${key}`);
+  //         } else if (is_number) {
+  //           let adjusted = value;
+  //           if (answer.options.preLabel) adjusted = `${answer.options.preLabel} ${value}`;
+  //           if (answer.options.units) adjusted += ` ${answer.options.units}`;
+  //           Item.LinkedSettingsAdjustMe[key] = adjusted;
+  //         }
+  //       },
+  //       mode: 'edit'
+  //     },
+  //   });
+  //   if (fetch) {
+  //     this.proxy_form = $('#SettingsModal');
+  //     let modal = $("#SettingsModal");
+  //     modal.save_btn = new Features.Button({
+  //       text: 'use these settings for autofill',
+  //       class_list: 'pink small',
+  //       action: function () {
+  //         Item.autofill_settings_update();
+  //         Item.LinkedSettingsOptionBox.toggle(false);
+  //         blurTop(Item.LinkedSettingsOptionBox.ele);
+  //       }
+  //     });
+  //     modal.save_btn.ele.appendTo(modal).on('click', _ => {
+  //       let settings = Item.AutofillSettings == null ? {} : Item.AutofillSettings;
+  //       this.autofill_proxy.settings_manager.settings_obj = settings;
+  //     });
+  //     await Item.autofill_settings_update();
+  //     Item.LinkedSettingsOptionBox.toggle(true);
+  //     blur($('#AddItem'), Item.LinkedSettingsOptionBox.ele);
+  //   } else {
+  //     $("#SettingsModal").append(`<h1 class='box pink'>You can't restrict this category because there are not appropriate settings by which to filter it</h1>`);
+  //     blur('#AddItem', '#SettingsModal');
+  //   }
+  // }
+  // set proxy_form(form) {
+  //   if (!form.is('.form')) form = form.find('.form').first();
+  //   log({ form });
+  //   this.autofill_proxy.settings_manager.form_ele = form;
+  // }
 
   static linked_to_fill(item_has_list = false) {
     if (Item.AutofillModel) {
@@ -1775,7 +1880,7 @@ class Item {
       $("#OptionsList").find('.answer.text').find('input').attr('readonly', true);
       item_has_list ? Item.LinkedLimit.ele.hide() : Item.LinkedLimit.ele.show();
     } else {
-      Item.LinkedEle.hide();
+      Item.AutofillProxyReset();
     }
   }
   static linked_to_reset() { Item.LinkedEle.hide(); Item.AutofillModel = null; Item.AutofillSettings = null; }
@@ -1788,23 +1893,17 @@ class Item {
     Item.AutofillModel = model;
     Item.option_list_reset(list.map(m => `${m.uid} %% ${m.name}`));
     $('#AutofillOptions').slideFadeIn();
-    let info = `Autofill this item with a list of all ${plural.toLowerCase()}`, header = `${model.addSpacesToKeyString()} Autofill Options`, btn_text = `autofill settings`;
-    if (Item.Current.item.type.includes('text')) {
-      info = `Show a popup with a list of all ${plural.toLowerCase()}`;
-      header = `${model.addSpacesToKeyString()} Pop Up Options`;
-      btn_text = 'pop up settings';
-    }
-    Item.AutofillInfo = { header, btn_text, info, plural };
-    $('#AutofillOptions').find('.settingsLabel').text(header);
-    $("#AutofillInfo").html(info);
-    $('#AutofillSettingsBtn').text(btn_text)
-    Item.AutofillProxy = new Models[model]({ uid: 'proxy' });
+
+    const proxy = new Models[model]({ uid: 'proxy' });
+    Item.proxy_option_fill(proxy);
+
     unblur({ repeat: 1 });
   }
   static AutofillSettingsDisplay(key, value, obj_to_bool_array = false) {
     try {
       // if (typeof value == 'string') value = value.toBool();
       let type = typeof value;
+      // log({ key, value, type });
       if (key == 'system' && !user.isSuper()) return null;
       else if (key == 'DisplayValues') {
         log({ key, value, this: this }, 'DisplayValues');
@@ -1848,7 +1947,7 @@ class Item {
         // if (!div.children().isSolo()) div.css({paddingTop:'0.25em'});
         return div;
       } else if (type == 'boolean') {
-        let icon = new Features.Icon({ type: value ? 'checkmark' : 'styled_x', size: 1 });
+        let icon = new Features.Icon({ type: value ? 'checkmark' : 'red_x', size: 1 });
         return flex.append(icon.img);
         // let div = $('<div/>').append(value ? 'true' : 'false', icon.img);
         // let div = $('<div/>').append(icon.img);
@@ -1942,6 +2041,7 @@ class Item {
   static AutofillProxyReset() {
     Item.AutofillProxy = null; Item.AutofillSettings = null;
     $('#AutofillOptions').slideFadeOut();
+    $('.NewLinkBtn').slideFadeIn();
     // Item.AutofillSettingsPrompt();
   }
 
@@ -1954,35 +2054,36 @@ class Item {
       q_mark_yellow = new Features.Icon({ type: 'question_mark', size: 1.5 });
 
   }
-  // staic AutofillSettingsIconPopups 
-  static AutofillSettingsPrompt() {
+  static async AutofillSettingsPrompt() {
     let ele = $('#AutofillSettingsPrompt'), option_box = ele.getObj();
     option_box.reset_header(Item.AutofillInfo.header);
-    if (Item.AutofillProxy.attr_list.settings) {
+    const settings = Item.AutofillProxy.settings_obj;
+    if (!$.isEmptyObject(settings)) {
       Item.AutofillSettingsHeaders = [];
 
-      let settings = Item.AutofillProxy.attr_list.settings;
+      let type = Item.AutofillProxy.type;
       for (let section_name in settings) { Item.AutofillSettingsHeaders.smartPush(section_name) }
       option_box.reset_info(settings);
-      let key_values = option_box.ele.find('.KeyValueBox').getObj(), plural = $('#Settings').data('plural').toLowerCase();
-      log({ key_values });
+      let key_values = option_box.ele.find('.KeyValueBox').getObj(), plural = await Models.ModelList.get(type);
+      log({ settings, type, option_box, key_values });
+      // log({ key_values });
       let sections = key_values.pairs_grouped_by_header;
-      log({ sections });
+      // log({ sections });
       key_values.keys.forEach(k => {
-        // log({k});
+        // log({ k });
         let text = $(k).text(), strict_dot = `autofill.strict.${text.toKeyString()}`, condition_dot = `autofill.condition.${text.toKeyString()}`;
         let options = $(k).closest('.pair').find('.option').get().map(option => `<li>${$(option).text().replace(':', '')}</li>`);
-
+        // log({ options, text, k });
         if (Item.AutofillProxy.get_setting(condition_dot)) {
           let condition = Item.AutofillProxy.get_setting(condition_dot);
           log({ condition });
-          let q_mark = new Features.Icon({ type: 'question_mark', color: 'purple', size: 1, tooltip: { message: `Only applies to ${plural} when<br>"${condition.key.split('.').pop().addSpacesToKeyString()}" is<br>"${condition.condition_str}"` } });
+          let q_mark = new Features.Icon({ type: 'question_mark', color: 'purple', size: 1, tooltip: { message: `Only applies to ${plural.toLowerCase()} when<br>"${condition.key.split('.').pop().addSpacesToKeyString()}" is<br>"${condition.condition_str}"` } });
           q_mark.img.appendTo(k);
         }
 
         if (options.notSolo()) {
           let popup = Item.AutofillProxy.settings_manager.popup_create({
-            header: $(`<div/>`).append(`<h2 class='bold m-y-25'>Only include ${plural} that</h2>`),
+            header: $(`<div/>`).append(`<h2 class='bold m-y-25'>Only include ${plural.toLowerCase()} that</h2>`),
           });
 
           popup.icon.appendTo(k);
@@ -2005,21 +2106,29 @@ class Item {
           popup.tooltip.message_append(`<h3 class='m-top_25'>${text}</h3><h4><ul class="bold">${options.join('')}</ul></h4>`);
         }
       })
-      key_values.realign();
-      log({ settings });
+      // key_values.realign();
+      // log({ settings });
     } else {
       option_box.reset_info(`All available ${Item.AutofillInfo.plural.toLowerCase()} will be loaded.`);
     }
     blur('#AddItem', '#AutofillSettingsPrompt');
   }
+  static async AutofillSettingsConfirm() {
+    Item.AutofillSettings = Item.AutofillProxy.settings_obj;
+    Item.AutofillModel = Item.AutofillProxy.type;
+    Item.proxy_option_fill(Item.AutofillProxy);
+    unblur();
+  }
   static async AutofillSettingsModal() {
+    window.Item = Item;
     let model = Item.AutofillModel, settings = Item.AutofillSettings;
     log({ settings }, `LINKED SETTINGS MODAL: ${model}`);
     // Item.AutofillProxy = new Models[model]({uid:'proxy'});
     unblur();
     await Item.AutofillProxy.settings();
     let proxy = Item.AutofillProxy, modal = $('#SettingsModal'), form = modal.find('.form');
-    $("#Settings").html(`<h1 class='bold'>${Item.AutofillInfo.header}</h1><h2 class='italic'>${Models.Model.active('Form').name} :: ${Item.Current.item.options.text}</h2><h3 class='m-y-25'>Only ${Item.AutofillInfo.plural.toLowerCase()} that match the settings below will be included.`);
+    // $("#Settings").html(`<h1 class='bold'>${Item.AutofillInfo.header}</h1><h2 class='italic'>${Models.Model.active('Form').name} :: ${Item.Current.item.options.text}</h2><h3 class='m-y-25'>Only ${Item.AutofillInfo.plural.toLowerCase()} that match the settings below will be included.`);
+    modal.find('.form_header').toggleClass('center left').html(`${Item.AutofillInfo.header}<div class='text-xlarge-rem'>${Models.Model.active('Form').name} :: ${Item.Current.item.options.text}</div><div class='text-large-rem'>Only ${Item.AutofillInfo.plural.toLowerCase()} that match the settings below will be included.</div>`)
     proxy.settings_manager = new Models.SettingsManager({
       obj: proxy,
       form: form,
@@ -2030,6 +2139,7 @@ class Item {
           return new Promise(resolve => {
             Item.AutofillProxySettings = proxy.attr_list.settings;
             Item.AutofillProxy.attr_list.settings = proxy.attr_list.settings;
+            console.log('SAVE PROXY', { form, proxy });
             resolve(proxy.attr_list.settings);
           })
         },
@@ -2038,7 +2148,8 @@ class Item {
         delay: 50,
       }),
       update_callback: (options = {}) => {
-        let answer = options.answer, key = options.key, value = options.value;
+        const { answer, key, value } = options;
+        // let answer = options.answer, key = options.key, value = options.value;
         let is_linked = answer.options.autofill_model || null, is_number = answer.type == 'number';
         Item.LinkedSettingsAdjustMe = Item.LinkedSettingsAdjustMe || {};
         if (is_linked) {
@@ -2059,37 +2170,18 @@ class Item {
       class_list: 'pink small',
       action: function () {
         // Item.AutofillProxy.attr_list.settings = proxy.attr_list.settings;
-        Item.AutofillSettings = proxy.attr_list.settings;
+        // Item.AutofillProxySettings = proxy.attr_list.settings;
+        // Item.AutofillSettings = proxy.attr_list.settings;
         // Item.autofill_settings_update();
+        Item.proxy_option_fill(proxy);
         Item.AutofillSettingsPrompt();
         // blurTop(Item.LinkedSettingsOptionBox.ele);
         // Item.LinkedSettingsOptionBox.realign();
       }
     });
     proxy.save_btn.ele.appendTo(modal);
-    // proxy.settings_manager.autosave();
     Item.AutofillProxySettings = proxy.attr_list.settings
   }
-  // static linked_to_fill (item_has_list = false) {
-  //   if (Item.AutofillModel) {
-  //     Item.LinkedEle.show();
-  //     Item.LinkedLabel.text(`Autofill By ${Item.AutofillModel}`);
-  //     Item.LinkedInfo.html('').append(`<b>Linked to '${Item.AutofillModel.addSpacesToKeyString()}' category.</b>`,
-  //       $(`<span class='little'>unlink</span>`).css({cursor:'pointer',padding:'0.5em',textDecoration:'underline'}).on('click', function(){Item.AutofillModel = null; Item.AutofillSettings = null; Item.linked_to_fill(); Item.option_list_reset()}), `<div>This question will always be populated with an up-to-date list.</div>`);
-  //     if (Item.AutofillSettings){
-  //       // let view = $(`<span class='little'>view</span>`).css({cursor:'pointer',padding:'0.5em',textDecoration:'underline'}).on('click', Item.LinkedSettingsOpen), clear = $(`<span class='little'>clear</span>`).css({cursor:'pointer',padding:'0.5em',textDecoration:'underline'}).on('click', function(){Item.AutofillSettings = null; Item.linked_to_fill(); Item.option_list_reset()});
-  //       let view = $(`<span class='little'>view</span>`).css({cursor:'pointer',padding:'0.5em',textDecoration:'underline'}).on('click', _ => { Item.Current.item.open_proxy_settings() }), clear = $(`<span class='little'>clear</span>`).css({cursor:'pointer',padding:'0.5em',textDecoration:'underline'}).on('click', function(){Item.AutofillSettings = null; Item.linked_to_fill(); Item.option_list_reset()});
-  //       Item.LinkedInfo.append('<b>Has autofill restrictions.</b>', view, clear);
-  //     } else {
-  //       Item.LinkedSettingsOptionBox.reset();
-  //     }
-  //     $("#OptionsList").find('.answer.text').find('input').attr('readonly',true);    
-  //     item_has_list ? Item.LinkedLimit.ele.hide() : Item.LinkedLimit.ele.show();
-  //   } else {
-  //     Item.LinkedEle.hide();
-  //   }
-  // }
-  // static linked_to_reset () { Item.LinkedEle.hide(); Item.AutofillModel = null; Item.AutofillSettings = null;}
 
   option_list_fill() {
     Item.option_list_fill(this.options.options.list);
@@ -2098,31 +2190,31 @@ class Item {
       Item.linked_to_fill();
     }
   }
-  autofill_option_fill() {
-    let answer = this.answer;
-    let model = answer.options.autofill_model;
-    let plural = Models.ModelList.find(model).plural.toLowerCase(), info = `Autofill this item with a list of all ${plural}`, header = `${model.addSpacesToKeyString()} Autofill Options`, btn_text = `autofill settings`;
+  // autofill_option_fill() {
+  //   let answer = this.answer;
+  //   let model = answer.options.autofill_model;
+  //   let plural = Models.ModelList.find(model).plural.toLowerCase(), info = `Autofill this item with a list of all ${plural}`, header = `${model.addSpacesToKeyString()} Autofill Options`, btn_text = `autofill settings`;
 
-    if (this.type.includes('text')) {
-      info = `Show a popup with a list of all ${plural.toLowerCase()}`;
-      header = `${model.addSpacesToKeyString()} Pop Up Options`;
-      btn_text = 'pop up settings';
-    }
-    Item.AutofillInfo = { header, btn_text, info, plural };
-    $('#AutofillOptions').find('.settingsLabel').text(header);
-    $("#AutofillInfo").html(info);
-    $('#AutofillSettingsBtn').text(btn_text)
-    Item.AutofillProxy = new Models[model]({ uid: 'proxy' });
-    let limit = $('#AutofillOptions').find('.listLimit').first().getObj('answer');
-    log({ model, this: this, limit }, "AUTOFILLLLL");
-    limit.value = answer.options.listLimit;
-    $('#AutofillOptions').slideFadeIn();
-    // if (this.options.autofill_settings) $('#AutofillInfo').text(`Show a popup with a list of ${this.auto}`);
-    // else $("#AutofillInfo").text(`Show a popup with a list of all ${this.auto}`);
-  }
+  //   if (this.type.includes('text')) {
+  //     info = `Show a popup with a list of all ${plural.toLowerCase()}`;
+  //     header = `${model.addSpacesToKeyString()} Pop Up Options`;
+  //     btn_text = 'pop up settings';
+  //   }
+  //   Item.AutofillInfo = { header, btn_text, info, plural };
+  //   $('#AutofillOptions').find('.settingsLabel').text(header);
+  //   $("#AutofillInfo").html(info);
+  //   $('#AutofillSettingsBtn').text(btn_text)
+  //   Item.AutofillProxy = new Models[model]({ uid: 'proxy' });
+  //   let limit = $('#AutofillOptions').find('.listLimit').first().getObj('answer');
+  //   console.log({ model, this: this, limit });
+  //   limit.value = answer.options.listLimit;
+  //   $('#AutofillOptions').slideFadeIn();
+  //   // if (this.options.autofill_settings) $('#AutofillInfo').text(`Show a popup with a list of ${this.auto}`);
+  //   // else $("#AutofillInfo").text(`Show a popup with a list of all ${this.auto}`);
+  // }
 }
 class Answer {
-  constructor(data, mode = 'display') {
+  constructor(data, mode = 'use') {
     try {
       this.mode = mode;
       this.define_by(data);
@@ -2133,6 +2225,7 @@ class Answer {
       this.settings = { required: true, warning: true, autocomplete: false }.merge(this.settings || {});
       this.save_as_bool = this.options.save_as_bool || this.settings.save_as_bool || false;
       this.initial = ifu(this.initial, this.options.initial, this.default, this.options.default, null);
+
       for (let s in this.settings) {
         if (typeof this.settings[s] == 'string') this.settings[s] = this.settings[s].toBool();
       }
@@ -2153,6 +2246,7 @@ class Answer {
         }).prependTo(this.nowrap || this.ele);
         this.ele.addClass('flexbox left');
         if (label_css) this.preLabel.css(label_css);
+        if (this.options.preLabelClass) this.preLabel.addClass(this.options.preLabelClass);
       }
       if (this.options.postLabel) {
         this.postLabel = $(`<${this.options.labelHtmlTag || 'span'}/>`, {
@@ -2172,12 +2266,12 @@ class Answer {
         classes.forEach(c => {
           if (c.includes('!')) {
             this.ele.removeClass(c.replace('!', ''));
-            if (this.name == 'listLimit') log({ c, ele: this.ele, list: `${this.ele.attr('class')}` }, '1');
+            // if (this.name == 'listLimit') log({ c, ele: this.ele, list: `${this.ele.attr('class')}` }, '1');
 
           }
           else {
             this.ele.addClass(c);
-            if (this.name == 'listLimit') log({ c }, '2');
+            // if (this.name == 'listLimit') log({ c }, '2');
 
           }
         })
@@ -2205,19 +2299,20 @@ class Answer {
 
       if (this.options.after_load_action) this.options.after_load_action.to_fx();
 
+      this.warning = new Features.Warning({ target: this.input, warning_class: 'border_flash_pink slow twice' });
     } catch (error) {
       log({ error, data, mode });
     }
-    // this.type = data.type;
-    // this.warning = 
   }
-  get warning() { return this.warning_obj == undefined ? this.warning_obj = new Features.Warning({ target: this.input, warning_class: 'border_flash_pink slow twice' }) : this.warning_obj }
+  // get warning() { return this.warning_obj == undefined ? this.warning_obj = new Features.Warning({ target: this.input, warning_class: 'border_flash_pink slow twice' }) : this.warning_obj }
 
   verify(string = null) {
     let message = string || this.if_null_str || 'required', value = this.get();
     if ((value === null || value === undefined) && this.settings.required) {
+      log(`Verify '${this.name} failed`, { error: this });
       this.input.smartScroll({
-        callback: _ => this.warning.show({ message })
+        offset: 50,
+        callback: () => this.warning.show({ message })
       });
       return false;
     }
@@ -2227,6 +2322,7 @@ class Answer {
   to_initial_value() {
     try {
       // log({initial:this.initial},`INITIAL: ${this.name}`);
+      if (this.name == 'services') log(`initial services ${this.initial}`, { value: this.initial });
       this.value = this.initial;
       this.hold = false;
       if (this.type == 'number' && this.initial && !this.options.initial) this.value = null;
@@ -2237,6 +2333,7 @@ class Answer {
   set value(value) {
     if (value === null) this.hold = false;
     if (this.options.autofill_model) {
+      if (this.name == 'services') log(`services ${value}`, { value });
       if (this.waiting_for_list) {
         let answer = this;
         setTimeout(function () { answer.value = value; }, 100);
@@ -2258,7 +2355,7 @@ class Answer {
         let split = Answer.split_values_and_text(value);
         this.input.val(split.text).data('value', split.value);
       } else if (typeof value == 'boolean') {
-        log({ value, string: value.to_string(), answer: this });
+        // log({ value, string: value.to_string(), answer: this });
         this.input.val(value.to_string());
       } else this.input.val(value);
     }
@@ -2269,7 +2366,7 @@ class Answer {
       let match = this.input.find('li').filter((l, li) => {
         return value.some(v => {
           let li_v = $(li).data('value');
-          log({ li_v, v, l });
+          // log({ li_v, v, l });
           if (typeof li_v == 'number') return li_v == Number(v);
           if (typeof v == 'string' && typeof li_v == 'string') return li_v == v || li_v.toKeyString() == v.toKeyString();
           else if (typeof v == 'number') return li_v == v;
@@ -2277,7 +2374,6 @@ class Answer {
           else if (typeof v == 'boolean') return li_v.bool_match(v);
         });
       });
-      log({ match });
       match.addClass('active');
     } else if (this.type == 'checkboxes') {
       let boxes = this.input.find('input');
@@ -2311,18 +2407,17 @@ class Answer {
         this.unit_ele.val(value.unit);
         this.display.html(this.display_html());
       }
-    }
-    // if (value === true || value === false) {
-    //   log({value, this:this, error: new Error(`"THIS IS DUMB"`)});
+    } else if (this.type == 'signature') {
+      if (value) {
+        const data = `data:${value.join(',')}`;
+        log('initial sig', { value, data, sig: this, input: this.input });
+        this.input.jSignature('setData', data);
+      }
+    } else if (this.type == 'bodyclick') {
 
-    //   return;
-    //   let values_true = ['yes','true'], values_false = ['no','false'], values = value ? values_true : values_false;
-    //   let match = this.input.find('option, li').filter((i,input) => {
-    //     return values.some(v => $(input).text().includes(v));
-    //   });
-    //   if (match.is('li')) match.addClass('active');
-    //   else this.input.val(match.text());
-    // }
+    } else {
+      log({ error: `Answer type '${this.type} not listed`, answer: this });
+    }
 
     this.placeholder_shift();
     this.followup_show(0);
@@ -2351,11 +2446,18 @@ class Answer {
   }
   get item() { return this.ele.getObj('item'); }
 
-  on_change(ev) {
-    // log({answer:this, value:this.get({literal:true})},`${this.name || 'no name'}`);
+  update_display() {
     this.input.removeClass('border_flash_pink');
     this.placeholder_shift();
     this.followup_show();
+
+  }
+  on_change(ev) {
+    // log({answer:this, value:this.get({literal:true})},`${this.name || 'no name'}`);
+    this.update_display();
+    // this.input.removeClass('border_flash_pink');
+    // this.placeholder_shift();
+    // this.followup_show();
     // if (this.type == 'dropdown') {
     //   if (this.get() !== null) this.input.addClass('active');
     //   else this.input.removeClass('active');
@@ -2366,8 +2468,10 @@ class Answer {
       this.ele.parent().getObj().on_change(ev);
       return;
     }
-    if (this.options.on_change_action) this.options.on_change_action.to_fx(this, ev);
-    if (this.options.after_change_action) this.options.after_change_action.to_fx(this, ev);
+    const change = this.on_change_action || this.options.on_change_action;
+    const afterChange = this.after_change_action || this.options.after_change_action;
+    if (change) change.to_fx(this, ev);
+    if (afterChange) afterChange.to_fx(this, ev);
   }
   static condition_matches_parent(value, condition) {
     let c = condition, matched = false;
@@ -2441,7 +2545,7 @@ class Answer {
     try {
       if (!this.placeholder_label) {
         this.ele.addClass('has-placeholder');
-        this.placeholder_label = $('<span/>', { text: this.options.placeholder }).addClass('placeholder text-large').insertBefore(this.input);
+        this.placeholder_label = $('<span/>', { text: this.options.placeholder }).addClass('placeholder text-xlarge').insertBefore(this.input);
       }
       if (this.get() != null || this.autofill_list) this.placeholder_label.addClass('visible');
       else this.placeholder_label.removeClass('visible');
@@ -2457,7 +2561,7 @@ class Answer {
     if (this.options.autofill_settings) {
       // list = list.filter(l => this.settings_manager.match_autofill_settings(l));
       list = Models.SettingsManager.autofill_filter(list, this.options.autofill_settings);
-      // log({list});
+      log({ list });
       // console.groupEnd();
     }
     this.waiting_for_list = false;
@@ -2484,11 +2588,17 @@ class Answer {
       message: this.autofill_list.ele,
       target: this.input,
       has_arrow: false,
-      class_list: 'p-small'
+      class_list: 'p-small purple'
     });
     if (this.options.list_separator == 'line break') this.options.list_separator = '\n';
     let list = this.autofill_list, columns = this.options.linked_columns || [], data_list = await this.autofill_list_get(this.options.autofill_model, columns);
-
+    log(`autofill ${this.options.autofill_model}`, { data_list });
+    const { error } = data_list;
+    if (error) {
+      Features.Banner.error(error);
+      log({ error, data_list, model: this.options.autofill_model });
+      return;
+    }
     data_list.forEach(option => {
       list.add_item({ text: option.name, value: option.uid, entire_li_clickable: true, action: ev => { this.autofill_select_click(ev) } });
     })
@@ -2506,7 +2616,6 @@ class Answer {
     })
   }
   autofill_select_click(ev) {
-    log({ ev });
     // let target = $(ev.target).closest('li'), val = target.data('value');
     this.autofill_text_update();
     this.on_change(ev);
@@ -2529,7 +2638,10 @@ class Answer {
     try {
       if (this.type == 'list') {
         this.ele.resetActives();
-        if (uids) this.ele.find('li').filter((l, li) => uids.some(uid => $(li).data('value') == uid)).addClass('active');
+        if (uids) {
+          const match = this.ele.find('li').filter((l, li) => uids.some(uid => $(li).data('value') == uid));
+          match.addClass('active');
+        }
       } else if (this.type == 'checkboxes') {
         let checkboxes = this.input.find('input');
         checkboxes.removeAttr('checked');
@@ -2537,13 +2649,13 @@ class Answer {
       } else {
         this.autofill_text_update(uids);
       }
-      this.on_change();
+      // this.on_change();
+      this.update_display();
     } catch (error) {
       log({ error, uids });
     }
   }
   autofill_text_update(uids = null) {
-    log('autofill', { uids });
     if (uids) {
       if (!uids.is_array()) uids = [uids];
       this.autofill_list.ele.resetActives();
@@ -2570,9 +2682,9 @@ class Answer {
   create_password() {
     this.type = 'text';
     this.create_text();
-    this.ele.addClass('text');
+    // this.ele.addClass('text');
     this.input.attr('type', 'password');
-    let fx = this.on_enter || this.options.on_enter || null;
+    // let fx = this.on_enter || this.options.on_enter || null;
     // if (fx) this.input.on('keyup',)
   }
   async create_text() {
@@ -2586,20 +2698,21 @@ class Answer {
     this.disable_unique = () => { this.input.attr('disabled', true) };
     this.enable_unique = () => { this.input.removeAttr('disabled') }
     this.placeholder_visible = false;
-
+    this.type = 'text';
+    this.ele.addClass('text');
     if (this.options.placeholder) this.input.on('keyup blur', this.placeholder_shift.bind(this));
     if (this.options.autofill_model) await this.autofill_popup_create();
   }
   async create_username() {
     let validate = input => {
-      input.allowKeys(/[a-zA-Z0-9_]/);
+      input.allowKeys(/[a-zA-Z0-9_@.]/);
       input.on('blur', function () {
         let val = input.val();
         if (val.length < 5) input.warn('Must be at least 5 characters');
       });
       input.on('keydown', function (ev) {
         let v = $(this).val(), l = v.length, k = ev.key;
-        if (l >= 14 && !['Backspace', 'Tab'].includes(k) && !k.includes('Arrow') && !$(this).hasSelectedText()) {
+        if (l >= 25 && !['Backspace', 'Tab'].includes(k) && !k.includes('Arrow') && !$(this).hasSelectedText()) {
           ev.preventDefault();
           input.warn('Max length is 14');
         }
@@ -2607,7 +2720,7 @@ class Answer {
       return input;
     }
     this.create_text();
-    this.ele.addClass('text');
+    // this.ele.addClass('text');
     this.input.on('focusout', this.on_change.bind(this));
     validate(this.input);
   }
@@ -2626,7 +2739,7 @@ class Answer {
       return input;
     }
     this.create_text();
-    this.ele.addClass('text');
+    // this.ele.addClass('text');
     this.input.on('focusout', _ => { this.on_change() });
     validate(this.input);
   }
@@ -2639,14 +2752,14 @@ class Answer {
       return input;
     }
     this.create_text();
-    this.ele.addClass('text');
+    // this.ele.addClass('text');
     this.input.on('focusout', this.on_change.bind(this));
     validate(this.input);
   }
   async create_textbox() {
     this.input = $(`<textarea/>`).appendTo(this.ele).on('keyup', this.on_change.bind(this));
     if (this.options.placeholder) this.input.attr('placeholder', this.options.placeholder);
-    this.if_null_str = 'boxxy';
+    // this.if_null_str = 'boxxy';
     this.get = () => {
       if (this.autofill_list) return this.autofill_uids;
       let v = $.sanitize(this.input.val());
@@ -2778,7 +2891,6 @@ class Answer {
         if (this.change.next === null) this.change.next = Number(this.options.start);
         else this.change.next = (this.change.direction == 'up') ? Number(this.change.next) + this.step : Number(this.change.next) - this.step;
         const { next, direction, current } = this.change;
-        console.log({ step: this.step, next, direction, current });
         if (this.change.check()) {
           this.change.current = this.change.next;
           this.change.count++;
@@ -2982,6 +3094,7 @@ class Answer {
     }).appendTo(this.ele);
     if (this.options.autofill_model) {
       this.options.list = await this.autofill_list_get(this.options.autofill_model, this.options.linked_columns || []);
+      log({ list: this.options.list });
       this.options.list = this.options.list.map(option => `${option.uid}%%${option.name}`);
     };
     this.options.list.forEach(option => {
@@ -3173,7 +3286,6 @@ class Answer {
       v = v != '' ? v : null;
       let response = v;
       if (this.time2) response = [v, this.time2.get()];
-      log({ response }, 'TIME RESPONSE');
       return response;
     }
     this.update = new_obj => {
@@ -3193,9 +3305,11 @@ class Answer {
   async create_signature() {
     this.input = $(`<div/>`, { class: 'j_sig' }).appendTo(this.ele);
     this.clear_sig = _ => { this.input.jSignature('reset') };
-    this.clear_btn = new Features.Button({ text: 'reset', class_list: 'clear pink70 xsmall', action: this.clear_sig });
+    this.clear_btn = new Features.Button({ text: 'clear', class_list: 'clear pink70 xsmall', action: this.clear_sig });
     this.input.append(this.clear_btn.ele);
-    if (this.options.typedName.toBool()) this.ele.prepend('<div>Type your full legal name here: <input class="typed_name" type="text" style="width:20em"></div><span>Sign in the box below:</span>');
+    const { typedName = false } = this.options;
+    log('signature', { answer: this });
+    if (typedName.toBool()) this.ele.prepend('<div>Type your full legal name here: <input class="typed_name" type="text" style="width:20em"></div><span>Sign in the box below:</span>');
     this.input.jSignature();
     this.get = () => {
       let jsig_data = this.input.jSignature('getData', 'base30');
@@ -3423,7 +3537,7 @@ var forms = {
         link_to_model: () => {
           throw new Error('dummy dont use');
           let link_modal = $(`<div/>`, { class: 'modalForm center' });
-          let list = new Features.List({ header: 'Available for Linking', li_selectable: false });
+          let list = new Features.List({ header: 'Available for Linking', selectable: false });
           link_modal.append(`<h3>Select a Category</h3><div>Linking a question to a category will allow the user to select from an up-to-date list of that category. There will be no need to update the question if you add to the category</div>`, list.ele);
           for (let model in linkable_models) {
             if (model != 'list') list.add_item({
@@ -3485,26 +3599,30 @@ var forms = {
       })
     },
     submit_buttons: () => {
-      init('.submit.create', function () {
+      init('.submit.model', function () {
         $(this).on('click', async function () {
-          try {
-            let instance = null;
-            let model_name = $(this).data('model');
-            if ($(this).hasClass('create')) {
-              instance = model_name.to_class_obj();
-            } else if ($(this).hasClass('edit')) {
-              instance = Models[model_name].editing;
-              if (!instance.update_attr_by_form()) throw new Error('form error');
-            }
-            if ($(this).data('wants_checkmark')) instance.wants_checkmark = true;
-            if ($(this).data('clear_count')) instance.clear_count = $(this).data('clear_count');
-            if ($(this).data('save_callback')) instance.save_callback = $(this).data('save_callback');
-            log({ instance }, 'pre-save instance');
-            await instance.save();
-            system.initialize.newContent();
-          } catch (error) {
-            log({ error, this: this });
+          // try {
+          let instance = null;
+          let { model, action } = $(this).data();
+          if ($(this).hasClass('create')) {
+            log('Save Create', { instance, model });
+            instance = model.to_class_obj();
+          } else if ($(this).hasClass('edit')) {
+
+            instance = Models[model].editing;
+            instance = Models.Model.current;
+            if (!instance) throw new Error('Models.Model.current not found');
+            if (!instance.update_attrs_by_form()) throw new Error('Form Error');
+            log('Save Edits', { instance, model });
           }
+          log('pre-save instance', { instance, model, action });
+          if (action) await action();
+          else await instance.save();
+          system.initialize.newContent();
+          // } catch (error) {
+          //   Features.Banner.error(error.message);
+          //   log({ error, this: this });
+          // }
         })
       })
     },
@@ -3516,7 +3634,8 @@ var forms = {
     signatures: () => {
       init($('.j_sig').filter(':visible'), function () {
         $(this).jSignature();
-        // $(this).find('.clear').on('click',function(){$(this).parent().jSignature('reset')});
+        const answer = $(this).getObj('answer');
+        if (answer.initial) answer.to_initial_value();
       })
     },
     builder: () => {

@@ -53,51 +53,59 @@ function dataAttrStr($pairs)
 function reportError($exception, $location = null)
 {
     if (isset($_SERVER['GAE_SERVICE'])) {
-        $event = new ReportedErrorEvent();
-        if (is_a($exception, 'Exception')) {
-            $event->setMessage("PHP Notice: " . (string) $exception);
-        } else {
-        }
-        $project = app('GoogleErrors')->projectName('bodywizard');
-        app('GoogleErrors')->reportErrorEvent($project, $event);
+        // $event = new ReportedErrorEvent();
+        // if (is_a($exception, 'Exception')) {
+        //     $event->setMessage("PHP Notice: " . (string) $exception);
+        // } else {
+        // }
+        // $project = app('GoogleErrors')->projectName('bodywizard');
+        // app('GoogleErrors')->reportErrorEvent($project, $event);
     } else {
+        $details = '';
         if (is_a($exception, 'Exception')) {
             $desc = explode("Stack", $exception)[0];
-            $details = $exception->getTrace();
-            if (count($details) > 15) {
-                $details = array_slice($details, 0, 15);
+            $trace = $exception->getTrace();
+            if (count($trace) > 10) {
+                $details = array_slice($trace, 0, 10);
                 $details[] = 'Info truncated.  See logs for complete trace info.';
+            } else {
+                $details = $trace;
             }
+
         } elseif (is_string($exception)) {
             $e = new \Exception($exception);
             $desc = $exception;
-            $details = $e->getTrace();
-            if (count($details) > 15) {
-                $details = array_slice($details, 0, 15);
+            $trace = $e->getTrace();
+            if (count($trace) > 10) {
+                $details = array_slice($trace, 0, 10);
                 $details[] = 'Info truncated.  See logs for complete trace info.';
+            } else {
+                $details = $trace;
             }
+
         } else {
             $desc = 'Error';
             $details = $exception;
         }
-        // Log::error($details);
-        $user = Auth::user();
-        event(new BugReported(
-            [
-                'description' => $desc,
-                'details' => $details,
-                'category' => 'Caught Exceptions',
-                'location' => $location,
-                'user' => $user ? $user->id : null,
-            ]
-        ));
+        logger($desc);
+        // logger($details);
+        // $user = Auth::user();
+        // event(new BugReported(
+        //     [
+        //         'description' => $desc,
+        //         // 'details' => $details,
+        //         'category' => 'Caught Exceptions',
+        //         'location' => $location,
+        //         'user' => $user ? $user->id : null,
+        //     ]
+        // ));
     }
 }
 function handleError($exception, $location = null)
 {
     $msg = $exception->getMessage();
     $error = null;
-    if (strpos($msg, 'constraint violation: 1062 Duplicate entry')) {
+    if (strpos($msg, 'constraint violation: 1062 Duplicate entry') > -1) {
         $regex = "/Duplicate entry '(.*)' for key '(.*)_(.*)_.*' \(SQL/m";
         preg_match_all($regex, $msg, $matches, PREG_SET_ORDER, 0);
         $type = singular(title($matches[0][2]));
@@ -105,7 +113,7 @@ function handleError($exception, $location = null)
         $attr = $matches[0][3];
         $error = ['header' => "Duplicate " . title(singularSpaces($type)), 'message' => title($attr) . " '$value' already exists. Please try another $attr.", 'attr' => $attr];
     } elseif ($msg == 'no changes') {
-        $error = ['header' => 'Error', 'message' => 'No changes were made.'];
+        $error = ['header' => 'Not Saved', 'message' => 'No changes were made.'];
     } elseif (strpos($msg, 'Call to undefined method') > -1) {
         $regex = "/Call to undefined method (.*)::(.*)\(\)/m";
         preg_match_all($regex, $msg, $matches, PREG_SET_ORDER, 0);
@@ -113,8 +121,15 @@ function handleError($exception, $location = null)
         $method = $matches[0][2];
         logger(compact('msg', 'class', 'method'));
         $error = ['header' => 'App Error', 'message' => "$class does not have method '$method'"];
+    } elseif (strpos($msg, 'SQLSTATE') > -1) {
+        $regex = "/(SQLSTATE.*)\(SQL:/m";
+        preg_match_all($regex, $msg, $matches, PREG_SET_ORDER, 0);
+        $sql = $matches[0][1];
+        // $method = $matches[0][2];
+        // logger(compact('msg', 'class', 'method'));
+        $error = ['header' => 'Database Error', 'message' => $sql];
     } else {
-        reportError($exception, $location);
+        // reportError($exception, $location);
         Log::error($exception);
         $error = ['header' => 'Error', 'message' => $msg];
     }
@@ -343,6 +358,10 @@ function addTo(&$addToArray, $keyValueArray)
 }
 function get($array, $key, $default = null)
 {
+    if (!is_array($array)) {
+        return false;
+    }
+
     return Arr::get($array, $key, $default);
 }
 function only($array, $keys = [])
@@ -582,7 +601,7 @@ function successResponse($model)
         $str = "\"$name\" information updated";
     }
 
-    $response = "<h1 class='p-y-150'>$str</h1>";
+    $response = "<h1 class='p-y-medium'>$str</h1>";
     $response .= "<div class='button pink' data-action='Menu.reload'>continue</div>";
     return $response;
 }
@@ -598,6 +617,9 @@ function unsetUid($model)
 {
     $uidList = session('uidList');
     unset($uidList[$model]);
+    if (in_array($model, ['Patient', 'Practitioner', 'StaffMember'])) {
+        unset($uidList['User']);
+    }
     session(['uidList' => $uidList]);
     // Log::info(session('uidList'));
 }

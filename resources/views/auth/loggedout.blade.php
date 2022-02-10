@@ -9,7 +9,7 @@
         @if ($logout)
             <div class="box pink">{{ $message }}</div>
         @endif
-        <div class="wrapper p-y-150">
+        <div class="wrapper p-y-medium">
             <div id="LoginForm" class="box">
                 <h2>{{ $message }}</h2>
                 <a href='/portal'>

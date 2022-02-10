@@ -47,7 +47,7 @@ trait HasSettings
         } else {
             $array = dot($array);
             $settings = collect($array);
-            // logger(['initial dot'=>$array,'collection'=>$settings]);
+            logger(['initial dot' => $array, 'collection' => $settings]);
             $zero_index = $settings->filter(function ($value, $dot_notation) {return Str::endsWith($dot_notation, '.0');});
             $zero_index->each(function ($value, $dot_notation) use (&$array, &$settings) {
                 $beginning = Str::before($dot_notation, '.0');

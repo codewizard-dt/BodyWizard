@@ -18,14 +18,19 @@ export const debug = {
   }
 };
 window.debug = debug;
-export const log = function (info, text = null) {
-  if (typeof info === 'string') text = info;
+// export const log = function (info, text = null) {
+export const log = function (text, info = {}) {
+  if (typeof text === 'object') {
+    info = { ...info, ...text };
+    text = null;
+  }
+  // if (typeof info === 'string') {
+  //   text = info;
+  // }
   let error = ifu(info.error, info.errors, null);
   let data = {}, attrText = [];
-  if (typeof info == 'object') {
-    for (let attr in info) { data[attr] = info[attr]; attrText.push(attr); }
-    attrText = attrText.join(', ');
-  } else attrText = 'log info';
+  for (let attr in info) { data[attr] = info[attr]; attrText.push(attr); }
+  attrText = attrText.join(', ');
 
   let stack_steps = (new Error()).stack.match(/at (.*) \((.*js):(.*):/g), stack_info = '', fx = '', file = '';
   if (stack_steps && stack_steps[1]) {
@@ -44,8 +49,8 @@ export const log = function (info, text = null) {
   }
 
   delete data.text;
-  console.groupCollapsed(`%c ${text} ${stack_info}`, style);
-  console.log(`%c ${file} @ ${fx}`, style)
+  console.groupCollapsed(`%c${text}\n ${file} @ ${fx}`, style);
+  // console.log(`%c ${file} @ ${fx}`, style)
   error ? console.error(data) : console.log(data);
   if (error !== null && error.stack) console.log(error.stack);
   // console.groupCollapsed('trace');
@@ -69,6 +74,7 @@ class Button {
       if (this.id) this.ele.attr('id', this.id);
       // if (options.css) this.ele.css(options.css);
       this.ele.addClass(this.class_list).data({ action: this.action, target: this.target, mode: this.mode });
+      this.ele.addClass(`button-${this.ele.text().removeSpaces('-')}`)
       this.ele.on('click', this.action_data, this.click.bind(this));
       this.ele.data('generic_fx', true);
       if (this.tooltip) new ToolTip({ target: this.ele, ...this.tooltip });
@@ -76,6 +82,9 @@ class Button {
       this.disabled_warning = new Warning({
         target: this.ele, message: this.disabled_message || 'button disabled',
       })
+      if (this.ele.text().toLowerCase().includes('sign chart')) {
+        log(`Sign Chart Button`, { button: this, options });
+      }
     } catch (error) {
       log({ error, options });
     }
@@ -106,7 +115,7 @@ class Button {
     // let action = this.action, target = this.target, mode = this.mode, callback = this.callback;
     const { action, target, mode, callback } = this;
     if (user.isSuper() && ev.metaKey) {
-      log({ action, ev, button: this }, `BTN ${this.ele.text()}`);
+      log(`BTN ${this.ele.text()}`, { action, ev, button: this });
       ev.stopPropagation();
       return;
     }
@@ -562,13 +571,13 @@ class List {
       this.ele.removeAttr('data-options').addClass(this.class_list || null);
       if (this.id) this.ele.attr('id', this.id);
       let text = ifu(this.header, null), tag = this.header_html_tag || 'h3';
-      if (text) this.header = $(`<${tag}>${text}</${tag}>`).appendTo(this.ele);
+      if (text) this.header = $(`<${tag} class='list-header'>${text}</${tag}>`).appendTo(this.ele);
       if (this.header_class) this.header.addClass(this.header_class);
       if (this.subheader) this.subheader = $(`<div>${this.subheader}</div>`).appendTo(this.ele);
       if (this.subheader_class) this.subheader.addClass(this.subheader_class);
       this.ul = $(`<ul/>`).css({ display: 'inline-block' }).appendTo(this.ele);
       if (this.css) this.ele.css(this.css);
-      this.li_selectable = ifu(this.li_selectable, true);
+      this.selectable = ifu(this.selectable, true);
       // this.ul_css = this.ul_css || {}; 
       // this.ul.css(this.ul_css.merge({width:'max-content',maxWidth:'35em'}))
       if (this.ul_class) this.ul.addClass(this.ul_class);
@@ -579,7 +588,7 @@ class List {
         this.ul.addClass(this.color);
       }
       if (typeof this.action == 'string') this.action = this.action.to_fx;
-      this.limit = Number.isNaN(Number(this.limit || 1)) ? null : Number(this.limit || 1);
+      this.limit = Number.isNaN(Number.parseInt(this.limit)) ? null : Number.parseInt(this.limit);
       if (this.limit !== null) this.limit_warning = new Warning({ ele: this.ul, message: `Limited to ${this.limit}` });
       this.no_items = this.add_item({ text: this.no_item_text || 'none', class_list: 'no_items', skip_check: true }).hide()
       this.no_selection = this.add_item({ text: this.no_selection_text || 'no matches', class_list: 'no_selection', skip_check: true }).hide();
@@ -637,6 +646,25 @@ class List {
   post_select_check(item) {
     if (this.post_select_fx) this.post_select_fx.to_fx(item);
   }
+  get ordered_list() { return this.ordered_list_array ? this.ordered_list_array : [] }
+  add_to_list(item) {
+    const list = this.ordered_list;
+    const { value } = item.data();
+    if (list.includes(value)) return;
+    list.push(value);
+    this.ordered_list_array = list;
+  }
+  remove_from_list(item) {
+    const list = this.ordered_list;
+    const { value } = item.data();
+    this.ordered_list_array = list.filter(v => v != value);
+  }
+  update_list(triggerAction = true) {
+    this.ordered_list_array = this.active_values || [];
+    // console.log(this.ordered_list_array);
+    if (triggerAction) this.action();
+  }
+
   get items() { return this.ul.find('li').not('.no_items, .no_selection'); }
   get values() { return this.items.get().map(item => $(item).data('value')); }
   get active() { return this.items.filter('.active'); }
@@ -651,7 +679,7 @@ class List {
     return this.items.filter((i, item) => value_array.includes($(item).data('value')))
   }
   async item_select(ev) {
-    if ($(ev.target).is('img') || !this.li_selectable) return;
+    if ($(ev.target).is('img') || !this.selectable) return;
     let pass = true;
     let has_limit = this.limit != null, item = $(ev.target).closest('li'), was_active = item.hasClass('active'),
       at_limit = !has_limit ? false : this.active.length == this.limit;
@@ -684,6 +712,9 @@ class List {
         else item.addClass('active');
       }
     }
+    if (item.hasClass('active')) this.add_to_list(item);
+    else this.remove_from_list(item);
+    // console.log(this.ordered_list);
     this.post_select_check();
   }
   add_item(options = {}) {
@@ -695,7 +726,7 @@ class List {
       item = $(`<li/>`, { class: options.class_list || this.li_class || '' }).appendTo(this.ul).show(),
       entire_li_clickable = ifu(options.entire_li_clickable, this.entire_li_clickable, true),
       clickable_ele = item,
-      selectable = ifu(options.selectable, this.li_selectable, false),
+      selectable = ifu(options.selectable, this.selectable, false),
       to_top = options.position ? options.position == 'top' ? true : false : false;
 
     if (options.data) item.data(options.data);
@@ -728,11 +759,19 @@ class List {
     $(item).slideFadeOut(function () { $(this).remove() });
   }
   remove_by_value(value, time = 400) {
-    let item = this.items.get().filter(i => $(i).data('value') === value);
-    if (item.isEmpty()) throw new Error(`Value ${value} does not exist`);
-    if (time) $(item).slideFadeOut(time, function () { $(this).remove() });
-    else $(item).remove();
-    setTimeout(_ => { this.post_add_check() }, time || 0);
+    if (value.is_array()) {
+
+      for (const val of value) {
+        log(`Remove from List ${val}`, { val, value, time });
+        this.remove_by_value(val, time);
+      }
+    } else {
+      let item = this.items.get().filter(i => $(i).data('value') == value);
+      if (item.isEmpty()) throw new Error(`Value ${value} does not exist`);
+      if (time) $(item).slideFadeOut(time, function () { $(this).remove() });
+      else $(item).remove();
+      setTimeout(_ => { this.post_add_check() }, time || 0);
+    }
   }
   remove_all() { this.items.remove(); this.post_add_check(); }
 };
@@ -843,8 +882,8 @@ class Toggle {
       ['toggle_ele', 'target_ele'].forEach(o => { if (!this[o]) throw new Error(`.Toggle missing "${o}"`) });
       this.toggle_ele = $(options.toggle_ele).data({ class_obj: this })
       this.toggle_ele.addClass(`${this.toggle_ele_class_list || ''} Toggle`);
-      if (this.target.is('.form')) this.toggle_ele.addClass('lined');
-      this.target.addClass('target_ele');
+      // if (this.target.is('.form')) this.toggle_ele.addClass('lined');
+      this.target.addClass('target_ele').data({ Toggle: this });
 
       this.callback_hide = options.callback_hide || null;
       this.callback_show = options.callback_show || null;
@@ -901,7 +940,7 @@ class Toggle {
       return $();
     }
   }
-  show(time = 400) {
+  async show(time = 400) {
     if (this.is_disabled) return;
     let arrow_left = this.arrow_position == 'left', angle = 0;
     if (arrow_left) angle = '0';
@@ -912,9 +951,10 @@ class Toggle {
     KeyValueBox.realign(this.target);
     $(this.arrow).css({ transform: `rotate(${angle}deg)` });
     if (this.callback_show && typeof this.callback_show == 'function') this.callback_show();
+    await this.target.promise();
     return this;
   }
-  hide(time = 400) {
+  async hide(time = 400) {
     let arrow_left = this.arrow_position == 'left', angle = 0;
     if (arrow_left) angle = '-90';
     this.target.slideFadeOut(time);
@@ -1027,7 +1067,8 @@ class ToolTip {
     this.message_ele = $('<div/>', { class: 'message_ele' });
     this.ele.append(this.message_ele);
 
-    if (this.class) this.ele.addClass(this.class);
+    const classList = this.class || this.class_list;
+    if (classList) this.ele.addClass(classList);
     if (this.message) this.message_append(this.message);
     if (this.shadow == 'small') this.ele.addClass('shadow shadow_small');
     else if (this.shadow) this.ele.addClass('shadow');
@@ -1208,9 +1249,9 @@ class ToolTip {
     let rotation_deg = 0, translateX = '-50%', translateY = '0', left, right, top, bottom, angle = { y: null, x: null, deg: null };
     left = right = top = bottom = 'unset';
 
-    if (fully_above) { rotation_deg = 180; bottom = -2; angle.y = edges.y.top; }
-    else if (fully_below) { translateY = '-100%'; top = -2; angle.y = edges.y.bottom; }
-    else { if (center.y < 0) { rotation_deg = 180; top = 0; } else { bottom = 0; } }
+    if (fully_above) { rotation_deg = 180; bottom = 0; angle.y = edges.y.top; }
+    else if (fully_below) { translateY = '-100%'; top = 0; angle.y = edges.y.bottom; }
+    else { if (center.y < 0) { rotation_deg = 180; top = -2; } else { bottom = 0; } }
 
     if (edges.far_right) {
       left = 0; angle.x = edges.x.right;
@@ -1325,7 +1366,7 @@ class Banner {
     else this.ele.addClass('Banner box');
     if (!this.message) this.message = this.text || 'HELLO';
     if (this.id) this.ele.attr({ id: this.id });
-    this.ele.append(this.message).data('class_obj', this).appendTo(Banner.Container);
+    this.ele.append(this.message).data({ 'class_obj': this, initialized: true }).appendTo(Banner.Container);
     this.ele.css(this.css || {});
     this.hide_onclick = ifu(this.hide_onclick, true);
     this.position = this.position || null;
@@ -1333,13 +1374,30 @@ class Banner {
     if (this.color) this.ele.addClass(this.color);
     if (this.class_list) this.ele.addClass(this.class_list);
     if (this.onclick) this.ele.on('click', this.onclick).css({ cursor: 'pointer' });
-    if (this.hide_onclick) this.ele.on('click', this.hide.bind(this));
+    if (this.hide_onclick) this.ele.on('click', this.hide).css({ cursor: 'pointer' });
     // if (this.message == 'HELLO') this.initial_state = 'hide';
     if (this.initial_state) {
       if (this.initial_state == 'hide') this.hide(0);
       else if (this.initial_state == 'fadein') this.show();
       else if (this.initial_state == 'show') this.show(0);
+      else if (this.initial_state == 'flash') this.flash();
     }
+  }
+  static now(options = {}) {
+    try {
+      if (!options.message && !options.text) throw new Error('No message for banner');
+      const banner = new Banner({ initial_state: 'flash', ...options });
+      return banner;
+    } catch (error) {
+      log({ error, options });
+    }
+
+  }
+  static error(options = {}) {
+    if (typeof options === 'string') options = { message: options };
+    log(`${options.message}`, { error: options });
+    const banner = Banner.now({ initial_state: 'fadein', ...options, color: 'pink' });
+    return banner;
   }
   // static get pink () { return {backgroundColor: 'var(--pink10o)',borderColor:'var(--pink70)',color:'var(--pink)'} }
   // static get green () { return {backgroundColor: 'var(--green10o)',borderColor:'var(--green70)',color:'var(--green)'} }
@@ -1360,7 +1418,7 @@ class Banner {
       b.hide({ time: time_out, callback: callback_hide });
     }, time_in + time);
   }
-  async show(options = {}, callback = null) {
+  show = async (options = {}, callback = null) => {
     if (typeof options == 'number') options = { time: options };
     else if (typeof options == 'function') options = { callback: options };
 
@@ -1374,7 +1432,7 @@ class Banner {
     this.ele.fadeIn(time, callback);
     return new Promise(resolve => setTimeout(_ => { resolve(true); }, time));
   }
-  hide(options = {}, callback = null) {
+  hide = (options = {}, callback = null) => {
     if (typeof options == 'number') options = { time: options };
     else if (typeof options == 'function') options = { callback: options };
     let time = options.time || this.time_out || 400;
@@ -1391,17 +1449,13 @@ class Banner {
   }
   static ContainerRepo() {
     if (!Banner.Container) return;
-    // let top = blurTopGet(true), parent = top ? top.children().first() : 'body';
     try {
-      let blur_top = Blur.top;
-      Banner.Container.appendTo(Blur.top);
-      // log({blur_top,container:Banner.Container},`ContainerRepo`);
-      // if (blur_top.is('body')) Banner.Container.addClass('_body')
-      // else {
-      //   let box = blur_top[0].getBoundingClientRect();
-      //   let pos = {top: `calc(${box.top}px + 2em)`, right: `calc(${view().width - box.right}px + 2.5em)`};
-      //   Banner.Container.css(pos);
-      // }
+      let blur_top = Blur.top, rect = blur_top[0].getBoundingClientRect();
+      if (blur_top.is('body')) Banner.Container.css({ right: '3em', top: '4em' });
+      else {
+        const { left: right, top } = rect;
+        Banner.Container.css({ right: right + 30, top: top + 20 });
+      }
     } catch (error) {
       log({ error })
     }
@@ -1701,7 +1755,7 @@ class Notification {
       no_item_text: 'No notifications',
     }));
     Notification.list_ele = Notification.List.ul[0];
-    Notification.header_count = $('<div/>', { class: 'pink' }).appendTo(Notification.List.header);
+    Notification.header_count = $('<h4/>', { class: 'pink' }).insertAfter(Notification.List.header);
     Notification.update();
     Notification.retrieve_interval = setInterval(Notification.retrieve, 3 * 60 * 1000);
     Notification.indicator = $('<div/>', { class: 'indicator' }).appendTo(Notification.menu_tab);
@@ -1744,16 +1798,14 @@ class Autosave {
       this.size = this.size || 2;
       this.message = this.message || 'changes saved';
       if (this.obj) this.name = this.obj.attr_list ? this.obj.attr_list.name : this.obj.name || 'nameless';
-      // if (this.obj) {
-      //   this.name = this.obj.attr_list ? this.obj.attr_list.name : this.obj.name || 'nameless';
-      //   log({ autosave: this, obj: this.obj }, `new Autosave for "${this.name}"`);
-      // } else log({ autosave: this, obj: this.obj }, `new Autosave, NO OBJ`);
     } catch (error) {
       log({ error });
     }
   }
 
   async trigger(options = {}) {
+    // console.log('TRIGGER!');
+    // log(`Trigger!`, { autosave: this });
     let is_autosave = this instanceof Autosave;
     if (!is_autosave) throw new Error(`'this' must be Autosave but it's not!`);
     let delay = ifu(options.delay, this.delay);
@@ -1768,6 +1820,7 @@ class Autosave {
       this.banner.show(countdown_time);
     }
     let send = async _ => {
+      // log({ send: this.send });
       this.result = await this.send();
       if (!this.result) return;
       if (this.show_status) {
@@ -1776,6 +1829,7 @@ class Autosave {
         else this.checkmark(options);
         this.hide_timer = setTimeout(_ => { this.banner.hide() }, 5000);
       }
+
       this.handle_result(options);
     }
 
@@ -1783,8 +1837,6 @@ class Autosave {
     clearTimeout(this.countdown_timer);
     clearTimeout(this.send_timer);
     clearTimeout(this.hide_timer);
-    // clearTimeout(this.spinner);
-    // if (this.circle) this.circle.clearIntervals();
 
     this.banner.color_reset();
 
@@ -2022,7 +2074,7 @@ class Confirm {
     this.define_by(options);
     this.box = new OptionBox({ class_list: 'confirmation' }.merge(options));
     this.yes_btn = this.box.add_button({
-      text: this.yes_text || 'yes', class_list: 'pink yes', action: _ => { log({ this: this }); this.result = true }
+      text: this.yes_text || 'yes', class_list: 'pink yes', action: _ => { this.result = true }
     });
     this.no_btn = this.box.add_button({
       text: this.no_text || 'no', class_list: 'no', action: _ => { log({ this: this }); this.result = false }
@@ -2035,7 +2087,7 @@ class Confirm {
   }
   async callbacks(response, options) {
     try {
-      log({ response, options }, 'CALLBACKS');
+      // log('CALLBACKS'{ response, options });
 
       if (this.unblur_after_resolve && [true, false].includes(response)) unblur();
       if (this.unblur_after_no_response && response === null) unblur();
@@ -2106,7 +2158,7 @@ class Blur {
       else if (this.auto_undoall_timeout) setTimeout(_ => { Blur.undo_all() }, this.auto_undoall_timeout);
       Blur.list.push(this);
     } catch (error) {
-      log({ error, options })
+      // log({ error, options })
     }
   }
   get grandparent() { return this.block.parent().parent(); }
@@ -2125,8 +2177,12 @@ class Blur {
   get blurred_ele() {
     let ele = this.ele || Blur.top;
     ele = $(ele);
-    if (ele.dne()) throw new Error('blur ele dne');
-    else if (!ele.is(':visible')) throw new Error('blur ele not visible');
+    if (ele.is('#Error')) {
+      unblur();
+      ele = this.ele || Blur.top;
+    }
+    if (ele.dne() || !ele.is(':visible')) throw new Error('blur ele dne');
+    // else if (!ele.is(':visible')) throw new Error('blur ele not visible');
     else if (ele.is('body')) {
       this.is_body = true;
       let top = `${(window.pageYOffset || document.scrollTop) - (document.clientTop || 0)}px`;
@@ -2149,7 +2205,9 @@ class Blur {
     let modal = $(this.modal);
     if (this.modal == 'loading') { this.blurred_by_icon = true; modal = this.load_ele; }
     else if (this.modal == 'checkmark') { this.blurred_by_icon = true; modal = $('#CheckmarkBlur'); }
+
     if (modal.dne()) throw new Error('modal ele dne');
+
     // modal.find('.blur_x').remove();
     if (!modal.data('tt_scroll_hide')) {
       modal.data({ tt_scroll_hide: true });
@@ -2172,9 +2230,15 @@ class Blur {
     this.undo_fx_array.push(fx);
   }
   set on_undo_replace(fx) { this.undo_fx_array = [fx] }
-  fade_undo(time = null) {
-    if (!time) this.undo();
-    else this.block.fadeOut(time, _ => { this.undo() })
+  fade_undo = (time = null) => {
+    try {
+      log({ this: this });
+      if (!time) this.undo();
+      else this.block.fadeOut(time, _ => { this.undo() })
+
+    } catch (error) {
+      log({ error });
+    }
   }
   undo() {
     if (this.is_chained) Blur.reset_dimensions(this.parent);
@@ -2204,7 +2268,8 @@ class Blur {
   // set initial_width () 
   // get initial_width () { return this.width || this.child}
   async resize() {
-    KeyValueBox.realign(this.block);
+    // KeyValueBox.realign(this.block);
+    const child = this.child.get()[0];
     if (!this.child_overflows || this.is_body) return;
     let width_increase = () => { let width = this.parent_width + 10; this.parent.css({ width }, 50) }
     let height_increase = () => { let height = this.parent_height + 10; this.parent.css({ height }, 50) }
@@ -2221,7 +2286,11 @@ class Blur {
     }
   }
 
-  static is_scrollable(ele, margin = 0) { return ele[0].scrollHeight > ele[0].clientHeight + margin }
+  static is_scrollable(ele, margin = 0) {
+    const height_overflow = ele[0].scrollHeight > ele[0].clientHeight + margin;
+    const width_overflow = ele[0].scrollWidth > ele[0].clientWidth + margin;
+    return height_overflow || width_overflow;
+  }
   static reset_dimensions(ele) {
     let style = ele.attr('style');
     if (!style) return;
@@ -2252,7 +2321,11 @@ class Blur {
   }
   static undo_by_click(ev) {
     ev.stopPropagation();
-    if ($(ev.target).is('.blur')) Blur.undo({ time: 500, exclude_loading: true });
+
+    if ($(ev.target).is('.blur')) {
+      log({ ev });
+      Blur.undo({ time: 500, exclude_loading: true });
+    }
   }
   static undo_all(time = 500) {
     // if (time == null) {
@@ -2273,6 +2346,17 @@ class Blur {
     // Blur.list.forEach( blur => {if (blur.is_chained) blur.undo()} );
     // log("UNDO all");
   }
+  static Checkmark() {
+    blurTop('checkmark', {
+      callback: () => { Blur.undo({ repeat: 1 }) },
+      callback_delay: 1000
+    });
+  }
+  static Error({ header = 'Error', message = 'Sorry there was an error' }) {
+    const modal = $('#Error');
+    modal.find('.message').html(`<h1 class='pink'>${header}</h1><div class='p-small'>${message}</div>`);
+    blurTop(modal);
+  }
 }
 export class Menu {
   constructor(options = {}) {
@@ -2291,9 +2375,14 @@ export class Menu {
     });
     if (!Menu.is_popping && this.index != 0) {
       let initial = this.active_tab;
-      // log({tabs: Menu.tab_str,initial,this:this},`${this.id}`);
-      if (initial) this.items.find(item => item.id == initial).load();
-      else this.items[0].load();
+
+      const tab = this.items.find(item => item.id == initial) || this.items[0];
+      tab.load();
+      // if (initial) {
+      //   const tab = this.items.find(item => item.id == initial) || this.items[0];
+      //   tab.load();
+      // }
+      // else this.items[0].load();
     }
   }
 
@@ -2372,18 +2461,24 @@ export class Menu {
     });
   }
   static async new_modal(options = {}) {
-    let target = options.target, in_background = options.in_background || false;
+    let { in_background, url, target, data = {}, method = 'GET' } = options;
+    const [m, id] = target.split(":");
     if (!in_background) blurTop('loading');
     return $.ajax({
-      url: options.url || 'NO URL',
-      // headers: system.validation.xhr.headers.list(),
+      url, data, method,
       headers: Menu.headers,
-      data: options.data || {},
-      method: options.method || 'GET',
       success: (response, status, request) => {
-        let split = target.split(':'), id = split[1] || null,
-          modal = id && $(`#${id}`).exists() ? $(`#${id}`) : $(`<div class='modalForm'${id ? `id='${id}'` : ''}></div>`);
-        modal.html(response);
+        let modal, existing = $(`#${id}`), exists = id ? existing.exists() : false;
+        if (id) {
+          if (exists) {
+            modal = existing.html(response);
+          } else {
+            modal = $(response).attr('id', id);
+          }
+        } else {
+          modal = $(response);
+        }
+
         if (!in_background) { unblur(); blurTop(modal); }
         else modal.hide().appendTo('body');
         initialize.newContent();
@@ -2428,16 +2523,18 @@ export class Menu {
       csrf = xhr.getResponseHeader('X-CSRF-TOKEN'),
       force_logout = xhr.getResponseHeader('X-FORCE-LOGOUT');
 
-    log({ uid_list, tab_list, xhr, response: xhr.responseJSON }, `${now().time} ${settings.url}`);
+    log(`${now().time} ${settings.url}`, { uid_list, tab_list, xhr, response: xhr.responseJSON });
     if (force_logout != null && force_logout.toBool()) Menu.force_logout();
     if (uid_list) uids(uid_list);
     if (tab_list) tabs(tab_list);
     if (csrf) $('meta[name="csrf-token"]').attr('content', csrf);
     if (xhr.responseJSON) {
       const { error } = xhr.responseJSON;
+      // const { error: generalError, save_result: { error: saveError } = {} } = xhr.responseJSON;
+      // let error = generalError || saveError || null;
       if (error) {
         const modal = $("#Error");
-        $(modal).find(".message").html(`<h2 class='pink'>${error.header}</h2><div class='p-small'>${error.message}</div>`);
+        modal.find(".message").html(`<h2 class='pink'>${error.header}</h2><div class='p-small'>${error.message}</div>`);
         blurTop(modal);
       }
     }
@@ -2542,7 +2639,7 @@ $(document).on('scroll', ev => { ToolTip.hide_all() });
 export const Features = { Notification, Button, ButtonBox, Filter, Editable, OptionBox, List, UpDown, Toggle, ToolTip, Warning, Banner, Autosave, Icon, KeyValueBox, Confirm, Blur };
 window.Notification = Notification;
 
-
+window.banner = Banner;
 window.Http = Menu;
 
 export const system = {
@@ -2553,7 +2650,7 @@ export const system = {
     isAdmin: function () { return (user.current && user.current.is_admin != undefined) ? user.current.is_admin : false; },
     set: function (userData) {
       if (Object.isFrozen(user)) return;
-      user.current = new Models.User(userData);
+      user.current = Models.User.Auth = new Models.User(userData);
       if (user.current.is_super) {
         window.system = system;
         window.Models = Models;
@@ -3164,7 +3261,7 @@ export const system = {
           let value = json[key];
           if (value === null) value = 'null';
           let type = typeof value, is_numeric = key.is_numeric();
-          log({ key, is_numeric })
+          // log({ key, is_numeric })
           if (['string', 'number'].includes(type) || value instanceof jQuery) {
             if (is_numeric) ele.append(`<div>${value}</div>`);
             else ele.append(`<div>${key}: ${value}</div>`);
@@ -3306,6 +3403,7 @@ window.px_to_rem = px => system.display.size.px_to_rem(px);
 window.rem_to_px = rem => system.display.size.rem_to_px(rem);
 window.blur = (ele, modal, options = {}) => { new Blur({ ele, modal }.merge(options)) };
 window.blurTop = (modal, options = {}) => { new Blur({ modal }.merge(options)) };
+window.blurError = ({ header = 'Error', message = `Sorry, there has been an error` }) => { Blur.Error({ header, message }) };
 window.unblur = (options = {}) => {
   Blur.undo(options);
 };
@@ -3430,27 +3528,28 @@ var systemModalList = ['Confirm', 'Warn', 'Error', 'Feedback', 'Refresh', 'Notif
 
 
 $.fn.getObj = function (type = null, include_parents = true, include_self = true) {
-  let obj = null;
+  let obj = null, objName = 'class_obj';
   try {
     if (type) {
       type = type.replace('.', '');
-      let this_obj = include_self ? $(this).data('class_obj') : undefined;
+      if (type === 'target_ele') objName = 'Tog`gle';
+      let this_obj = include_self ? $(this).data(objName) : undefined;
       if (this_obj != undefined && $(this).is(`.${type}`)) obj = this_obj;
       else if (include_parents) {
         let ele = include_self ? $(this).closest(`.${type}`) : $(this).parents(`.${type}`).first();
         while (ele.exists()) {
-          let ele_obj = ele.data('class_obj');
+          let ele_obj = ele.data(objName);
           if (ele_obj) { obj = ele_obj; break; }
           ele = ele.parent().closest(`.${type}`);
         }
       }
     } else {
-      if (this.data('class_obj') != undefined) obj = this.data('class_obj');
+      if (this.data(objName) != undefined) obj = this.data(objName);
       else if (include_parents) {
         let parents = this.parents();
         parents.each((p, parent) => {
-          if ($(parent).data('class_obj') != undefined) {
-            obj = $(parent).data('class_obj');
+          if ($(parent).data(objName) != undefined) {
+            obj = $(parent).data(objName);
             return false;
           }
         })
@@ -3530,7 +3629,7 @@ $.fn.slideFadeOut = function (time = 400, callback = null) {
   }
   return this;
 };
-$.fn.slideFadeIn = function (time = 400, callback = null) {
+$.fn.slideFadeIn = async function (time = 400, callback = null) {
   try {
     if (this.dne()) return;
     if (typeof time === 'function') { callback = time; time = 400; }
@@ -3541,6 +3640,7 @@ $.fn.slideFadeIn = function (time = 400, callback = null) {
       // e.cssTransition(0).css({opacity:0});
       e.cssTransition(time).slideDown(time).delay(100).resetOpacity();
     })
+    await this.promise();
   } catch (error) {
     log({ error, time, callback, ele: this });
   }
@@ -3600,29 +3700,50 @@ $.fn.getTopOffset = function (offset = 0) {
     let bars = $("#NavBar").add('.menuBar').not('.siteMenu');
     bars.each((b, bar) => offset += $(bar).outerHeight());
   }
-  // log({offset});
+  // log({ offset });
   return offset;
 }
-$.fn.smartScroll = function (settings = {}) {
+$.fn.smartScroll = async function (settings = {}) {
+  let is_hidden = () => !this.is(':visible'), parentToggle = this.getObj('target_ele');
   let duration = settings.duration || 1000,
     callback = settings.callback || null,
     offset = settings.offset || 0,
     force = settings.force || false;
+
+  if (system.ui.scroll.pending) {
+    let pending = () => system.ui.scroll.pending;
+    new Promise((resolve) => {
+      let check = setInterval(() => {
+        if (!pending()) {
+          clearInterval(check);
+          resolve();
+        }
+      }, 50);
+    }).then(() => { if (callback) callback() });
+    return;
+  }
+  system.ui.scroll.pending = true;
+  while (is_hidden() && parentToggle) {
+    await parentToggle.show(200);
+    parentToggle = parentToggle.target.getObj('target_ele', true, false);
+  }
+
   let ele = this.isInside('.blur') ? this.closest('.blur').children().first() : null;
   delete settings.callback; delete settings.duration; delete settings.force;
   let is_visible = this.isVisible(offset);
+  const finish = () => {
+    system.ui.scroll.pending = false;
+    if (callback) callback();
+  }
   offset += this.getTopOffset();
   settings.offset = -offset;
-  if (is_visible.top && !force) {
-    if (callback && typeof callback == 'function') callback();
-  } else {
-    if (!system.ui.scroll.pending) {
-      if (ele) ele.scrollTo(this[0], duration, settings);
-      else $.scrollTo(this, duration, settings);
-      system.ui.scroll.pending = true;
-      setTimeout(function () { system.ui.scroll.pending = false }, duration);
-    }
-    if (callback && typeof callback == 'function') setTimeout(callback, duration);
+
+  if (is_visible.top && !force) finish();
+  else {
+    if (ele) ele.scrollTo(this[0], duration, settings);
+    else $.scrollTo(this, duration, settings);
+
+    setTimeout(finish, duration);
   }
 }
 $.fn.warn = function (string = 'warning', options = {}) {
@@ -3774,11 +3895,9 @@ $.ajaxSetup({
 $(document).ajaxError(function (ev, xhr, settings, error) {
   Menu.check_headers(xhr, settings, ev);
   if (error !== 'abort') {
-    log({ ev, xhr, settings, error });
-    var status = xhr.status,
-      message = (xhr.responseJSON != undefined) ? xhr.responseJSON.message : error,
-      modal = "#Error";
-
+    const modal = "#Error";
+    const { status, responseJSON = {} } = xhr;
+    const message = responseJSON.message || status;
     if ([419, 401].includes(status)) {
       // if ($.inArray(status, [419, 401]) > -1){
       Menu.force_logout(true);
@@ -3803,14 +3922,15 @@ $(document).ajaxError(function (ev, xhr, settings, error) {
       });
       blurTop("#Feedback");
     } else {
+      log({ ev, status, message, xhr, settings, error });
       $(modal).find(".submit").data('error', xhr);
       $(modal).find(".message").html("<h2 class='pink'>Error</h2><div>" + message + "</div>");
       blurTop(modal);
     }
-    var btn = $(modal).find(".submit");
-    SystemModalBtnFlash = setInterval(function () {
-      btn.toggleClass("pink70 pink");
-    }, 500);
+    // var btn = $(modal).find(".submit");
+    // SystemModalBtnFlash = setInterval(function () {
+    //   btn.toggleClass("pink70 pink");
+    // }, 500);
   }
 }).ajaxSuccess(function (ev, xhr, settings) {
   Menu.check_headers(xhr, settings, ev);

@@ -2,83 +2,82 @@
   "SiteMenu": {
     "about": {
       "text": "About",
-      "dropdown":false,
-      "uri":"/about"
-    }, 
-    "what_how" : {
+      "dropdown": false,
+      "uri": "/about"
+    },
+    "what_how": {
       "text": "What + How",
       "dropdown": {
         "treatments": {
-          "text":"Treatments",
-          "dropdown":false,
-          "uri":"/treatments"
+          "text": "Treatments",
+          "dropdown": false,
+          "uri": "/treatments"
         },
         "conditions": {
-          "text":"Conditions",
-          "dropdown":false,
-          "uri":"/conditions"
+          "text": "Conditions",
+          "dropdown": false,
+          "uri": "/conditions"
         },
         "rates": {
-          "text":"Rates",
-          "dropdown":false,
-          "uri":"/rates"
+          "text": "Rates",
+          "dropdown": false,
+          "uri": "/rates"
         }
       }
     },
     "portal_login": {
       "text": "Log In",
-      "dropdown":false,
-      "uri":"/portal"
+      "dropdown": false,
+      "uri": "/portal"
     },
     "portal_home": {
       "text": "Portal",
-      "dropdown":false,
-      "uri":"/portal"
+      "dropdown": false,
+      "uri": "/portal"
     },
-    "divide":{
-    },
+    "divide": {},
     "logout": {
       "text": "Log Out",
-      "dropdown":false,
-      "uri":"/portal/logout"
+      "dropdown": false,
+      "uri": "/portal/logout"
     },
     "booknow": {
-      "text":"Book Now",
-      "dropdown":false,
-      "uri":"/booknow"
+      "text": "Book Now",
+      "dropdown": false,
+      "uri": "/booknow"
     }
   },
   "MobileMenu": {
     "MobilePlaceholder": {
       "text": "",
-      "image_url":"/images/icons/mobile_menu.png",
+      "image_url": "/images/icons/mobile_menu.png",
       "dropdown": {}
     }
   },
   "PortalPractitioner": {
     "home": {
-      "text":"Home",
-      "image_url":"/images/icons/home_icon_yellow.png",
+      "text": "Home",
+      "image_url": "/images/icons/home_icon_yellow.png",
       "dropdown": {
         "portal-home": {
-          "text":"EHR Launchpad",
-          "uri":"/portal",
-          "dropdown":false
+          "text": "EHR Launchpad",
+          "uri": "/portal",
+          "dropdown": false
         },
         "user-settings": {
-          "text":"User Settings",
-          "uri":"/portal/user/settings",
-          "dropdown":false
+          "text": "User Settings",
+          "uri": "/portal/user/settings",
+          "dropdown": false
         },
         "portal-settings": {
-          "text":"Portal Settings",
-          "uri":"/portal/settings",
-          "dropdown":false
+          "text": "Portal Settings",
+          "uri": "/portal/settings",
+          "dropdown": false
         },
         "practice-settings": {
-          "text":"Practice Details",
-          "uri":"/portal/practices",
-          "dropdown":false
+          "text": "Practice Details",
+          "uri": "/portal/practices",
+          "dropdown": false
         }
       }
     },
@@ -87,614 +86,598 @@
     },
     "divide": {},
     "lock-ehr": {
-      "text":"Lock EHR",
-      "image_url":"/images/icons/lock_icon_yellow.png"
+      "text": "Lock EHR",
+      "image_url": "/images/icons/lock_icon_yellow.png"
     },
     "logout": {
-      "text":"Log Out",
-      "dropdown":false,
-      "uri":"/portal/logout"
+      "text": "Log Out",
+      "dropdown": false,
+      "uri": "/portal/logout"
     }
   },
   "PortalPatient": {
-    "divide": {
-    },
+    "divide": {},
     "notifications": {
       "dropdown": {}
     },
     "booknow": {
-      "text":"Book An Appointment",
-      "dropdown":false,
-      "uri":"#createAppointment"
+      "text": "Book An Appointment",
+      "dropdown": false,
+      "uri": "#createAppointment"
     },
     "logout": {
-      "text":"Log Out",
-      "dropdown":false,
-      "uri":"/portal/logout"
+      "text": "Log Out",
+      "dropdown": false,
+      "uri": "/portal/logout"
     }
   },
   "PortalAdmin": {
     "logout": {
-      "text":"Log Out",
-      "dropdown":false,
-      "uri":"portal/logout"
+      "text": "Log Out",
+      "dropdown": false,
+      "uri": "portal/logout"
     }
   },
-  "PortalTabOptions":
-  {
+  "PortalTabOptions": {
     "appointments-home": {
-      "text":"Appointments",
-      "dropdown":false,
-      "uri":"/home/appointments"
+      "text": "Appointments",
+      "dropdown": false,
+      "uri": "/appointments/home"
+    },
+    "appointments-index": {
+      "text": "List",
+      "dropdown": false,
+      "uri": "/appointment/index"
     },
     "appointments-calendar": {
-      "text":"Appointments",
-      "dropdown":false,
-      "uri":"/appointments/calendar"
+      "text": "Appointments",
+      "dropdown": false,
+      "uri": "/appointments/calendar"
     },
     "appointments-create": {
-      "text":"New Appointment",
-      "dropdown":false,
-      "uri":"/appointments/create"
+      "text": "New Appointment",
+      "dropdown": false,
+      "uri": "/appointments/create"
     },
     "appointments-settings": {
-      "text":"Settings",
-      "dropdown":false,
-      "uri":"/appointments/settings"
+      "text": "Settings",
+      "dropdown": false,
+      "uri": "/appointments/settings"
     },
     "artisan": {
-      "text":"Artisan",
+      "text": "Artisan",
       "dropdown": {
         "refresh-appointments": {
-          "text":"Reset Appointments",
-          "dropdown":false,
-          "uri":"/artisan/execute/refresh-appointments"
+          "text": "Reset Appointments",
+          "dropdown": false,
+          "uri": "/artisan/execute/refresh-appointments"
         },
         "update-appointments": {
-          "text":"Update Calendars",
-          "dropdown":false,
-          "uri":"/artisan/execute/update-appointments"
+          "text": "Update Calendars",
+          "dropdown": false,
+          "uri": "/artisan/execute/update-appointments"
         },
         "refresh-users": {
-          "text":"Reset Users",
-          "dropdown":false,
-          "uri":"/artisan/execute/refresh-users"
+          "text": "Reset Users",
+          "dropdown": false,
+          "uri": "/artisan/execute/refresh-users"
         },
         "refresh-complaints": {
-          "text":"Reset Complaints",
-          "dropdown":false,
-          "uri":"/artisan/execute/refresh-complaints"
+          "text": "Reset Complaints",
+          "dropdown": false,
+          "uri": "/artisan/execute/refresh-complaints"
         },
         "refresh-bugs": {
-          "text":"Reset Bugs",
-          "dropdown":false,
-          "uri":"/artisan/execute/refresh-bugs"
+          "text": "Reset Bugs",
+          "dropdown": false,
+          "uri": "/artisan/execute/refresh-bugs"
         },
         "reset-uids": {
-          "text":"Reset UIDs",
-          "dropdown":false,
-          "uri":"/artisan/execute/reset-uids"
+          "text": "Reset UIDs",
+          "dropdown": false,
+          "uri": "/artisan/execute/reset-uids"
         }
       }
     },
-
     "botanicals-home": {
-      "text":"Botanicals",
-      "dropdown":false,
-      "uri":"/home/botanicals"
+      "text": "Botanicals",
+      "dropdown": false,
+      "uri": "/home/botanicals"
     },
     "botanicals-index": {
-      "text":"Botanicals",
-      "dropdown":false,
-      "uri":"/botanicals"
+      "text": "Botanicals",
+      "dropdown": false,
+      "uri": "/botanicals"
     },
     "botanicals-create": {
-      "text":"New Botanical",
-      "dropdown":false,
-      "uri":"/botanicals/create"
+      "text": "New Botanical",
+      "dropdown": false,
+      "uri": "/botanicals/create"
     },
     "chart-notes-index": {
-      "text":"Chart Notes",
-      "dropdown":false,
-      "uri":"/ChartNote/index"
+      "text": "Chart Notes",
+      "dropdown": false,
+      "uri": "/ChartNote/index"
     },
-
+    "complaints-index": {
+      "text": "Complaints",
+      "dropdown": false,
+      "uri": "/Complaint/index"
+    },
     "diagnoses-home": {
-      "text":"Diagnosis",
+      "text": "Diagnosis",
       "dropdown": {
         "complaints-index": {
-          "text":"Chief Complaints",
-          "uri":"/Complaint/index",
-          "dropdown":false
+          "text": "Chief Complaints",
+          "uri": "/Complaint/index",
+          "dropdown": false
         },
         "chinese-diagnosis-index": {
-          "text":"Chinese Diagnosis",
-          "uri":"/Diagnosis/index?type=Chinese",
-          "dropdown":false
+          "text": "Chinese Diagnosis",
+          "uri": "/Diagnosis/index?type=Chinese",
+          "dropdown": false
         },
         "western-diagnosis-index": {
-          "text":"Western Diagnosis",
-          "uri":"/Diagnosis/index?type=Western",
-          "dropdown":false
+          "text": "Western Diagnosis",
+          "uri": "/Diagnosis/index?type=Western",
+          "dropdown": false
         }
       }
     },
     "diagnoses-create": {
-      "text":"Add New Diagnosis",
-      "dropdown":false,
-      "uri":"/create/Diagnosis"
+      "text": "Add New Diagnosis",
+      "dropdown": false,
+      "uri": "/create/Diagnosis"
     },
-
+    "invoices-index": {
+      "text": "Invoices",
+      "dropdown": false,
+      "uri": "/Invoice/index"
+    },
     "settings-patient": {
-      "text":"Settings",
-      "dropdown":false,
-      "uri":"/settings/Patient/uid"
+      "text": "Settings",
+      "dropdown": false,
+      "uri": "/settings/Patient/uid"
     },
     "settings-panel": {
-      "text":"Settings Panel",
-      "dropdown":false,
-      "uri":"/portal/settings/panel"
+      "text": "Settings Panel",
+      "dropdown": false,
+      "uri": "/portal/settings/panel"
     },
     "display-settings": {
-      "text":"Display Settings",
+      "text": "Display Settings",
       "dropdown": {
         "display-settings-services": {
-          "text":"Services",
-          "dropdown":false,
-          "uri":"/portal/settings/display/Service"
+          "text": "Services",
+          "dropdown": false,
+          "uri": "/portal/settings/display/Service"
         },
         "display-settings-forms": {
-          "text":"Forms",
-          "dropdown":false,
-          "uri":"/portal/settings/display/Form"
+          "text": "Forms",
+          "dropdown": false,
+          "uri": "/portal/settings/display/Form"
         },
         "display-settings-appointments": {
-          "text":"Appointments",
-          "dropdown":false,
-          "uri":"/portal/settings/display/Appointment"
+          "text": "Appointments",
+          "dropdown": false,
+          "uri": "/portal/settings/display/Appointment"
         }
       }
     },
     "forms+submissions": {
-      "text":"Forms",
+      "text": "Forms",
       "dropdown": {
         "forms": {
-          "text":"Forms to Fill Out",
-          "dropdown":false,
-          "uri":"/home/forms"
+          "text": "Forms to Fill Out",
+          "dropdown": false,
+          "uri": "/home/forms"
         },
         "submissions": {
-          "text":"Submitted Forms",
-          "dropdown":false,
-          "uri":"/Submission/index"
+          "text": "Submitted Forms",
+          "dropdown": false,
+          "uri": "/Submission/index"
         }
       }
     },
     "forms-home": {
-      "text":"Forms",
-      "dropdown":false,
-      "uri":"/home/forms"
+      "text": "Forms",
+      "dropdown": false,
+      "uri": "/home/forms"
     },
     "forms-index": {
-      "text":"Available Forms",
-      "dropdown":false,
-      "uri":"/Form/index"
+      "text": "Available Forms",
+      "dropdown": false,
+      "uri": "/Form/index"
     },
     "forms-create": {
-      "text":"Create Form",
-      "dropdown":false,
-      "uri":"/forms/create"
+      "text": "Create Form",
+      "dropdown": false,
+      "uri": "/forms/create"
     },
     "forms-edit": {
-      "text":"Edit Form",
-      "dropdown":false,
-      "uri":"/forms/UID/edit"
+      "text": "Edit Form",
+      "dropdown": false,
+      "uri": "/forms/UID/edit"
     },
     "forms-settings": {
-      "text":"Settings",
-      "dropdown":false,
-      "uri":"/forms/UID/settings"
+      "text": "Settings",
+      "dropdown": false,
+      "uri": "/forms/UID/settings"
     },
-
     "new": {
-      "text":"Quick",
-      "image_url":"/images/icons/pencil_icon_yellow.png",
-      "modal":true,
+      "text": "Quick",
+      "image_url": "/images/icons/pencil_icon_yellow.png",
+      "modal": true,
       "dropdown": {
         "users-create": {
-          "text":"New User",
-          "dropdown":{
-            "patient-create":{
-              "text":"Patient",
-              "dropdown":false,
-              "uri":"/create/Patient"
+          "text": "New User",
+          "dropdown": {
+            "patient-create": {
+              "text": "Patient",
+              "dropdown": false,
+              "uri": "/create/Patient"
             },
-            "practitioner-create":{
-              "text":"Practitioner",
-              "dropdown":false,
-              "uri":"/create/Practitioner"
+            "practitioner-create": {
+              "text": "Practitioner",
+              "dropdown": false,
+              "uri": "/create/Practitioner"
             },
-            "staff-create":{
-              "text":"Staff Member",
-              "dropdown":false,
-              "uri":"/create/StaffMember"
+            "staff-create": {
+              "text": "Staff Member",
+              "dropdown": false,
+              "uri": "/create/StaffMember"
             }
           }
         },
         "appointment-create": {
-          "text":"Appointment",
-          "uri":"/create/Appointment",
-          "dropdown":false
+          "text": "Appointment",
+          "uri": "/create/Appointment",
+          "dropdown": false
         },
         "chart-note-create": {
-          "text":"Chart Note",
-          "uri":"/ChartNote/create",
-          "dropdown":false
+          "text": "Chart Note",
+          "uri": "/create/ChartNote",
+          "dropdown": false
         },
         "invoice-create": {
-          "text":"Invoice",
-          "uri":"/Invoice/create",
-          "dropdown":false
+          "text": "Invoice",
+          "uri": "/create/Invoice",
+          "dropdown": false
         },
         "prescription-create": {
-          "text":"Prescription",
-          "uri":"/prescription/create",
-          "dropdown":false
-        },
-        "practice-create": {
-          "text":"Practice",
-          "uri":"/practice/create",
-          "dropdown":false
+          "text": "Prescription",
+          "uri": "/create/Prescription",
+          "dropdown": false
         }
       }
     },
     "indices": {
-      "text":"See All",
-      "image_url":"/images/icons/list_icon_yellow.png",
+      "text": "See All",
+      "image_url": "/images/icons/list_icon_yellow.png",
       "dropdown": {
         "user-type-list": {
-          "text":"Users",
+          "text": "Users",
           "dropdown": {
             "patient-index": {
-              "uri":"/Patient/index",
-              "text":"Patients",
-              "dropdown":false
+              "uri": "/Patient/index",
+              "text": "Patients",
+              "dropdown": false
             },
             "practitioner-index": {
-              "uri":"/Practitioner/index",
-              "text":"Practitioners",
-              "dropdown":false
+              "uri": "/Practitioner/index",
+              "text": "Practitioners",
+              "dropdown": false
             },
             "staff-member-index": {
-              "uri":"/StaffMember/index",
-              "text":"Staff",
-              "dropdown":false
-            },
-            "practice-index": {
-              "uri":"/Practice/index",
-              "text":"Practices",
-              "dropdown":false
+              "uri": "/StaffMember/index",
+              "text": "Staff",
+              "dropdown": false
             }
           }
         },
         "diagnostics-list": {
-          "text":"Diagnosis",
+          "text": "Diagnosis",
           "dropdown": {
             "complaint-index": {
-              "text":"Chief Complaints",
-              "uri":"/Complaint/index",
-              "dropdown":false
+              "text": "Chief Complaints",
+              "uri": "/Complaint/index",
+              "dropdown": false
             },
             "diagnosis-type-list": {
-              "text":"Diagnoses",
-              "dropdown":
-              {
-                "western-diagnosis-index":
-                {
-                  "uri":"/Diagnosis/index?type=Western",
-                  "text":"Western",
-                  "dropdown":false
+              "text": "Diagnoses",
+              "dropdown": {
+                "western-diagnosis-index": {
+                  "uri": "/Diagnosis/index?type=Western",
+                  "text": "Western",
+                  "dropdown": false
                 },
-                "chinese-diagnosis-index":
-                {
-                  "uri":"/Diagnosis/index?type=Chinese",
-                  "text":"Chinese",
-                  "dropdown":false
+                "chinese-diagnosis-index": {
+                  "uri": "/Diagnosis/index?type=Chinese",
+                  "text": "Chinese",
+                  "dropdown": false
                 }
               }
             },
             "icd-code-index": {
-              "text":"ICD Codes",
-              "dropdown":false,
-              "uri":"/IcdCode/index"
+              "text": "ICD Codes",
+              "dropdown": false,
+              "uri": "/IcdCode/index"
             }
           }
         },
         "service-index": {
-          "text":"Services",
-          "dropdown":false,
-          "uri":"/Service/index"
+          "text": "Services",
+          "dropdown": false,
+          "uri": "/Service/index"
         },
         "acupuncture": {
           "text": "Acupuncture",
           "dropdown": {
             "acu_style_index": {
-              "uri":"/AcuStyle/index",
-              "text":"Styles",
-              "dropdown":false              
+              "uri": "/AcuStyle/index",
+              "text": "Styles",
+              "dropdown": false
             },
             "acu_meridian_index": {
-              "uri":"/AcuMeridian/index",
-              "text":"Meridians",
-              "dropdown":false              
+              "uri": "/AcuMeridian/index",
+              "text": "Meridians",
+              "dropdown": false
             },
             "acu_points_index": {
-              "uri":"/AcuPoint/index",
-              "text":"Points",
-              "dropdown":false              
+              "uri": "/AcuPoint/index",
+              "text": "Points",
+              "dropdown": false
             }
           }
         },
         "invoice-index": {
-          "text":"Invoices",
-          "dropdown":false,
-          "uri":"/Invoice/index"
+          "text": "Invoices",
+          "dropdown": false,
+          "uri": "/Invoice/index"
         },
-        "form-type-list":{
-          "text":"Forms",
+        "form-type-list": {
+          "text": "Forms",
           "dropdown": {
             "form-index": {
-              "text":"Available Forms",
-              "dropdown":false,
-              "uri":"/home/forms"
+              "text": "Available Forms",
+              "dropdown": false,
+              "uri": "/home/forms"
             },
             "submission-index": {
-              "text":"Submissions",
-              "dropdown":false,
-              "uri":"/Submission/index"
+              "text": "Submissions",
+              "dropdown": false,
+              "uri": "/Submission/index"
             }
           }
         },
         "message-list": {
-          "text":"Messages",
-          "dropdown":{
+          "text": "Messages",
+          "dropdown": {
             "message-index": {
-              "text":"Message Center",
-              "dropdown":false,
-              "uri":"/Message/index"
+              "text": "Message Center",
+              "dropdown": false,
+              "uri": "/Message/index"
             },
             "notification-index": {
-              "text":"Scheduled Notifications",
-              "dropdown":false,
-              "uri":"/Notification/index"
+              "text": "Scheduled Notifications",
+              "dropdown": false,
+              "uri": "/Notification/index"
             },
             "template-index": {
-              "text":"Templates",
-              "dropdown":false,
-              "uri":"/Template/index"
+              "text": "Templates",
+              "dropdown": false,
+              "uri": "/Template/index"
             }
           }
         },
         "practice-settings": {
-          "text":"Practice Details",
-          "uri":"/portal/practices",
-          "dropdown":false
+          "text": "Practice Details",
+          "uri": "/portal/practices",
+          "dropdown": false
         },
         "system-list": {
-          "text":"System",
+          "text": "System",
           "dropdown": {
             "bug-index": {
-              "uri":"/Bug/index",
-              "dropdown":false,
-              "text":"Bugs"
+              "uri": "/Bug/index",
+              "dropdown": false,
+              "text": "Bugs"
             }
           }
         }
       }
     },
-
     "messages-home": {
-      "text":"Message Center",
-      "dropdown":false,
-      "uri":"/home/messages"
+      "text": "Message Center",
+      "dropdown": false,
+      "uri": "/home/messages"
     },
     "messages-index": {
-      "text":"Message Center",
-      "dropdown":false,
-      "uri":"/Message/index"
+      "text": "Message Center",
+      "dropdown": false,
+      "uri": "/Message/index"
     },
     "messages-create": {
-      "text":"Send New Message",
-      "dropdown":false,
-      "uri":"/create/Message"
+      "text": "Send New Message",
+      "dropdown": false,
+      "uri": "/create/Message"
     },
-
     "patients-home": {
-      "text":"Patients",
-      "dropdown":false,
-      "uri":"/home/patients"
+      "text": "Patients",
+      "dropdown": false,
+      "uri": "/home/patients"
     },
     "patients-index": {
-      "text":"Patients",
-      "dropdown":false,
-      "uri":"/Patient/index"
+      "text": "Patients",
+      "dropdown": false,
+      "uri": "/Patient/index"
     },
     "patients-create": {
-      "text":"Add Patient",
-      "dropdown":false,
-      "uri":"/create/User"
+      "text": "Add Patient",
+      "dropdown": false,
+      "uri": "/create/User"
     },
-
     "practice-contact": {
-      "text":"Location + Contact Info",
-      "uri":"/practice/contact-info",
-      "dropdown":false
+      "text": "Location + Contact Info",
+      "uri": "/practice/contact-info",
+      "dropdown": false
     },
     "practice-hours": {
-      "text":"Business Hours",
-      "uri":"/schedule/Practice",
-      "dropdown":false
+      "text": "Business Hours",
+      "uri": "/schedule/Practice",
+      "dropdown": false
     },
     "practice-legal": {
-      "text":"Tax + Insurance Info",
-      "uri":"/practice/legal-info",
-      "dropdown":false
+      "text": "Tax + Insurance Info",
+      "uri": "/practice/legal-info",
+      "dropdown": false
     },
-
     "services-home": {
-      "text":"Services",
-      "dropdown":false,
-      "uri":"/home/services"
+      "text": "Services",
+      "dropdown": false,
+      "uri": "/home/services"
     },
     "services-index": {
-      "text":"Services",
-      "dropdown":false,
-      "uri":"/Service/index"
+      "text": "Services",
+      "dropdown": false,
+      "uri": "/Service/index"
     },
     "services-create": {
-      "text":"New Service",
-      "dropdown":false,
-      "uri":"/create/Service"
+      "text": "New Service",
+      "dropdown": false,
+      "uri": "/create/Service"
     },
-
     "service-categories-home": {
-      "text":"Service Categories",
-      "dropdown":false,
-      "uri":"/home/service-categories"
+      "text": "Service Categories",
+      "dropdown": false,
+      "uri": "/home/service-categories"
     },
     "service-categories-index": {
-      "dropdown":false,
-      "uri":"/ServiceCategory/index"
+      "dropdown": false,
+      "uri": "/ServiceCategory/index"
     },
     "service-categories-create": {
-      "text":"New Service Category",
-      "dropdown":false,
-      "uri":"/create/ServiceCategory"
+      "text": "New Service Category",
+      "dropdown": false,
+      "uri": "/create/ServiceCategory"
     },
-
-
-
     "users-home": {
-      "text":"Users",
-      "dropdown":false,
-      "uri":"/home/users"
+      "text": "Users",
+      "dropdown": false,
+      "uri": "/home/users"
     },
     "users-index": {
-      "text":"Users",
-      "dropdown":false,
-      "uri":"/users"
+      "text": "Users",
+      "dropdown": false,
+      "uri": "/users"
     },
     "users-create": {
-      "text":"New User",
-      "dropdown":{
-        "patient-create":{
-          "text":"Patient",
-          "dropdown":false,
-          "uri":"/create/Patient"
+      "text": "New User",
+      "dropdown": {
+        "patient-create": {
+          "text": "Patient",
+          "dropdown": false,
+          "uri": "/create/Patient"
         },
-        "practitioner-create":{
-          "text":"Practitioner",
-          "dropdown":false,
-          "uri":"/create/Practitioner"
+        "practitioner-create": {
+          "text": "Practitioner",
+          "dropdown": false,
+          "uri": "/create/Practitioner"
         },
-        "staff-create":{
-          "text":"Staff Member",
-          "dropdown":false,
-          "uri":"/create/StaffMember"
+        "staff-create": {
+          "text": "Staff Member",
+          "dropdown": false,
+          "uri": "/create/StaffMember"
         }
       }
     }
   },
-
-  "UserSettings":
-  {
+  "UserSettings": {
     "general-info": {
-      "text":"General Info",
-      "dropdown":false,
-      "uri":"/user/info"
+      "text": "General Info",
+      "dropdown": false,
+      "uri": "/user/info"
     },
     "security": {
-      "text":"Security",
+      "text": "Security",
       "dropdown": {
         "password": {
-          "text":"Change Password",
-          "dropdown":false,
-          "uri":"/user/password"
+          "text": "Change Password",
+          "dropdown": false,
+          "uri": "/user/password"
         },
         "security-questions": {
-          "text":"Security Questions",
-          "dropdown":false,
-          "uri":"/user/security-questions"
+          "text": "Security Questions",
+          "dropdown": false,
+          "uri": "/user/security-questions"
         }
       }
     }
   },
-
   "TreatmentMenu": {
     "acu": {
-      "text":"Acupuncture",
-      "dropdown":false,
-      "uri":"#AcuListing"
+      "text": "Acupuncture",
+      "dropdown": false,
+      "uri": "#AcuListing"
     },
     "botanical": {
-      "text":"Botanical Medicine",
-      "dropdown":false,
-      "uri":"#BotanicalListing"
+      "text": "Botanical Medicine",
+      "dropdown": false,
+      "uri": "#BotanicalListing"
     },
     "fascial": {
-      "text":"Fascial Release",
-      "dropdown":false,
-      "uri":"#FascialListing"
+      "text": "Fascial Release",
+      "dropdown": false,
+      "uri": "#FascialListing"
     },
     "meditation": {
-      "text":"Guided Breathing + Meditation",
-      "dropdown":false,
-      "uri":"#MeditationListing"
+      "text": "Guided Breathing + Meditation",
+      "dropdown": false,
+      "uri": "#MeditationListing"
     }
   },
   "ConditionMenu": {
     "internal": {
-      "Text":"Internal Medicine",
-      "dropdown":false,
-      "uri":"#InternalMedicineListing"
+      "Text": "Internal Medicine",
+      "dropdown": false,
+      "uri": "#InternalMedicineListing"
     },
     "pain": {
-      "text":"Muscle + Joint Pain",
-      "dropdown":false,
-      "uri":"#MuscleJointPainListing"
+      "text": "Muscle + Joint Pain",
+      "dropdown": false,
+      "uri": "#MuscleJointPainListing"
     },
     "psychosocial": {
-      "text":"Psychosocial Conditions",
-      "dropdown":false,
-      "uri":"#PsychoSocialListing"
+      "text": "Psychosocial Conditions",
+      "dropdown": false,
+      "uri": "#PsychoSocialListing"
     }
   },
-  "RateMenu":
-  {
+  "RateMenu": {
     "eval": {
-      "text":"Evaluation + Diagnosis",
-      "dropdown":false,
-      "uri":"#EvaluationRates"
+      "text": "Evaluation + Diagnosis",
+      "dropdown": false,
+      "uri": "#EvaluationRates"
     },
     "acu": {
-      "text":"Acupuncture",
-      "dropdown":false,
-      "uri":"#AcuRates"
+      "text": "Acupuncture",
+      "dropdown": false,
+      "uri": "#AcuRates"
     },
     "botanical": {
-      "text":"Botanical Medicine",
-      "dropdown":false,
-      "uri":"#BotanicalRates"
+      "text": "Botanical Medicine",
+      "dropdown": false,
+      "uri": "#BotanicalRates"
     },
     "fascial": {
-      "text":"Fascial Release",
-      "dropdown":false,
-      "uri":"#FascialRates"
+      "text": "Fascial Release",
+      "dropdown": false,
+      "uri": "#FascialRates"
     },
     "meditation": {
-      "text":"Guided Breathing and Meditation",
-      "dropdown":false,
-      "uri":"#MeditationRates"
+      "text": "Guided Breathing and Meditation",
+      "dropdown": false,
+      "uri": "#MeditationRates"
     }
   }
 }

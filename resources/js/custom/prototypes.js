@@ -274,8 +274,8 @@ Object.defineProperties(String.prototype, {
     }
   },
   removeSpaces: {
-    value: function () {
-      return this.replace(/ /g, '');
+    value: function (str = '') {
+      return this.replace(/ /g, str);
     }
   },
   toKeyString: {

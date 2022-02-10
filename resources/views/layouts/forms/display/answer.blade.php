@@ -13,11 +13,11 @@ if (isset($initial) && isset($initial[$name])) {
 }
 try {
     if (is_array($value)) {
-        throw new \Exception("value for '$name' is array -- string required");
+        $value = json_encode($value);
     }
 } catch (\Exception $e) {
-    handleError($e, 'Answer blade');
-    $value = '';
+    $error = handleError($e, 'Answer blade');
+    $value = null;
 }
 ?>
 

@@ -16,7 +16,7 @@ body
   text-align: center
   min-height: 100vh
   position: relative
-  overflow-x: hidden
+  // overflow-x: hidden
   box-sizing: border-box
   overflow-anchor: none
   overflow-wrap: break-word
@@ -30,6 +30,9 @@ body
   display: flex
 #Nav
   z-index: 66
+
+.hidden
+  display: none
 
 .smaller 
   font-size: 0.9em
@@ -57,8 +60,11 @@ $colors: 'purple', 'pink', 'yellow', 'green', 'white',
 h1, h2, h3, h4, h5
   font-weight: 400
   line-height: 1.2
-  min-width: max-content
-  max-width: 100%
+  // width: max-content
+  // max-width: 100%
+  &.subtitle
+    @include mix.pad('xsmall')
+    @include mix.margin('mini','y')
   &.bold, .bold
     font-weight: 400
   @each $color in $colors
@@ -106,11 +112,9 @@ $easeinout_sine: cubic-bezier(0.37, 0, 0.63, 1)
 @keyframes opacityFlash
   100%
     opacity: 1
-@mixin opacityFlash ($time: 800)
-  animation: opacityFlash #{$time}ms $easeinout_sine infinite alternate
-@each $time in [400 800 1200 1600]
-  .opacityFlash#{$time}
-    @include opacityFlash($time)
+@each $name, $ms in var.$animation-speeds
+  .opacity-flash-#{$name}
+    @include mix.opacityFlash($ms)
 
 
 .link, a
@@ -133,13 +137,12 @@ $easeinout_sine: cubic-bezier(0.37, 0, 0.63, 1)
 
 
 .central
-  min-width: min-content
+  // width: min-content
   max-width: 100%
-  padding: 0 1em
   box-sizing: border-box
   margin: auto
-  &.large
-    min-width: min(100%, 800px)
+  // &.large
+  //   min-width: min(100%, 800px)
   &.full
     width: 100%
 .fit-content
@@ -218,38 +221,6 @@ a.button, div.button
     opacity: 0.5
     cursor: not-allowed
 
-// @mixin box ($color:'gray', $radius: 5px, $opaque: true, $opacity: 10, $border-width: 1px, $color_bg: true, $flex: false)
-//   position: relative
-//   border: #{$border-width} solid colors.get($color,$opacity*5,$opaque)
-//   background-color: colors.get($color,$opacity,$opaque)
-//   @if ($flex)
-//     display: inline-flex
-//   @else
-//     display: inline-block
-//   border-radius: $radius
-//   padding: 0.2em 0.5em
-//   max-width: 100%
-//   box-sizing: border-box
-//   &.max, &.full
-//     display: block
-//   &.squared
-//     border-radius: 0
-//   @each $color in ['pink' 'yellow' 'purple' 'green']
-//     &.#{$color}
-//       border: #{$border-width} solid colors.get($color, $opacity*7.5, $opaque)
-//       @if ($color_bg)
-//         background-color: colors.get($color, $opacity, $opaque)
-//       > h1, > h2, > h3, > h4, > h5
-//         color: colors.get($color)      
-//       &.light
-//         $lighter: $opacity * 0.5
-//         border: #{$border-width} solid colors.get($color, $lighter*7.5, $opaque)
-//         @if ($color_bg)
-//           background-color: colors.get($color, $lighter, $opaque)
-
-// @mixin indent
-//   @include pad(0,0,0,200)
-
 
 @mixin flexbox
   display: flex
@@ -312,7 +283,7 @@ a.button, div.button
       flex-basis: 33%
       max-width: 300px
   .basis
-    @each $width in [25 33 40 50 60 66 75]
+    @each $width in [25 33 40 50 60 66 75 100]
       &-#{$width}
         box-sizing: border-box
         flex-basis: $width * 1%
@@ -379,14 +350,14 @@ a.button, div.button
           margin: 0
 
 $colors: 'pink' 'yellow' 'purple' 'green'
-@each $color in $colors
-  .filled.#{$color}
-    background-color: colors.get($color,5, true)
-    border-radius: 0.5em
-  .lined.#{$color}
-    border-top: 2px solid colors.get($color, 30, true) !important
-    border-radius: 0 0 0.5em 0.5em
-  .filled.lined.#{$color}
+// @each $color in $colors
+//   .filled.#{$color}
+//     background-color: colors.get($color,5, true)
+//     border-radius: 0.5em
+//   .lined.#{$color}
+//     border-top: 2px solid colors.get($color, 30, true) !important
+//     border-radius: 0 0 0.5em 0.5em
+//   .filled.lined.#{$color}
     border-top: 2px solid colors.get($color, 30, true) !important
     border: 1px solid colors.get($color,20, true)
 
@@ -401,7 +372,7 @@ svg
     opacity: 0.6
     cursor: pointer
     &:hover
-      @include opacityFlash()
+      @include mix.opacityFlash()
     &.active
       opacity: 1
     &.inactive
@@ -504,16 +475,18 @@ svg
       fill: colors.get($color,80,true)    
 
 
-.box, .button_box
+.box
   @include mix.box
+  @each $color in var.$box-colors
+    &.#{$color}
+      @include mix.box($color)
 .button_box
+  @include mix.box
   @include mix.pad('none')
   background-color: transparent
   border-color: transparent
   // text-align: center
 
-// margin and padding
-// $spacings: ('none':0, 'mini':0.25rem, 'xsmall':0.5rem, 'small':1rem, 'medium':1.5rem, 'large': 2rem, 'xlarge': 2.5rem, 'huge':3rem, 'massive':4rem )
 @each $name,$space in var.$spacings
   .m-#{$name}
     margin: $space !important
@@ -544,11 +517,13 @@ svg
     &-bottom
       padding-bottom: $space !important
     
-$font-sizes: ('xsmall':0.8em, 'small':0.9em, 'large':1.1em, 'xlarge':1.2em, 'huge':1.5em, 'double':2em, 'triple':3em)
+$font-sizes: ('mini':0.5,'xsmall':0.8, 'small':0.9, 'large':1.1, 'xlarge':1.2, 'huge':1.5, 'double':2, 'triple':3)
 @each $name, $size in $font-sizes
   .text
     &-#{$name}
-      font-size: $size
+      font-size: #{$size}em
+      &-rem
+        font-size: #{$size}rem
 $font-weights: ('thin':300, 'regular':400, 'bold':700)
 @each $name, $size in $font-weights
   .text
@@ -573,7 +548,7 @@ $rounded: ('small':3px, 'medium':5px, 'large':7px, 'full':50%)
   
 
 .indent
-  @include mix.pad('mini','left')
+  @include mix.pad('large','left')
 .prompt
   @extend .box
 .quote
@@ -588,8 +563,8 @@ $rounded: ('small':3px, 'medium':5px, 'large':7px, 'full':50%)
     &::before
       content: "-"
 
-.body
-  max-width: 100%
+// .body
+//   max-width: 100%
 
 .indicator 
   @include flexbox

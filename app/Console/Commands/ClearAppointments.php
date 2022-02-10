@@ -7,7 +7,6 @@ use App\Appointment;
 use App\Practice;
 use App\RefreshTables;
 
-
 class ClearAppointments extends Command
 {
     /**
@@ -42,21 +41,21 @@ class ClearAppointments extends Command
     public function handle(RefreshTables $refresh)
     {
         //
-        $practiceId = $this->argument('practiceId');
-        // $calendarId = config('practices')[$practiceId]['app']['calendarId'];
-        // $database = config('practices')[$practiceId]['app']['database'];
-        $calendarId = practiceConfig("practices.$practiceId.app.calendarId");
-        $database = practiceConfig("practices.$practiceId.app.database");
-        // $ctrl = new Appointment;
-        config(['database.connections.mysql.database' => $database]);
-        \DB::reconnect();
+        // $practiceId = $this->argument('practiceId');
+        // // $calendarId = config('practices')[$practiceId]['app']['calendarId'];
+        // // $database = config('practices')[$practiceId]['app']['database'];
+        // $calendarId = practiceConfig("practices.$practiceId.app.calendarId");
+        // $database = practiceConfig("practices.$practiceId.app.database");
+        // // $ctrl = new Appointment;
+        // config(['database.connections.mysql.database' => $database]);
+        // \DB::reconnect();
 
-        $refresh->clearApptTables();
-        $this->info('Appointment tables cleared');
-        
-        Practice::clearCalendar($calendarId);
-        $this->info('Google calendar cleared.');
-        Practice::updateEntireEventFeed($practiceId,$calendarId);
-        $this->info('Practitioner event feed updated.');
+        // $refresh->clearApptTables();
+        // $this->info('Appointment tables cleared');
+
+        // Practice::clearCalendar($calendarId);
+        // $this->info('Google calendar cleared.');
+        // Practice::updateEntireEventFeed($practiceId,$calendarId);
+        // $this->info('Practitioner event feed updated.');
     }
 }

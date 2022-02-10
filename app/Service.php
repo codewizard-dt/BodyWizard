@@ -25,7 +25,7 @@ class Service extends Model
 
     public static $instance_actions = [];
     public static $static_actions = [];
-    public static $list_cols = ['duration', 'price'];
+    public static $list_attributes = ['duration', 'price'];
     public static function table()
     {
         $columns = [
@@ -58,6 +58,7 @@ class Service extends Model
     }
     public function getChartFormsAttribute()
     {
+        // return $this->morphToMany('App\Form')
         $ids = $this->get_setting('Default Forms.AutoloadedChartForms');
         return Form::find($ids);
     }
@@ -66,9 +67,6 @@ class Service extends Model
     {
         return $this->morphToMany('App\Code', 'codeable');
     }
-    // public function category(){
-    //   return $this->belongsTo('App\ServiceCategory','service_category_id');
-    // }
     public function forms()
     {
         return $this->morphToMany('App\Form', 'formable', 'formables', null, 'form_id');

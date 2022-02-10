@@ -25,8 +25,9 @@ trait TableAccess
         static::$table_name = static::query()->getQuery()->from;
         static::$primary_key = $proxy->getKeyName();
         static::$model_name = class_basename(get_class());
-        static::$display_name = title(singularSpaces(static::$model_name));
-        static::$display_name_plural = title(pluralSpaces(static::$display_name));
+        $name = isset(static::$alternate_name) ? static::$alternate_name : static::$model_name;
+        static::$display_name = title(singularSpaces($name));
+        static::$display_name_plural = title(pluralSpaces($name));
         static::$is_category = uses_trait($proxy, 'IsCategory');
         static::$has_category = uses_trait($proxy, 'HasCategory');
         static::$has_settings = uses_trait($proxy, 'HasSettings');
@@ -53,82 +54,101 @@ trait TableAccess
             $query->orderBy(...$orderBy);
         }
 
-        if (static::$has_category) {
+        if (static::$has_settings) {
             $query->orderBy(static::$table_name . '.settings->system', 'desc')
                 ->orderBy(static::$table_name . ".settings->Display Order");
-        } elseif (static::$is_user) {
-            $query->orderBy('users.last_name');
-        } else {
-            $query->orderBy(static::$table_name . '.settings->system', 'desc')
-                ->orderBy(static::$table_name . ".settings->Display Order")
-                ->orderBy(static::$table_name . ".name");
         }
+        if (static::$is_user) {
+            $query->orderBy('users.last_name');
+        }
+        // else {
+        //     $query->orderBy(static::$table_name . '.settings->system', 'desc')
+        //         ->orderBy(static::$table_name . ".settings->Display Order")
+        //         ->orderBy(static::$table_name . ".name");
+        // }
         $items = $query->get();
-        logger("Fetch " . static::$table_name, $items->toArray());
+        // logger("Fetch " . static::$table_name, $items->toArray());
         return $items;
     }
 
-    public static function get_list($as_json = false, $collection = null)
+    public static function list_attrs()
+    {
+        $attrs = ['name', 'uid'];
+        $unique = isset(static::$list_attributes) ? static::$list_attributes : [];
+        smart_merge($attrs, $unique);
+
+        if (static::$has_category) {
+            smart_merge($attrs, ['category_name', 'category_id']);
+        }
+        if (static::$has_settings) {
+            $attrs[] = 'settings';
+        }
+        return $attrs;
+    }
+    public static function get_list($collection = null)
     {
         try {
             if (static::$has_category === null) {
                 static::bootTableAccess();
             }
 
-            $select = ['name', 'uid'];
-            $unique = isset(static::$list_cols) ? static::$list_cols : [];
-            smart_merge($select, $unique);
-
-            if (static::$has_category) {
-                smart_merge($select, ['category_name', 'category_id']);
-            }
-
-            if (static::$has_settings) {
-                $select[] = 'settings';
-            }
-
             $list = $collection ? $collection : static::fetch();
-            $list = $list->map(function ($instance, $uid) use ($select) {
-                $attrs = [];
-                collect($select)->each(function ($column) use (&$attrs, $instance) {
-                    if ($column == 'uid') {
-                        $attrs['uid'] = $instance->getKey();
-                    } else {
-                        $attrs[$column] = $instance->$column;
-                    }
+            $list = $list->map(function ($instance, $uid) {
+                return $instance->list_map();
+                // $attrs = [];
+                // collect($attr_names)->each(function ($key) use (&$attrs, $instance) {
+                //     if ($key == 'uid') {
+                //         $attrs['uid'] = $instance->getKey();
+                //     } else {
+                //         $attrs[$key] = e($instance->$key);
+                //     }
 
-                });
-                return $attrs;
+                // });
+                // return $attrs;
             })->toArray();
-            // $list['plural'] = plural(static::$model_name);
-            return $as_json ? json_encode($list) : $list;
+
+            return $list;
         } catch (\Exception $e) {
             $error = handleError($e);
             return compact('error');
         }
     }
+    public function list_map($attr_names = null)
+    {
+        if ($attr_names === null) {
+            $attr_names = static::list_attrs();
+        }
+        $values = [];
+        foreach ($attr_names as $name) {
+            $value = $name === 'uid' ? $this->getKey() : $this->$name;
+            if (is_string($value)) {
+                $value = e($value);
+            }
 
-    public static function table_json($query_array)
+            set($values, $name, $value);
+        }
+        return $values;
+    }
+
+    public static function table_attrs()
+    {
+        $options = static::base_table();
+        if (method_exists(static::class, 'table')) {
+            $unique = static::table();
+            merge($options, $unique);
+        }
+        // logger($options);
+        return $options;
+    }
+    public static function table_json($query_array = [])
     {
         try {
             $items = static::fetch($query_array);
-            $options = static::base_table();
-            if (method_exists(static::class, 'table')) {
-                $unique = static::table();
-                merge($options, $unique);
-            }
-
-            function a($value)
-            {return is_array($value) ? implodeAnd($value) : $value;}
+            $options = static::table_attrs();
 
             $rows = $items->map(function ($item) use ($options) {
-                $row = collect($options['columns'])->map(function ($attr) use ($item) {return e(a($item->$attr));});
-                $data = collect($options['data'])->mapWithKeys(function ($attr) use ($item) {return [$attr => e(a($item->$attr))];});
-                set($data, 'uid', $item->getKey());
-                set($row, 'data', $data);
-                return $row;
+                return $item->table_map($options);
             })->toArray();
-            // logger(compact('rows', 'items'));
 
             $columns = collect($options['columns'])->map(function ($str, $key) {
                 if (strpos($str, 'setting:') !== false) {
@@ -136,6 +156,8 @@ trait TableAccess
                 }
                 return $str;
             })->toArray();
+
+            // logger(compact('rows', 'columns'));
 
             // $filters = collect($options['filters'])->map(function($info, $key) {
 
@@ -145,12 +167,30 @@ trait TableAccess
             set($options, 'columns', $columns);
             set($options, 'rows', $rows);
             set($options, 'buttons', static::table_buttons());
-            set($options, 'list_update', static::get_list(false, $items));
+            set($options, 'list_update', static::get_list($items));
+            // logger($options);
             return dataAttrStr($options);
         } catch (\Exception $e) {
-            $error = handleError($e);
+            $error = reportError($e);
             return null;
         }
+    }
+
+    public function table_map($options = null)
+    {
+
+        if ($options === null) {
+            $options = static::table_attrs();
+        }
+
+        $columns = collect(get($options, 'columns', []));
+        $data = collect(get($options, 'data', []));
+
+        $row = $columns->map(function ($attr) {return $this->flatten($attr);});
+        $row_data = $data->mapWithKeys(function ($attr) {return [$attr => $this->flatten($attr)];});
+        set($row_data, 'uid', $this->getKey());
+        set($row, 'data', $row_data);
+        return $row->toArray();
     }
 
     public static function base_table()
@@ -181,9 +221,9 @@ trait TableAccess
         return $array;
     }
 
-    public static function instance_details($uid = null)
+    public static function instance_details($uid = null, $instance = null)
     {
-        if ($uid === null || $uid === '' || $uid === 'undefined') {
+        if ($uid === null || $uid === '') {
             return null;
         }
 
@@ -192,24 +232,30 @@ trait TableAccess
             if (!$instance) {
                 throw new \Exception(static::$display_name . ' with $uid = ' . $uid . ' not found');
             }
-            $details = $instance->details();
-            if (!$details) {
-                throw new \Exception(static::$display_name . ' "details" method is undefined');
-            }
-
-            $array = [
-                'name' => $instance->name,
-                'uid' => $uid,
-                'General Info' => $details,
-            ];
-            if (static::$has_settings) {
-                $array['Settings'] = $instance->settings;
-            }
-            return $array;
+            return $instance->details_map();
         } catch (\Exception $e) {
             $error = handleError($e);
             return compact('error');
         }
+    }
+    public function details_map()
+    {
+        $details = $this->details();
+        if (!$details) {
+            // throw new \Exception(static::$display_name . ' "details" method array is empty');
+            $details = [];
+        }
+
+        $array = [
+            'name' => $this->name,
+            'uid' => $this->getKey(),
+            'General Info' => $details,
+        ];
+        if (static::$has_settings) {
+            $array['Settings'] = $this->settings;
+        }
+        return $array;
+
     }
 
     public static function instance_buttons()
@@ -234,8 +280,8 @@ trait TableAccess
         $model = static::$model_name;
         // $instance = new static;
         $buttons = [
-            ['text' => 'add new', 'action' => 'Model.form_open', 'class_list' => 'pink'],
-            ['text' => 'edit', 'action' => 'Model.edit', 'class_list' => 'pink disabled requires-selection'],
+            ['text' => 'add new', 'action' => 'Model.FormOpen', 'class_list' => 'pink'],
+            ['text' => 'edit', 'action' => 'Model.edit', 'class_list' => 'pink disabled requires-selection select-1', 'disabled_message' => 'select exactly one'],
             ['text' => 'delete', 'action' => 'Model.delete', 'class_list' => 'pink disabled requires-selection'],
         ];
         if (static::$has_settings) {
@@ -267,6 +313,12 @@ trait TableAccess
             $button['model'] = $model;
         }
         return $buttons;
+    }
+
+    public function flatten($attr)
+    {
+        $value = $this->$attr;
+        return e(is_array($value) ? implodeAnd($value) : $value);
     }
 
 }

@@ -42,7 +42,7 @@ class Practice extends Model
 
     public static $instance_actions = [];
     public static $static_actions = [];
-    // public static $list_cols = ['duration', 'price'];
+    // public static $list_attributes = ['duration', 'price'];
     public static function table()
     {
         $columns = [

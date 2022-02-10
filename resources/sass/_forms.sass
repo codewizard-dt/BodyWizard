@@ -15,6 +15,7 @@
     vertical-align: top
     // transform: translateY(-0.3em)
 
+
 .settings_label
   @include style.max(false)
   display: block
@@ -25,18 +26,23 @@
 .form
   .form_settings_label
     @include style.max
-  > .header 
-    @include style.margin('small')
+  > h1:not(.Toggle)
+    @include style.box('yellow', $pad:['small'])
+  .form_header, .section_header
+    min-width: unset
   .section
-    @include style.box('gray')
-    border-left: 1px solid style.get('darkgray',70)
+    @include style.box('gray', $margin:['xsmall','y'], $pad:['small'])
     width: 100%
-    > .header
-      @include style.margin('small','bottom')
-      text-align: left
+    text-align:  left
+    > h2
+      @include style.reverse-margin('small','top','small','x')
+      @include style.pad('xsmall','y','small','x')
+      @include style.lined()
+      @include style.bg('gray',10)
     .Items
       align-items: stretch
       width: 100%
+      @include style.margin('small','top')
       > .button_box
         display: block
         text-align: left
@@ -45,28 +51,20 @@
         background-color: transparent
         border-color: transparent
     .item
-      @include style.box('gray')
+      @include style.box('gray',$border:'none',$opaque:false)
+      // @include style.bg('gray',10)
       display: flex
       text-align: left
       width: 100%
       margin: 0.25rem
       max-width: calc(100% - 0.5em)
       border-left-color: style.get('darkgray',50)
-      // &.condensed
-      //   width: unset
-      //   display: inline-flex
-      //   flex: 1 0 0
-      // &.minify
-      //   .question_wrap
-      //     width: unset
-      // &.full
-      //   width: 100%
-      // &.half
-      //   width: 50%
-      // &.third
-      //   width: 33%
-    > .Items > .item
-      // @include style.margin(100, 25, 25, 25)
+      .linked-settings
+        flex-basis: 100%
+        @include style.margin('mini','top')
+        .info
+          @include style.box('pink',$shade:'light')
+          @include style.fit-content
     .question
       display: inline-block
       border-style: solid
@@ -91,23 +89,27 @@
     .item
       .question_wrap
         width: unset
+  &.charting
+    @include style.margin('small','bottom')
 
 .answer
   position: relative
   border-style: solid
   border-radius: 5px
   border-color: style.get('gray',70)
-  @include style.margin('medium','top')
+  @include style.margin('xsmall','top')
   &.max
     margin: 5px auto
   width: max-content
   max-width: calc(100% - 0.4em)
-  .preLabel, .postLabel
-    &:not(input)
-      @include style.pad('xsmall')
+  .preLabel:not(input)
+    @include style.pad('xsmall','right')
+  .postLabel:not(input)
+    @include style.pad('xsmall','left')
   &.has-placeholder
-    @include style.margin('large','top')
-  .placeholder
+    @include style.margin('small','top')
+    @include style.pad('small','top')
+  .placeholder:not(input,textarea)
     opacity: 0
     position: absolute
     left: 0.75em
@@ -115,11 +117,13 @@
     width: 100%
     overflow: hidden
     transition: opacity 300ms, left 300ms, top 300ms
+    color: style.get('darkgray')
+    z-index: -1
     &.visible
       z-index: 2
       opacity: 1
       left: 0
-      top: -1.5em
+      top: -0.5em
   &:not(.imageclick) > img
     margin-left: 0.5em
   h2
@@ -132,7 +136,7 @@
     ul
       @include style.flex_left
       border-radius: 3px
-      border: 1px solid style.get('yellow',5)
+      border: 2px solid style.get('yellow',5)
       list-style: none
     li
       display: inline-block
@@ -270,7 +274,8 @@
     &.large
       max-height: max(90vh, 40em)
   &.signature
-    width: 100vw
+    width: unset
+    max-width: unset
     .j_sig
       @include style.box
       border-width: 2px
@@ -283,8 +288,17 @@
     &.#{$color}
       input
         border-color: style.get($color,20)
+.flexbox
+  > .answer
+    width: unset
+    flex-grow: 1
+    @include style.margin('xsmall','right')
+    @include style.width('mini','min')
 // DISPLAY SETTINGS 
 .form
+  &.hide_titles_Form
+    .form_header
+      display: none
   &.width_form_full
     width: 100%
   &.width_item_half
@@ -311,6 +325,9 @@
     .Items
       justify-content: flex-end
   .section
+    &.HideSectionTitle
+      .section_header
+        display: none
     &.width_item_full
       .item
         width: 100%
@@ -459,6 +476,7 @@ textarea
   display: none
   padding: 2em
 
+
 .itemOptionList
   margin: 1em 0
   .settingsLabel
@@ -487,20 +505,29 @@ textarea
   .answer
     max-width: 100%
 
+.module
+  @include style.margin('medium','y')
+  .header
+    @include style.pad('small', 'y')
 
 
 // SPECIFIC FORMS AND ELEMENTS
 
+#SettingsModal
+  @include style.width('large')
 
 .createModel
   box-sizing: border-box
-  display: none
+  // display: none
 
 #LoginForm
   .answer 
     margin: 0.75em auto
     input
       width: 12em
+
+.settings_header
+  @include style.box('purple',$pad:['small'],$margin:['small','bottom'])
 
 .settings_popup
   @include style.pad('xsmall')

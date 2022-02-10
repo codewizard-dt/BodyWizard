@@ -32,9 +32,10 @@
   @if map.has-key(var.$spacings, $size) == false
     @error "'#{$size}' is not a valid value for $size. Valid values: #{map.keys(var.$spacings)}"
   @return map.get(var.$spacings, $size)
-
-@mixin spacing($property, $size, $mod: false)
+@mixin spacing($property, $size, $mod: false, $reverse: false)
   $space: space($size)
+  @if $reverse
+    $space: $space * -1
   @if $mod == false
     #{$property}: $space
   @else if $mod == 'y'
@@ -44,6 +45,8 @@
     #{$property}-left: $space
     #{$property}-right: $space
   @else 
+    @if not list.index(var.$sides, $mod)
+      @error "'#{$mod}' is not a valid value for $mod. Valid values: #{var.$sides}"
     #{$property}-#{$mod}: $space
 
 @mixin pad($size, $mod: false, $size2: null, $mod2: false, $size3: null, $mod3: false, $size4: null, $mod4: false)
@@ -61,7 +64,16 @@
   @if $size3
     @include spacing('margin', $size3, $mod3)
   @if $size4
-    @include spacing('margin', $size4, $mod4)
+    @include spacing('margin', $size4, $mod4)  
+@mixin reverse-margin($size, $mod: false, $size2: null, $mod2: false, $size3: null, $mod3: false, $size4: null, $mod4: false)
+  max-width: unset
+  @include spacing('margin',$size, $mod, $reverse:true)
+  @if $size2
+    @include spacing('margin', $size2, $mod2, $reverse:true)
+  @if $size3
+    @include spacing('margin', $size3, $mod3, $reverse:true)
+  @if $size4
+    @include spacing('margin', $size4, $mod4, $reverse:true)
   
 @mixin rounded($size)
   @if map.has-key(var.$roundedness, $size) == false
@@ -75,8 +87,18 @@
     @error "'#{$color}' is not a valid value for $color. Valid values: #{$box-colors}"
   border: map.get(var.$border-widths, $width) solid color.get($color, $shade, true)
   @include rounded($radius)
+@mixin lined($width:'thin',$color:'gray',$side:'bottom',$shade:75)
+  @if map.has-key(var.$border-widths, $width) == false
+    @error "'#{$width}' is not a valid value for $width. Valid values: #{map.keys(var.$border-widths)}"
+  @if not list.index(var.$sides, $side)
+    @error "'#{$side}' is not a valid value for $side. Valid values: #{var.$sides}"
+  @if not list.index(var.$box-colors, $color)
+    @error "'#{$color}' is not a valid value for $color. Valid values: #{var.$box-colors}"
+  border-#{$side}-width: map.get(var.$border-widths, $width)
+  border-#{$side}-style: solid
+  border-#{$side}-color: color.get($color, $shade, true)
 
-@mixin box($color: 'gray', $border:'small', $corners:'small', $opaque:true, $shade:'medium', $pad:['mini','y','small','x'])
+@mixin box($color: 'gray', $border:'small', $corners:'small', $opaque:true, $shade:'medium', $pad:['mini','y','small','x'], $margin:['none'])
   @if map.has-key(var.$box-shades, $shade) == false
     @error "'#{$shade}' is not a valid value for $shade. Valid values: #{map.keys(var.$box-shades)}"
   $box-shade: map.get(var.$box-shades, $shade)
@@ -86,4 +108,12 @@
   background-color: color.get($color, $bg-shade, $opaque)
   position: relative
   box-sizing: border-box
+  @if $color == 'gray'
+    color: color.get('darkgray')
+  @else 
+    color: color.get($color)
   @include pad($pad...)
+  @include margin($margin...)
+
+@mixin opacityFlash ($time: 500)
+  animation: opacityFlash #{$time}ms map.get(var.$animation-curves,'easeinout_sine') infinite alternate
