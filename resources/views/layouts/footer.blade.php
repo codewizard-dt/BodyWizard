@@ -34,18 +34,18 @@ $contact_info = isset($contact_info) ? $contact_info : false;
     <div class='copyright'>
         <?php echo 'Copyright 2013-' . date('Y') . ', Body Wizard Integrative Medicine Studio, David Taylor MS L.Ac.'; ?>
     </div>
-    <script type='text/javascript' src="{{ asset('/js/app.js') }}"></script>
+    <script type='text/javascript' src="{{ secure_asset('/js/app.js') }}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-color/2.1.2/jquery.color.min.js"
         integrity="sha256-H28SdxWrZ387Ldn0qogCzFiUDDxfPiNIyJX7BECQkDE=" crossorigin="anonymous"></script>
-    <script type="text/javascript" src="{{ asset('/js/jquery.plugin.min.js') }}"></script>
-    <script type="text/javascript" src="{{ asset('/js/scrollTo.js') }}"></script>
+    <script type="text/javascript" src="{{ secure_asset('/js/jquery.plugin.min.js') }}"></script>
+    <script type="text/javascript" src="{{ secure_asset('/js/scrollTo.js') }}"></script>
     <script type="text/javascript"
-        src="{{ asset('/js/jonthornton-jquery-timepicker-99bc9e3/jquery.timepicker.min.js') }}">
+        src="{{ secure_asset('/js/jonthornton-jquery-timepicker-99bc9e3/jquery.timepicker.min.js') }}">
     </script>
-    <script type="text/javascript" src="{{ asset('/js/jquery.datepick.min.js') }}"></script>
-    <script type="text/javascript" src="{{ asset('/js/mark/jquery.mark.js') }}"></script>
-    <script type='text/javascript' src="{{ asset('/js/summernote-lite.min.js') }}"></script>
-    <script type='text/javascript' src="{{ asset('/js/jSignature.min.js') }}"></script>
+    <script type="text/javascript" src="{{ secure_asset('/js/jquery.datepick.min.js') }}"></script>
+    <script type="text/javascript" src="{{ secure_asset('/js/mark/jquery.mark.js') }}"></script>
+    <script type='text/javascript' src="{{ secure_asset('/js/summernote-lite.min.js') }}"></script>
+    <script type='text/javascript' src="{{ secure_asset('/js/jSignature.min.js') }}"></script>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAWtxBxZgTCJ2xSy_GBBXxechbOS7iN_1A&libraries=places"
         async></script>
     <script src="https://js.stripe.com/v3/"></script>
