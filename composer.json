@@ -62,8 +62,7 @@
         ],
         "post-install-cmd": [
             "chmod -R 755 bootstrap\/cache",
-            "php artisan cache:clear",
-            "npm install && run production"
+            "php artisan cache:clear"
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
