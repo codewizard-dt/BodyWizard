@@ -2669,11 +2669,11 @@ export const system = {
         method: "POST",
         data: data,
         success: function (data) {
+          log({ data });
           blur(form, "checkmark", {
-            callback: _ => { window.location.href = '/portal' },
+            callback: _ => { window.location.href = '/portal/launchpad' },
             callback_delay: 1000
           });
-          // setTimeout(function(){window.location.reload()},1000);
         },
         error: function (data) {
           unblur()
@@ -3885,7 +3885,6 @@ function toTitleCase(str) {
 var uidList, tabList, tabHeaderInfo = {};
 var SystemModalBtnFlash;
 $.ajaxSetup({
-  // headers:system.validation.xhr.headers.list(),
   headers: Menu.headers,
   dataFilter: data => {
     data = data.trim();
