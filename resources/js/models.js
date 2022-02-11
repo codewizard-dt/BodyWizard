@@ -1675,7 +1675,7 @@ class User extends Model {
 
   static IsPatient() { return User.Auth.get_attribute('role', 'patient') }
 
-  get is_super() { return this.attr_list.is_super || false }
+  get is_superuser() { return this.attr_list.is_superuser || false }
   get is_admin() { return this.attr_list.is_admin || false }
   async delete_unique() {
     // log({ this: this });

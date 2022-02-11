@@ -18,8 +18,9 @@ export const debug = {
   }
 };
 window.debug = debug;
-// export const log = function (info, text = null) {
+
 export const log = function (text, info = {}) {
+  if (!user.isSuper()) return;
   if (typeof text === 'object') {
     info = { ...info, ...text };
     text = null;
@@ -2646,7 +2647,7 @@ export const system = {
   user: {
     current: null,
     is: function (usertype) { return user.current ? (user.current.type == usertype) : false; },
-    isSuper: function () { return (user.current && user.current.is_super != undefined) ? user.current.is_super : false; },
+    isSuper: function () { return (user.current && user.current.is_superuser != undefined) ? user.current.is_superuser : false; },
     isAdmin: function () { return (user.current && user.current.is_admin != undefined) ? user.current.is_admin : false; },
     set: function (userData) {
       if (Object.isFrozen(user)) return;
@@ -2670,12 +2671,9 @@ export const system = {
         data: data,
         headers: { Accept: "application/json" },
         success: function (data) {
-          // log({ data });
           blur(form, "checkmark", {
             callback: _ => { window.location = '/portal/launchpad' },
-            // callback_delay: 1000
           });
-          // setTimeout(function(){window.location.reload()},1000);
         },
         error: function (data) {
           unblur()

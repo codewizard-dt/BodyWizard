@@ -144,6 +144,7 @@ class User extends Authenticatable implements MustVerifyEmail
         $type = camel(request('usertype', $this->default_role));
         return $this->$type->details();
     }
+
     public function patient()
     {
         return $this->hasOne('App\Patient');
