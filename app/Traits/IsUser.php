@@ -20,6 +20,7 @@ trait IsUser
             $builder->with('user')->join('users', $table . '.id', '=', 'users.id');
         });
     }
+
     public function user()
     {return $this->belongsTo('App\User', 'user_id');}
 

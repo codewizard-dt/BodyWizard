@@ -82,11 +82,11 @@ class Form extends Model
     //     });
     // }
 
-    public static function successResponse()
+    public function scopeNonSystem($query)
     {
-        $form = Form::find(getUid('Form'));
-        return ['uid' => $form->id, 'form_id' => $form->form_id, 'version_id' => $form->version_id];
+        $query->where('settings->system', null);
     }
+
     public static function nextFormId()
     {
         $max = Form::select('form_id')->orderBy('form_id', 'desc')->limit(1)->get()->first();

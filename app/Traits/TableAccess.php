@@ -2,6 +2,7 @@
 
 namespace App\Traits;
 
+use App\User;
 use Mockery\Undefined;
 
 // use Illuminate\Http\Request;
@@ -42,6 +43,9 @@ trait TableAccess
         $orderBy = get($params, 'orderBy', null);
 
         $query = static::select($select);
+        if (static::$model_name == 'Form' && !User::IsSuper()) {
+            $query->nonSystem();
+        }
         if ($scopes) {
             collect($scopes)->each(function ($scope) use ($query) {$query->$scope();});
         }
@@ -108,7 +112,7 @@ trait TableAccess
             })->toArray();
 
             return $list;
-        } catch (\Exception $e) {
+        } catch (\Exception$e) {
             $error = handleError($e);
             return compact('error');
         }
@@ -157,20 +161,13 @@ trait TableAccess
                 return $str;
             })->toArray();
 
-            // logger(compact('rows', 'columns'));
-
-            // $filters = collect($options['filters'])->map(function($info, $key) {
-
-            // })->toArray();
-
-            // set($options, 'filters', $filters);
             set($options, 'columns', $columns);
             set($options, 'rows', $rows);
             set($options, 'buttons', static::table_buttons());
             set($options, 'list_update', static::get_list($items));
             // logger($options);
             return dataAttrStr($options);
-        } catch (\Exception $e) {
+        } catch (\Exception$e) {
             $error = reportError($e);
             return null;
         }
@@ -233,7 +230,7 @@ trait TableAccess
                 throw new \Exception(static::$display_name . ' with $uid = ' . $uid . ' not found');
             }
             return $instance->details_map();
-        } catch (\Exception $e) {
+        } catch (\Exception$e) {
             $error = handleError($e);
             return compact('error');
         }

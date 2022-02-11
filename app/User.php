@@ -51,6 +51,14 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return Auth::user()->patient->id;
     }
+    public static function IsSuper()
+    {
+        if (!Auth::check()) {
+            return false;
+        } else {
+            return Auth::user()->is_superuser;
+        }
+    }
 
     public static function admins()
     {
