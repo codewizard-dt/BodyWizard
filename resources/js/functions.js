@@ -2668,9 +2668,11 @@ export const system = {
         url: "/login",
         method: "POST",
         data: data,
+        headers: { Accept: "application/json" },
         success: function (data) {
+          // log({ data });
           blur(form, "checkmark", {
-            callback: _ => { window.location.reload() },
+            callback: _ => { window.location = '/portal/launchpad' },
             // callback_delay: 1000
           });
           // setTimeout(function(){window.location.reload()},1000);

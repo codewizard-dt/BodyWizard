@@ -170,56 +170,57 @@ ul
   &.centered
     margin: 2.5rem auto
 
-a.button, div.button
-  display: inline-block
-  position: relative
-  background-color: black
-  font-family: Roboto
-  font-weight: normal
-  text-transform: uppercase
-  text-align: center
-  letter-spacing: 1px
-  font-size: 1em
-  line-height: normal
-  border-radius: 4px
-  border-width: 1px
-  border-style: solid
-  border-color: black
-  color: colors.get('white',80)
-  padding: 0.65em
-  margin: 0.5em
-  text-decoration: none
-  white-space: nowrap
-  transition: background-color 400ms, color 400ms, box-shadow 400ms
-  cursor: pointer
-  touch-action: manipulate
-  user-select: none
-  &:hover
-    color: white
-  $colors: 'pink', 'yellow', 'purple', 'green', 'white', 'black'
-  @each $color in $colors
-    &.#{$color} 
-      background-color: colors.get($color)
-      border-color: colors.get($color)
-    &.#{$color}70 
-      background-color: colors.get($color, 70)
-      border-color: colors.get($color, 70)
-      &.active
+a, div, button
+  &.button
+    display: inline-block
+    position: relative
+    background-color: black
+    font-family: Roboto
+    font-weight: normal
+    text-transform: uppercase
+    text-align: center
+    letter-spacing: 1px
+    font-size: 1em
+    line-height: normal
+    border-radius: 4px
+    border-width: 1px
+    border-style: solid
+    border-color: black
+    color: colors.get('white',80)
+    padding: 0.65em
+    margin: 0.5em
+    text-decoration: none
+    white-space: nowrap
+    transition: background-color 400ms, color 400ms, box-shadow 400ms
+    cursor: pointer
+    touch-action: manipulate
+    user-select: none
+    &:hover
+      color: white
+    $colors: 'pink', 'yellow', 'purple', 'green', 'white', 'black'
+    @each $color in $colors
+      &.#{$color} 
         background-color: colors.get($color)
-      &:hover:not(.disabled)
-        background-color: colors.get($color)
-  &.white, &.white70
-    color: black
-  &.cancel
-    @extend .black70
-  $sizes: ('xsmall':0.7em,'small':0.9em,'large':1.1em, 'xlarge':1.3em)
-  @each $name, $size in $sizes
-    &.#{$name}
-      font-size: $size
-      padding: $size * 0.65
-  &.disabled
-    opacity: 0.5
-    cursor: not-allowed
+        border-color: colors.get($color)
+      &.#{$color}70 
+        background-color: colors.get($color, 70)
+        border-color: colors.get($color, 70)
+        &.active
+          background-color: colors.get($color)
+        &:hover:not(.disabled)
+          background-color: colors.get($color)
+    &.white, &.white70
+      color: black
+    &.cancel
+      @extend .black70
+    $sizes: ('xsmall':0.7em,'small':0.9em,'large':1.1em, 'xlarge':1.3em)
+    @each $name, $size in $sizes
+      &.#{$name}
+        font-size: $size
+        padding: $size * 0.65
+    &.disabled
+      opacity: 0.5
+      cursor: not-allowed
 
 
 @mixin flexbox
