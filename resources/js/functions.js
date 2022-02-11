@@ -2669,11 +2669,11 @@ export const system = {
         method: "POST",
         data: data,
         success: function (data) {
-          log({ data });
           blur(form, "checkmark", {
-            callback: _ => { window.location.href = '/portal/launchpad' },
-            callback_delay: 1000
+            callback: _ => { window.location.reload() },
+            // callback_delay: 1000
           });
+          // setTimeout(function(){window.location.reload()},1000);
         },
         error: function (data) {
           unblur()
