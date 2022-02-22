@@ -7,7 +7,11 @@ Electronic Medical Record Portal
   In development I've also learned version management, package management, and command line tools.<br>
 </p>
 
-As such, this repository demonstrates my self-driven ability to learn new coding languages and my tenacity in doing so.<br>
+<p>
+  As such, this repository demonstrates my self-driven ability to learn new coding languages and my tenacity in doing so.<br>
+  Having built a responsive form editor from scratch, among other features, has made me appreciate the frameworks available to modern developers.
+</p>
+
 
 Although I spent many hours writing (and revising) this app, it never reached production. I stopped working on this project when I decided to take in-depth courses to become a full stack engineer. After completing a lot of coding-boot-camp type classes, I returned to this project in order to clean it up and make it presentable for my portfolio.<br>
 
